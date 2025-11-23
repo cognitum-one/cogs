@@ -1,0 +1,6 @@
+//
+// File created by:  irun
+// Do not modify this file
+
+s1::(04May2025:12:53:59):( /tools/ldv/v15.2/tools/bin/ncverilog /proj/TekStart/lokotech/soc/users/romeo/newport_src_a0/src/Top/Newport_pads.v )
+s2::(04May2025:12:54:50):( /tools/ldv/v15.2/tools/bin/ncverilog /proj/TekStart/lokotech/soc/users/romeo/newport_src_a0/src/Top/Newport_pads.v:q )

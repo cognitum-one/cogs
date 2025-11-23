@@ -1,0 +1,6 @@
+ncverilog: 15.20-s044: (c) Copyright 1995-2018 Cadence Design Systems, Inc.
+TOOL:	ncverilog	15.20-s044: Started on May 04, 2025 at 12:54:50 PDT
+/tools/ldv/v15.2/tools/bin/ncverilog
+	/proj/TekStart/lokotech/soc/users/romeo/newport_src_a0/src/Top/Newport_pads.v:q
+ncverilog: *E,FILEMIS: Cannot find the provided file /proj/TekStart/lokotech/soc/users/romeo/newport_src_a0/src/Top/Newport_pads.v:q.
+TOOL:	ncverilog	15.20-s044: Exiting on May 04, 2025 at 12:54:50 PDT  (total: 00:00:00)

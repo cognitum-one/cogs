@@ -1,0 +1,42 @@
+ncverilog: 15.20-s044: (c) Copyright 1995-2018 Cadence Design Systems, Inc.
+TOOL:	ncverilog	15.20-s044: Started on Feb 24, 2025 at 13:28:45 PST
+/tools/ldv/v15.2/tools/bin/ncverilog
+	../Support/A2_CDC.v
+	../Support//A2_sync.v
+	-sysv2009
+	+access+rw
+	+nstimescale+1ns/1ps
+file: ../Support/A2_CDC.v
+	module worklib.A2_CDC:v
+		errors: 0, warnings: 0
+file: ../Support//A2_sync.v
+	module worklib.A2_sync:v
+		errors: 0, warnings: 0
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.A2_CDC:v <0x73b67880>
+			streams:   8, words:  1809
+		worklib.A2_sync:v <0x05927aab>
+			streams:   4, words:   765
+		worklib.A2_sync:v <0x0b75927a>
+			streams:   4, words:   765
+	Building instance specific data structures.
+	Loading native compiled code:     .................... Done
+	Design hierarchy summary:
+		                 Instances  Unique
+		Modules:                 3       2
+		Registers:               4       3
+		Scalar wires:           14       -
+		Always blocks:           4       3
+		Cont. assignments:       4       5
+		Pseudo assignments:      2       2
+		Simulation timescale:  1ps
+	Writing initial simulation snapshot: worklib.A2_CDC:v
+Loading snapshot worklib.A2_CDC:v .................... Done
+ncsim> source /tools/ldv/v15.2/tools/inca/files/ncsimrc
+ncsim> run
+ncsim: *W,RNQUIE: Simulation is complete.
+ncsim> exit
+TOOL:	ncverilog	15.20-s044: Exiting on Feb 24, 2025 at 13:29:28 PST  (total: 00:00:43)

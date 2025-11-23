@@ -1,0 +1,18 @@
+ncverilog: 15.20-s044: (c) Copyright 1995-2018 Cadence Design Systems, Inc.
+TOOL:	ncverilog	15.20-s044: Started on Feb 26, 2025 at 13:27:08 PST
+/tools/ldv/v15.2/tools/bin/ncverilog
+	Raceway.v
+file: Raceway.v
+	module worklib.Raceway:v
+		errors: 0, warnings: 0
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+		Caching library 'worklib' ....... Done
+A2_arbiter #(4) iBCR (.win(rw2bc_req_winner[3:0]), .req(rw2bc_req[3:0]), .adv(bcast_take_rw), `ECR);
+                   |
+ncelab: *E,CUVMUR (./Raceway.v,423|19): instance 'Raceway.iBCR' of design unit 'A2_arbiter' is unresolved in 'worklib.Raceway:v'.
+A2_arbiter #(8) iBCT (.win(tp2bc_req_winner[7:0]), .req(tp2bc_req[7:0]), .adv(bcast_take_tp), `ECR);
+                   |
+ncelab: *E,CUVMUR (./Raceway.v,424|19): instance 'Raceway.iBCT' of design unit 'A2_arbiter' is unresolved in 'worklib.Raceway:v'.
+ncverilog: *E,ELBERR: Error during elaboration (status 1), exiting.
+TOOL:	ncverilog	15.20-s044: Exiting on Feb 26, 2025 at 13:27:08 PST  (total: 00:00:00)

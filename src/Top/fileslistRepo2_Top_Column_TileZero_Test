@@ -1,0 +1,116 @@
+// This filelist assumes that jfechter user is at the tip of the GIT repo ( pulls completed for synchronization )
+// LVDS
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/decode.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/encode.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_clock.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_control.v //Modify Almost Empty to 10 so don't overflow @ 2x
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/lvds_control.v //Modification for Simulation with Change to Almost Empty to 10 so don't overflow @ 2x
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_piso.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_sipo.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_dfe.v 
+// Support
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_adFIFO.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_CDC.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_reset.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_digital_filter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync_Rst1.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_1toN.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_Nto1.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_enc.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_mux21.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority_broadcast.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipeline.v
+
+// TileZero
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v  //Problem with NEWPORT_IO_addresses.vh Header so use workaround for now
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/NEWS.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/Recrypt.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_squaresparrow.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe141.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/A2_jtag_interface.v
+
+//IO
+//     /home/mvigil/scrypt/frontend/io/io_gppr_12lpplus_t18_mv08_mv18_fs18_rvt_dr.v
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/William/Simulation/io_gppr_12lpplus_t18_mv08_mv18_fs18_rvt_dr.v
+
+//IO_Ring and AFE
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_pads.v
+
+//TileZero_Test and Column_Test Incremental Compile Core
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v
+
+//Dummy TileZero
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero.v
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/TileZero_Test.v
+
+//Raceway - Rogers Latest - Not Checked In and Waiting for BlackBox with Column_Test
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Raceway.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Quadrant.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Column.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/Column_Test.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Hub.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/ColumnZero.v
+//   /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_src_a0/src/Support/A2_pipe_priority.v
+//   /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_src_a0/src/Support/A2_pipe_mux21.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_enc.v
+
+// AFE 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx_top.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_drv_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_lvsft_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_tx_top.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_slew_ctl_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvl_sft_sl_1p8_14n.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/ts_por.v   //Final top simulation
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/ts_pmu.v   //Final top simulation
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_por.v   //Final top simulation
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_pmu.v   //Final top simulation
+
+// Testbench and Dummy Top
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/Top_tb.v
+
+//TileOne Compilation Files
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SPFPU.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_LIFO.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SIMD.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_v.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_c.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_lib.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m_wrap.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m1.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m2.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2S_gateway_CoP.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_BW_multiply_BSW.v 
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/support/A2_CDC.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockDiv.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockGen.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockMux.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_div_r2.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_reset.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_RingOscillator.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_shifter_BSW.v 
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_2P.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/wRAM.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/mRAM.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileOne/TileOne_20250407.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/PUF_OSC.v
+
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_3PX.v
+

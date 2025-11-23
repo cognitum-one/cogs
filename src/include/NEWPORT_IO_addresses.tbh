@@ -1,0 +1,414 @@
+//================================================================================================================================
+//
+//   Copyright (c) 2024 Advanced Architectures
+//
+//   All rights reserved
+//   Confidential Information
+//   Limited Distribution to authorized Persons Only
+//   Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
+//
+//   Project Name         :  NEWPORT
+//
+//   Description          :  Address Definitions for A2S I/O and Tile Accesses
+//
+//================================================================================================================================
+//
+//   THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS
+//   BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+//   TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+//   AND ON ANY THEORY OF LIABILITY, WHETHER IN  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//================================================================================================================================
+//   Notes:
+//
+//
+//================================================================================================================================
+
+// IO Addresses
+
+`define	aTILE_SHA256_MESG                       	32'hc0004000
+`define	aTILE_SHA256_HASH                       	32'hc0004004
+`define	aTILE_SHA256_STOP                       	32'hc0004008
+`define	aTILE_SHA256_STRT_RDY                   	32'hc000400c
+`define	aTILE_SHA256_INIT                       	32'hc0004010
+`define	aTILE_SHA256_WAKE                       	32'hc0004014
+`define	aTILE_SHA256_SLEEP                      	32'hc0004018
+
+`define	aTILE_XSALSA_XBUF                       	32'hc0004020
+`define	aTILE_XSALSA_XBBS                       	32'hc0004024
+`define	aTILE_XSALSA_STOP                       	32'hc0004028
+`define	aTILE_XSALSA_STRT_RDY                   	32'hc000402c
+`define	aTILE_XSALSA_CTRL                       	32'hc0004030
+
+`define	aTILE_GATEWAY_MyID                      	32'hc0004040
+`define	aTILE_GATEWAY_ADDR                      	32'hc0004044
+`define	aTILE_GATEWAY_DATA                      	32'hc0004048
+`define	aTILE_GATEWAY_CMND                      	32'hc000404c
+`define	aTILE_GATEWAY_BUSY                      	32'hc0004050
+`define	aTILE_GATEWAY_RDA1                      	32'hc0004054
+`define	aTILE_GATEWAY_RDA0                      	32'hc0004058
+`define	aTILE_GATEWAY_RESP                      	32'hc000405c
+`define	aTILE_GATEWAY_TIMO                      	32'hc0004060
+`define	aTILE_GATEWAY_TIMB                      	32'hc0004064
+`define	aTILE_GATEWAY_TIMR                      	32'hc0004068
+`define	aTILE_GATEWAY_FLAG                      	32'hc000406c
+
+`define	aTILE_TILE_RD_CLOCKS                    	32'hc0004080
+`define	aTILE_TILE_RD_DIVIDE                    	32'hc0004084
+`define	aTILE_TILE_MATCH_TAGS                   	32'hc0004088
+`define	aTILE_TILE_SCRATCH                      	32'hc000408c
+`define	aTILE_TILE_PUF_OSCS                     	32'hc0004090
+
+`define	aTILE_NEWS_N_HEAD                       	32'hc0004400
+`define	aTILE_NEWS_E_HEAD                       	32'hc0004404
+`define	aTILE_NEWS_W_HEAD                       	32'hc0004408
+`define	aTILE_NEWS_S_HEAD                       	32'hc000440c
+`define	aTILE_NEWS_N_CSR                        	32'hc0004410
+`define	aTILE_NEWS_E_CSR                        	32'hc0004414
+`define	aTILE_NEWS_W_CSR                        	32'hc0004418
+`define	aTILE_NEWS_S_CSR                        	32'hc000441c
+`define	aTILE_NEWS_L_CSR                        	32'hc0004420
+`define	aTILE_NEWS_L_IN                         	32'hc0004424
+`define	aTILE_NEWS_L_EOF                        	32'hc0004428
+`define	aTILE_NEWS_N_CONTROL                    	32'hc000442c
+`define	aTILE_NEWS_E_CONTROL                    	32'hc0004430
+`define	aTILE_NEWS_W_CONTROL                    	32'hc0004434
+`define	aTILE_NEWS_S_CONTROL                    	32'hc0004438
+`define	aTILE_NEWS_L_OUT                        	32'hc000443c
+`define	aTILE_NEWS_N_OUTPUT                     	32'hc0004440
+`define	aTILE_NEWS_E_OUTPUT                     	32'hc0004444
+`define	aTILE_NEWS_W_OUTPUT                     	32'hc0004448
+`define	aTILE_NEWS_S_OUTPUT                     	32'hc000444c
+`define	aTILE_NEWS_L_DMA_INCOMING               	32'hc0004450
+`define	aTILE_NEWS_L_DMA_OUTGOING               	32'hc0004454
+`define	aTILE_NEWS_L_DMA_STATE                  	32'hc0004458
+
+`define	aTILE_ROPUF_WR_CONTROL                  	32'hc0004800
+`define	aTILE_ROPUF_WR_NUM_CHAL                 	32'hc0004804
+`define	aTILE_ROPUF_WR_S_INC                    	32'hc0004808
+`define	aTILE_ROPUF_WR_MAX_CNT                  	32'hc000480c
+`define	aTILE_ROPUF_WR_SEL1                     	32'hc0004810
+`define	aTILE_ROPUF_WR_SEL2                     	32'hc0004814
+`define	aTILE_ROPUF_WR_ECC                      	32'hc0004818
+`define	aTILE_ROPUF_WR_HD                       	32'hc000481c
+`define	aTILE_ROPUF_WR_ECC_RATE                 	32'hc0004820
+`define	aTILE_ROPUF_WR_KEY_ID                   	32'hc0004824
+`define	aTILE_ROPUF_WR_INPUT_KEY0               	32'hc0004828
+`define	aTILE_ROPUF_WR_INPUT_KEY1               	32'hc000482c
+`define	aTILE_ROPUF_WR_INPUT_KEY2               	32'hc0004830
+`define	aTILE_ROPUF_WR_INPUT_KEY3               	32'hc0004834
+`define	aTILE_ROPUF_WR_ENCRYPTED_KEY0           	32'hc0004838
+`define	aTILE_ROPUF_WR_ENCRYPTED_KEY1           	32'hc000483c
+`define	aTILE_ROPUF_WR_ENCRYPTED_KEY2           	32'hc0004840
+`define	aTILE_ROPUF_WR_ENCRYPTED_KEY3           	32'hc0004844
+`define	aTILE_ROPUF_WR_CORE_EN_KEY0             	32'hc0004848
+`define	aTILE_ROPUF_WR_CORE_EN_KEY1             	32'hc000484c
+`define	aTILE_ROPUF_WR_CORE_EN_KEY2             	32'hc0004850
+`define	aTILE_ROPUF_WR_CORE_EN_KEY3             	32'hc0004854
+`define	aTILE_ROPUF_WR_DISCOVERY_SEED0          	32'hc0004858
+`define	aTILE_ROPUF_WR_DISCOVERY_SEED1          	32'hc000485c
+`define	aTILE_ROPUF_WR_DISCOVERY_SEED2          	32'hc0004860
+`define	aTILE_ROPUF_WR_DISCOVERY_SEED3          	32'hc0004864
+`define	aTILE_ROPUF_WR_DEVICE_ID0               	32'hc0004868
+`define	aTILE_ROPUF_WR_DEVICE_ID1               	32'hc000486c
+`define	aTILE_ROPUF_WR_DEVICE_ID2               	32'hc0004870
+`define	aTILE_ROPUF_WR_DEVICE_ID3               	32'hc0004874
+`define	aTILE_ROPUF_WR_IV_DIVERSIFIER0          	32'hc0004878
+`define	aTILE_ROPUF_WR_IV_DIVERSIFIER1          	32'hc000487c
+`define	aTILE_ROPUF_WR_IV_DIVERSIFIER2          	32'hc0004880
+`define	aTILE_ROPUF_WR_IV_DIVERSIFIER3          	32'hc0004884
+`define	aTILE_ROPUF_WR_KEY_DIVERSIFIER0         	32'hc0004888
+`define	aTILE_ROPUF_WR_KEY_DIVERSIFIER1         	32'hc000488c
+`define	aTILE_ROPUF_WR_KEY_DIVERSIFIER2         	32'hc0004890
+`define	aTILE_ROPUF_WR_KEY_DIVERSIFIER3         	32'hc0004894
+`define	aTILE_ROPUF_WR_IRQ_EN                   	32'hc0004898
+`define	aTILE_ROPUF_WR_KEY_MANAGER_CTRL         	32'hc000489c
+`define	aTILE_ROPUF_WR_TRNG_CTRL                	32'hc00048a0
+`define	aTILE_ROPUF_RD_STATUS                   	32'hc00048a4
+`define	aTILE_ROPUF_RD_ECC                      	32'hc00048a8
+`define	aTILE_ROPUF_RD_ID                       	32'hc00048ac
+`define	aTILE_ROPUF_RD_HD                       	32'hc00048b0
+`define	aTILE_ROPUF_RD_TRNG                     	32'hc00048b4
+`define	aTILE_ROPUF_RD_TRNG_STATUS              	32'hc00048b8
+`define	aTILE_ROPUF_RD_KEY_MANAGER_STATUS       	32'hc00048bc
+`define	aTILE_ROPUF_RD_SECURE_KEY0              	32'hc00048c0
+`define	aTILE_ROPUF_RD_SECURE_KEY1              	32'hc00048c4
+`define	aTILE_ROPUF_RD_SECURE_KEY2              	32'hc00048c8
+`define	aTILE_ROPUF_RD_SECURE_KEY3              	32'hc00048cc
+`define	aTILE_ROPUF_RD_DISCOVERY_RESP0          	32'hc00048d0
+`define	aTILE_ROPUF_RD_DISCOVERY_RESP1          	32'hc00048d4
+`define	aTILE_ROPUF_RD_DISCOVERY_RESP2          	32'hc00048d8
+`define	aTILE_ROPUF_RD_DISCOVERY_RESP3          	32'hc00048dc
+`define	aTILE_ROPUF_RD_ENCRYPTED_ID0            	32'hc00048e0
+`define	aTILE_ROPUF_RD_ENCRYPTED_ID1            	32'hc00048e4
+`define	aTILE_ROPUF_RD_ENCRYPTED_ID2            	32'hc00048e8
+`define	aTILE_ROPUF_RD_ENCRYPTED_ID3            	32'hc00048ec
+`define	aTILE_ROPUF_RW_spare1                   	32'hc00048f0
+`define	aTILE_ROPUF_RW_spare2                   	32'hc00048f4
+`define	aTILE_ROPUF_RW_spare3                   	32'hc00048f8
+`define	aTILE_ROPUF_RW_SYSTEM                   	32'hc00048fc
+
+`define	aTILE_AES_ISKTON_0                      	32'hc0004c00
+`define	aTILE_AES_ISKTON_1                      	32'hc0004c04
+`define	aTILE_AES_ISKTON_2                      	32'hc0004c08
+`define	aTILE_AES_ISKTON_3                      	32'hc0004c0c
+`define	aTILE_AES_ISKTOS_0                      	32'hc0004c10
+`define	aTILE_AES_ISKTOS_1                      	32'hc0004c14
+`define	aTILE_AES_ISKTOS_2                      	32'hc0004c18
+`define	aTILE_AES_ISKTOS_3                      	32'hc0004c1c
+`define	aTILE_AES_ISKTOE_0                      	32'hc0004c20
+`define	aTILE_AES_ISKTOE_1                      	32'hc0004c24
+`define	aTILE_AES_ISKTOE_2                      	32'hc0004c28
+`define	aTILE_AES_ISKTOE_3                      	32'hc0004c2c
+`define	aTILE_AES_ISKTOW_0                      	32'hc0004c30
+`define	aTILE_AES_ISKTOW_1                      	32'hc0004c34
+`define	aTILE_AES_ISKTOW_2                      	32'hc0004c38
+`define	aTILE_AES_ISKTOW_3                      	32'hc0004c3c
+`define	aTILE_AES_ISKFRN_0                      	32'hc0004c40
+`define	aTILE_AES_ISKFRN_1                      	32'hc0004c44
+`define	aTILE_AES_ISKFRN_2                      	32'hc0004c48
+`define	aTILE_AES_ISKFRN_3                      	32'hc0004c4c
+`define	aTILE_AES_ISKFRS_0                      	32'hc0004c50
+`define	aTILE_AES_ISKFRS_1                      	32'hc0004c54
+`define	aTILE_AES_ISKFRS_2                      	32'hc0004c58
+`define	aTILE_AES_ISKFRS_3                      	32'hc0004c5c
+`define	aTILE_AES_ISKFRE_0                      	32'hc0004c60
+`define	aTILE_AES_ISKFRE_1                      	32'hc0004c64
+`define	aTILE_AES_ISKFRE_2                      	32'hc0004c68
+`define	aTILE_AES_ISKFRE_3                      	32'hc0004c6c
+`define	aTILE_AES_ISKFRW_0                      	32'hc0004c70
+`define	aTILE_AES_ISKFRW_1                      	32'hc0004c74
+`define	aTILE_AES_ISKFRW_2                      	32'hc0004c78
+`define	aTILE_AES_ISKFRW_3                      	32'hc0004c7c
+`define	aTILE_AES_ISK0FR_0                      	32'hc0004c80
+`define	aTILE_AES_ISK0FR_1                      	32'hc0004c84
+`define	aTILE_AES_ISK0FR_2                      	32'hc0004c88
+`define	aTILE_AES_ISK0FR_3                      	32'hc0004c8c
+`define	aTILE_AES_ISK0TO_0                      	32'hc0004c90
+`define	aTILE_AES_ISK0TO_1                      	32'hc0004c94
+`define	aTILE_AES_ISK0TO_2                      	32'hc0004c98
+`define	aTILE_AES_ISK0TO_3                      	32'hc0004c9c
+`define	aTILE_AES_ISK1FR_0                      	32'hc0004ca0
+`define	aTILE_AES_ISK1FR_1                      	32'hc0004ca4
+`define	aTILE_AES_ISK1FR_2                      	32'hc0004ca8
+`define	aTILE_AES_ISK1FR_3                      	32'hc0004cac
+`define	aTILE_AES_ISK1TO_0                      	32'hc0004cb0
+`define	aTILE_AES_ISK1TO_1                      	32'hc0004cb4
+`define	aTILE_AES_ISK1TO_2                      	32'hc0004cb8
+`define	aTILE_AES_ISK1TO_3                      	32'hc0004cbc
+`define	aTILE_AES_ISKMLT_0                      	32'hc0004cc0
+`define	aTILE_AES_ISKMLT_1                      	32'hc0004cc4
+`define	aTILE_AES_ISKMLT_2                      	32'hc0004cc8
+`define	aTILE_AES_ISKMLT_3                      	32'hc0004ccc
+`define	aTILE_AES_ISKSP0_0                      	32'hc0004cd0
+`define	aTILE_AES_ISKSP0_1                      	32'hc0004cd4
+`define	aTILE_AES_ISKSP0_2                      	32'hc0004cd8
+`define	aTILE_AES_ISKSP0_3                      	32'hc0004cdc
+`define	aTILE_AES_ISKSP1_0                      	32'hc0004ce0
+`define	aTILE_AES_ISKSP1_1                      	32'hc0004ce4
+`define	aTILE_AES_ISKSP1_2                      	32'hc0004ce8
+`define	aTILE_AES_ISKSP1_3                      	32'hc0004cec
+`define	aTILE_AES_ISKSP2_0                      	32'hc0004cf0
+`define	aTILE_AES_ISKSP2_1                      	32'hc0004cf4
+`define	aTILE_AES_ISKSP2_2                      	32'hc0004cf8
+`define	aTILE_AES_ISKSP2_3                      	32'hc0004cfc
+`define	aTILE_AES_IVCTON_0                      	32'hc0004d00
+`define	aTILE_AES_IVCTON_1                      	32'hc0004d04
+`define	aTILE_AES_IVCTON_2                      	32'hc0004d08
+`define	aTILE_AES_IVCTON_3                      	32'hc0004d0c
+`define	aTILE_AES_IVCTOS_0                      	32'hc0004d10
+`define	aTILE_AES_IVCTOS_1                      	32'hc0004d14
+`define	aTILE_AES_IVCTOS_2                      	32'hc0004d18
+`define	aTILE_AES_IVCTOS_3                      	32'hc0004d1c
+`define	aTILE_AES_IVCTOE_0                      	32'hc0004d20
+`define	aTILE_AES_IVCTOE_1                      	32'hc0004d24
+`define	aTILE_AES_IVCTOE_2                      	32'hc0004d28
+`define	aTILE_AES_IVCTOE_3                      	32'hc0004d2c
+`define	aTILE_AES_IVCTOW_0                      	32'hc0004d30
+`define	aTILE_AES_IVCTOW_1                      	32'hc0004d34
+`define	aTILE_AES_IVCTOW_2                      	32'hc0004d38
+`define	aTILE_AES_IVCTOW_3                      	32'hc0004d3c
+`define	aTILE_AES_IVCFRN_0                      	32'hc0004d40
+`define	aTILE_AES_IVCFRN_1                      	32'hc0004d44
+`define	aTILE_AES_IVCFRN_2                      	32'hc0004d48
+`define	aTILE_AES_IVCFRN_3                      	32'hc0004d4c
+`define	aTILE_AES_IVCFRS_0                      	32'hc0004d50
+`define	aTILE_AES_IVCFRS_1                      	32'hc0004d54
+`define	aTILE_AES_IVCFRS_2                      	32'hc0004d58
+`define	aTILE_AES_IVCFRS_3                      	32'hc0004d5c
+`define	aTILE_AES_IVCFRE_0                      	32'hc0004d60
+`define	aTILE_AES_IVCFRE_1                      	32'hc0004d64
+`define	aTILE_AES_IVCFRE_2                      	32'hc0004d68
+`define	aTILE_AES_IVCFRE_3                      	32'hc0004d6c
+`define	aTILE_AES_IVCFRW_0                      	32'hc0004d70
+`define	aTILE_AES_IVCFRW_1                      	32'hc0004d74
+`define	aTILE_AES_IVCFRW_2                      	32'hc0004d78
+`define	aTILE_AES_IVCFRW_3                      	32'hc0004d7c
+`define	aTILE_AES_IVC0FR_0                      	32'hc0004d80
+`define	aTILE_AES_IVC0FR_1                      	32'hc0004d84
+`define	aTILE_AES_IVC0FR_2                      	32'hc0004d88
+`define	aTILE_AES_IVC0FR_3                      	32'hc0004d8c
+`define	aTILE_AES_IVC0TO_0                      	32'hc0004d90
+`define	aTILE_AES_IVC0TO_1                      	32'hc0004d94
+`define	aTILE_AES_IVC0TO_2                      	32'hc0004d98
+`define	aTILE_AES_IVC0TO_3                      	32'hc0004d9c
+`define	aTILE_AES_IVC1FR_0                      	32'hc0004da0
+`define	aTILE_AES_IVC1FR_1                      	32'hc0004da4
+`define	aTILE_AES_IVC1FR_2                      	32'hc0004da8
+`define	aTILE_AES_IVC1FR_3                      	32'hc0004dac
+`define	aTILE_AES_IVC1TO_0                      	32'hc0004db0
+`define	aTILE_AES_IVC1TO_1                      	32'hc0004db4
+`define	aTILE_AES_IVC1TO_2                      	32'hc0004db8
+`define	aTILE_AES_IVC1TO_3                      	32'hc0004dbc
+`define	aTILE_AES_IVCMLT_0                      	32'hc0004dc0
+`define	aTILE_AES_IVCMLT_1                      	32'hc0004dc4
+`define	aTILE_AES_IVCMLT_2                      	32'hc0004dc8
+`define	aTILE_AES_IVCMLT_3                      	32'hc0004dcc
+`define	aTILE_AES_IVCSP0_0                      	32'hc0004dd0
+`define	aTILE_AES_IVCSP0_1                      	32'hc0004dd4
+`define	aTILE_AES_IVCSP0_2                      	32'hc0004dd8
+`define	aTILE_AES_IVCSP0_3                      	32'hc0004ddc
+`define	aTILE_AES_IVCSP1_0                      	32'hc0004de0
+`define	aTILE_AES_IVCSP1_1                      	32'hc0004de4
+`define	aTILE_AES_IVCSP1_2                      	32'hc0004de8
+`define	aTILE_AES_IVCSP1_3                      	32'hc0004dec
+`define	aTILE_AES_IVCSP2_0                      	32'hc0004df0
+`define	aTILE_AES_IVCSP2_1                      	32'hc0004df4
+`define	aTILE_AES_IVCSP2_2                      	32'hc0004df8
+`define	aTILE_AES_IVCSP2_3                      	32'hc0004dfc
+`define	aTILE_AES_ISKTNC_0                      	32'hc0004e00
+`define	aTILE_AES_ISKTNC_1                      	32'hc0004e04
+`define	aTILE_AES_ISKTNC_2                      	32'hc0004e08
+`define	aTILE_AES_ISKTNC_3                      	32'hc0004e0c
+`define	aTILE_AES_ISKTSC_0                      	32'hc0004e10
+`define	aTILE_AES_ISKTSC_1                      	32'hc0004e14
+`define	aTILE_AES_ISKTSC_2                      	32'hc0004e18
+`define	aTILE_AES_ISKTSC_3                      	32'hc0004e1c
+`define	aTILE_AES_ISKTEC_0                      	32'hc0004e20
+`define	aTILE_AES_ISKTEC_1                      	32'hc0004e24
+`define	aTILE_AES_ISKTEC_2                      	32'hc0004e28
+`define	aTILE_AES_ISKTEC_3                      	32'hc0004e2c
+`define	aTILE_AES_ISKTWC_0                      	32'hc0004e30
+`define	aTILE_AES_ISKTWC_1                      	32'hc0004e34
+`define	aTILE_AES_ISKTWC_2                      	32'hc0004e38
+`define	aTILE_AES_ISKTWC_3                      	32'hc0004e3c
+`define	aTILE_AES_ISKFNC_0                      	32'hc0004e40
+`define	aTILE_AES_ISKFNC_1                      	32'hc0004e44
+`define	aTILE_AES_ISKFNC_2                      	32'hc0004e48
+`define	aTILE_AES_ISKFNC_3                      	32'hc0004e4c
+`define	aTILE_AES_ISKFSC_0                      	32'hc0004e50
+`define	aTILE_AES_ISKFSC_1                      	32'hc0004e54
+`define	aTILE_AES_ISKFSC_2                      	32'hc0004e58
+`define	aTILE_AES_ISKFSC_3                      	32'hc0004e5c
+`define	aTILE_AES_ISKFEC_0                      	32'hc0004e60
+`define	aTILE_AES_ISKFEC_1                      	32'hc0004e64
+`define	aTILE_AES_ISKFEC_2                      	32'hc0004e68
+`define	aTILE_AES_ISKFEC_3                      	32'hc0004e6c
+`define	aTILE_AES_ISKFWC_0                      	32'hc0004e70
+`define	aTILE_AES_ISKFWC_1                      	32'hc0004e74
+`define	aTILE_AES_ISKFWC_2                      	32'hc0004e78
+`define	aTILE_AES_ISKFWC_3                      	32'hc0004e7c
+`define	aTILE_AES_ISK0FC_0                      	32'hc0004e80
+`define	aTILE_AES_ISK0FC_1                      	32'hc0004e84
+`define	aTILE_AES_ISK0FC_2                      	32'hc0004e88
+`define	aTILE_AES_ISK0FC_3                      	32'hc0004e8c
+`define	aTILE_AES_ISK0TC_0                      	32'hc0004e90
+`define	aTILE_AES_ISK0TC_1                      	32'hc0004e94
+`define	aTILE_AES_ISK0TC_2                      	32'hc0004e98
+`define	aTILE_AES_ISK0TC_3                      	32'hc0004e9c
+`define	aTILE_AES_ISK1FC_0                      	32'hc0004ea0
+`define	aTILE_AES_ISK1FC_1                      	32'hc0004ea4
+`define	aTILE_AES_ISK1FC_2                      	32'hc0004ea8
+`define	aTILE_AES_ISK1FC_3                      	32'hc0004eac
+`define	aTILE_AES_ISK1TC_0                      	32'hc0004eb0
+`define	aTILE_AES_ISK1TC_1                      	32'hc0004eb4
+`define	aTILE_AES_ISK1TC_2                      	32'hc0004eb8
+`define	aTILE_AES_ISK1TC_3                      	32'hc0004ebc
+`define	aTILE_AES_ISKMLC_0                      	32'hc0004ec0
+`define	aTILE_AES_ISKMLC_1                      	32'hc0004ec4
+`define	aTILE_AES_ISKMLC_2                      	32'hc0004ec8
+`define	aTILE_AES_ISKMLC_3                      	32'hc0004ecc
+`define	aTILE_AES_ISKS0C_0                      	32'hc0004ed0
+`define	aTILE_AES_ISKS0C_1                      	32'hc0004ed4
+`define	aTILE_AES_ISKS0C_2                      	32'hc0004ed8
+`define	aTILE_AES_ISKS0C_3                      	32'hc0004edc
+`define	aTILE_AES_ISKS1C_0                      	32'hc0004ee0
+`define	aTILE_AES_ISKS1C_1                      	32'hc0004ee4
+`define	aTILE_AES_ISKS1C_2                      	32'hc0004ee8
+`define	aTILE_AES_ISKS1C_3                      	32'hc0004eec
+`define	aTILE_AES_ISKS2C_0                      	32'hc0004ef0
+`define	aTILE_AES_ISKS2C_1                      	32'hc0004ef4
+`define	aTILE_AES_ISKS2C_2                      	32'hc0004ef8
+`define	aTILE_AES_ISKS2C_3                      	32'hc0004efc
+`define	aTILE_AES_CSR                           	32'hc0004f00
+
+`define	aTILE_GCM_S0                            	32'hc0005000
+`define	aTILE_GCM_S1                            	32'hc0005004
+`define	aTILE_GCM_S2                            	32'hc0005008
+`define	aTILE_GCM_S3                            	32'hc000500c
+`define	aTILE_GCM_T0                            	32'hc0005010
+`define	aTILE_GCM_T1                            	32'hc0005014
+`define	aTILE_GCM_T2                            	32'hc0005018
+`define	aTILE_GCM_T3                            	32'hc000501c
+`define	aTILE_GCM_U0                            	32'hc0005020
+`define	aTILE_GCM_U1                            	32'hc0005024
+`define	aTILE_GCM_U2                            	32'hc0005028
+`define	aTILE_GCM_U3                            	32'hc000502c
+`define	aTILE_GCM_V0                            	32'hc0005030
+`define	aTILE_GCM_V1                            	32'hc0005034
+`define	aTILE_GCM_V2                            	32'hc0005038
+`define	aTILE_GCM_V3                            	32'hc000503c
+`define	aTILE_GCM_W0                            	32'hc0005040
+`define	aTILE_GCM_W1                            	32'hc0005044
+`define	aTILE_GCM_W2                            	32'hc0005048
+`define	aTILE_GCM_W3                            	32'hc000504c
+`define	aTILE_GCM_X0                            	32'hc0005050
+`define	aTILE_GCM_X1                            	32'hc0005054
+`define	aTILE_GCM_X2                            	32'hc0005058
+`define	aTILE_GCM_X3                            	32'hc000505c
+`define	aTILE_GCM_Y0                            	32'hc0005060
+`define	aTILE_GCM_Y1                            	32'hc0005064
+`define	aTILE_GCM_Y2                            	32'hc0005068
+`define	aTILE_GCM_Y3                            	32'hc000506c
+`define	aTILE_GCM_Z0                            	32'hc0005070
+`define	aTILE_GCM_Z1                            	32'hc0005074
+`define	aTILE_GCM_Z2                            	32'hc0005078
+`define	aTILE_GCM_Z3                            	32'hc000507c
+
+`define	aTILE_TMR0_CSR                          	32'hc0005400
+`define	aTILE_TMR0_VALUE                        	32'hc0005404
+`define	aTILE_TMR0_SCALE                        	32'hc0005408
+`define	aTILE_TMR0_LOWER                        	32'hc000540c
+`define	aTILE_TMR0_UPPER                        	32'hc0005410
+
+`define	aTILE_TMR1_CSR                          	32'hc0005440
+`define	aTILE_TMR1_VALUE                        	32'hc0005444
+`define	aTILE_TMR1_SCALE                        	32'hc0005448
+`define	aTILE_TMR1_LOWER                        	32'hc000544c
+`define	aTILE_TMR1_UPPER                        	32'hc0005450
+
+`define	aTILE_ZCKS_TILE_CTRL                    	32'hc0005480
+`define	aTILE_ZCKS_RACE_CTRL                    	32'hc0005484
+`define	aTILE_ZCKS_NEWS_CTRL                    	32'hc0005488
+`define	aTILE_ZCKS_NEWS_DIVD                    	32'hc000548c
+
+`define	aTILE_JTAG_IRDY                         	32'hc00054c0
+`define	aTILE_JTAG_ORDY                         	32'hc00054c4
+`define	aTILE_JTAG_DATA                         	32'hc00054c8
+
+`define	aTILE_PVT_FREQ                          	32'hc0005500
+`define	aTILE_PVT_CMND                          	32'hc0005504
+`define	aTILE_PVT_STATUS                        	32'hc0005508
+`define	aTILE_PVT_DATA                          	32'hc000550c
+
+`define	aTILE_FLAG_IN                           	32'hc0005580
+`define	aTILE_FLAG_OUT                          	32'hc0005584
+
+`define	aTILE_TIMO_IN                           	32'hc0005588
+
+// Raceway Addresses
+`define	aTILE_SET_CLOCKS                        	32'hffff8000
+`define	aTILE_SET_DIVIDE                        	32'hffff8004
+`define	aTILE_A2S_RESET                         	32'hffff8008
