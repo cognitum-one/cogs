@@ -35,7 +35,7 @@ pub struct BroadcastResults {
     pub completion_time_us: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThroughputResults {
     pub packets_per_sec: f64,
     pub bits_per_sec: f64,
@@ -146,7 +146,7 @@ pub async fn bench_column_broadcast(iterations: usize) -> BroadcastResults {
     }
 }
 
-/// Benchmark throughput
+/// Benchmark throughput (sequential)
 pub async fn bench_throughput(packet_count: usize) -> ThroughputResults {
     let mut network = RaceWayNetwork::new_for_test().await;
 
@@ -166,8 +166,101 @@ pub async fn bench_throughput(packet_count: usize) -> ThroughputResults {
     let bits_per_sec = packets_per_sec * bits_per_packet;
     let gbps = bits_per_sec / 1_000_000_000.0;
 
-    // Utilization assuming 1 GHz clock and 96 bits/cycle per lane
-    let theoretical_max_gbps = 96.0; // Single lane @ 1 GHz
+    // Utilization assuming 500 GB/s target (96 bits/cycle × 1 GHz × 16 columns)
+    let theoretical_max_gbps = 500.0; // Full network capacity
+    let utilization = (gbps / theoretical_max_gbps) * 100.0;
+
+    ThroughputResults {
+        packets_per_sec,
+        bits_per_sec,
+        gbps,
+        utilization_percent: utilization,
+    }
+}
+
+/// Benchmark concurrent throughput with all tiles injecting packets
+pub async fn bench_concurrent_throughput(packets_per_tile: usize, num_sources: usize) -> ThroughputResults {
+    let mut network = RaceWayNetwork::new_for_test().await;
+
+    let start = Instant::now();
+
+    // Create packets from multiple source tiles
+    let mut all_packets = Vec::new();
+    for tile_idx in 0..num_sources {
+        let src_col = (tile_idx % 16) as u8;
+        let src_row = ((tile_idx / 16) % 8) as u8;
+        let source = TileId::new(src_col, src_row).unwrap();
+
+        for i in 0..packets_per_tile {
+            let dest_col = ((tile_idx + i) % 16) as u8;
+            let dest_row = (((tile_idx + i) / 16) % 8) as u8;
+            let dest = TileId::new(dest_col, dest_row).unwrap();
+            all_packets.push((source, dest, vec![0xFF]));
+        }
+    }
+
+    let total_packets = all_packets.len();
+
+    // Send all packets concurrently
+    let _ = network.send_concurrent(all_packets).await;
+
+    let elapsed = start.elapsed();
+    let packets_per_sec = total_packets as f64 / elapsed.as_secs_f64();
+    let bits_per_packet = 97.0;
+    let bits_per_sec = packets_per_sec * bits_per_packet;
+    let gbps = bits_per_sec / 1_000_000_000.0;
+
+    // Utilization assuming 500 GB/s target
+    let theoretical_max_gbps = 500.0;
+    let utilization = (gbps / theoretical_max_gbps) * 100.0;
+
+    ThroughputResults {
+        packets_per_sec,
+        bits_per_sec,
+        gbps,
+        utilization_percent: utilization,
+    }
+}
+
+/// Benchmark with batching
+pub async fn bench_batched_throughput(packet_count: usize, batch_size: usize) -> ThroughputResults {
+    let mut network = RaceWayNetwork::new_for_test().await;
+    let mut batch = network.create_batch(batch_size);
+
+    let start = Instant::now();
+
+    // Send packets in batches
+    for i in 0..packet_count {
+        let dest_col = (i % 16) as u8;
+        let dest_row = ((i / 16) % 8) as u8;
+        let dest = TileId::new(dest_col, dest_row).unwrap();
+
+        let packet = RaceWayPacket::new()
+            .source(TileId(0x00))
+            .dest(dest)
+            .command(Command::Write)
+            .data(&[0xFF])
+            .push(true)
+            .build()
+            .unwrap();
+
+        if let Some(packets) = batch.add(packet) {
+            let _ = network.send_batch(packets).await;
+        }
+    }
+
+    // Flush remaining packets
+    if !batch.is_empty() {
+        let _ = network.send_batch(batch.flush()).await;
+    }
+
+    let elapsed = start.elapsed();
+    let packets_per_sec = packet_count as f64 / elapsed.as_secs_f64();
+    let bits_per_packet = 97.0;
+    let bits_per_sec = packets_per_sec * bits_per_packet;
+    let gbps = bits_per_sec / 1_000_000_000.0;
+
+    let theoretical_max_gbps = 500.0;
     let utilization = (gbps / theoretical_max_gbps) * 100.0;
 
     ThroughputResults {
@@ -272,7 +365,10 @@ pub fn identify_bottlenecks(results: &BenchmarkResults) -> Vec<Bottleneck> {
 #[tokio::main]
 async fn main() {
     println!("🚀 Newport RaceWay Network Performance Benchmark\n");
+    println!("═══════════════════════════════════════════════════════════════\n");
 
+    println!("📊 LATENCY TESTS");
+    println!("───────────────────────────────────────────────────────────────");
     println!("Testing local routing latency (same column)...");
     let local = bench_local_routing(1000).await;
     println!("  ✓ Avg: {:.2}µs, P95: {:.2}µs, P99: {:.2}µs", local.avg_us, local.p95_us, local.p99_us);
@@ -285,11 +381,39 @@ async fn main() {
     let broadcast = bench_column_broadcast(100).await;
     println!("  ✓ Avg latency: {:.2}µs, Tiles: {}/{}", broadcast.avg_latency_us, broadcast.tiles_reached, broadcast.expected_tiles);
 
-    println!("\nTesting throughput (10000 packets)...");
+    println!("\n📈 THROUGHPUT TESTS");
+    println!("───────────────────────────────────────────────────────────────");
+    println!("Testing sequential throughput (10000 packets)...");
     let throughput = bench_throughput(10000).await;
-    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.1}% utilization", throughput.packets_per_sec, throughput.gbps, throughput.utilization_percent);
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", throughput.packets_per_sec, throughput.gbps, throughput.utilization_percent);
 
-    println!("\nTesting packet operations...");
+    println!("\nTesting batched throughput (10000 packets, batch=50)...");
+    let batched = bench_batched_throughput(10000, 50).await;
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", batched.packets_per_sec, batched.gbps, batched.utilization_percent);
+    println!("  ⚡ Speedup: {:.2}x over sequential", batched.gbps / throughput.gbps);
+
+    println!("\n🚀 CONCURRENT INJECTION TESTS (Network Stress)");
+    println!("───────────────────────────────────────────────────────────────");
+
+    println!("\nTesting 25% load (32 sources × 100 packets)...");
+    let concurrent_25 = bench_concurrent_throughput(100, 32).await;
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", concurrent_25.packets_per_sec, concurrent_25.gbps, concurrent_25.utilization_percent);
+
+    println!("\nTesting 50% load (64 sources × 100 packets)...");
+    let concurrent_50 = bench_concurrent_throughput(100, 64).await;
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", concurrent_50.packets_per_sec, concurrent_50.gbps, concurrent_50.utilization_percent);
+
+    println!("\nTesting 75% load (96 sources × 100 packets)...");
+    let concurrent_75 = bench_concurrent_throughput(100, 96).await;
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", concurrent_75.packets_per_sec, concurrent_75.gbps, concurrent_75.utilization_percent);
+
+    println!("\nTesting 100% load (128 sources × 100 packets)...");
+    let concurrent_100 = bench_concurrent_throughput(100, 128).await;
+    println!("  ✓ {:.0} packets/sec, {:.2} Gbps, {:.2}% utilization", concurrent_100.packets_per_sec, concurrent_100.gbps, concurrent_100.utilization_percent);
+
+    println!("\n⚙️  PACKET OPERATIONS");
+    println!("───────────────────────────────────────────────────────────────");
+    println!("Testing packet operations...");
     let packet_ops = bench_packet_ops(10000);
     println!("  ✓ Creation: {:.2}ns, Serialization: {:.2}ns, Deserialization: {:.2}ns",
              packet_ops.creation_ns, packet_ops.serialization_ns, packet_ops.deserialization_ns);
@@ -298,7 +422,7 @@ async fn main() {
         local_routing: local,
         cross_column_routing: cross,
         column_broadcast: broadcast,
-        throughput,
+        throughput: concurrent_50.clone(), // Use 50% load as primary throughput
         packet_ops,
         bottlenecks: Vec::new(),
     };
@@ -309,7 +433,8 @@ async fn main() {
         ..results
     };
 
-    println!("\n📊 Bottleneck Analysis:");
+    println!("\n📊 BOTTLENECK ANALYSIS");
+    println!("───────────────────────────────────────────────────────────────");
     if results_with_bottlenecks.bottlenecks.is_empty() {
         println!("  ✓ No significant bottlenecks identified!");
     } else {
@@ -321,8 +446,25 @@ async fn main() {
         }
     }
 
+    println!("\n📈 OPTIMIZATION SUMMARY");
+    println!("───────────────────────────────────────────────────────────────");
+    println!("  Sequential:     {:.2} Gbps ({:.2}% utilization)", throughput.gbps, throughput.utilization_percent);
+    println!("  Batched:        {:.2} Gbps ({:.2}% utilization)", batched.gbps, batched.utilization_percent);
+    println!("  Concurrent 25%: {:.2} Gbps ({:.2}% utilization)", concurrent_25.gbps, concurrent_25.utilization_percent);
+    println!("  Concurrent 50%: {:.2} Gbps ({:.2}% utilization)", concurrent_50.gbps, concurrent_50.utilization_percent);
+    println!("  Concurrent 75%: {:.2} Gbps ({:.2}% utilization)", concurrent_75.gbps, concurrent_75.utilization_percent);
+    println!("  Concurrent 100%: {:.2} Gbps ({:.2}% utilization)", concurrent_100.gbps, concurrent_100.utilization_percent);
+    println!("\n  🎯 Target: 50% utilization (250 Gbps)");
+    if concurrent_50.utilization_percent >= 50.0 {
+        println!("  ✅ TARGET ACHIEVED!");
+    } else {
+        println!("  ⚠️  Target not yet achieved (current: {:.2}%)", concurrent_50.utilization_percent);
+    }
+
     // Save results
     let json = serde_json::to_string_pretty(&results_with_bottlenecks).unwrap();
+    std::fs::create_dir_all("/home/user/newport/benchmarks/results").ok();
     std::fs::write("/home/user/newport/benchmarks/results/network-performance.json", json).unwrap();
     println!("\n✅ Results saved to benchmarks/results/network-performance.json");
+    println!("═══════════════════════════════════════════════════════════════\n");
 }
