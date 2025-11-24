@@ -1,4 +1,4 @@
-# Newport Stress Test Summary
+# Cognitum Stress Test Summary
 
 **Status**: ✅ COMPLETED
 **Date**: 2025-11-23
@@ -14,10 +14,10 @@
 
 ## Files Created
 
-1. `/home/user/newport/benchmarks/stress-tests/newport_stress_tests.rs` - 8 memory stress tests
-2. `/home/user/newport/benchmarks/stress-tests/raceway_stress_tests.rs` - 10 network stress tests
-3. `/home/user/newport/benchmarks/reports/stress-test-report.md` - Comprehensive analysis
-4. `/home/user/newport/benchmarks/stress-tests/results.json` - Machine-readable results
+1. `/home/user/cognitum/benchmarks/stress-tests/newport_stress_tests.rs` - 8 memory stress tests
+2. `/home/user/cognitum/benchmarks/stress-tests/raceway_stress_tests.rs` - 10 network stress tests
+3. `/home/user/cognitum/benchmarks/reports/stress-test-report.md` - Comprehensive analysis
+4. `/home/user/cognitum/benchmarks/stress-tests/results.json` - Machine-readable results
 
 ## Critical Findings
 
@@ -29,14 +29,14 @@
    - **Action**: Debug broadcast completion logic
 
 2. **Missing Address Types**
-   - `PhysAddr` and `VirtAddr` not in `newport-core::memory`
-   - **Blocks**: `newport-memory`, `newport-processor`, `newport-sim`
+   - `PhysAddr` and `VirtAddr` not in `cognitum-core::memory`
+   - **Blocks**: `cognitum-memory`, `cognitum-processor`, `cognitum-sim`
    - **Action**: Add type aliases or refactor to `MemoryAddress`
 
 ### ✅ What Works
 
-- ✅ Newport-core: 42/42 tests pass
-- ✅ Newport-raceway: 18/20 tests pass
+- ✅ Cognitum-core: 42/42 tests pass
+- ✅ Cognitum-raceway: 18/20 tests pass
 - ✅ 256-tile addressing validated
 - ✅ Memory edge cases tested
 - ✅ Network routing functional
@@ -44,7 +44,7 @@
 ## How to Run Stress Tests
 
 ```bash
-cd /home/user/newport/newport-sim
+cd /home/user/cognitum/cognitum-sim
 
 # After fixing compilation errors:
 cargo test --workspace -- --ignored --nocapture
@@ -62,4 +62,4 @@ cargo test stress_test_1m_cycles_single_tile -- --ignored --nocapture
 
 ---
 
-**Full Report**: `/home/user/newport/benchmarks/reports/stress-test-report.md`
+**Full Report**: `/home/user/cognitum/benchmarks/reports/stress-test-report.md`

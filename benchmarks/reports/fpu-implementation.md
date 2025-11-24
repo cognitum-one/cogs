@@ -1,5 +1,5 @@
 # IEEE 754 FPU Implementation Report
-## Newport ASIC Simulator - Floating-Point Unit
+## Cognitum ASIC Simulator - Floating-Point Unit
 
 **Date**: 2025-11-24
 **Version**: 1.0.0
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Successfully implemented a complete IEEE 754-compliant Floating-Point Unit (FPU) for the Newport A2S v2r3 processor simulator. The implementation includes full single-precision (f32) and double-precision (f64) support with comprehensive arithmetic, comparison, conversion, and utility operations.
+Successfully implemented a complete IEEE 754-compliant Floating-Point Unit (FPU) for the Cognitum A2S v2r3 processor simulator. The implementation includes full single-precision (f32) and double-precision (f64) support with comprehensive arithmetic, comparison, conversion, and utility operations.
 
 ### Key Achievements
 
@@ -28,7 +28,7 @@ Successfully implemented a complete IEEE 754-compliant Floating-Point Unit (FPU)
 The FPU is implemented as a separate module (`fpu.rs`) integrated into the A2SProcessor:
 
 ```
-newport-processor/
+cognitum-processor/
 ├── src/
 │   ├── fpu.rs                    # IEEE 754 FPU implementation
 │   ├── processor.rs              # Processor with FPU integration
@@ -321,7 +321,7 @@ DMUL  = 16'b 1111_1110_0010_0???,  // 0xFE20 + rounding mode
 
 ```rust
 // Module structure
-newport-processor/
+cognitum-processor/
 ├── fpu.rs              (466 lines) - Core FPU logic
 ├── processor.rs        (700+ lines) - Integration
 ├── instruction.rs      (300 lines) - FPU enum variants
@@ -488,7 +488,7 @@ let double = f64::from_bits((high << 32) | low);
 
 ## Conclusion
 
-The IEEE 754 FPU implementation for Newport is **complete, tested, and production-ready**. All 35 floating-point instructions have been implemented with full IEEE 754 compliance, comprehensive error handling, and extensive test coverage.
+The IEEE 754 FPU implementation for Cognitum is **complete, tested, and production-ready**. All 35 floating-point instructions have been implemented with full IEEE 754 compliance, comprehensive error handling, and extensive test coverage.
 
 ### Key Deliverables
 
@@ -509,7 +509,7 @@ The IEEE 754 FPU implementation for Newport is **complete, tested, and productio
 
 ### Recommendations
 
-1. **Production Deployment**: The FPU is ready for integration into Newport ASIC simulator
+1. **Production Deployment**: The FPU is ready for integration into Cognitum ASIC simulator
 2. **Cross-Validation**: Compare results with Verilog FPU for hardware accuracy
 3. **Performance Profiling**: Benchmark against real workloads
 4. **Extended Testing**: Add property-based tests for exhaustive validation

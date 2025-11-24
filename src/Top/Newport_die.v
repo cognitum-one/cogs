@@ -1,13 +1,13 @@
 //===============================================================================================================================
 //
-//    Copyright © 2021..2025 Advanced Architectures
+//    Copyright ï¿½ 2021..2025 Advanced Architectures
 //
 //    All rights reserved
 //    Confidential Information
 //    Limited Distribution to Authorized Persons Only
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//    Project Name         : Newport
+//    Project Name         : Cognitum
 //
 //    Description          : 256 processor array
 //
@@ -25,7 +25,7 @@
 //
 //===============================================================================================================================
 
-module Newport_die (
+module Cognitum_die (
 `ifdef SIMULATE_CLOCK_RESET //JLSW
    input wire clockd, //***
    input wire clocki, //***
@@ -192,7 +192,7 @@ wire sync_phase; //JLPL - 10_23_25
 
 // Instancess -------------------------------------------------------------------------------------------------------------------
 
-Newport_pads i_PADS (
+Cognitum_pads i_PADS (
    .pad_gpio_0(pad001_pin01_gpio_0),  .pad_gpio_4(pad043_pin23_gpio_4),  .pad_gpio_8 (pad085_pin45_gpio_8),   .pad_gpio_12 (pad127_pin67_gpio_12),
    .pad_gpio_1(pad005_pin03_gpio_1),  .pad_gpio_5(pad047_pin25_gpio_5),  .pad_gpio_9 (pad089_pin47_gpio_9),   .pad_gpio_13 (pad131_pin69_gpio_13),
    .pad_WRXDp (pad009_pin06_WRXDp),   .pad_SRXDp (pad051_pin28_SRXDp),   .pad_ERXDp  (pad093_pin50_ERXDp),    .pad_NRXDp   (pad135_pin72_NRXDp),
@@ -242,30 +242,30 @@ Newport_pads i_PADS (
 // .Wrx_gain_trim       (Wrx_gain_trim),           .Srx_gain_trim       (Srx_gain_trim),     //*** - Remove signals
 // .Wtx_bias_trim       (Wtx_bias_trim),           .Stx_bias_trim       (Stx_bias_trim),     //*** - Remove signals
    .rx_rterm_trim_W     (Wrx_rterm_trim),          .rx_rterm_trim_S     (Srx_rterm_trim),    //*** - Update Module signal name
-   .tx_slew_W           (Wtx_slew),                .tx_slew_S           (Stx_slew),          //*** - Add new signals to Newport_Pads this level
+   .tx_slew_W           (Wtx_slew),                .tx_slew_S           (Stx_slew),          //*** - Add new signals to Cognitum_Pads this level
    .rx_cdac_p_W         (Wrx_cdac_p),              .rx_cdac_p_S         (Srx_cdac_p),        //*** - Update Module signal name
    .rx_cdac_m_W         (Wrx_cdac_m),              .rx_cdac_m_S         (Srx_cdac_m),        //*** - Update Module signal name
    .rx_bias_trim_W      (Wrx_bias_trim),           .rx_bias_trim_S      (Srx_bias_trim),     //*** - Update Module signal name
    .tx_offset_trim_W    (Wtx_offset_trim),         .tx_offset_trim_S    (Stx_offset_trim),   //*** - Update Module signal name
    .pmu_bias_trim_W     (Wpmu_bias_trim),          .pmu_bias_trim_S     (Spmu_bias_trim),    //*** - Update Module signal name
-   .pmu_pd_W            (Wpower_down),             .pmu_pd_S            (Spower_down),           //*** Add new signals to Newport_Pads this level //***JL
-   .rx_pd_W             (Wpower_down),             .rx_pd_S             (Spower_down),            //*** Add new signals to Newport_Pads this level //***JL
-   .tx_pd_W             (Wpower_down),             .tx_pd_S             (Spower_down),            //*** Add new signals to Newport_Pads this level //***JL
-   .sig_por             (sig_por),                                                           //*** Add new signal to Newport_Pads this level
+   .pmu_pd_W            (Wpower_down),             .pmu_pd_S            (Spower_down),           //*** Add new signals to Cognitum_Pads this level //***JL
+   .rx_pd_W             (Wpower_down),             .rx_pd_S             (Spower_down),            //*** Add new signals to Cognitum_Pads this level //***JL
+   .tx_pd_W             (Wpower_down),             .tx_pd_S             (Spower_down),            //*** Add new signals to Cognitum_Pads this level //***JL
+   .sig_por             (sig_por),                                                           //*** Add new signal to Cognitum_Pads this level
 
 // .Erx_offset_trim     (Erx_offset_trim),         .Nrx_offset_trim     (Nrx_offset_trim),   //*** - Remove signals
 // .Erx_gain_trim       (Erx_gain_trim),           .Nrx_gain_trim       (Nrx_gain_trim),     //*** - Remove signals
 // .Etx_bias_trim       (Etx_bias_trim),           .Ntx_bias_trim       (Ntx_bias_trim),     //*** - Remove signals
    .rx_rterm_trim_E     (Erx_rterm_trim),          .rx_rterm_trim_N     (Nrx_rterm_trim),    //*** - Update Module signal name
-   .tx_slew_E           (Etx_slew),                .tx_slew_N           (Ntx_slew),          //*** - Add new signals to Newport_Pads this level
+   .tx_slew_E           (Etx_slew),                .tx_slew_N           (Ntx_slew),          //*** - Add new signals to Cognitum_Pads this level
    .rx_cdac_p_E         (Erx_cdac_p),              .rx_cdac_p_N         (Nrx_cdac_p),        //*** - Update Module signal name
    .rx_cdac_m_E         (Erx_cdac_m),              .rx_cdac_m_N         (Nrx_cdac_m),        //*** - Update Module signal name
    .rx_bias_trim_E      (Erx_bias_trim),           .rx_bias_trim_N      (Nrx_bias_trim),     //*** - Update Module signal name
    .tx_offset_trim_E    (Etx_offset_trim),         .tx_offset_trim_N    (Ntx_offset_trim),   //*** - Update Module signal name
    .pmu_bias_trim_E     (Epmu_bias_trim),          .pmu_bias_trim_N     (Npmu_bias_trim),    //*** - Update Module signal name
-   .pmu_pd_E            (Epower_down),             .pmu_pd_N            (Npower_down),           //*** Add new signals to Newport_Pads this level //***JL
-   .rx_pd_E             (Epower_down),             .rx_pd_N             (Npower_down),            //*** Add new signals to Newport_Pads this level //***JL
-   .tx_pd_E             (Epower_down),             .tx_pd_N             (Npower_down),            //*** Add new signals to Newport_Pads this level //***JL
+   .pmu_pd_E            (Epower_down),             .pmu_pd_N            (Npower_down),           //*** Add new signals to Cognitum_Pads this level //***JL
+   .rx_pd_E             (Epower_down),             .rx_pd_N             (Npower_down),            //*** Add new signals to Cognitum_Pads this level //***JL
+   .tx_pd_E             (Epower_down),             .tx_pd_N             (Npower_down),            //*** Add new signals to Cognitum_Pads this level //***JL
 
    .Wanalog_test (Wanalog_test), .Sanalog_test (Sanalog_test), .Eanalog_test (Eanalog_test), .Nanalog_test (Nanalog_test), //JL
    .vddcore (VDD_08), .vddio (VDD_18), .vss (VSS) //JL
@@ -276,7 +276,7 @@ Newport_pads i_PADS (
 wire PoR_bypass = 1'b0; //JLSW - temporary
 wire PoR_extern = 1'b0; //JLSW - temporary 
 
-Newport_core i_CORE (
+Cognitum_core i_CORE (
 `ifdef SIMULATE_CLOCK_RESET //JLSW
    .clockd(clockd),              //JLSW
    .clocki(clocki),              //JLSW

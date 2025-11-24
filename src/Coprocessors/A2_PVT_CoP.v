@@ -7,7 +7,7 @@
    Limited Distribution to Authorized Persons Only
    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 
-   Project Name         : NEWPORT
+   Project Name         : COGNITUM
 
    Description          : PVT monitor interface
 
@@ -56,18 +56,18 @@
 
 //JL Comment out this include construct to use final synthesis construct
 //`ifdef   STANDALONE                    // DEFINE IN SIMULATOR COMMAND LINE
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_defines.vh"
-//   `include "/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_a0/src/include/NEWPORT_IO_addresses.vh" //JL
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_defines.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/roger/COGNITUM/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //JL
 //`else
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_project_settings.vh"
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" //JL
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_project_settings.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //JL
 //`endif
 //End Comment out
 
 //JL - Use Romeo convention for Simulation vs Synthesis Include Configurations
 `ifdef synthesis
-     `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh" //JL - Don't use Romeo's version until later when Romeo synchronizes to latest GIT tip
-     //`include "/proj/TekStart/lokotech/soc/users/jfechter/newport_a0/src/include/A2_project_settings.vh" //JL - Use presently checked in version until Romeo synchronizes to GIT Tip
+     `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh" //JL - Don't use Romeo's version until later when Romeo synchronizes to latest GIT tip
+     //`include "/proj/TekStart/lokotech/soc/users/jfechter/cognitum_a0/src/include/A2_project_settings.vh" //JL - Use presently checked in version until Romeo synchronizes to GIT Tip
 `else
      `include "A2_defines.vh"
 `endif
@@ -92,10 +92,10 @@ module   A2_PVT_CoP #(
 localparam  LG2REGS  =  `LG2(NUM_REGS);
 //JL - Use Romeo convention for Simulation vs Synthesis Include Configurations
 `ifdef synthesis
-	 `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
-	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/newport_a0/src/include/NEWPORT_IO_addresses.vh" //Use local repo copy until Romeo's directory is updated to repo tip
+	 `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
+	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //Use local repo copy until Romeo's directory is updated to repo tip
 `else
-	`include "NEWPORT_IO_addresses.vh"
+	`include "COGNITUM_IO_addresses.vh"
 `endif
 //End JL
 

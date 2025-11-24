@@ -64,10 +64,10 @@
    `define  TILEONE_ADDR_MSB)    16                // Most significant address bit for decode
    `define  WM_NUM_CLOCKS_READ   1                 // Access time in clock cycles     -- supports up to 7 wait states
    `define  WM_NUM_CLOCKS_CYCLE  1                 // RAM cycle time in clock cycles
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_defines.vh"
 `else
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 `endif
 
 module   A2_Xsalsa20_8I_CoP #(
@@ -132,7 +132,7 @@ A2_reset  u_rst (.q(freset),.reset(reset),.clock(fast_clock));
 
 // imosi/imosi Interface ========================================================================================================
 // For correct operation and to prevent errors, reads and writes to the X buffer are only permitted when in the 'idle' state.
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
 
 localparam  LG2REGS  =  `LG2(NUM_REGS);
 
@@ -1328,7 +1328,7 @@ endmodule
 
 `ifdef   verify_salsa20_8           // Add this as a Simulator command line define
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.tbh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.tbh"
 module t;
 
 // Stimulii

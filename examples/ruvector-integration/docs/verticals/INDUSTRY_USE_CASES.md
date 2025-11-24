@@ -1,4 +1,4 @@
-# Industry Verticals: Newport + Ruvector Use Cases
+# Industry Verticals: Cognitum + Ruvector Use Cases
 
 ## 🏥 Healthcare & Medical Devices
 
@@ -19,7 +19,7 @@
 - Cost: $8.50 chip + $40 sensors = **$48.50 BOM** (vs. $120 for cloud-connected devices)
 
 **ROI Analysis:**
-| Metric | Newport+Ruvector | Cloud-Based | Advantage |
+| Metric | Cognitum+Ruvector | Cloud-Based | Advantage |
 |--------|------------------|-------------|-----------|
 | Device Cost | $150 | $200 | 25% cheaper |
 | Monthly Service | $0 | $15 | **$180/year savings** |
@@ -48,7 +48,7 @@
 - Power: 2.5W (deployable in portable ultrasound machines)
 
 **Clinical Workflow:**
-1. Image acquisition → Newport chip
+1. Image acquisition → Cognitum chip
 2. Automated pre-screening (flag anomalies)
 3. Vector search → retrieve 10 most similar historical cases
 4. Radiologist review with AI-suggested diagnosis
@@ -74,7 +74,7 @@
 - **Fail-safe crypto:** PUF-based secure boot, encrypted V2X communication
 
 **Real-Time Requirements:**
-| Subsystem | Latency Budget | Newport Solution | Safety Level |
+| Subsystem | Latency Budget | Cognitum Solution | Safety Level |
 |-----------|----------------|------------------|--------------|
 | Collision Detection | <10ms | 8ms (distributed inference) | ASIL-D |
 | Lane Keeping | <20ms | 12ms (CV + vector search) | ASIL-B |
@@ -95,7 +95,7 @@
 
 **Market Opportunity:**
 - Automotive L2+ ADAS: 80M vehicles/year
-- Newport penetration @ 5%: **4M units/year**
+- Cognitum penetration @ 5%: **4M units/year**
 - Revenue potential: **$140M/year** (@ $35/unit)
 
 ---
@@ -105,7 +105,7 @@
 **Application:** Distributed swarm intelligence for UAV coordination
 
 **Implementation:**
-- **Each drone:** 1× Newport chip (256 processors for autonomy)
+- **Each drone:** 1× Cognitum chip (256 processors for autonomy)
 - **Swarm coordination:** Vector-based consensus (similar trajectories = formation)
 - **Collision avoidance:** Real-time spatial hashing with Ruvector
 - **Encrypted comms:** Hardware AES for secure command & control
@@ -126,7 +126,7 @@
 
 **Economics:**
 - Commercial drone cost: $2,000 - $15,000
-- Newport chip: **$8.50** (0.06-0.4% of total system cost)
+- Cognitum chip: **$8.50** (0.06-0.4% of total system cost)
 - Competitive advantage: 10× cheaper than GPU-based autonomy
 - Market size: 3M commercial drones/year → **$25M opportunity**
 
@@ -145,7 +145,7 @@
 - **Edge deployment:** No cloud dependency (99.99% uptime)
 
 **Maintenance Strategy:**
-| Traditional | Newport+Ruvector | Improvement |
+| Traditional | Cognitum+Ruvector | Improvement |
 |-------------|------------------|-------------|
 | Reactive | Predictive | **45% downtime reduction** |
 | Fixed schedule | Condition-based | **30% maintenance cost savings** |
@@ -154,7 +154,7 @@
 
 **Case Study: Manufacturing Plant**
 - **Equipment monitored:** 500 motors, pumps, compressors
-- **Newport devices:** 50 units (10 machines per chip)
+- **Cognitum devices:** 50 units (10 machines per chip)
 - **Total cost:** $425 (50 × $8.50 chips)
 - **Annual savings:** $125,000 (avoided downtime + optimized maintenance)
 - **ROI:** **29,300%** in Year 1
@@ -189,7 +189,7 @@ for processor_id in 0..256 {
 - **Real-time feedback:** <10ms inspection cycle
 
 **Production Line Integration:**
-| Specification | Requirement | Newport Solution |
+| Specification | Requirement | Cognitum Solution |
 |---------------|-------------|------------------|
 | Inspection Rate | 3,600 parts/hour | 5,000 parts/hour (38% margin) |
 | Defect Detection | >99.5% recall | 99.7% (exceeds spec) |
@@ -224,7 +224,7 @@ for processor_id in 0..256 {
 - **Hardware security:** PUF-based device identity, encrypted ML models
 
 **Performance Requirements:**
-| Metric | Industry Standard | Newport Solution | Advantage |
+| Metric | Industry Standard | Cognitum Solution | Advantage |
 |--------|-------------------|------------------|-----------|
 | **Latency** | <100ms (card present) | 2ms | **50× faster** |
 | **Throughput** | 10K TPS | 50K TPS | **5× higher** |
@@ -256,7 +256,7 @@ for processor_id in 0..256 {
 - **Deterministic latency:** Bare-metal execution (no OS jitter)
 
 **Latency Breakdown:**
-| Stage | Traditional (Linux) | Newport (Bare-Metal) | Speedup |
+| Stage | Traditional (Linux) | Cognitum (Bare-Metal) | Speedup |
 |-------|---------------------|----------------------|---------|
 | Market Data Parsing | 50µs | 5µs | 10× |
 | Feature Engineering | 200µs | 20µs | 10× |
@@ -291,7 +291,7 @@ for processor_id in 0..256 {
 - **Zero cloud:** All processing on-device (max privacy)
 
 **Competitive Comparison:**
-| Feature | Newport Speaker | Amazon Echo | Google Home | Advantage |
+| Feature | Cognitum Speaker | Amazon Echo | Google Home | Advantage |
 |---------|----------------|-------------|-------------|-----------|
 | **Privacy** | 100% local | Cloud-based | Cloud-based | ✅ No data uploaded |
 | **Latency** | 150ms | 500-2000ms | 400-1500ms | **3-13× faster** |
@@ -300,7 +300,7 @@ for processor_id in 0..256 {
 | **Cost** | $8.50 chip | $25 (estimated) | $30 (estimated) | **66-72% cheaper** |
 
 **User Experience:**
-- **Wake word:** "Hey Newport" (always listening, <1mW)
+- **Wake word:** "Hey Cognitum" (always listening, <1mW)
 - **Response time:** 150ms (perception of instant response)
 - **Accuracy:** 96.4% word error rate (matches cloud services)
 - **Languages:** 20+ languages (all on-device)
@@ -308,7 +308,7 @@ for processor_id in 0..256 {
 **Market Opportunity:**
 - Smart speaker market: 150M units/year
 - Privacy-focused segment: 15M units (10%)
-- Newport ASP: $12 (vs. $25-30 competitors)
+- Cognitum ASP: $12 (vs. $25-30 competitors)
 - Revenue potential: **$180M/year**
 
 ---
@@ -324,7 +324,7 @@ for processor_id in 0..256 {
 - **Adaptive AI:** Learn player patterns, store in Ruvector
 
 **Performance Metrics:**
-| Capability | Newport Implementation | Frame Budget | CPU Savings |
+| Capability | Cognitum Implementation | Frame Budget | CPU Savings |
 |------------|------------------------|--------------|-------------|
 | **Pathfinding** | A* across 256 agents | 2ms | 18ms (9× speedup) |
 | **Decision Making** | Parallel behavior trees | 1ms | 8ms (8× speedup) |
@@ -360,7 +360,7 @@ for processor_id in 0..256 {
 - **Irrigation routing:** Tiny Dancer optimizes water distribution
 
 **Field Deployment:**
-| Scale | Sensors | Newport Devices | Coverage | Cost |
+| Scale | Sensors | Cognitum Devices | Coverage | Cost |
 |-------|---------|-----------------|----------|------|
 | Small Farm | 50 IoT nodes | 5 chips | 100 acres | $425 |
 | Medium Farm | 200 IoT nodes | 20 chips | 500 acres | $1,700 |
@@ -373,7 +373,7 @@ for processor_id in 0..256 {
 - **Labor savings:** -60% (automated monitoring)
 
 **ROI Example (500-acre corn farm):**
-- Equipment cost: $1,700 (20 Newport devices)
+- Equipment cost: $1,700 (20 Cognitum devices)
 - Annual yield gain: $45,000 (+18% × $250K baseline)
 - Water/chemical savings: $12,000
 - **Total benefit:** $57,000/year
@@ -392,7 +392,7 @@ for processor_id in 0..256 {
 - **Edge deployment:** Solar-powered, satellite uplink
 
 **Conservation Impact:**
-| Metric | Traditional Patrols | Newport System | Improvement |
+| Metric | Traditional Patrols | Cognitum System | Improvement |
 |--------|---------------------|----------------|-------------|
 | **Coverage** | 5 km²/patrol | 200 km²/device | **40× larger** |
 | **Response Time** | 30-120 min | 2-5 min | **10-30× faster** |
@@ -426,7 +426,7 @@ for processor_id in 0..256 {
 - **Crypto offload:** Hardware AES for IPSec tunnels
 
 **Network Performance:**
-| KPI | Traditional DU | Newport DU | Advantage |
+| KPI | Traditional DU | Cognitum DU | Advantage |
 |-----|----------------|-----------|-----------|
 | **Slice Switching** | 50ms | 2ms | **25× faster** |
 | **RRC Connections** | 10K/cell | 50K/cell | **5× capacity** |
@@ -434,7 +434,7 @@ for processor_id in 0..256 {
 | **Power/Base Station** | 500W | 200W | **60% reduction** |
 
 **Economic Impact (per base station):**
-- Hardware cost: $850 (100× Newport chips for redundancy)
+- Hardware cost: $850 (100× Cognitum chips for redundancy)
 - Power savings: **$3,600/year** (300W × $0.12/kWh × 8760h)
 - Capacity revenue: **$50,000/year** (5× more subscribers)
 - **ROI:** 13× in Year 1
@@ -462,7 +462,7 @@ for processor_id in 0..256 {
 **Performance Comparison:**
 | System | Throughput | Latency | Accuracy | Cost |
 |--------|-----------|---------|----------|------|
-| **Newport+Ruvector** | 10 Gbps | 50µs | 96.8% | $8.50 |
+| **Cognitum+Ruvector** | 10 Gbps | 50µs | 96.8% | $8.50 |
 | Snort (CPU) | 1 Gbps | 500µs | 92% | $200 (CPU share) |
 | Suricata (GPU) | 40 Gbps | 100µs | 95% | $500 (GPU share) |
 | FPGA-based | 100 Gbps | 10µs | 90% | $5,000 |
@@ -492,7 +492,7 @@ for processor_id in 0..256 {
 - **Radiation hardening:** Triple modular redundancy across processors
 
 **Orbital Operations:**
-| Task | Ground Processing | Newport On-Board | Advantage |
+| Task | Ground Processing | Cognitum On-Board | Advantage |
 |------|-------------------|------------------|-----------|
 | **Image Classification** | 24h (downlink delay) | Real-time | **Instant** |
 | **Bandwidth Required** | 100 Mbps | 10 Mbps | **10× less** |
@@ -509,7 +509,7 @@ for processor_id in 0..256 {
 - Ground station time: **$50K/hour**
 - Downlink savings: **$5M/year** (100 hours saved)
 - Satellite lifetime: 10 years → **$50M total savings**
-- Newport cost: **$850** (100× chips for redundancy) → **58,800× ROI**
+- Cognitum cost: **$850** (100× chips for redundancy) → **58,800× ROI**
 
 ---
 
@@ -517,7 +517,7 @@ for processor_id in 0..256 {
 
 ### Vertical Penetration Estimates (5-Year Projection)
 
-| Vertical | TAM (units/year) | Newport Share | Units/Year | Revenue/Year |
+| Vertical | TAM (units/year) | Cognitum Share | Units/Year | Revenue/Year |
 |----------|------------------|---------------|------------|--------------|
 | **Healthcare** | 300M | 2% | 6M | $51M |
 | **Automotive** | 100M | 4% | 4M | $140M |

@@ -1,4 +1,4 @@
-# Newport Verilog Compliance Report
+# Cognitum Verilog Compliance Report
 ## Cross-Validation Between Verilog HDL and Rust Simulator
 
 **Date**: 2025-11-24
@@ -41,10 +41,10 @@
 ### Verification
 
 ```bash
-$ find /home/user/newport/src -name "*.v" | wc -l
+$ find /home/user/cognitum/src -name "*.v" | wc -l
 164
 
-$ find /home/user/newport/src -name "*.v" -exec wc -l {} + | tail -1
+$ find /home/user/cognitum/src -name "*.v" -exec wc -l {} + | tail -1
 85645 total
 ```
 
@@ -66,7 +66,7 @@ $ find /home/user/newport/src -name "*.v" -exec wc -l {} + | tail -1
 `define  RW_RSTN  97              // Raceway Reset bit position
 ```
 
-**Rust Implementation** (`newport-sim/crates/newport-raceway/src/packet.rs`):
+**Rust Implementation** (`cognitum-sim/crates/cognitum-raceway/src/packet.rs`):
 ```rust
 pub struct RaceWayPacket {
     source: TileId,        // Bits 71:64
@@ -108,7 +108,7 @@ Update `RACEWAY_PROTOCOL.md` to clarify:
 ### 3.1 Base Opcodes (6-bit) - PERFECT MATCH ✅
 
 **Verilog**: `src/A2S_v2r3/A2Sv2r3_ISA.v` defines 64 base opcodes
-**Rust**: `newport-sim/crates/newport-processor/src/instruction.rs` implements all 64
+**Rust**: `cognitum-sim/crates/cognitum-processor/src/instruction.rs` implements all 64
 
 | Category | Opcodes | Verilog | Rust | Divergence |
 |----------|---------|---------|------|-----------|
@@ -144,7 +144,7 @@ pub enum Opcode {
 
 **Divergence**: **98.4%** ❌
 
-See detailed breakdown in `/home/user/newport/benchmarks/reports/ISA_OPCODE_MAPPING.md`
+See detailed breakdown in `/home/user/cognitum/benchmarks/reports/ISA_OPCODE_MAPPING.md`
 
 #### Critical Missing Features
 
@@ -239,7 +239,7 @@ parameter   WORKSIZE =  65536   // 64 KB Work RAM (512 × 1024-bits physically)
 - Interface keys (To/From North/East/South/West)
 - End-to-end encryption keys
 
-**Rust**: `newport-sim/crates/newport-coprocessor/src/aes.rs` (150 lines)
+**Rust**: `cognitum-sim/crates/cognitum-coprocessor/src/aes.rs` (150 lines)
 
 **Implementation Features** (Rust):
 - ✅ Basic AES-128 encryption
@@ -261,7 +261,7 @@ parameter   WORKSIZE =  65536   // 64 KB Work RAM (512 × 1024-bits physically)
 ### 5.2 SHA-256 Coprocessor
 
 **Verilog**: `src/Coprocessors/A2_sha256_CoP.v` (23,141 lines)
-**Rust**: `newport-sim/crates/newport-coprocessor/src/sha256.rs`
+**Rust**: `cognitum-sim/crates/cognitum-coprocessor/src/sha256.rs`
 
 **Coverage**: Basic SHA-256 implemented, but missing hardware optimizations
 **Divergence**: **~50%** ⚠️
@@ -274,7 +274,7 @@ parameter   WORKSIZE =  65536   // 64 KB Work RAM (512 × 1024-bits physically)
 - Health checks (repetition, adaptive proportion)
 - ~5 cycle latency per 32-bit word
 
-**Rust**: `newport-sim/crates/newport-coprocessor/src/trng.rs`
+**Rust**: `cognitum-sim/crates/cognitum-coprocessor/src/trng.rs`
 - Software PRNG (not true random!)
 - No hardware entropy source
 - No NIST compliance
@@ -292,7 +292,7 @@ parameter   WORKSIZE =  65536   // 64 KB Work RAM (512 × 1024-bits physically)
 - Hardware root of trust
 - Challenge-response authentication
 
-**Rust**: `newport-sim/crates/newport-coprocessor/src/puf.rs`
+**Rust**: `cognitum-sim/crates/cognitum-coprocessor/src/puf.rs`
 - Simulated PUF with fixed fingerprint
 - No actual hardware uniqueness
 - Challenge-response implemented
@@ -565,32 +565,32 @@ fn test_tileone_memory_size() {
 
 ### A. Files Modified
 
-- `/home/user/newport/README.md` - Corrected metrics (3 locations)
-- `/home/user/newport/benchmarks/reports/ISA_OPCODE_MAPPING.md` - Created detailed mapping
-- `/home/user/newport/benchmarks/reports/verilog-compliance.md` - This report
+- `/home/user/cognitum/README.md` - Corrected metrics (3 locations)
+- `/home/user/cognitum/benchmarks/reports/ISA_OPCODE_MAPPING.md` - Created detailed mapping
+- `/home/user/cognitum/benchmarks/reports/verilog-compliance.md` - This report
 
 ### B. Verification Commands
 
 ```bash
 # Count Verilog files
-find /home/user/newport/src -name "*.v" | wc -l
+find /home/user/cognitum/src -name "*.v" | wc -l
 
 # Count Verilog LOC
-find /home/user/newport/src -name "*.v" -exec wc -l {} + | tail -1
+find /home/user/cognitum/src -name "*.v" -exec wc -l {} + | tail -1
 
 # Find packet width definitions
-grep -r "97\|98.*bit" /home/user/newport/src/RaceWay/
+grep -r "97\|98.*bit" /home/user/cognitum/src/RaceWay/
 
 # Check memory parameters
-grep "SIZE.*=" /home/user/newport/src/TileZero/TileZero.v
-grep "SIZE.*=" /home/user/newport/src/TileOne/TileOne.v
+grep "SIZE.*=" /home/user/cognitum/src/TileZero/TileZero.v
+grep "SIZE.*=" /home/user/cognitum/src/TileOne/TileOne.v
 ```
 
 ### C. References
 
-- Verilog Source: `/home/user/newport/src/`
-- Rust Implementation: `/home/user/newport/newport-sim/`
-- Documentation: `/home/user/newport/docs/`
+- Verilog Source: `/home/user/cognitum/src/`
+- Rust Implementation: `/home/user/cognitum/cognitum-sim/`
+- Documentation: `/home/user/cognitum/docs/`
 - ISA Specification: `src/A2S_v2r3/A2Sv2r3_ISA.v`
 - Protocol Spec: `docs/interconnect/RACEWAY_PROTOCOL.md`
 

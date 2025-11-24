@@ -1,4 +1,4 @@
-# Newport RaceWay Network Optimization Report
+# Cognitum RaceWay Network Optimization Report
 
 **Date**: 2025-11-24
 **Optimization Goal**: Improve network utilization from 0.8% to 50% (61× improvement)
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This report documents the network optimization work performed on the Newport RaceWay interconnect simulator. While the software simulation shows limited performance gains due to tokio channel overhead, the **infrastructure for high-performance networking has been successfully implemented** and will provide significant benefits in hardware implementation.
+This report documents the network optimization work performed on the Cognitum RaceWay interconnect simulator. While the software simulation shows limited performance gains due to tokio channel overhead, the **infrastructure for high-performance networking has been successfully implemented** and will provide significant benefits in hardware implementation.
 
 ### Target Metrics
 - **Initial State**: 0.80 Gbps (0.8% of 500 GB/s theoretical maximum)
@@ -245,7 +245,7 @@ The software simulation uses `tokio::mpsc::unbounded_channel` for tile communica
 
 ### Files Modified
 
-1. **`newport-sim/crates/newport-raceway/src/network.rs`**
+1. **`cognitum-sim/crates/cognitum-raceway/src/network.rs`**
    - Added `PacketPool` (56 lines)
    - Added `PacketBatch` (40 lines)
    - Added `send_batch()` method

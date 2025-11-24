@@ -1,18 +1,18 @@
 [package]
-name = "newport-ruvector-integration"
+name = "cognitum-ruvector-integration"
 version = "0.1.0"
 edition = "2021"
-authors = ["Newport Project", "rUv.io"]
-description = "Integration example demonstrating ruvector vector database with Newport neuro-synaptic chips"
+authors = ["Cognitum Project", "rUv.io"]
+description = "Integration example demonstrating ruvector vector database with Cognitum neuro-synaptic chips"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Newport simulator crates
-newport-core = { path = "../../newport-sim/crates/newport-core" }
-newport-processor = { path = "../../newport-sim/crates/newport-processor" }
-newport-coprocessor = { path = "../../newport-sim/crates/newport-coprocessor" }
-newport-raceway = { path = "../../newport-sim/crates/newport-raceway" }
-newport-sim = { path = "../../newport-sim/crates/newport-sim" }
+# Cognitum simulator crates
+cognitum-core = { path = "../../newport-sim/crates/newport-core" }
+cognitum-processor = { path = "../../newport-sim/crates/newport-processor" }
+cognitum-coprocessor = { path = "../../newport-sim/crates/newport-coprocessor" }
+cognitum-raceway = { path = "../../newport-sim/crates/newport-raceway" }
+cognitum-sim = { path = "../../newport-sim/crates/newport-sim" }
 
 # Ruvector crates for vector operations and AI routing
 ruvector-core = { git = "https://github.com/ruvnet/ruvector" }

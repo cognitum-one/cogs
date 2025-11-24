@@ -1,16 +1,16 @@
-# Newport ASIC Simulator - Performance Profiling Report
+# Cognitum ASIC Simulator - Performance Profiling Report
 
 **Date**: 2025-11-23
 **Profiler**: Performance Profiling Specialist
 **Duration**: ~30 minutes
-**Environment**: Newport v0.1.0, Rust 1.91.1, Linux 4.4.0
+**Environment**: Cognitum v0.1.0, Rust 1.91.1, Linux 4.4.0
 **Tools Used**: cargo-flamegraph, criterion, custom benchmarks
 
 ---
 
 ## Executive Summary
 
-This report documents comprehensive performance profiling of the Newport ASIC Simulator, identifying critical bottlenecks and optimization opportunities:
+This report documents comprehensive performance profiling of the Cognitum ASIC Simulator, identifying critical bottlenecks and optimization opportunities:
 
 - **Critical Bottleneck**: Network utilization at only 0.8% of theoretical maximum
 - **Build Performance**: 17.6s full rebuild, 0.4-0.9s incremental
@@ -82,7 +82,7 @@ Status: SUCCESS (individual crates)
 | `network_bench` | 0.43s | ✅ SUCCESS |
 | `crypto_ops` | 0.94s | ✅ SUCCESS |
 | `raceway_bench` | 0.86s | ✅ SUCCESS |
-| `newport-sim` | 3.19s | ❌ FAILED |
+| `cognitum-sim` | 3.19s | ❌ FAILED |
 
 ---
 
@@ -173,7 +173,7 @@ Status: SUCCESS (individual crates)
 
 ### 4.1 AES-128 Encryption Benchmarks
 
-**Source**: `/home/user/newport/newport-sim/crates/newport-coprocessor/benches/crypto_ops.rs`
+**Source**: `/home/user/cognitum/cognitum-sim/crates/cognitum-coprocessor/benches/crypto_ops.rs`
 
 #### Single Block Encryption
 ```
@@ -226,7 +226,7 @@ Status: Running...
 
 ### 5.1 Memory Access Patterns
 
-**Source**: Code review of `/home/user/newport/newport-sim/crates/newport-memory/`
+**Source**: Code review of `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/`
 
 #### Cache Implementation Status
 ```rust
@@ -268,7 +268,7 @@ pub fn translate(&self, virt: VirtAddr) -> Result<Option<PhysAddr>> {
 
 ### 5.2 Memory Allocation Analysis
 
-**newport-core RAM Implementation** (Actual working memory):
+**cognitum-core RAM Implementation** (Actual working memory):
 ```rust
 pub struct RAM {
     pub(crate) base: MemoryAddress,
@@ -473,10 +473,10 @@ b.iter(|| {
 
 **Longest Compilation Path**:
 ```
-newport-sim (FAILED)
-  └─ newport-processor (FAILED)
-       └─ newport-memory (FAILED: missing types)
-            └─ newport-core (SUCCESS)
+cognitum-sim (FAILED)
+  └─ cognitum-processor (FAILED)
+       └─ cognitum-memory (FAILED: missing types)
+            └─ cognitum-core (SUCCESS)
 ```
 
 **Blocker**: Cascade compilation failures due to missing `PhysAddr`/`VirtAddr`
@@ -485,12 +485,12 @@ newport-sim (FAILED)
 
 | Crate | Compile Time | Status | Notes |
 |-------|--------------|--------|-------|
-| `newport-core` | ~2-3s | ✅ | Foundation crate |
-| `newport-raceway` | ~3-4s | ✅ | Network simulation |
-| `newport-memory` | N/A | ❌ | Missing types |
-| `newport-processor` | N/A | ❌ | Depends on memory |
-| `newport-sim` | N/A | ❌ | Top-level simulator |
-| `newport-coprocessor` | ~2-3s | ✅ | Crypto operations |
+| `cognitum-core` | ~2-3s | ✅ | Foundation crate |
+| `cognitum-raceway` | ~3-4s | ✅ | Network simulation |
+| `cognitum-memory` | N/A | ❌ | Missing types |
+| `cognitum-processor` | N/A | ❌ | Depends on memory |
+| `cognitum-sim` | N/A | ❌ | Top-level simulator |
+| `cognitum-coprocessor` | ~2-3s | ✅ | Crypto operations |
 
 ### 8.3 Optimization Opportunities
 
@@ -517,9 +517,9 @@ newport-sim (FAILED)
 
 | Test Suite | Tests | Duration | Pass Rate |
 |------------|-------|----------|-----------|
-| `newport-core` | 42 | <1s | 100% ✅ |
-| `newport-raceway` | 18 | <1s | 90% ⚠️ |
-| `newport-raceway` (broadcast) | 8 | >120s | 75% ❌ |
+| `cognitum-core` | 42 | <1s | 100% ✅ |
+| `cognitum-raceway` | 18 | <1s | 90% ⚠️ |
+| `cognitum-raceway` (broadcast) | 8 | >120s | 75% ❌ |
 
 ### 9.2 Benchmark Execution Times
 
@@ -598,7 +598,7 @@ debug = true  # Adds ~10-20% overhead vs pure release
 **Effort**: Low
 **Actions**:
 ```rust
-// In newport-core/src/memory.rs:
+// In cognitum-core/src/memory.rs:
 pub type PhysAddr = MemoryAddress;
 pub type VirtAddr = MemoryAddress;
 
@@ -771,20 +771,20 @@ impl std::fmt::Display for TileId {
 ### Generated Profiles
 
 ```
-/home/user/newport/benchmarks/profiles/
+/home/user/cognitum/benchmarks/profiles/
   - (No flamegraphs generated due to compilation errors)
 
-/home/user/newport/benchmarks/results/
+/home/user/cognitum/benchmarks/results/
   ✅ network-performance.json (detailed network metrics)
 
-/home/user/newport/newport-sim/target/criterion/
+/home/user/cognitum/cognitum-sim/target/criterion/
   ✅ sha256/hardware/{64,512,4096,65536,1048576}/benchmark.json
   ✅ aes_single_block/hardware/benchmark (partial)
 ```
 
 ### Raw Benchmark Data
 
-**Network Performance** (`/home/user/newport/benchmarks/results/network-performance.json`):
+**Network Performance** (`/home/user/cognitum/benchmarks/results/network-performance.json`):
 - 1,000 local routing samples (0-2 µs)
 - 1,000 cross-column routing samples (all 0 µs)
 - 100 broadcast iterations
@@ -837,7 +837,7 @@ impl std::fmt::Display for TileId {
 
 ### A.1 Network Performance JSON
 
-**File**: `/home/user/newport/benchmarks/results/network-performance.json`
+**File**: `/home/user/cognitum/benchmarks/results/network-performance.json`
 
 Key metrics:
 ```json
@@ -870,7 +870,7 @@ Key metrics:
 ### A.2 Criterion Benchmark Locations
 
 ```
-/home/user/newport/newport-sim/target/criterion/
+/home/user/cognitum/cognitum-sim/target/criterion/
   ├── sha256/
   │   ├── hardware/64/
   │   ├── hardware/512/
@@ -887,7 +887,7 @@ Key metrics:
 
 ```
 error[E0599]: the method `as_display` exists for reference `&TileId`, but its trait bounds were not satisfied
-  --> crates/newport-sim/src/error.rs:11:13
+  --> crates/cognitum-sim/src/error.rs:11:13
    |
 11 |     #[error("Channel closed for tile {0}")]
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called on `&TileId` due to unsatisfied trait bounds
@@ -898,7 +898,7 @@ error[E0599]: the method `as_display` exists for reference `&TileId`, but its tr
 
 **Solution**:
 ```rust
-// Add to newport-core/src/types.rs:
+// Add to cognitum-core/src/types.rs:
 impl std::fmt::Display for TileId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "TileId(0x{:02X})", self.0)
@@ -925,7 +925,7 @@ cargo install cargo-llvm-lines  # Optional
 # Run benchmarks with profiling
 cargo bench --bench crypto_ops
 cargo bench --bench raceway_bench
-cd /home/user/newport/benchmarks && cargo run --release
+cd /home/user/cognitum/benchmarks && cargo run --release
 
 # Generate flamegraphs (requires working release build)
 cargo flamegraph --bench crypto_ops

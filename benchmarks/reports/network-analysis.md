@@ -1,14 +1,14 @@
-# Newport RaceWay Network Performance Analysis
+# Cognitum RaceWay Network Performance Analysis
 
 **Date:** 2025-11-23
 **Analyzer:** Network Performance Agent
-**Test Environment:** Newport ASIC Simulator (Rust-based)
+**Test Environment:** Cognitum ASIC Simulator (Rust-based)
 
 ---
 
 ## Executive Summary
 
-This report presents a comprehensive performance analysis of the Newport RaceWay 97-bit packet-switched interconnect network. The analysis covers latency characteristics, throughput capabilities, broadcast performance, and identifies potential bottlenecks in the current implementation.
+This report presents a comprehensive performance analysis of the Cognitum RaceWay 97-bit packet-switched interconnect network. The analysis covers latency characteristics, throughput capabilities, broadcast performance, and identifies potential bottlenecks in the current implementation.
 
 ### Key Findings
 
@@ -471,7 +471,7 @@ Projected Performance (Theoretical):
 
 ## Conclusion
 
-The Newport RaceWay interconnect demonstrates **excellent baseline performance** in local routing, packet operations, and column broadcast. The implementation successfully handles point-to-point routing and broadcast protocols with minimal overhead.
+The Cognitum RaceWay interconnect demonstrates **excellent baseline performance** in local routing, packet operations, and column broadcast. The implementation successfully handles point-to-point routing and broadcast protocols with minimal overhead.
 
 **Key Achievements:**
 - ✅ Efficient 97-bit packet format
@@ -523,5 +523,5 @@ Packet Ops:          10,000 iterations
 ---
 
 **Report Generated:** 2025-11-23
-**Analysis Tool:** Newport Network Performance Analyzer
-**JSON Data:** `/home/user/newport/benchmarks/results/network-performance.json`
+**Analysis Tool:** Cognitum Network Performance Analyzer
+**JSON Data:** `/home/user/cognitum/benchmarks/results/network-performance.json`

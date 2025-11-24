@@ -62,7 +62,7 @@ Signal any_tag_match ->  = '0' when this is an initial Hub input Broadcast Reque
 
 // include for the timespec for simulation 
 `ifdef synthesis //JLSW
-	 `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+	 `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `else
 `include "A2_project_settings.vh"
 `endif

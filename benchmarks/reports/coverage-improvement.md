@@ -1,4 +1,4 @@
-# Newport Test Coverage Improvement Report
+# Cognitum Test Coverage Improvement Report
 
 **Date**: 2025-11-24
 **Objective**: Increase test coverage from 40-50% to 80%+
@@ -6,13 +6,13 @@
 
 ## Executive Summary
 
-Successfully added **92 comprehensive tests** across critical Newport ASIC subsystems, dramatically improving test coverage for previously untested components. The implementation focused on the highest-impact areas identified in the coverage analysis.
+Successfully added **92 comprehensive tests** across critical Cognitum ASIC subsystems, dramatically improving test coverage for previously untested components. The implementation focused on the highest-impact areas identified in the coverage analysis.
 
 ## Coverage Improvements by Component
 
 ### 🔴 CRITICAL Priority (Previously 5-15% → Target 70-80%)
 
-#### 1. newport-memory (49 tests added)
+#### 1. cognitum-memory (49 tests added)
 **Initial Coverage**: 5-15% (essentially untested)
 **Final Coverage**: ~75-80% (estimated)
 **Tests Added**: 49
@@ -28,7 +28,7 @@ Successfully added **92 comprehensive tests** across critical Newport ASIC subsy
 - ✅ Empty and large data transfers
 
 **Test Files**:
-- `/home/user/newport/newport-sim/crates/newport-memory/tests/cache_tests.rs`
+- `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/cache_tests.rs`
 
 ##### DRAM Tests (18 tests)
 - ✅ DRAM creation with various sizes (512B - 16KB)
@@ -44,7 +44,7 @@ Successfully added **92 comprehensive tests** across critical Newport ASIC subsy
 - ✅ Partial overlap handling
 
 **Test Files**:
-- `/home/user/newport/newport-sim/crates/newport-memory/tests/dram_tests.rs`
+- `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/dram_tests.rs`
 
 ##### TLB Tests (16 tests)
 - ✅ TLB creation with various sizes (16 - 1024 entries)
@@ -58,9 +58,9 @@ Successfully added **92 comprehensive tests** across critical Newport ASIC subsy
 - ✅ Stress testing (1000 translations with pseudo-random addresses)
 
 **Test Files**:
-- `/home/user/newport/newport-sim/crates/newport-memory/tests/tlb_tests.rs`
+- `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/tlb_tests.rs`
 
-#### 2. newport-io (21 tests added)
+#### 2. cognitum-io (21 tests added)
 **Initial Coverage**: 5-15% (essentially untested)
 **Final Coverage**: ~70-75% (estimated)
 **Tests Added**: 21
@@ -88,9 +88,9 @@ Successfully added **92 comprehensive tests** across critical Newport ASIC subsy
 - ✅ Controller lifecycle management
 
 **Test Files**:
-- `/home/user/newport/newport-sim/crates/newport-io/tests/io_comprehensive_tests.rs`
+- `/home/user/cognitum/cognitum-sim/crates/cognitum-io/tests/io_comprehensive_tests.rs`
 
-#### 3. newport-debug (22 tests added)
+#### 3. cognitum-debug (22 tests added)
 **Initial Coverage**: 5-15% (essentially untested)
 **Final Coverage**: ~85-90% (estimated)
 **Tests Added**: 22
@@ -118,22 +118,22 @@ Successfully added **92 comprehensive tests** across critical Newport ASIC subsy
 - ✅ Stress testing with many counters
 
 **Test Files**:
-- `/home/user/newport/newport-sim/crates/newport-debug/tests/debug_comprehensive_tests.rs`
+- `/home/user/cognitum/cognitum-sim/crates/cognitum-debug/tests/debug_comprehensive_tests.rs`
 
 ## Test Results Summary
 
 ### All Tests Passing ✅
 
 ```
-newport-memory:  49 tests passed
+cognitum-memory:  49 tests passed
   - cache_tests:  15 passed
   - dram_tests:   18 passed
   - tlb_tests:    16 passed
 
-newport-io:      21 tests passed
+cognitum-io:      21 tests passed
   - io_comprehensive_tests: 21 passed
 
-newport-debug:   22 tests passed
+cognitum-debug:   22 tests passed
   - debug_comprehensive_tests: 22 passed
 
 TOTAL:           92 tests passed, 0 failed
@@ -144,22 +144,22 @@ TOTAL:           92 tests passed, 0 failed
 ### Before Test Implementation
 | Component       | Coverage | Test Files | Tests |
 |----------------|----------|------------|-------|
-| newport-memory | 5-15%    | 0          | 0     |
-| newport-io     | 5-15%    | 0          | 0     |
-| newport-debug  | 5-15%    | 0          | 0     |
-| newport-cli    | 15-25%   | 1          | ~12   |
-| newport-raceway| 40-50%   | 4          | ~30   |
-| newport-sim    | 30-40%   | 3          | ~15   |
+| cognitum-memory | 5-15%    | 0          | 0     |
+| cognitum-io     | 5-15%    | 0          | 0     |
+| cognitum-debug  | 5-15%    | 0          | 0     |
+| cognitum-cli    | 15-25%   | 1          | ~12   |
+| cognitum-raceway| 40-50%   | 4          | ~30   |
+| cognitum-sim    | 30-40%   | 3          | ~15   |
 
 ### After Test Implementation
 | Component       | Coverage | Test Files | Tests | Improvement |
 |----------------|----------|------------|-------|-------------|
-| newport-memory | ~75-80%  | 3          | 49    | **+70%**    |
-| newport-io     | ~70-75%  | 1          | 21    | **+65%**    |
-| newport-debug  | ~85-90%  | 1          | 22    | **+80%**    |
-| newport-cli    | 15-25%   | 1          | ~12   | No change   |
-| newport-raceway| 40-50%   | 4          | ~30   | No change   |
-| newport-sim    | 30-40%   | 3          | ~15   | No change   |
+| cognitum-memory | ~75-80%  | 3          | 49    | **+70%**    |
+| cognitum-io     | ~70-75%  | 1          | 21    | **+65%**    |
+| cognitum-debug  | ~85-90%  | 1          | 22    | **+80%**    |
+| cognitum-cli    | 15-25%   | 1          | ~12   | No change   |
+| cognitum-raceway| 40-50%   | 4          | ~30   | No change   |
+| cognitum-sim    | 30-40%   | 3          | ~15   | No change   |
 
 ### Overall Project Impact
 - **Total New Tests**: 92
@@ -192,42 +192,42 @@ TOTAL:           92 tests passed, 0 failed
 ## Files Created/Modified
 
 ### New Test Files
-1. `/home/user/newport/newport-sim/crates/newport-memory/tests/cache_tests.rs`
-2. `/home/user/newport/newport-sim/crates/newport-memory/tests/dram_tests.rs`
-3. `/home/user/newport/newport-sim/crates/newport-memory/tests/tlb_tests.rs`
-4. `/home/user/newport/newport-sim/crates/newport-io/tests/io_comprehensive_tests.rs`
-5. `/home/user/newport/newport-sim/crates/newport-debug/tests/debug_comprehensive_tests.rs`
+1. `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/cache_tests.rs`
+2. `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/dram_tests.rs`
+3. `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/tests/tlb_tests.rs`
+4. `/home/user/cognitum/cognitum-sim/crates/cognitum-io/tests/io_comprehensive_tests.rs`
+5. `/home/user/cognitum/cognitum-sim/crates/cognitum-debug/tests/debug_comprehensive_tests.rs`
 
 ### Modified Source Files
-1. `/home/user/newport/newport-sim/crates/newport-memory/src/tlb.rs` (fixed field naming)
+1. `/home/user/cognitum/cognitum-sim/crates/cognitum-memory/src/tlb.rs` (fixed field naming)
 
 ### Report Files
-1. `/home/user/newport/benchmarks/reports/coverage-improvement.md` (this file)
-2. `/home/user/newport/benchmarks/analysis/coverage-report.html`
+1. `/home/user/cognitum/benchmarks/reports/coverage-improvement.md` (this file)
+2. `/home/user/cognitum/benchmarks/analysis/coverage-report.html`
 
 ## Recommendations for Future Work
 
 ### To Achieve 80%+ Overall Coverage
 
-1. **newport-cli** (Priority: HIGH)
+1. **cognitum-cli** (Priority: HIGH)
    - Expand CLI argument parsing tests
    - Add error handling tests
    - Test all command paths
    - Estimated effort: 4-6 hours
 
-2. **newport-raceway** (Priority: MEDIUM)
+2. **cognitum-raceway** (Priority: MEDIUM)
    - Add routing algorithm edge cases
    - Test congestion scenarios
    - Add hub crossbar stress tests
    - Estimated effort: 4-6 hours
 
-3. **newport-sim** (Priority: MEDIUM)
+3. **cognitum-sim** (Priority: MEDIUM)
    - Test event loop edge cases
    - Add scheduler stress tests
    - Test multi-tile coordination
    - Estimated effort: 4-6 hours
 
-4. **newport-processor** (Priority: LOW)
+4. **cognitum-processor** (Priority: LOW)
    - Already has good coverage
    - Add more edge cases for complex instructions
    - Estimated effort: 2-4 hours
@@ -246,18 +246,18 @@ TOTAL:           92 tests passed, 0 failed
 
 ## Conclusion
 
-The test coverage improvement initiative successfully addressed the three highest-priority gaps in the Newport ASIC simulator:
+The test coverage improvement initiative successfully addressed the three highest-priority gaps in the Cognitum ASIC simulator:
 
-1. ✅ **newport-memory**: From untested to ~75-80% coverage (49 tests)
-2. ✅ **newport-io**: From untested to ~70-75% coverage (21 tests)
-3. ✅ **newport-debug**: From untested to ~85-90% coverage (22 tests)
+1. ✅ **cognitum-memory**: From untested to ~75-80% coverage (49 tests)
+2. ✅ **cognitum-io**: From untested to ~70-75% coverage (21 tests)
+3. ✅ **cognitum-debug**: From untested to ~85-90% coverage (22 tests)
 
 The project now has **92 additional high-quality tests** providing comprehensive coverage of critical subsystems. Overall project coverage improved from **40-50% to an estimated 65-70%**, with the highest-risk components now well-tested.
 
-To achieve the 80%+ target, the next phase should focus on expanding tests for newport-cli, newport-raceway, and newport-sim as outlined in the recommendations section.
+To achieve the 80%+ target, the next phase should focus on expanding tests for cognitum-cli, cognitum-raceway, and cognitum-sim as outlined in the recommendations section.
 
 ---
 
 **Report Generated**: 2025-11-24
-**Test Coverage Specialist**: Newport QA Team
+**Test Coverage Specialist**: Cognitum QA Team
 **Session ID**: newport-fixes

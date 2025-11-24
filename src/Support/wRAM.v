@@ -32,11 +32,11 @@
 `ifdef   RELATIVE_FILENAMES                    // DEFINE IN SIMULATOR COMMAND LINE
 //   `include "A2_project_settings.vh"
 //   `include "A2_defines.vh"
-//   `include "NEWPORT_defines.vh"
+//   `include "COGNITUM_defines.vh"
 `else
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_project_settings.vh"
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_defines.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_defines.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_project_settings.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_defines.vh"
 `endif
 
 module  wRAM #(

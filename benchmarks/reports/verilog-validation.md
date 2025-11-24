@@ -1,4 +1,4 @@
-# Newport Verilog Cross-Validation Report
+# Cognitum Verilog Cross-Validation Report
 
 ## Executive Summary
 
@@ -57,7 +57,7 @@ src/
 ### 1. A2S Processor Core
 
 **Verilog**: `src/A2S_v2r3/A2Sv2r3.v` (1,684 LOC)
-**Rust**: `newport-sim/crates/newport-processor/` (~2,000 LOC estimated)
+**Rust**: `cognitum-sim/crates/cognitum-processor/` (~2,000 LOC estimated)
 
 #### Key Parameters (from Verilog)
 
@@ -79,7 +79,7 @@ parameter WFNC  = `A2S_FUNCTION_WIDTH         // Function width
 - WASM-SIMD support
 - IO commands (IORC, IORD, IOWR, IOSW)
 
-**Rust**: `newport-processor/src/instruction.rs`
+**Rust**: `cognitum-processor/src/instruction.rs`
 - Zero-address stack machine ISA
 - Module structure present but needs verification
 
@@ -92,7 +92,7 @@ parameter WFNC  = `A2S_FUNCTION_WIDTH         // Function width
 ### 2. RaceWay Interconnect
 
 **Verilog**: `src/RaceWay/Raceway.v` (506 LOC)
-**Rust**: `newport-sim/crates/newport-raceway/` (~1,500 LOC estimated)
+**Rust**: `cognitum-sim/crates/cognitum-raceway/` (~1,500 LOC estimated)
 
 #### Packet Format Alignment
 
@@ -149,7 +149,7 @@ Implemented coprocessors:
 - `A2_RPUF_CoP.v` - Ring oscillator PUF
 - `A2_NEWS_CoP.v` - North/East/West/South messaging
 
-**Rust**: `newport-sim/crates/newport-coprocessor/`
+**Rust**: `cognitum-sim/crates/cognitum-coprocessor/`
 
 **VALIDATION NEEDED**:
 - [ ] Verify AES implementation matches RTL
@@ -171,7 +171,7 @@ Memory types:
 - `data_mem.v` - Data memory
 - `wRAM.v` - Work memory (33,721 LOC - largest file)
 
-Memory sizes (from `NEWPORT_defines.vh`):
+Memory sizes (from `COGNITUM_defines.vh`):
 ```verilog
 `define TILEZERO_VROMSIZE   32768   // x1
 `define TILEZERO_FRAMSIZE   16384   // x2
@@ -182,7 +182,7 @@ Memory sizes (from `NEWPORT_defines.vh`):
 `define TILEONE_WORKSIZE    65536
 ```
 
-**Rust**: `newport-sim/crates/newport-memory/`
+**Rust**: `cognitum-sim/crates/cognitum-memory/`
 
 **VALIDATION NEEDED**:
 - [ ] Verify memory sizes match
@@ -231,13 +231,13 @@ find src -name "*test*.v" -o -name "*tb*.v" -o -name "*bench*.v"
 
 | Verilog Module | Rust Crate | Alignment Status |
 |----------------|------------|------------------|
-| A2S_v2r3/ | newport-processor | PARTIAL - needs ISA verification |
-| RaceWay/ | newport-raceway | GOOD - packet format differs slightly |
-| Coprocessors/ | newport-coprocessor | UNKNOWN - needs detailed verification |
-| Support/ | newport-memory | UNKNOWN - needs memory size verification |
-| TileZero/ | newport-core (?) | UNKNOWN |
-| TileOne/ | newport-core (?) | UNKNOWN |
-| Top/ | newport-sim | UNKNOWN |
+| A2S_v2r3/ | cognitum-processor | PARTIAL - needs ISA verification |
+| RaceWay/ | cognitum-raceway | GOOD - packet format differs slightly |
+| Coprocessors/ | cognitum-coprocessor | UNKNOWN - needs detailed verification |
+| Support/ | cognitum-memory | UNKNOWN - needs memory size verification |
+| TileZero/ | cognitum-core (?) | UNKNOWN |
+| TileOne/ | cognitum-core (?) | UNKNOWN |
+| Top/ | cognitum-sim | UNKNOWN |
 
 ## Specification Compliance Issues
 
@@ -382,7 +382,7 @@ Coprocessors/
 
 ## Appendix B: Key Parameters
 
-### From NEWPORT_defines.vh
+### From COGNITUM_defines.vh
 
 ```verilog
 // Interface widths

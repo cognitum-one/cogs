@@ -60,8 +60,8 @@
 
 //JL - Use Romeo convention for Simulation vs Synthesis Include Configurations
 `ifdef synthesis
-	 `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_defines.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
-	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/include/A2_defines.vh" //Use local repo copy until Romeo's directory is updated to repo tip
+	 `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_defines.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
+	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/cognitum_src_a0/src/include/A2_defines.vh" //Use local repo copy until Romeo's directory is updated to repo tip
 `else
 	`include "A2_defines.vh" //JLPL - 11_5_25 -> Fix simulation define statement
 `endif
@@ -117,10 +117,10 @@ localparam  [3:0]  SOF = 3, EOF = 2, BRK = 1, ERR = 0;                  // Statu
 
 //JL - Use Romeo convention for Simulation vs Synthesis Include Configurations
 `ifdef synthesis
-	 `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
-	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/newport_a0/src/include/NEWPORT_IO_addresses.vh" //Use local repo copy until Romeo's directory is updated to repo tip
+	 `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //Comment out until Romeo ready for synthesis of compilable Top Netlist
+	 //`include "/proj/TekStart/lokotech/soc/users/jfechter/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //Use local repo copy until Romeo's directory is updated to repo tip
 `else
-	`include "NEWPORT_IO_addresses.vh"
+	`include "COGNITUM_IO_addresses.vh"
 `endif
 //End JL
 

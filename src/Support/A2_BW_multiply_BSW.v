@@ -28,7 +28,7 @@
 //******************************************************************************************************************************
 
 `ifdef  synthesis //JLPL
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/Top/NEWPORT_project_settings.v"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/Top/COGNITUM_project_settings.v"
 `else
   `include "A2_project_settings.vh"
 `endif

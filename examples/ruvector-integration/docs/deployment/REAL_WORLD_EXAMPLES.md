@@ -1,6 +1,6 @@
 # Real-World Deployment Examples
 
-This document provides **step-by-step implementation guides** for deploying Newport + Ruvector in real production environments across different industries.
+This document provides **step-by-step implementation guides** for deploying Cognitum + Ruvector in real production environments across different industries.
 
 ---
 
@@ -18,12 +18,12 @@ This document provides **step-by-step implementation guides** for deploying Newp
 Production Floor
 ├── 500 motors/pumps/compressors
 ├── 500 vibration sensors (1 per machine)
-├── 50 Newport chips (10 machines per chip @ $8.50 = $425)
+├── 50 Cognitum chips (10 machines per chip @ $8.50 = $425)
 ├── 5 gateway computers (Raspberry Pi @ $55 = $275)
 └── Central monitoring dashboard
 
 Data Flow:
-Sensor → Newport (local inference) → Gateway → Dashboard
+Sensor → Cognitum (local inference) → Gateway → Dashboard
          ↓
     Local alert if anomaly detected
 ```
@@ -32,7 +32,7 @@ Sensor → Newport (local inference) → Gateway → Dashboard
 
 | Component | Quantity | Unit Cost | Total |
 |-----------|----------|-----------|-------|
-| Newport chips | 50 | $8.50 | $425 |
+| Cognitum chips | 50 | $8.50 | $425 |
 | Vibration sensors (MEMS) | 500 | $12 | $6,000 |
 | Sensor interface boards | 50 | $15 | $750 |
 | Raspberry Pi gateways | 5 | $55 | $275 |
@@ -43,12 +43,12 @@ Sensor → Newport (local inference) → Gateway → Dashboard
 ### Software Stack
 
 ```rust
-// Vibration analysis on Newport
-use newport::{Newport, TileId};
+// Vibration analysis on Cognitum
+use newport::{Cognitum, TileId};
 use ruvector_core::VectorDB;
 
 struct VibrationMonitor {
-    newport: Newport,
+    newport: Cognitum,
     vector_db: VectorDB,
     failure_patterns: HashMap<String, Vec<f32>>,
 }
@@ -110,7 +110,7 @@ impl VibrationMonitor {
 
 #### Phase 1: Pilot (Week 1-2)
 1. **Select 10 critical machines** (highest downtime impact)
-2. **Install 1 Newport chip** with 10 vibration sensors
+2. **Install 1 Cognitum chip** with 10 vibration sensors
 3. **Collect baseline data** for 1 week (normal operation)
 4. **Build failure pattern library** from historical maintenance logs
 
@@ -154,7 +154,7 @@ impl VibrationMonitor {
 
 ### Product Specifications
 
-| Feature | Newport Hub | Amazon Echo | Google Home |
+| Feature | Cognitum Hub | Amazon Echo | Google Home |
 |---------|-------------|-------------|-------------|
 | **Voice Processing** | 100% local | Cloud-based | Cloud-based |
 | **Data Upload** | Zero | All audio | All audio |
@@ -171,7 +171,7 @@ impl VibrationMonitor {
 
 ```
 Smart Home Hub
-├── Newport chip ($8.50) – Voice AI + home automation logic
+├── Cognitum chip ($8.50) – Voice AI + home automation logic
 ├── MEMS microphone array 4× ($3)
 ├── Speaker ($5)
 ├── WiFi/Bluetooth module ($4)
@@ -185,12 +185,12 @@ Total BOM: $38 → Retail $99 (61% gross margin)
 ### Firmware Architecture
 
 ```rust
-// Voice assistant running on Newport
-use newport::{Newport, TileId};
+// Voice assistant running on Cognitum
+use newport::{Cognitum, TileId};
 use ruvector_core::VectorDB;
 
 struct VoiceAssistant {
-    newport: Newport,
+    newport: Cognitum,
     wake_word_detector: TileId,  // Processor 0
     speech_recognition: Vec<TileId>,  // Processors 1-64
     nlu_engine: Vec<TileId>,  // Processors 65-128
@@ -280,7 +280,7 @@ impl VoiceAssistant {
 
 ### Competitive Differentiation
 
-| Feature | Newport Hub | Competition | Advantage |
+| Feature | Cognitum Hub | Competition | Advantage |
 |---------|-------------|-------------|-----------|
 | **Privacy** | 100% local | Cloud-based | ✅ Zero data uploads |
 | **Latency** | 150ms | 500-2000ms | ✅ 3-13× faster |
@@ -322,7 +322,7 @@ impl VoiceAssistant {
 
 ```
 Drone Swarm (100 UAVs)
-├── Each drone: 1× Newport chip ($8.50)
+├── Each drone: 1× Cognitum chip ($8.50)
 ├── Swarm coordination: Vector-based consensus
 ├── Coverage: 100 acres per drone per day
 ├── Total cost: $850 (100× $8.50 chips)
@@ -338,7 +338,7 @@ Capabilities:
 
 | Component | Cost |
 |-----------|------|
-| Newport chip | $8.50 |
+| Cognitum chip | $8.50 |
 | Flight controller | $25 |
 | GPS/compass | $15 |
 | Multispectral camera | $120 |
@@ -353,7 +353,7 @@ Capabilities:
 
 ```rust
 // Distributed swarm coordination
-use newport::{Newport, TileId};
+use newport::{Cognitum, TileId};
 use ruvector_core::VectorDB;
 
 struct DroneSwarm {
@@ -412,7 +412,7 @@ impl DroneSwarm {
 }
 
 struct Drone {
-    newport: Newport,
+    newport: Cognitum,
     position: GPS,
     camera: MultispectralCamera,
 }
@@ -452,7 +452,7 @@ impl Drone {
 
 ### Competitive Advantage
 
-| Feature | Newport Swarm | Traditional Drones | Manned Aircraft |
+| Feature | Cognitum Swarm | Traditional Drones | Manned Aircraft |
 |---------|---------------|-------------------|-----------------|
 | **Cost/acre** | $0.25 | $2.50 | $5.00 |
 | **Resolution** | 1 cm/pixel | 5 cm/pixel | 50 cm/pixel |
@@ -475,14 +475,14 @@ impl Drone {
 ```
 Point-of-Sale Terminal
 ├── Payment app (existing)
-├── Newport fraud detection module (add-on card)
+├── Cognitum fraud detection module (add-on card)
 │   ├── Real-time scoring (<2ms)
 │   ├── Local pattern library (1M transactions)
 │   └── Encrypted model (PUF-based protection)
 └── Network (offline fallback mode)
 
 Data Flow:
-Transaction → Newport (local score) → Approve/Deny
+Transaction → Cognitum (local score) → Approve/Deny
               ↓
          Cloud (async update) – No blocking
 ```
@@ -493,7 +493,7 @@ Transaction → Newport (local score) → Approve/Deny
 
 | Component | Cost |
 |-----------|------|
-| Newport chip | $8.50 |
+| Cognitum chip | $8.50 |
 | PCB + connectors | $12 |
 | Enclosure | $5 |
 | **Total** | **$25.50** |
@@ -503,11 +503,11 @@ Transaction → Newport (local score) → Approve/Deny
 ### Fraud Detection Algorithm
 
 ```rust
-use newport::{Newport, TileId};
+use newport::{Cognitum, TileId};
 use ruvector_core::VectorDB;
 
 struct FraudDetector {
-    newport: Newport,
+    newport: Cognitum,
     legitimate_patterns: VectorDB,  // 1M+ legitimate transactions
     fraud_patterns: VectorDB,       // 100K known fraud cases
     merchant_profile: MerchantProfile,
@@ -573,7 +573,7 @@ impl FraudDetector {
 
 ### Performance Metrics (After Deployment)
 
-| Metric | Before (Cloud) | After (Newport) | Improvement |
+| Metric | Before (Cloud) | After (Cognitum) | Improvement |
 |--------|---------------|-----------------|-------------|
 | **Fraud Detection Rate** | 85% | 94% | **+9%** |
 | **False Decline Rate** | 10% | 1.2% | **-88%** |
@@ -614,7 +614,7 @@ impl FraudDetector {
 
 ```
 Tactical Edge AI Node
-├── 10× Newport chips (2,560 processors total)
+├── 10× Cognitum chips (2,560 processors total)
 ├── Triple modular redundancy (radiation tolerance)
 ├── Shielded enclosure (TEMPEST Level B)
 ├── Offline operation (no network dependency)
@@ -629,18 +629,18 @@ Cost per node: $10,000 (chips + hardening + packaging)
 **Mission:** Analyze overhead imagery from reconnaissance satellites for target identification
 
 ```rust
-use newport::{Newport, TileId};
+use newport::{Cognitum, TileId};
 use ruvector_core::VectorDB;
 
 struct ISRSystem {
-    newport_cluster: Vec<Newport>,  // 10 chips
+    newport_cluster: Vec<Cognitum>,  // 10 chips
     target_db: VectorDB,  // 10M known targets/vehicles/structures
     threat_db: VectorDB,  // 100K threat signatures
 }
 
 impl ISRSystem {
     async fn analyze_satellite_image(&self, image: &Image) -> Result<AnalysisReport> {
-        // Distributed processing: each Newport chip handles 1/10 of image
+        // Distributed processing: each Cognitum chip handles 1/10 of image
         let tile_results: Vec<_> = self.newport_cluster
             .iter()
             .enumerate()
@@ -694,7 +694,7 @@ impl ISRSystem {
 
 ### Military Advantages
 
-| Requirement | Newport Solution | Advantage |
+| Requirement | Cognitum Solution | Advantage |
 |-------------|------------------|-----------|
 | **Air-gapped** | 100% on-device processing | ✅ No network = no exfiltration |
 | **TEMPEST** | Shielded packaging | ✅ Electromagnetic security |
@@ -715,7 +715,7 @@ impl ISRSystem {
 
 | Item | Unit Cost | Total |
 |------|-----------|-------|
-| Newport chips (500) | $8.50 | $4,250 |
+| Cognitum chips (500) | $8.50 | $4,250 |
 | Radiation hardening | $3,000/unit | $150,000 |
 | TEMPEST shielding | $1,500/unit | $75,000 |
 | Ruggedization | $2,000/unit | $100,000 |
@@ -729,7 +729,7 @@ impl ISRSystem {
 - Power infrastructure (150W vs. 25W): **$100,000**
 - **Total: $475,000**
 
-**Newport Advantage:**
+**Cognitum Advantage:**
 - 6× better radiation tolerance
 - 3× lower power (critical for battery/generator operations)
 - Hardware cryptography (Jetson lacks PUF, AES, SHA-256 accelerators)
@@ -742,7 +742,7 @@ impl ISRSystem {
 ### Pre-Deployment Checklist
 
 1. **Hardware Validation**
-   - [ ] Bench test all Newport chips
+   - [ ] Bench test all Cognitum chips
    - [ ] Verify sensor/actuator interfaces
    - [ ] Power consumption measurements
    - [ ] Temperature cycling (-40°C to +85°C)
@@ -789,7 +789,7 @@ impl ISRSystem {
 
 ## Summary: Real-World Impact
 
-These deployment examples demonstrate Newport + Ruvector's versatility:
+These deployment examples demonstrate Cognitum + Ruvector's versatility:
 
 1. **Industrial IoT:** 14,600% ROI in predictive maintenance
 2. **Consumer Electronics:** $99 privacy-first smart speaker (63% margin)

@@ -27,7 +27,7 @@
 ===============================================================================================================================*/
 
 `ifdef synthesis //JLSW
-	 `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+	 `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `else
 `include "A2_project_settings.vh"
 `endif
@@ -60,7 +60,7 @@ module   A2_RPUF_CoP #(
 
 // I/O Module Number of Registers
 
-//`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" - Put back in later after finding ncverilog compile sensitivity with local param header NEWPORT_IO_addresses.vh
+//`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" - Put back in later after finding ncverilog compile sensitivity with local param header COGNITUM_IO_addresses.vh
 
   apb_ro_puf puf_top (
     .PCLK           (clock      ),

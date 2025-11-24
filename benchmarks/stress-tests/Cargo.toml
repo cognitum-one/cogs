@@ -1,5 +1,5 @@
 [package]
-name = "newport-memory-stress-tests"
+name = "cognitum-memory-stress-tests"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,7 +16,7 @@ name = "generate_results"
 path = "generate_results.rs"
 
 [dependencies]
-newport-core = { path = "../../newport-sim/crates/newport-core" }
+cognitum-core = { path = "../../newport-sim/crates/newport-core" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

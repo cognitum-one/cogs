@@ -1,4 +1,4 @@
-# Newport ASIC Simulator - Integration Test Report
+# Cognitum ASIC Simulator - Integration Test Report
 
 **Date:** 2025-11-23
 **Test Session:** Integration Testing Specialist
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Integration testing of the Newport ASIC simulator workspace **FAILED** due to compilation errors in 6 out of 10 crates. While 4 crates successfully compiled and passed 143 tests, critical integration gaps exist that prevent end-to-end workflow validation.
+Integration testing of the Cognitum ASIC simulator workspace **FAILED** due to compilation errors in 6 out of 10 crates. While 4 crates successfully compiled and passed 143 tests, critical integration gaps exist that prevent end-to-end workflow validation.
 
 ### Quick Stats
 
@@ -23,7 +23,7 @@ Integration testing of the Newport ASIC simulator workspace **FAILED** due to co
 
 ## Crate-by-Crate Results
 
-### ✅ newport-core (PASSED)
+### ✅ cognitum-core (PASSED)
 
 **Status:** All tests passing
 **Tests:** 42 passed / 42 total
@@ -43,7 +43,7 @@ Integration testing of the Newport ASIC simulator workspace **FAILED** due to co
 
 ---
 
-### ✅ newport-processor (PASSED)
+### ✅ cognitum-processor (PASSED)
 
 **Status:** All tests passing
 **Tests:** 77 passed / 77 total
@@ -71,7 +71,7 @@ Integration testing of the Newport ASIC simulator workspace **FAILED** due to co
 
 ---
 
-### ✅ newport-raceway (PASSED WITH ISSUES)
+### ✅ cognitum-raceway (PASSED WITH ISSUES)
 
 **Status:** 22 tests passed, 2 tests hanging indefinitely
 **Tests:** 22 passed / 24 total
@@ -102,7 +102,7 @@ Integration testing of the Newport ASIC simulator workspace **FAILED** due to co
 
 ---
 
-### ✅ newport-io (PASSED)
+### ✅ cognitum-io (PASSED)
 
 **Status:** All tests passing
 **Tests:** 1 passed / 1 total
@@ -116,13 +116,13 @@ Integration testing of the Newport ASIC simulator workspace **FAILED** due to co
 
 ---
 
-### ❌ newport-memory (COMPILATION FAILED)
+### ❌ cognitum-memory (COMPILATION FAILED)
 
 **Status:** Cannot compile
 **Error Count:** 3 type resolution errors
 
 **Root Cause:**
-The crate imports `PhysAddr` and `VirtAddr` types from `newport_core::memory`, but these types **do not exist**. Only `MemoryAddress` exists in newport-core.
+The crate imports `PhysAddr` and `VirtAddr` types from `newport_core::memory`, but these types **do not exist**. Only `MemoryAddress` exists in cognitum-core.
 
 **Errors:**
 ```rust
@@ -144,12 +144,12 @@ Blocks all memory subsystem integration testing:
 - Virtual memory translation
 
 **Recommendation:**
-1. Add `PhysAddr` and `VirtAddr` type aliases to newport-core, OR
+1. Add `PhysAddr` and `VirtAddr` type aliases to cognitum-core, OR
 2. Change all references to use `MemoryAddress` type
 
 ---
 
-### ❌ newport-coprocessor (COMPILATION FAILED)
+### ❌ cognitum-coprocessor (COMPILATION FAILED)
 
 **Status:** Cannot compile
 **Error Count:** 18 compilation errors
@@ -196,7 +196,7 @@ Blocks all cryptographic coprocessor testing:
 
 ---
 
-### ❌ newport-sim (COMPILATION FAILED)
+### ❌ cognitum-sim (COMPILATION FAILED)
 
 **Status:** Cannot compile
 **Error Count:** 11 compilation errors
@@ -238,16 +238,16 @@ Blocks all simulation engine testing:
 
 **Recommendation:**
 1. Use `tile_id.value()` instead of `tile_id.0`
-2. Implement `Display` for `TileId` in newport-core
+2. Implement `Display` for `TileId` in cognitum-core
 3. Add `test-util` feature to tokio dependency
 4. Add explicit type annotations for Arc
 
 ---
 
-### ❓ newport-debug (NOT TESTED)
+### ❓ cognitum-debug (NOT TESTED)
 
 **Status:** Not attempted
-**Reason:** Depends on newport-sim which failed to compile
+**Reason:** Depends on cognitum-sim which failed to compile
 
 **Expected Coverage:**
 - Debugger interface
@@ -257,10 +257,10 @@ Blocks all simulation engine testing:
 
 ---
 
-### ❓ newport-cli (NOT TESTED)
+### ❓ cognitum-cli (NOT TESTED)
 
 **Status:** Not attempted
-**Reason:** Depends on newport-sim which failed to compile
+**Reason:** Depends on cognitum-sim which failed to compile
 
 **Expected Coverage:**
 - CLI command parsing
@@ -290,11 +290,11 @@ All major integration scenarios are blocked:
 
 | Integration Test | Status | Blocker |
 |------------------|--------|---------|
-| Processor + Memory | ❌ Not tested | newport-memory compilation failed |
-| Processor + Coprocessor | ❌ Not tested | newport-coprocessor compilation failed |
-| Network + Processor | ❌ Not tested | newport-sim compilation failed |
-| Multi-tile Coordination | ❌ Not tested | newport-sim compilation failed |
-| CLI Commands | ❌ Not tested | newport-cli compilation failed |
+| Processor + Memory | ❌ Not tested | cognitum-memory compilation failed |
+| Processor + Coprocessor | ❌ Not tested | cognitum-coprocessor compilation failed |
+| Network + Processor | ❌ Not tested | cognitum-sim compilation failed |
+| Multi-tile Coordination | ❌ Not tested | cognitum-sim compilation failed |
+| CLI Commands | ❌ Not tested | cognitum-cli compilation failed |
 | SDK Library Usage | ❌ Not tested | SDK compilation incomplete |
 | End-to-End Workflows | ❌ Not tested | Multiple dependencies failed |
 
@@ -325,16 +325,16 @@ Individual crate functionality is well tested for the 4 compiling crates:
 
 | Crate | Tests |
 |-------|-------|
-| newport-core | 42 |
-| newport-processor | 77 |
-| newport-raceway | 24 (22 passed, 2 hanging) |
-| newport-io | 1 |
+| cognitum-core | 42 |
+| cognitum-processor | 77 |
+| cognitum-raceway | 24 (22 passed, 2 hanging) |
+| cognitum-io | 1 |
 | **Subtotal** | **144** |
-| newport-memory | ❌ |
-| newport-coprocessor | ❌ |
-| newport-sim | ❌ |
-| newport-debug | ❌ |
-| newport-cli | ❌ |
+| cognitum-memory | ❌ |
+| cognitum-coprocessor | ❌ |
+| cognitum-sim | ❌ |
+| cognitum-debug | ❌ |
+| cognitum-cli | ❌ |
 | newport (SDK) | ❓ |
 
 ### Discrepancy Analysis
@@ -352,39 +352,39 @@ The documentation claims 79+ tests, but we found:
 
 ### Priority 1 (Blocking)
 
-1. **newport-memory: Type System Mismatch**
+1. **cognitum-memory: Type System Mismatch**
    - Severity: HIGH
    - Impact: Blocks all memory subsystem testing
    - Fix: Add PhysAddr/VirtAddr types or migrate to MemoryAddress
 
-2. **newport-coprocessor: Missing tokio Dependency**
+2. **cognitum-coprocessor: Missing tokio Dependency**
    - Severity: HIGH
    - Impact: Blocks all crypto testing
    - Fix: Add `tokio = { version = "1.48", features = ["time"] }` to Cargo.toml
 
-3. **newport-sim: Private Field Access**
+3. **cognitum-sim: Private Field Access**
    - Severity: HIGH
    - Impact: Blocks simulation engine
    - Fix: Use `tile_id.value()` accessor method
 
-4. **newport-sim: Missing Display Trait**
+4. **cognitum-sim: Missing Display Trait**
    - Severity: HIGH
    - Impact: Error messages cannot format
-   - Fix: Implement `Display` for `TileId` in newport-core
+   - Fix: Implement `Display` for `TileId` in cognitum-core
 
 ### Priority 2 (Non-Blocking)
 
-5. **newport-coprocessor: Field Name Mismatch**
+5. **cognitum-coprocessor: Field Name Mismatch**
    - Severity: MEDIUM
    - Impact: AES instantiation fails
    - Fix: Rename field or update usage
 
-6. **newport-raceway: Hanging Tests**
+6. **cognitum-raceway: Hanging Tests**
    - Severity: MEDIUM
    - Impact: Broadcast tests incomplete
    - Fix: Investigate deadlock in broadcast loop logic
 
-7. **newport-sim: Missing test-util Feature**
+7. **cognitum-sim: Missing test-util Feature**
    - Severity: MEDIUM
    - Impact: Time manipulation in tests
    - Fix: Add test-util to tokio features
@@ -396,25 +396,25 @@ The documentation claims 79+ tests, but we found:
 The following integration scenarios cannot be tested:
 
 1. ❌ **Load program → Execute → Inspect memory**
-   - Blocked by: newport-sim, newport-memory compilation failures
+   - Blocked by: cognitum-sim, cognitum-memory compilation failures
 
 2. ❌ **Multi-tile program coordination**
-   - Blocked by: newport-sim compilation failure
+   - Blocked by: cognitum-sim compilation failure
 
 3. ❌ **Processor + Coprocessor crypto operations**
-   - Blocked by: newport-coprocessor compilation failure
+   - Blocked by: cognitum-coprocessor compilation failure
 
 4. ❌ **Network message passing between tiles**
-   - Blocked by: newport-sim compilation failure
+   - Blocked by: cognitum-sim compilation failure
 
 5. ❌ **CLI simulation control**
-   - Blocked by: newport-cli compilation failure
+   - Blocked by: cognitum-cli compilation failure
 
 6. ❌ **SDK high-level API usage**
    - Blocked by: SDK compilation incomplete
 
 7. ⚠️ **Network broadcast synchronization**
-   - Blocked by: Hanging tests in newport-raceway
+   - Blocked by: Hanging tests in cognitum-raceway
 
 ---
 
@@ -422,23 +422,23 @@ The following integration scenarios cannot be tested:
 
 ### Immediate Actions (Required for Integration Testing)
 
-1. **Fix newport-memory type imports**
+1. **Fix cognitum-memory type imports**
    ```rust
-   // Option A: Add type aliases to newport-core/src/memory.rs
+   // Option A: Add type aliases to cognitum-core/src/memory.rs
    pub type PhysAddr = MemoryAddress;
    pub type VirtAddr = MemoryAddress;
 
-   // Option B: Update newport-memory to use MemoryAddress
+   // Option B: Update cognitum-memory to use MemoryAddress
    use newport_core::MemoryAddress;
    ```
 
-2. **Add tokio dependency to newport-coprocessor**
+2. **Add tokio dependency to cognitum-coprocessor**
    ```toml
    [dependencies]
    tokio = { version = "1.48", features = ["time", "macros", "rt"] }
    ```
 
-3. **Fix newport-sim TileId access**
+3. **Fix cognitum-sim TileId access**
    ```rust
    // Change all instances of:
    let tile_idx = tile_id.0 as usize;
@@ -446,7 +446,7 @@ The following integration scenarios cannot be tested:
    let tile_idx = tile_id.value() as usize;
    ```
 
-4. **Implement Display for TileId in newport-core**
+4. **Implement Display for TileId in cognitum-core**
    ```rust
    impl std::fmt::Display for TileId {
        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -457,7 +457,7 @@ The following integration scenarios cannot be tested:
 
 ### Medium-Term Improvements
 
-5. **Fix newport-coprocessor field name**
+5. **Fix cognitum-coprocessor field name**
    ```rust
    // In AES implementation:
    if self.simulate_ecc_double_bit {  // Changed from simulate_double_bit
@@ -505,14 +505,14 @@ The following integration scenarios cannot be tested:
 23:42:24 - Pre-task hook executed
 23:42:24 - Session restore attempted (no session found)
 23:42:25 - Cargo test --workspace started
-23:42:26 - newport-core compiled (6.08s)
-23:43:06 - newport-core tests completed (42 passed)
-23:43:08 - newport-processor tests completed (77 passed)
-23:43:11 - newport-raceway tests started
-23:44:11 - newport-raceway broadcast tests hanging (60+ seconds)
-23:45:00 - newport-memory compilation failed (type errors)
-23:45:05 - newport-coprocessor compilation failed (missing tokio)
-23:46:15 - newport-sim compilation failed (private field access)
+23:42:26 - cognitum-core compiled (6.08s)
+23:43:06 - cognitum-core tests completed (42 passed)
+23:43:08 - cognitum-processor tests completed (77 passed)
+23:43:11 - cognitum-raceway tests started
+23:44:11 - cognitum-raceway broadcast tests hanging (60+ seconds)
+23:45:00 - cognitum-memory compilation failed (type errors)
+23:45:05 - cognitum-coprocessor compilation failed (missing tokio)
+23:46:15 - cognitum-sim compilation failed (private field access)
 23:46:16 - Workspace test halted (compilation failures)
 ```
 
@@ -522,7 +522,7 @@ The following integration scenarios cannot be tested:
 
 ## Conclusion
 
-Newport ASIC simulator workspace has **solid foundation testing** for individual components (143 passing tests), but **critical compilation failures** prevent comprehensive integration testing.
+Cognitum ASIC simulator workspace has **solid foundation testing** for individual components (143 passing tests), but **critical compilation failures** prevent comprehensive integration testing.
 
 **Key Findings:**
 - ✅ 40% of crates compile and pass all tests
@@ -532,9 +532,9 @@ Newport ASIC simulator workspace has **solid foundation testing** for individual
 - 📊 Actual test count (143+) exceeds documented count (79+)
 
 **Before integration testing can proceed:**
-1. Fix type system mismatches (newport-memory)
-2. Add missing dependencies (newport-coprocessor)
-3. Fix private field access (newport-sim)
+1. Fix type system mismatches (cognitum-memory)
+2. Add missing dependencies (cognitum-coprocessor)
+3. Fix private field access (cognitum-sim)
 4. Implement missing traits (TileId Display)
 
 **Estimated effort to fix:** 2-4 hours for a developer familiar with the codebase.
@@ -543,8 +543,8 @@ Newport ASIC simulator workspace has **solid foundation testing** for individual
 
 ## Files Generated
 
-- `/home/user/newport/benchmarks/results/integration-tests.json` - Machine-readable results
-- `/home/user/newport/benchmarks/reports/integration-report.md` - This report
+- `/home/user/cognitum/benchmarks/results/integration-tests.json` - Machine-readable results
+- `/home/user/cognitum/benchmarks/reports/integration-report.md` - This report
 
 ---
 

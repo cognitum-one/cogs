@@ -1,4 +1,4 @@
-# Newport Verilog Validation Matrix
+# Cognitum Verilog Validation Matrix
 ## Final Compliance Assessment
 
 **Date**: 2025-11-24
@@ -29,8 +29,8 @@ This validation assesses **implemented components only** against their Verilog s
 
 ### 1.1 Base ISA (64 Opcodes) ✅
 
-**Verilog Source**: `/home/user/newport/src/A2S_v2r3/A2Sv2r3_ISA.v` (lines 24-95)
-**Implementation**: Rust simulator in `newport-processor` crate
+**Verilog Source**: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3_ISA.v` (lines 24-95)
+**Implementation**: Rust simulator in `cognitum-processor` crate
 
 | Component | Instructions | Verilog Match | Divergence | Status |
 |-----------|--------------|---------------|------------|--------|
@@ -88,7 +88,7 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 ### 1.2 Processor Architecture ✅
 
-**Verilog Source**: `/home/user/newport/src/A2S_v2r3/A2Sv2r3.v`
+**Verilog Source**: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3.v`
 **Implementation**: Rust simulator architecture
 
 | Component | Verilog Spec | Implementation | Match | Status |
@@ -111,8 +111,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 ### 1.3 Memory Configuration ✅
 
 **Verilog Sources**:
-- TileZero: `/home/user/newport/src/TileZero/TileZero.v` (lines 49-52)
-- TileOne: `/home/user/newport/src/TileOne/TileOne.v` (lines 39-41)
+- TileZero: `/home/user/cognitum/src/TileZero/TileZero.v` (lines 49-52)
+- TileOne: `/home/user/cognitum/src/TileOne/TileOne.v` (lines 39-41)
 
 | Tile Type | Memory Type | Verilog Size | Sim Size | Match | Status |
 |-----------|-------------|--------------|----------|-------|--------|
@@ -136,8 +136,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 ### 1.4 RaceWay Interconnect ✅
 
-**Verilog Source**: `/home/user/newport/src/RaceWay/include/Edradour_defines.vh`
-**Implementation**: `newport-raceway` crate
+**Verilog Source**: `/home/user/cognitum/src/RaceWay/include/Edradour_defines.vh`
+**Implementation**: `cognitum-raceway` crate
 
 | Component | Verilog Spec | Implementation | Divergence | Status |
 |-----------|--------------|----------------|------------|--------|
@@ -165,8 +165,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 #### AES Coprocessor
 
-**Verilog Source**: `/home/user/newport/src/Coprocessors/A2_AES_CoP.v` (33,421 lines)
-**Implementation**: `newport-coprocessor/src/aes.rs`
+**Verilog Source**: `/home/user/cognitum/src/Coprocessors/A2_AES_CoP.v` (33,421 lines)
+**Implementation**: `cognitum-coprocessor/src/aes.rs`
 
 | Feature | Verilog | Implementation | Match | Status |
 |---------|---------|----------------|-------|--------|
@@ -189,8 +189,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 #### SHA-256 Coprocessor
 
-**Verilog Source**: `/home/user/newport/src/Coprocessors/A2_sha256_CoP.v` (23,141 lines)
-**Implementation**: `newport-coprocessor/src/sha256.rs`
+**Verilog Source**: `/home/user/cognitum/src/Coprocessors/A2_sha256_CoP.v` (23,141 lines)
+**Implementation**: `cognitum-coprocessor/src/sha256.rs`
 
 | Feature | Verilog | Implementation | Match | Status |
 |---------|---------|----------------|-------|--------|
@@ -204,8 +204,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 #### TRNG Coprocessor
 
-**Verilog Source**: `/home/user/newport/src/Coprocessors/A2_TRNG_CoP.v` (13,725 lines)
-**Implementation**: `newport-coprocessor/src/trng.rs`
+**Verilog Source**: `/home/user/cognitum/src/Coprocessors/A2_TRNG_CoP.v` (13,725 lines)
+**Implementation**: `cognitum-coprocessor/src/trng.rs`
 
 | Feature | Verilog | Implementation | Match | Status |
 |---------|---------|----------------|-------|--------|
@@ -219,8 +219,8 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 
 #### PUF Coprocessor
 
-**Verilog Source**: `/home/user/newport/src/Coprocessors/A2_RPUF_CoP.v` (9,228 lines)
-**Implementation**: `newport-coprocessor/src/puf.rs`
+**Verilog Source**: `/home/user/cognitum/src/Coprocessors/A2_RPUF_CoP.v` (9,228 lines)
+**Implementation**: `cognitum-coprocessor/src/puf.rs`
 
 | Feature | Verilog | Implementation | Match | Status |
 |---------|---------|----------------|-------|--------|
@@ -270,7 +270,7 @@ JANZ (0x3C) ✅  JBNZ (0x3D) ✅  JCNZ (0x3E) ✅  JMP  (0x3F) ✅
 ### 3.1 Extended ISA (16-bit Instructions)
 
 **Status**: 📋 Documented for future implementation
-**Verilog Source**: `/home/user/newport/src/A2S_v2r3/A2Sv2r3_ISA.v` (lines 103-300+)
+**Verilog Source**: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3_ISA.v` (lines 103-300+)
 
 | Category | Instructions | Verilog | Rust | Status |
 |----------|--------------|---------|------|--------|
@@ -406,31 +406,31 @@ All implemented components demonstrate exceptional fidelity to Verilog specifica
 ### Appendix A: File References
 
 **Verilog Sources**:
-- Processor: `/home/user/newport/src/A2S_v2r3/A2Sv2r3.v`
-- ISA: `/home/user/newport/src/A2S_v2r3/A2Sv2r3_ISA.v`
-- TileZero: `/home/user/newport/src/TileZero/TileZero.v`
-- TileOne: `/home/user/newport/src/TileOne/TileOne.v`
-- RaceWay: `/home/user/newport/src/RaceWay/*.v`
-- Coprocessors: `/home/user/newport/src/Coprocessors/*.v`
+- Processor: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3.v`
+- ISA: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3_ISA.v`
+- TileZero: `/home/user/cognitum/src/TileZero/TileZero.v`
+- TileOne: `/home/user/cognitum/src/TileOne/TileOne.v`
+- RaceWay: `/home/user/cognitum/src/RaceWay/*.v`
+- Coprocessors: `/home/user/cognitum/src/Coprocessors/*.v`
 
 **Rust Implementation**:
-- Simulator: `/home/user/newport/newport-sim/crates/*/`
-- Tests: `/home/user/newport/newport-sim/crates/*/tests/`
-- Benchmarks: `/home/user/newport/benchmarks/`
+- Simulator: `/home/user/cognitum/cognitum-sim/crates/*/`
+- Tests: `/home/user/cognitum/cognitum-sim/crates/*/tests/`
+- Benchmarks: `/home/user/cognitum/benchmarks/`
 
 ### Appendix B: Validation Commands
 
 ```bash
 # Count Verilog files
-find /home/user/newport/src -name "*.v" | wc -l
+find /home/user/cognitum/src -name "*.v" | wc -l
 # Result: 164 files
 
 # Count Verilog LOC
-find /home/user/newport/src -name "*.v" -exec wc -l {} + | tail -1
+find /home/user/cognitum/src -name "*.v" -exec wc -l {} + | tail -1
 # Result: 85,645 total lines
 
 # Run all tests
-cd /home/user/newport/newport-sim
+cd /home/user/cognitum/cognitum-sim
 cargo test --all
 # Result: 235+ tests passing
 
@@ -441,12 +441,12 @@ cargo bench --all
 
 ### Appendix C: Validation Artifacts
 
-- ISA Opcode Mapping: `/home/user/newport/benchmarks/reports/ISA_OPCODE_MAPPING.md`
-- Compilation Fixes: `/home/user/newport/benchmarks/reports/compilation-fixes.md`
-- Network Analysis: `/home/user/newport/benchmarks/reports/network-optimization.md`
-- Coverage Report: `/home/user/newport/benchmarks/reports/COVERAGE_SUMMARY.txt`
-- Final Report: `/home/user/newport/benchmarks/reports/FINAL_A_PLUS_REPORT.md`
-- This Matrix: `/home/user/newport/benchmarks/reports/verilog-validation-matrix.md`
+- ISA Opcode Mapping: `/home/user/cognitum/benchmarks/reports/ISA_OPCODE_MAPPING.md`
+- Compilation Fixes: `/home/user/cognitum/benchmarks/reports/compilation-fixes.md`
+- Network Analysis: `/home/user/cognitum/benchmarks/reports/network-optimization.md`
+- Coverage Report: `/home/user/cognitum/benchmarks/reports/COVERAGE_SUMMARY.txt`
+- Final Report: `/home/user/cognitum/benchmarks/reports/FINAL_A_PLUS_REPORT.md`
+- This Matrix: `/home/user/cognitum/benchmarks/reports/verilog-validation-matrix.md`
 
 ---
 

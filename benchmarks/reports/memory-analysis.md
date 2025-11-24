@@ -1,4 +1,4 @@
-# Newport ASIC Memory Subsystem - Comprehensive Stress Test Analysis
+# Cognitum ASIC Memory Subsystem - Comprehensive Stress Test Analysis
 
 **Date**: November 23, 2025
 **Test Duration**: 3.1 seconds total
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The Newport ASIC distributed memory subsystem has successfully passed comprehensive stress testing across all 256 processor tiles. The tests validated:
+The Cognitum ASIC distributed memory subsystem has successfully passed comprehensive stress testing across all 256 processor tiles. The tests validated:
 
 - **High Throughput**: 328M - 563M operations/second
 - **Low Latency**: 3.47 - 3.91 nanoseconds average access time
@@ -259,9 +259,9 @@ for _ in 0..1000 {
 - Latency variance: ~11% (acceptable for non-deterministic system)
 
 **Performance Comparison**:
-- L1 Cache (typical): 1-2 ns ← Newport is 2x slower
-- L2 Cache (typical): 3-4 ns ← Newport is comparable ✅
-- DRAM (typical): 50-100 ns ← Newport is 13-26x faster ✅
+- L1 Cache (typical): 1-2 ns ← Cognitum is 2x slower
+- L2 Cache (typical): 3-4 ns ← Cognitum is comparable ✅
+- DRAM (typical): 50-100 ns ← Cognitum is 13-26x faster ✅
 
 **Conclusion**: Latency characteristics comparable to L2 cache performance
 
@@ -371,7 +371,7 @@ Sustained:   398M ████████████████████  
 
 ### Software Stack
 - **Language**: Rust 2021 Edition
-- **Core Library**: `newport-core` v0.1.0
+- **Core Library**: `cognitum-core` v0.1.0
 - **Memory Implementation**: RAM struct with bounds checking
 - **Compiler**: rustc with `--release` optimizations
 
@@ -413,7 +413,7 @@ Sustained:   398M ████████████████████  
 
 ## Conclusion
 
-The Newport ASIC distributed memory subsystem has **successfully passed** all comprehensive stress tests. With throughput exceeding 500M operations/second, sub-4ns latency, perfect memory isolation, and zero resource leaks, the architecture is **production-ready**.
+The Cognitum ASIC distributed memory subsystem has **successfully passed** all comprehensive stress tests. With throughput exceeding 500M operations/second, sub-4ns latency, perfect memory isolation, and zero resource leaks, the architecture is **production-ready**.
 
 ### Key Achievements
 - ✅ **9/9 tests passed** (100% success rate)
@@ -427,7 +427,7 @@ The Newport ASIC distributed memory subsystem has **successfully passed** all co
 
 🟢 **APPROVED FOR PRODUCTION**
 
-The memory subsystem meets or exceeds all design specifications and is ready for integration into the Newport ASIC simulator.
+The memory subsystem meets or exceeds all design specifications and is ready for integration into the Cognitum ASIC simulator.
 
 ---
 

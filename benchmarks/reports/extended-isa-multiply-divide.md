@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Successfully implemented all 8 extended multiply and divide instructions for the Newport A2S v2r3 processor, matching the Verilog specification. All 31 comprehensive tests pass with 100% success rate.
+Successfully implemented all 8 extended multiply and divide instructions for the Cognitum A2S v2r3 processor, matching the Verilog specification. All 31 comprehensive tests pass with 100% success rate.
 
 ## Instructions Implemented
 
@@ -335,7 +335,7 @@ All 8 extended multiply/divide instructions have been successfully implemented a
 - ✅ Maintains code quality standards
 - ✅ Ready for integration
 
-The extended ISA implementation is production-ready and can be integrated into the Newport processor simulator.
+The extended ISA implementation is production-ready and can be integrated into the Cognitum processor simulator.
 
 ---
 

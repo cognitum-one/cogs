@@ -1,4 +1,4 @@
-# 🚀 Newport ASIC Simulator - Comprehensive Benchmark Report
+# 🚀 Cognitum ASIC Simulator - Comprehensive Benchmark Report
 
 **Date**: 2025-11-23
 **Swarm Coordination**: 15 concurrent AI agents
@@ -84,18 +84,18 @@
 
 #### 1. **Compilation Failures** (P0 - Blocks Everything)
 - **Impact**: 60% of crates cannot compile
-- **Affected**: newport-memory, newport-coprocessor, newport-sim, newport-debug, newport-cli, newport SDK
+- **Affected**: cognitum-memory, cognitum-coprocessor, cognitum-sim, cognitum-debug, cognitum-cli, newport SDK
 - **Fix Time**: 40 minutes total
 
 **Required Fixes**:
 ```rust
 // Fix 1: Add missing type aliases (5 min)
-// File: newport-core/src/memory.rs
+// File: cognitum-core/src/memory.rs
 pub type PhysAddr = MemoryAddress;
 pub type VirtAddr = MemoryAddress;
 
 // Fix 2: Add Display trait (10 min)
-// File: newport-core/src/types.rs
+// File: cognitum-core/src/types.rs
 impl Display for TileId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -103,15 +103,15 @@ impl Display for TileId {
 }
 
 // Fix 3: Fix coprocessor array init (5 min)
-// File: newport-coprocessor/src/aes.rs:168
+// File: cognitum-coprocessor/src/aes.rs:168
 sessions: std::array::from_fn(|_| None)
 
 // Fix 4: Add tokio dependency (2 min)
-// File: newport-coprocessor/Cargo.toml
+// File: cognitum-coprocessor/Cargo.toml
 tokio = { version = "1.35", features = ["full"] }
 
 // Fix 5: Fix clippy error (3 min)
-// File: newport-core/src/types.rs:43
+// File: cognitum-core/src/types.rs:43
 self.0.is_multiple_of(alignment)
 ```
 
@@ -374,7 +374,7 @@ self.0.is_multiple_of(alignment)
 - `/benchmarks/reports/crypto-benchmarks.md` (9.2KB)
 - `crypto_ops.rs` benchmark suite
 
-**Verdict**: 🟢 **Production-ready** and meets Newport ASIC specs
+**Verdict**: 🟢 **Production-ready** and meets Cognitum ASIC specs
 
 ---
 
@@ -473,17 +473,17 @@ self.0.is_multiple_of(alignment)
 - **2 tests hanging** (broadcast loops)
 
 **Passing Crates**:
-1. newport-core: 42 tests ✅
-2. newport-processor: 77 tests ✅
-3. newport-raceway: 22 tests ✅ (2 hanging)
-4. newport-io: 1 test ✅
+1. cognitum-core: 42 tests ✅
+2. cognitum-processor: 77 tests ✅
+3. cognitum-raceway: 22 tests ✅ (2 hanging)
+4. cognitum-io: 1 test ✅
 
 **Failed Crates**:
-1. newport-memory: Type mismatch
-2. newport-coprocessor: Missing tokio + field errors
-3. newport-sim: Private field access + Display trait
-4. newport-debug: Blocked by sim
-5. newport-cli: Blocked by sim
+1. cognitum-memory: Type mismatch
+2. cognitum-coprocessor: Missing tokio + field errors
+3. cognitum-sim: Private field access + Display trait
+4. cognitum-debug: Blocked by sim
+5. cognitum-cli: Blocked by sim
 6. newport (SDK): Incomplete
 
 **Critical Integration Gaps**:
@@ -680,18 +680,18 @@ self.0.is_multiple_of(alignment)
 **Coverage by Crate**:
 
 **Well-Tested** (A/A+):
-- newport-processor: 75-85%, 83 tests
-- newport-coprocessor: 65-75%, 67 tests
+- cognitum-processor: 75-85%, 83 tests
+- cognitum-coprocessor: 65-75%, 67 tests
 
 **Critical Gaps** (F):
-- newport-memory: 5-15%, only 1 test
-- newport-io: 5-15%, only 1 test
-- newport-debug: 5-15%, only 1 test
+- cognitum-memory: 5-15%, only 1 test
+- cognitum-io: 5-15%, only 1 test
+- cognitum-debug: 5-15%, only 1 test
 
 **Moderate** (C/D):
-- newport-cli: 15-25%
-- newport-raceway: 40-50%
-- newport-sim: 30-40%
+- cognitum-cli: 15-25%
+- cognitum-raceway: 40-50%
+- cognitum-sim: 30-40%
 
 **Blocking Issue**: 9 compilation errors prevent coverage tools
 - 6 private field access errors
@@ -792,10 +792,10 @@ Verilog: 85,645 LOC in 164 files
 └── Support/: 68 files (Memory/utilities)
 
 Rust: 10,996 LOC in 90 files
-├── newport-processor: 80% coverage
-├── newport-raceway: 90% coverage
-├── newport-coprocessor: 40% coverage
-└── newport-memory: 60% coverage
+├── cognitum-processor: 80% coverage
+├── cognitum-raceway: 90% coverage
+├── cognitum-coprocessor: 40% coverage
+└── cognitum-memory: 60% coverage
 
 Compression: 7.8:1 (Rust is 87% smaller)
 ```
@@ -834,20 +834,20 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 1. **Fix 3 Compilation Errors** (40 minutes)
    ```bash
-   # Add type aliases to newport-core/src/memory.rs
+   # Add type aliases to cognitum-core/src/memory.rs
    pub type PhysAddr = MemoryAddress;
    pub type VirtAddr = MemoryAddress;
 
-   # Add Display trait to newport-core/src/types.rs
+   # Add Display trait to cognitum-core/src/types.rs
    impl Display for TileId { ... }
 
-   # Fix clippy error in newport-core/src/types.rs
+   # Fix clippy error in cognitum-core/src/types.rs
    self.0.is_multiple_of(alignment)
 
    # Fix coprocessor array init
    sessions: std::array::from_fn(|_| None)
 
-   # Add tokio dependency to newport-coprocessor/Cargo.toml
+   # Add tokio dependency to cognitum-coprocessor/Cargo.toml
    ```
 
 2. **Debug Broadcast Deadlocks** (2-4 hours)
@@ -931,7 +931,7 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 ### Reports (15 files, ~150KB total)
 ```
-/home/user/newport/benchmarks/reports/
+/home/user/cognitum/benchmarks/reports/
 ├── performance-report.md (600+ lines)
 ├── security-audit.md (935 lines)
 ├── security-audit-summary.txt
@@ -953,7 +953,7 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 ### Results (10+ JSON files, ~50KB total)
 ```
-/home/user/newport/benchmarks/results/
+/home/user/cognitum/benchmarks/results/
 ├── performance-metrics.json
 ├── network-performance.json (23KB)
 ├── memory-stress-tests.json
@@ -967,7 +967,7 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 ### Stress Tests (18 comprehensive tests)
 ```
-/home/user/newport/benchmarks/stress-tests/
+/home/user/cognitum/benchmarks/stress-tests/
 ├── memory_stress_tests.rs (603 lines)
 ├── raceway_stress_tests.rs (14KB)
 ├── newport_stress_tests.rs (14KB)
@@ -979,7 +979,7 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 ### Benchmark Frameworks
 ```
-/home/user/newport/benchmarks/
+/home/user/cognitum/benchmarks/
 ├── data/comprehensive-benchmark-framework.rs (13 functions)
 ├── network_bench.rs
 └── crypto_ops.rs (10 benchmark groups)
@@ -987,7 +987,7 @@ Compression: 7.8:1 (Rust is 87% smaller)
 
 ### Analysis Files
 ```
-/home/user/newport/benchmarks/analysis/
+/home/user/cognitum/benchmarks/analysis/
 └── coverage-report.html
 ```
 
@@ -1129,4 +1129,4 @@ This comprehensive benchmark was conducted using:
 
 ---
 
-*This report represents the most comprehensive analysis of the Newport ASIC Simulator to date, conducted by 15 specialized AI agents working in parallel to evaluate every aspect of the system.*
+*This report represents the most comprehensive analysis of the Cognitum ASIC Simulator to date, conducted by 15 specialized AI agents working in parallel to evaluate every aspect of the system.*

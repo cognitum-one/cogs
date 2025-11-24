@@ -1,4 +1,4 @@
-# Economic Analysis: Newport + Ruvector
+# Economic Analysis: Cognitum + Ruvector
 
 ## 💰 Cost Breakdown & Economics
 
@@ -40,7 +40,7 @@
 
 | System | Unit Cost | Production Volume | Year | Process Node |
 |--------|-----------|-------------------|------|--------------|
-| **Newport + Ruvector** | **$8.50** | 1M units | 2025 | 12nm FinFET |
+| **Cognitum + Ruvector** | **$8.50** | 1M units | 2025 | 12nm FinFET |
 | BrainChip Akida | $25 | Commercial | 2022 | 28nm |
 | Google Coral TPU | $60 | Mass production | 2019 | 14nm |
 | NVIDIA Jetson Nano | $99 | Mass production | 2019 | 16nm |
@@ -58,7 +58,7 @@
 
 #### Scenario: 1,000 Edge AI Devices
 
-| Cost Component | Newport+Ruvector | BrainChip Akida | NVIDIA Jetson | Intel Loihi 2 |
+| Cost Component | Cognitum+Ruvector | BrainChip Akida | NVIDIA Jetson | Intel Loihi 2 |
 |----------------|------------------|-----------------|---------------|---------------|
 | **Hardware** | $8,500 | $25,000 | $99,000 | $3,000,000 |
 | **Power (5yr @ $0.12/kWh)** | $1,314 | $263 | $5,256 | $1,577 |
@@ -100,7 +100,7 @@
 
 #### Total Addressable Market (TAM)
 
-| Vertical | Global Market 2025 | Newport Opportunity | Potential Revenue |
+| Vertical | Global Market 2025 | Cognitum Opportunity | Potential Revenue |
 |----------|-------------------|---------------------|-------------------|
 | **Edge AI Chips** | $5.2B | 5% share | $260M |
 | **IoT Security** | $12.7B | 2% share | $254M |
@@ -129,7 +129,7 @@
 
 #### Performance per Dollar (Ops/Sec/$)
 
-| Benchmark | Newport+Ruvector | BrainChip | Jetson Nano | Advantage |
+| Benchmark | Cognitum+Ruvector | BrainChip | Jetson Nano | Advantage |
 |-----------|------------------|-----------|-------------|-----------|
 | **Vector Search** | 1,176 | 12 | 20 | **59-98×** |
 | **Neural Inference** | 14.1 | 12 | 5.1 | **1.2-2.8×** |
@@ -139,7 +139,7 @@
 
 #### Energy Efficiency (Ops/Sec/Watt)
 
-| Benchmark | Newport+Ruvector | TrueNorth | Loihi 2 | Akida | Advantage vs GPU |
+| Benchmark | Cognitum+Ruvector | TrueNorth | Loihi 2 | Akida | Advantage vs GPU |
 |-----------|------------------|-----------|---------|-------|------------------|
 | **Vector Search** | 4,000 | 7,143 | 3,333 | 600 | **5× vs Jetson** |
 | **Pattern Recognition** | 20,000 | 1.43M | 200K | 80K | **7× vs Jetson** |
@@ -166,7 +166,7 @@
 #### Bundle Offerings
 
 **Starter Kit:** $299
-- 2× Newport+Ruvector chips
+- 2× Cognitum+Ruvector chips
 - Development board
 - USB debugger
 - Software SDK
@@ -190,7 +190,7 @@
 
 #### Value Proposition Matrix
 
-|  | Newport+Ruvector | BrainChip | Loihi 2 | Jetson |
+|  | Cognitum+Ruvector | BrainChip | Loihi 2 | Jetson |
 |--|------------------|-----------|---------|--------|
 | **Cost** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐ | ⭐⭐ |
 | **Power Efficiency** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ |

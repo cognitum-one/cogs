@@ -7,7 +7,7 @@
    Limited Distribution to Authorized Persons Only
    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 
-   Project Name         : Newport
+   Project Name         : Cognitum
 
    Description          : TileZero -- Recrypt module for passing thorugh NEWS network
 

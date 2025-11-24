@@ -8,7 +8,7 @@
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
 //
-//    Project Name   : NEWPORT
+//    Project Name   : COGNITUM
 //
 //    Description    : 128-bit Galois Field Multipler
 //                     Karatsuba Hierarchical multiplier with a lower base of 8-bit polynomial multiplier

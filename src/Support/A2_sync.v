@@ -28,7 +28,7 @@
 `ifdef   RELATIVE_FILENAMES
 //`include "A2_project_settings.vh"
 `else
-//`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+//`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `endif
 
 module A2_sync (

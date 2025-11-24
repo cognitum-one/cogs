@@ -1,4 +1,4 @@
-# Newport Bindings Validation Report
+# Cognitum Bindings Validation Report
 
 **Date**: 2025-11-23
 **Validator**: WASM/NAPI Bindings Validator
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Both WebAssembly and NAPI bindings for Newport ASIC Simulator have been successfully built and validated. The bindings provide comprehensive API coverage with TypeScript support for browser, Node.js, and bundler environments.
+Both WebAssembly and NAPI bindings for Cognitum ASIC Simulator have been successfully built and validated. The bindings provide comprehensive API coverage with TypeScript support for browser, Node.js, and bundler environments.
 
 ### Overall Results
 
@@ -25,7 +25,7 @@ Both WebAssembly and NAPI bindings for Newport ASIC Simulator have been successf
 
 ### Build Results
 
-**Location**: `/home/user/newport/newport-sim/newport-wasm`
+**Location**: `/home/user/cognitum/cognitum-sim/cognitum-wasm`
 
 #### Multi-Target Build Success
 
@@ -69,9 +69,9 @@ The WASM bindings expose a comprehensive API:
 
 #### Core Classes
 
-**NewportConfig**
+**CognitumConfig**
 ```typescript
-class NewportConfig {
+class CognitumConfig {
   constructor(num_tiles: number, memory_size: number, clock_freq_mhz: number)
   enableDebug(): void
   readonly num_tiles: number
@@ -80,10 +80,10 @@ class NewportConfig {
 }
 ```
 
-**NewportWasm**
+**CognitumWasm**
 ```typescript
-class NewportWasm {
-  constructor(config?: NewportConfig | null)
+class CognitumWasm {
+  constructor(config?: CognitumConfig | null)
 
   // Program Management
   loadProgram(tile_id: number, program: Uint8Array): void
@@ -134,7 +134,7 @@ The WASM bindings support:
 
 ### Build Results
 
-**Location**: `/home/user/newport/newport-sim/newport-napi`
+**Location**: `/home/user/cognitum/cognitum-sim/cognitum-napi`
 
 #### Native Build Success
 
@@ -163,7 +163,7 @@ The NAPI bindings provide an async-first API with comprehensive TypeScript defin
 #### Data Structures
 
 ```typescript
-interface NewportConfigNode {
+interface CognitumConfigNode {
   numTiles: number
   memorySize: number
   clockFreqMhz: number
@@ -189,8 +189,8 @@ interface PerformanceMetrics {
 #### Main Class
 
 ```typescript
-class NewportNode {
-  constructor(config?: NewportConfigNode | undefined | null)
+class CognitumNode {
+  constructor(config?: CognitumConfigNode | undefined | null)
 
   // Async Operations
   loadProgram(tileId: number, program: Buffer): Promise<void>
@@ -203,7 +203,7 @@ class NewportNode {
   isRunning(): Promise<boolean>
   getRegister(tileId: number, regNum: number): Promise<number>
   setRegister(tileId: number, regNum: number, value: number): Promise<void>
-  getConfig(): Promise<NewportConfigNode>
+  getConfig(): Promise<CognitumConfigNode>
   getMetrics(): Promise<PerformanceMetrics>
 
   // Synchronous Operation
@@ -237,7 +237,7 @@ class NewportNode {
 **Error**: ES module loader cycle detected
 ```
 Error [ERR_REQUIRE_CYCLE_MODULE]: Cannot require() ES Module
-/home/user/newport/newport-sim/newport-napi/test/index.spec.ts in a cycle.
+/home/user/cognitum/cognitum-sim/cognitum-napi/test/index.spec.ts in a cycle.
 ```
 
 **Analysis**: The test failure is due to a module loading issue with the test runner configuration, not a problem with the NAPI bindings themselves. The test suite is comprehensive with 16 test cases covering:
@@ -317,8 +317,8 @@ Both bindings implement the same core functionality:
 To provide a unified API across WASM and NAPI, a thin wrapper layer would be beneficial:
 
 ```typescript
-// Unified Newport API
-interface UnifiedNewport {
+// Unified Cognitum API
+interface UnifiedCognitum {
   loadProgram(tileId: number, program: Uint8Array | Buffer): Promise<void>
   runCycles(cycles: number): Promise<void>
   getState(tileId: number): Promise<TileState>
@@ -471,9 +471,9 @@ Based on binary analysis and API design:
 ```rust
 // Automatic cleanup with Rust ownership
 #[wasm_bindgen]
-impl NewportWasm {
-    pub fn new(config: Option<NewportConfig>) -> Result<NewportWasm, JsValue> {
-        // Config moved into NewportWasm, no manual free needed
+impl CognitumWasm {
+    pub fn new(config: Option<CognitumConfig>) -> Result<CognitumWasm, JsValue> {
+        // Config moved into CognitumWasm, no manual free needed
     }
 }
 ```
@@ -488,7 +488,7 @@ impl NewportWasm {
 
 ```rust
 // Thread-safe shared state
-pub struct NewportNode {
+pub struct CognitumNode {
     state: Arc<RwLock<NewportState>>,  // Automatic reference counting
 }
 ```
@@ -502,7 +502,7 @@ pub struct NewportNode {
 **Memory Leak Test Recommendation**:
 Run continuous cycles test:
 ```typescript
-const newport = new NewportNode();
+const newport = new CognitumNode();
 for (let i = 0; i < 10000; i++) {
   await newport.runCycles(1000);
   // Monitor RSS memory usage
@@ -595,7 +595,7 @@ interface PerformanceMetrics {
 
 ### WASM Documentation
 
-**README**: ✅ Present (`newport-wasm/README.md`)
+**README**: ✅ Present (`cognitum-wasm/README.md`)
 
 **Coverage**:
 - Package description
@@ -609,7 +609,7 @@ interface PerformanceMetrics {
 
 ### NAPI Documentation
 
-**README**: ✅ Present (`newport-napi/README.md`)
+**README**: ✅ Present (`cognitum-napi/README.md`)
 
 **Coverage**:
 - Package description
@@ -662,7 +662,7 @@ None. Both bindings are production-ready.
 
 1. **Unified API Wrapper**
    - Create abstraction layer for seamless WASM/NAPI switching
-   - Example: `@ruv/newport-universal`
+   - Example: `@ruv/cognitum-universal`
 
 2. **Performance Benchmarks**
    - Add comparative benchmarks between WASM and NAPI
@@ -682,7 +682,7 @@ None. Both bindings are production-ready.
 
 ### Summary
 
-Both WASM and NAPI bindings for Newport are **production-ready** with minor documentation improvements needed.
+Both WASM and NAPI bindings for Cognitum are **production-ready** with minor documentation improvements needed.
 
 ### Validation Checklist
 
@@ -738,7 +738,7 @@ Both WASM and NAPI bindings for Newport are **production-ready** with minor docu
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # Build for web
-cd newport-sim/newport-wasm
+cd cognitum-sim/cognitum-wasm
 RUSTFLAGS="-C lto=off" wasm-pack build --target web --out-dir pkg
 
 # Build for Node.js
@@ -752,7 +752,7 @@ RUSTFLAGS="-C lto=off" wasm-pack build --target bundler --out-dir pkg-bundler
 
 ```bash
 # Install dependencies
-cd newport-sim/newport-napi
+cd cognitum-sim/cognitum-napi
 npm install
 
 # Build release binary
@@ -765,14 +765,14 @@ npm test
 ### File Locations
 
 **WASM Outputs**:
-- `/home/user/newport/newport-sim/newport-wasm/pkg/` (web)
-- `/home/user/newport/newport-sim/newport-wasm/pkg-node/` (nodejs)
-- `/home/user/newport/newport-sim/newport-wasm/pkg-bundler/` (bundler)
+- `/home/user/cognitum/cognitum-sim/cognitum-wasm/pkg/` (web)
+- `/home/user/cognitum/cognitum-sim/cognitum-wasm/pkg-node/` (nodejs)
+- `/home/user/cognitum/cognitum-sim/cognitum-wasm/pkg-bundler/` (bundler)
 
 **NAPI Outputs**:
-- `/home/user/newport/newport-sim/newport-napi/index.js`
-- `/home/user/newport/newport-sim/newport-napi/index.d.ts`
-- `/home/user/newport/newport-sim/newport-napi/newport.linux-x64-gnu.node`
+- `/home/user/cognitum/cognitum-sim/cognitum-napi/index.js`
+- `/home/user/cognitum/cognitum-sim/cognitum-napi/index.d.ts`
+- `/home/user/cognitum/cognitum-sim/cognitum-napi/newport.linux-x64-gnu.node`
 
 ---
 

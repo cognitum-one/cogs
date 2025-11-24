@@ -1,6 +1,6 @@
 /*==============================================================================================================================
 
-   Copyright © 2003 Advanced Architectures
+   Copyright ï¿½ 2003 Advanced Architectures
 
    All rights reserved
    Confidential Information
@@ -30,12 +30,12 @@
 `include "A2_defines.vh"
 `include "A2Sv2r3_defines.vh"
 `include "A2Sv2r3_Registers.vh"
-`include "NEWPORT_defines.vh"
+`include "COGNITUM_defines.vh"
 `else
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_defines.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_defines.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_Registers.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_defines.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_defines.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_Registers.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 `endif
 
 

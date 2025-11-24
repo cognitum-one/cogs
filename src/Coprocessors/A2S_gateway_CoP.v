@@ -46,8 +46,8 @@
 
 ********************************************************************************************************************************/
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 
 module   A2_gateway_CoP #(
    parameter   [12:0]         BASE = 13'h00000,  // Base Address of Co-processor
@@ -73,7 +73,7 @@ module   A2_gateway_CoP #(
    input  wire                      clock
    );
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
 
 // Physical Registers ===========================================================================================================
 
