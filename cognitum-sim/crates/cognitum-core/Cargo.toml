@@ -1,0 +1,16 @@
+[package]
+name = "cognitum-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cognitum Project"]
+description = "Core types and memory system for Cognitum ASIC simulator"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+mockall = "0.12"
+proptest = "1.0"
+serde_json = "1.0"

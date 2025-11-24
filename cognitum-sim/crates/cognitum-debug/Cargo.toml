@@ -1,0 +1,28 @@
+[package]
+name = "cognitum-debug"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Debugger and profiling tools for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+cognitum-processor.workspace = true
+cognitum-memory.workspace = true
+cognitum-sim.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true

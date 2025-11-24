@@ -431,9 +431,9 @@ fn test_io_read() {
 
 ## 6. References
 
-- **Verilog Source**: `/home/user/newport/src/A2S_v2r3/A2Sv2r3_ISA.v`
-- **Rust Implementation**: `/home/user/newport/newport-sim/crates/newport-processor/src/instruction.rs`
-- **ISA Documentation**: `/home/user/newport/docs/modules/a2s-processor/ISA_REFERENCE.md`
+- **Verilog Source**: `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3_ISA.v`
+- **Rust Implementation**: `/home/user/cognitum/cognitum-sim/crates/cognitum-processor/src/instruction.rs`
+- **ISA Documentation**: `/home/user/cognitum/docs/modules/a2s-processor/ISA_REFERENCE.md`
 
 ---
 

@@ -37,7 +37,7 @@
 //
 //*******************************************************************************************************************************
 `ifdef synthesis
-     `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+     `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `else
      `include "A2_project_settings.vh" //JL - Add missing `
 `endif

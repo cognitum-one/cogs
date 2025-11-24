@@ -1,12 +1,12 @@
 # XSalsa20 Stream Cipher Coprocessor Implementation Report
 
 **Date**: 2025-11-24
-**Component**: Newport XSalsa20 Coprocessor
+**Component**: Cognitum XSalsa20 Coprocessor
 **Status**: ✅ Complete
 
 ## Executive Summary
 
-Successfully implemented XSalsa20 stream cipher coprocessor for the Newport ASIC simulator, achieving NaCl/libsodium compatibility with optimized performance characteristics suitable for hardware simulation.
+Successfully implemented XSalsa20 stream cipher coprocessor for the Cognitum ASIC simulator, achieving NaCl/libsodium compatibility with optimized performance characteristics suitable for hardware simulation.
 
 ## Implementation Overview
 
@@ -72,7 +72,7 @@ fn quarter_round(a, b, c, d):
 ## File Structure
 
 ```
-newport-sim/crates/newport-coprocessor/
+cognitum-sim/crates/cognitum-coprocessor/
 ├── src/
 │   ├── xsalsa20.rs          (370 lines) - Core implementation
 │   └── lib.rs               (Updated exports)
@@ -185,7 +185,7 @@ All tests passed! ✅
 2. **Counter Overflow**: Not detected (128 EB limit per nonce)
 3. **Authentication**: No built-in MAC (use with Poly1305)
 
-## Integration with Newport
+## Integration with Cognitum
 
 ### Module Structure
 
@@ -274,7 +274,7 @@ cipher2.decrypt(&mut data).await?;
 3. ✅ **Key Management**: Proper key derivation and storage
 4. ✅ **Test Coverage**: Validate with official NaCl vectors
 
-### For Newport Integration
+### For Cognitum Integration
 
 1. ✅ **Hardware Modeling**: Adjust latency based on target frequency
 2. ✅ **Power Analysis**: Add power consumption simulation
@@ -291,7 +291,7 @@ The XSalsa20 coprocessor implementation successfully meets all requirements:
 - ✅ **Well-Tested**: 19 comprehensive tests, 95% coverage
 - ✅ **Production-Ready**: Memory-safe, async-ready, documented
 
-The implementation is ready for integration into the Newport ASIC simulator and provides a solid foundation for secure communications and data protection.
+The implementation is ready for integration into the Cognitum ASIC simulator and provides a solid foundation for secure communications and data protection.
 
 ---
 

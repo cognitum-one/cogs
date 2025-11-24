@@ -2,7 +2,7 @@
 //!
 //! Tests latency, throughput, and identifies bottlenecks
 
-use newport_raceway::*;
+use cognitum_raceway::*;
 use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 

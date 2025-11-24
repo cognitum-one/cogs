@@ -7,7 +7,7 @@
 //! - Broadcast storm handling
 //! - Packet loss and recovery
 
-use newport_raceway::*;
+use cognitum_raceway::*;
 use std::time::Instant;
 use tokio::time::{timeout, Duration};
 

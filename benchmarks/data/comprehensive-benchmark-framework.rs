@@ -17,7 +17,7 @@ use sysinfo::{System, SystemExt};
 // Placeholder imports - update when newport-sim compiles
 // use newport_sim::NewportSimulator;
 // use newport_core::{TileId, MemoryAddress};
-// use newport_raceway::RaceWayPacket;
+// use cognitum_raceway::RaceWayPacket;
 
 /// Configuration for scalability testing
 const TILE_CONFIGURATIONS: &[usize] = &[1, 4, 16, 64, 128, 256];

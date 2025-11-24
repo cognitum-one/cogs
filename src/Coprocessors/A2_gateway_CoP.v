@@ -47,10 +47,10 @@ A2S_extern_CoP #(`aGATEWY_base) i_GW (
 
 `ifdef   RELATIVE_FILENAMES
 //   `include "A2_project_settings.vh"
-//   `include "NEWPORT_defines.vh"
+//   `include "COGNITUM_defines.vh"
 `else
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 `endif
 
 module   A2_gateway_CoP #(
@@ -78,9 +78,9 @@ module   A2_gateway_CoP #(
    );
 
 `ifdef   RELATIVE_FILENAMES
-   `include "NEWPORT_IO_addresses.vh"
+   `include "COGNITUM_IO_addresses.vh"
 `else
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
 `endif
 
 // Physical Registers ===========================================================================================================

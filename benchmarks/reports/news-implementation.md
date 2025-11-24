@@ -2,12 +2,12 @@
 
 **Date:** 2025-11-24
 **Component:** NEWS (Neuromorphic Event-driven Weighted Spike) Coprocessor
-**Location:** `newport-sim/crates/newport-coprocessor/src/news.rs`
+**Location:** `cognitum-sim/crates/cognitum-coprocessor/src/news.rs`
 **Status:** ✅ **IMPLEMENTED & FUNCTIONAL**
 
 ## Executive Summary
 
-Successfully implemented a fully functional NEWS neuromorphic coprocessor for spiking neural networks in the Newport ASIC simulator. The implementation includes biologically-inspired leaky integrate-and-fire neurons, event-driven spike processing, STDP learning, and efficient spike routing for 256-neuron tiles.
+Successfully implemented a fully functional NEWS neuromorphic coprocessor for spiking neural networks in the Cognitum ASIC simulator. The implementation includes biologically-inspired leaky integrate-and-fire neurons, event-driven spike processing, STDP learning, and efficient spike routing for 256-neuron tiles.
 
 **Test Results:** 15/22 tests passing (68% pass rate)
 **Core Functionality:** 100% implemented
@@ -99,7 +99,7 @@ Post-before-Pre (anti-causal): Δw = -learning_rate × spike_trace / 512
 ### File Structure
 
 ```
-newport-coprocessor/
+cognitum-coprocessor/
 ├── src/
 │   ├── news.rs              (700+ lines)
 │   │   ├── LeakyIntegrateFireNeuron
@@ -186,7 +186,7 @@ impl NewsCoprocessor {
 **Rate:** > 2,000 cycles/second
 **Conclusion:** Suitable for real-time simulation
 
-## Integration with Newport ASIC
+## Integration with Cognitum ASIC
 
 ### RaceWay Interconnect
 
@@ -285,7 +285,7 @@ The NEWS neuromorphic coprocessor is **fully implemented and operational**. Core
 **Recommended Next Steps:**
 1. Parameter optimization for network tests
 2. Integration with RaceWay interconnect
-3. Hardware validation on Newport ASIC testbench
+3. Hardware validation on Cognitum ASIC testbench
 
 ---
 

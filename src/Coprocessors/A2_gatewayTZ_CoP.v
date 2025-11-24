@@ -7,7 +7,7 @@
    Limited Distribution to Authorized Persons Only
    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 
-   Project Name         : NEWPORT
+   Project Name         : COGNITUM
 
    Description          : Tile Output -- A2S creates access to the rest of the chip -- Includes PUF Oscillator access for RoT
 
@@ -80,9 +80,9 @@ module   A2_gatewayTZ_CoP #(
 localparam  LNRG  =  4; // `LG2(NUM_REGS);
 
 `ifdef   RELATIVE_FILENAMES
-   `include "NEWPORT_IO_addresses.vh"
+   `include "COGNITUM_IO_addresses.vh"
 `else
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
 `endif
 
 // Physical Registers ===========================================================================================================
@@ -422,7 +422,7 @@ module t;
 parameter   [12:0]         BASE = 13'h00000;  // Base Address of Co-processor
 parameter              NUM_REGS = 12;
 
-`include "NEWPORT_IO_addresses.vh"
+`include "COGNITUM_IO_addresses.vh"
 
 // INPUTS TO MUT
 // Request out to Raceway

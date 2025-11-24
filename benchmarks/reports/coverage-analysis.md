@@ -1,4 +1,4 @@
-# Newport ASIC Simulator - Test Coverage Analysis Report
+# Cognitum ASIC Simulator - Test Coverage Analysis Report
 
 **Analysis Date**: 2025-11-23
 **Analyzer**: Coverage Analyzer Agent
@@ -32,7 +32,7 @@
 
 ## Detailed Analysis by Crate
 
-### 1. newport-core (Foundation)
+### 1. cognitum-core (Foundation)
 - **Source**: 688 LOC
 - **Tests**: 42 tests (all inline)
 - **Test Files**: 0 dedicated test files
@@ -43,7 +43,7 @@
 **Uncovered Modules**:
 - No major uncovered files (tests are inline)
 
-### 2. newport-processor (Instruction Execution)
+### 2. cognitum-processor (Instruction Execution)
 - **Source**: 871 LOC
 - **Tests**: 83 tests (9 inline + 74 in test files)
 - **Test Files**: 7 dedicated test files (1,331 LOC)
@@ -65,7 +65,7 @@
 - `instruction.rs` - 284 LOC, 0 inline tests (tested via integration)
 - `processor.rs` - 319 LOC, 0 inline tests (tested via integration)
 
-### 3. newport-memory (Memory Subsystem)
+### 3. cognitum-memory (Memory Subsystem)
 - **Source**: 137 LOC
 - **Tests**: 1 test (inline only)
 - **Test Files**: 0
@@ -78,7 +78,7 @@
 - `dram.rs` - 38 LOC, 0 tests
 - `tlb.rs` - 45 LOC, 0 tests
 
-### 4. newport-raceway (Interconnect Network)
+### 4. cognitum-raceway (Interconnect Network)
 - **Source**: 1,361 LOC
 - **Tests**: 46 tests (21 inline + 25 async)
 - **Test Files**: 4 dedicated test files (534 LOC)
@@ -96,7 +96,7 @@
 - `error.rs` - 26 LOC, 0 tests
 - `lib.rs` - 43 LOC, 0 tests
 
-### 5. newport-coprocessor (Crypto Accelerators)
+### 5. cognitum-coprocessor (Crypto Accelerators)
 - **Source**: 1,063 LOC
 - **Tests**: 67 async tests (all in test files)
 - **Test Files**: 4 dedicated test files (1,175 LOC)
@@ -117,7 +117,7 @@
 - `ai.rs` - 26 LOC, 0 tests
 - `gcm.rs` - 24 LOC, 0 tests
 
-### 6. newport-io (I/O Controllers)
+### 6. cognitum-io (I/O Controllers)
 - **Source**: 60 LOC
 - **Tests**: 1 test (inline only)
 - **Test Files**: 0
@@ -125,7 +125,7 @@
 - **Coverage Status**: ❌ CRITICAL - Severely undertested
 - **Assessment**: I/O subsystem lacks testing
 
-### 7. newport-sim (Simulator Core)
+### 7. cognitum-sim (Simulator Core)
 - **Source**: 888 LOC
 - **Tests**: 26 tests (6 inline + 20 async)
 - **Test Files**: 3 dedicated test files (460 LOC)
@@ -142,7 +142,7 @@
 - `error.rs` - 36 LOC, 0 tests
 - `simulator.rs` - 42 LOC, 0 tests
 
-### 8. newport-debug (Debug Tools)
+### 8. cognitum-debug (Debug Tools)
 - **Source**: 69 LOC
 - **Tests**: 1 test (inline only)
 - **Test Files**: 0
@@ -153,7 +153,7 @@
 **Uncovered Modules**:
 - `profiler.rs` - 34 LOC, 0 tests
 
-### 9. newport-cli (Command Line Interface)
+### 9. cognitum-cli (Command Line Interface)
 - **Source**: 902 LOC
 - **Tests**: 13 tests (3 inline + 10 in test files)
 - **Test Files**: 1 dedicated test file (115 LOC)
@@ -193,9 +193,9 @@
 The following errors prevent coverage tools from running:
 
 #### 1. Private Field Access (TileId)
-**Location**: `newport-sim/src/newport.rs`
+**Location**: `cognitum-sim/src/newport.rs`
 **Issue**: Attempting to access private field `TileId.0`
-**Impact**: Blocks all newport-sim tests
+**Impact**: Blocks all cognitum-sim tests
 
 ```rust
 // Error at lines 96, 98, 173, 175, 186
@@ -203,7 +203,7 @@ let tile_idx = tile_id.0 as usize;  // ❌ field `0` is private
 ```
 
 #### 2. Missing Display Trait (TileId)
-**Location**: `newport-sim/src/error.rs`
+**Location**: `cognitum-sim/src/error.rs`
 **Issue**: TileId doesn't implement std::fmt::Display
 **Impact**: Error formatting fails
 
@@ -213,7 +213,7 @@ let tile_idx = tile_id.0 as usize;  // ❌ field `0` is private
 ```
 
 #### 3. Type Inference Failure
-**Location**: `newport-sim/src/newport.rs:102`
+**Location**: `cognitum-sim/src/newport.rs:102`
 **Issue**: Arc type annotations needed
 **Impact**: Cannot determine tile type
 
@@ -235,16 +235,16 @@ let tile = Arc::clone(&self.tiles[tile_idx]);  // ❌ needs type annotation
 
 | Crate | Source LOC | Tests | Ratio | Grade |
 |-------|-----------|-------|-------|-------|
-| newport-processor | 871 | 83 | 152% | A+ |
-| newport-coprocessor | 1,063 | 67 | 110% | A |
-| newport-sim | 888 | 26 | 51% | C |
-| newport-raceway | 1,361 | 46 | 39% | C- |
-| newport-cli | 902 | 13 | 12% | D |
-| newport-core | 688 | 42 | 0%* | B |
+| cognitum-processor | 871 | 83 | 152% | A+ |
+| cognitum-coprocessor | 1,063 | 67 | 110% | A |
+| cognitum-sim | 888 | 26 | 51% | C |
+| cognitum-raceway | 1,361 | 46 | 39% | C- |
+| cognitum-cli | 902 | 13 | 12% | D |
+| cognitum-core | 688 | 42 | 0%* | B |
 | newport | 759 | 10 | 0%* | D |
-| newport-memory | 137 | 1 | 0% | F |
-| newport-io | 60 | 1 | 0% | F |
-| newport-debug | 69 | 1 | 0% | F |
+| cognitum-memory | 137 | 1 | 0% | F |
+| cognitum-io | 60 | 1 | 0% | F |
+| cognitum-debug | 69 | 1 | 0% | F |
 
 *Inline tests only, no dedicated test files
 
@@ -265,15 +265,15 @@ Benchmark Tests:     Claimed but cannot verify
 
 ### High-Priority (Critical Functionality)
 
-1. **Memory Subsystem** (newport-memory)
+1. **Memory Subsystem** (cognitum-memory)
    - `cache.rs` - 35 LOC - Cache operations untested
    - `dram.rs` - 38 LOC - DRAM simulation untested
    - `tlb.rs` - 45 LOC - TLB translation untested
 
-2. **I/O Controllers** (newport-io)
+2. **I/O Controllers** (cognitum-io)
    - All I/O controller code minimally tested
 
-3. **CLI Commands** (newport-cli)
+3. **CLI Commands** (cognitum-cli)
    - `main.rs` - 226 LOC - Command dispatch untested
    - `benchmark.rs` - 144 LOC - Benchmark command untested
    - `run.rs` - 83 LOC - Simulation run untested
@@ -281,19 +281,19 @@ Benchmark Tests:     Claimed but cannot verify
 
 ### Medium-Priority (Supporting Functionality)
 
-4. **Processor Implementation** (newport-processor)
+4. **Processor Implementation** (cognitum-processor)
    - `instruction.rs` - 284 LOC - Instruction decode (tested via integration)
    - `processor.rs` - 319 LOC - Execution engine (tested via integration)
 
-5. **Coprocessor Types** (newport-coprocessor)
+5. **Coprocessor Types** (cognitum-coprocessor)
    - `types.rs` - 102 LOC - Type definitions untested
 
-6. **RaceWay Network** (newport-raceway)
+6. **RaceWay Network** (cognitum-raceway)
    - Several test files exist but don't compile
 
 ### Low-Priority (Utilities)
 
-7. **Debug Tools** (newport-debug)
+7. **Debug Tools** (cognitum-debug)
    - `profiler.rs` - 34 LOC - Performance profiling untested
 
 8. **Error Handling**
@@ -309,16 +309,16 @@ Based on test analysis and code review:
 
 | Crate | Estimated | Confidence |
 |-------|-----------|------------|
-| newport-processor | 75-85% | High |
-| newport-coprocessor | 65-75% | Medium |
-| newport-core | 60-70% | Medium |
-| newport-raceway | 40-50% | Low |
-| newport-sim | 30-40% | Low |
-| newport-cli | 15-25% | Medium |
+| cognitum-processor | 75-85% | High |
+| cognitum-coprocessor | 65-75% | Medium |
+| cognitum-core | 60-70% | Medium |
+| cognitum-raceway | 40-50% | Low |
+| cognitum-sim | 30-40% | Low |
+| cognitum-cli | 15-25% | Medium |
 | newport | 20-30% | Low |
-| newport-memory | 5-15% | High |
-| newport-io | 5-15% | High |
-| newport-debug | 5-15% | High |
+| cognitum-memory | 5-15% | High |
+| cognitum-io | 5-15% | High |
+| cognitum-debug | 5-15% | High |
 
 ### Overall Estimated Coverage
 
@@ -334,13 +334,13 @@ Based on test analysis and code review:
 ### Potential Dead Code (Unused Variables/Imports)
 
 ```rust
-// newport-memory/src/cache.rs
+// cognitum-memory/src/cache.rs
 struct Cache {
     size: usize,           // ❌ Never read
     associativity: usize,  // ❌ Never read
 }
 
-// newport-io/src/usb.rs
+// cognitum-io/src/usb.rs
 struct UsbController {
     version: u8,  // ❌ Never read
 }
@@ -478,4 +478,4 @@ Before any coverage claims can be validated:
 
 **Report Generated**: 2025-11-23
 **Next Analysis**: After compilation fixes
-**Maintained By**: Newport Coverage Analyzer
+**Maintained By**: Cognitum Coverage Analyzer

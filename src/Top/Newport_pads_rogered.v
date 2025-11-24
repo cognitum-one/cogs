@@ -7,7 +7,7 @@
 //    Limited Distribution to Authorized Persons Only
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//    Project Name         : Newport
+//    Project Name         : Cognitum
 //
 //    Description          : 256 processor array
 //
@@ -26,7 +26,7 @@
 //===============================================================================================================================
 `timescale 1ps/1fs
 
-module Newport_pads (
+module Cognitum_pads (
    // PADS
    inout  wire  pad_gpio_0,      inout  wire pad_gpio_4,       inout  wire pad_gpio_8,       inout  wire pad_gpio_12,
    inout  wire  pad_gpio_1,      inout  wire pad_gpio_5,       inout  wire pad_gpio_9,       inout  wire pad_gpio_13,
@@ -89,7 +89,7 @@ module Newport_pads (
    output wire       Wpreserve_spare_net,    Spreserve_spare_net,          Epreserve_spare_net,          Npreserve_spare_net
    output wire       Wpower_down,            Spower_down,                  Epower_down,                  Npower_down
 );
-module Newport_pads
+module Cognitum_pads
   #(parameter PMU_START_DELAY = 100000, 
     parameter POR_DELAY = 1000000)
   (

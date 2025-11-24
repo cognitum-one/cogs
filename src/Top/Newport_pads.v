@@ -1,13 +1,13 @@
 //===============================================================================================================================
 //
-//    Copyright © 2021.2025 Advanced Architectures
+//    Copyright ï¿½ 2021.2025 Advanced Architectures
 //
 //    All rights reserved
 //    Confidential Information
 //    Limited Distribution to Authorized Persons Only
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//    Project Name         : Newport
+//    Project Name         : Cognitum
 //
 //    Description          : 256 processor array
 //
@@ -26,7 +26,7 @@
 //===============================================================================================================================
 
 `ifdef  synthesis //JLPL
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `else
    `include "A2_project_settings.vh"
 `endif
@@ -71,7 +71,7 @@ gpio_14 = NTXC
 gpio_15 = NTXD
 */
 
-module Newport_pads 
+module Cognitum_pads 
   #(parameter PMU_START_DELAY = 1000, //RKSW
     parameter POR_DELAY = 500000) //JLPL - 7_24_25 Change to 500000 to get 500ns of POR
    (

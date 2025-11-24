@@ -1,4 +1,4 @@
-# Newport Broadcast Deadlock Fix Report
+# Cognitum Broadcast Deadlock Fix Report
 
 **Date**: 2025-11-24
 **Status**: RESOLVED
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Successfully debugged and fixed two hanging broadcast tests in the Newport RaceWay interconnect. Both tests now pass within 0.01 seconds (previously hanging indefinitely for 60+ seconds).
+Successfully debugged and fixed two hanging broadcast tests in the Cognitum RaceWay interconnect. Both tests now pass within 0.01 seconds (previously hanging indefinitely for 60+ seconds).
 
 ### Tests Fixed
 1. `test_broadcast_loop_completion` - Now passes in 0.01s
@@ -24,7 +24,7 @@ The `RaceWayNetwork` test implementation was incomplete and did not handle broad
 
 ### Investigation Details
 
-**File**: `/home/user/newport/newport-sim/crates/newport-raceway/src/network.rs`
+**File**: `/home/user/cognitum/cognitum-sim/crates/cognitum-raceway/src/network.rs`
 
 **Original Code Issues**:
 ```rust
@@ -240,7 +240,7 @@ test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 ## Files Modified
 
-1. `/home/user/newport/newport-sim/crates/newport-raceway/src/network.rs`
+1. `/home/user/cognitum/cognitum-sim/crates/cognitum-raceway/src/network.rs`
    - Added `BroadcastManager` integration
    - Implemented `handle_broadcast()` method
    - Added timeout to `receive()` method

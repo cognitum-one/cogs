@@ -40,8 +40,8 @@
 //   `include "A2_project_settings.vh"
 //   `include "A2_defines.vh"
 `else
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_project_settings.vh"
-//   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/A2_defines.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_project_settings.vh"
+//   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/A2_defines.vh"
 `endif
 
 module   A2_sha256_CoP #(
@@ -121,9 +121,9 @@ always @(posedge clock) if (rROM) ROMo <= `tCQ  Ks[32*CYCLE+:32];
 `ifdef STANDALONE
    localparam SHA256_MESG = 0,SHA256_HASH = 1,SHA256_STOP = 2,SHA256_STRT_RDY = 3,SHA256_INIT = 4,SHA256_WAKE = 5,SHA256_SLEEP= 6;
 `elsif   RELATIVE_FILENAMES
-   `include "NEWPORT_IO_addresses.vh"
+   `include "COGNITUM_IO_addresses.vh"
 `else
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src//include/NEWPORT_IO_addresses.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src//include/COGNITUM_IO_addresses.vh"
 `endif
 
 wire  [31:0]   iIO, IOo;

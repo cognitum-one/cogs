@@ -1,17 +1,17 @@
-# Newport ASIC Simulator - Comprehensive Stress Test Report
+# Cognitum ASIC Simulator - Comprehensive Stress Test Report
 
 **Date**: 2025-11-23
 **Tester**: Stress Testing Specialist (Swarm Agent)
 **Duration**: ~10 minutes
-**Environment**: Newport v0.1.0, Rust 1.75+, Tokio async runtime
+**Environment**: Cognitum v0.1.0, Rust 1.75+, Tokio async runtime
 
 ---
 
 ## Executive Summary
 
-This report documents comprehensive stress testing of the Newport ASIC Simulator, covering:
-- ✅ **Working Components**: `newport-core`, `newport-raceway`
-- ❌ **Blocked Components**: `newport-memory`, `newport-processor`, `newport-sim` (compilation errors)
+This report documents comprehensive stress testing of the Cognitum ASIC Simulator, covering:
+- ✅ **Working Components**: `cognitum-core`, `cognitum-raceway`
+- ❌ **Blocked Components**: `cognitum-memory`, `cognitum-processor`, `cognitum-sim` (compilation errors)
 - 🔍 **Tests Created**: 18 stress tests (1M+ operations, 256-tile utilization, network congestion)
 - ⚠️ **Critical Findings**: 2 hanging broadcast tests, missing address types
 
@@ -23,38 +23,38 @@ This report documents comprehensive stress testing of the Newport ASIC Simulator
 
 | Crate | Status | Tests | Notes |
 |-------|--------|-------|-------|
-| `newport-core` | ✅ PASS | 42 tests pass | Core types, memory, errors working |
-| `newport-raceway` | ✅ PASS | 18/20 tests pass | 2 broadcast tests hang |
+| `cognitum-core` | ✅ PASS | 42 tests pass | Core types, memory, errors working |
+| `cognitum-raceway` | ✅ PASS | 18/20 tests pass | 2 broadcast tests hang |
 
 ### ❌ Blocked Crates (Compilation Errors)
 
 | Crate | Error | Root Cause |
 |-------|-------|------------|
-| `newport-memory` | Missing `PhysAddr`, `VirtAddr` | Types not defined in `newport-core::memory` |
-| `newport-processor` | Depends on `newport-memory` | Cascade failure |
-| `newport-sim` | Depends on failed crates | Cascade failure |
+| `cognitum-memory` | Missing `PhysAddr`, `VirtAddr` | Types not defined in `cognitum-core::memory` |
+| `cognitum-processor` | Depends on `cognitum-memory` | Cascade failure |
+| `cognitum-sim` | Depends on failed crates | Cascade failure |
 
-**Critical Issue**: The following imports fail in `newport-memory` crate:
+**Critical Issue**: The following imports fail in `cognitum-memory` crate:
 ```rust
-// crates/newport-memory/src/{cache.rs, dram.rs, tlb.rs}
+// crates/cognitum-memory/src/{cache.rs, dram.rs, tlb.rs}
 use newport_core::{Result, memory::PhysAddr};  // ❌ PhysAddr doesn't exist
 use newport_core::{Result, memory::{PhysAddr, VirtAddr}};  // ❌ Neither exist
 ```
 
-**Available Types** in `newport-core::memory`:
+**Available Types** in `cognitum-core::memory`:
 - ✅ `MemoryAddress` (32-bit wrapper)
 - ✅ `Memory` trait
 - ✅ `RAM` struct
 
 **Required Fix**: Either:
-1. Add `PhysAddr` and `VirtAddr` type aliases to `newport-core::memory`, OR
-2. Update `newport-memory` to use `MemoryAddress` instead
+1. Add `PhysAddr` and `VirtAddr` type aliases to `cognitum-core::memory`, OR
+2. Update `cognitum-memory` to use `MemoryAddress` instead
 
 ---
 
 ## 2. Test Execution Results
 
-### Newport-Core Tests (42 tests - ALL PASS ✅)
+### Cognitum-Core Tests (42 tests - ALL PASS ✅)
 
 ```
 test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
@@ -67,7 +67,7 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 - ✅ Error handling (unaligned, out-of-bounds)
 - ✅ Property-based tests (proptest)
 
-### Newport-RaceWay Tests (18/20 tests - MOSTLY PASS ⚠️)
+### Cognitum-RaceWay Tests (18/20 tests - MOSTLY PASS ⚠️)
 
 **Passed Tests (18)**:
 - ✅ Broadcast domain detection (column, quadrant, global)
@@ -92,7 +92,7 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 ## 3. Stress Tests Created
 
 ### 3.1 Memory Stress Tests
-**File**: `/home/user/newport/benchmarks/stress-tests/newport_stress_tests.rs`
+**File**: `/home/user/cognitum/benchmarks/stress-tests/newport_stress_tests.rs`
 
 | Test | Operations | Target | Status |
 |------|------------|--------|--------|
@@ -113,7 +113,7 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 - 💾 Memory leak detection
 
 ### 3.2 RaceWay Network Stress Tests
-**File**: `/home/user/newport/benchmarks/stress-tests/raceway_stress_tests.rs`
+**File**: `/home/user/cognitum/benchmarks/stress-tests/raceway_stress_tests.rs`
 
 | Test | Packets | Target | Status |
 |------|---------|--------|--------|
@@ -146,13 +146,13 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
    - **Recommendation**: Debug broadcast completion logic, add timeout handling
 
 2. **Missing Address Types**
-   - `PhysAddr` and `VirtAddr` not defined in `newport-core`
-   - **Impact**: Blocks `newport-memory`, `newport-processor`, and `newport-sim` crates
+   - `PhysAddr` and `VirtAddr` not defined in `cognitum-core`
+   - **Impact**: Blocks `cognitum-memory`, `cognitum-processor`, and `cognitum-sim` crates
    - **Recommendation**: Add type aliases or refactor to use `MemoryAddress`
 
 ### 🟡 MEDIUM PRIORITY
 
-3. **Unused Imports** (5 warnings in `newport-raceway`)
+3. **Unused Imports** (5 warnings in `cognitum-raceway`)
    - Suggests incomplete implementation or dead code
    - **Recommendation**: Run `cargo fix` or remove unused imports
 
@@ -199,7 +199,7 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 
 1. ⏸️ **Stack overflow/underflow** - Requires working processor
 2. ⏸️ **Invalid instruction handling** - Requires working processor
-3. ⏸️ **Full 256-tile simulation** - Requires working `newport-sim`
+3. ⏸️ **Full 256-tile simulation** - Requires working `cognitum-sim`
 4. ⏸️ **Actual MIPS measurement** - Requires working processor
 
 ---
@@ -210,11 +210,11 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 
 1. **Fix Compilation Errors** (Blocking)
    ```rust
-   // In newport-core/src/memory.rs, add:
+   // In cognitum-core/src/memory.rs, add:
    pub type PhysAddr = MemoryAddress;
    pub type VirtAddr = MemoryAddress;
 
-   // Or refactor newport-memory to use MemoryAddress directly
+   // Or refactor cognitum-memory to use MemoryAddress directly
    ```
 
 2. **Debug Hanging Broadcast Tests** (High Priority)
@@ -224,9 +224,9 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 
 3. **Execute Created Stress Tests**
    ```bash
-   cd newport-sim
-   cargo test --package newport-core -- --ignored --nocapture
-   cargo test --package newport-raceway -- --ignored --nocapture
+   cd cognitum-sim
+   cargo test --package cognitum-core -- --ignored --nocapture
+   cargo test --package cognitum-raceway -- --ignored --nocapture
    ```
 
 ### Future Enhancements
@@ -254,7 +254,7 @@ test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured
 ### Running Stress Tests
 
 ```bash
-cd /home/user/newport/newport-sim
+cd /home/user/cognitum/cognitum-sim
 
 # Run all standard tests
 cargo test --workspace
@@ -263,7 +263,7 @@ cargo test --workspace
 cargo test --workspace -- --ignored --nocapture
 
 # Run specific stress test
-cargo test --package newport-core stress_test_1m_cycles_single_tile -- --ignored --nocapture
+cargo test --package cognitum-core stress_test_1m_cycles_single_tile -- --ignored --nocapture
 
 # Run with release optimizations (faster)
 cargo test --workspace --release -- --ignored --nocapture
@@ -296,11 +296,11 @@ Stress Tests Executed: 0 (blocked by compilation)
 ### Component Status
 
 ```
-✅ newport-core:        42 tests PASS (100%)
-⚠️  newport-raceway:    18 tests PASS, 2 HANG (90%)
-❌ newport-memory:      COMPILATION FAILED
-❌ newport-processor:   COMPILATION FAILED
-❌ newport-sim:         COMPILATION FAILED
+✅ cognitum-core:        42 tests PASS (100%)
+⚠️  cognitum-raceway:    18 tests PASS, 2 HANG (90%)
+❌ cognitum-memory:      COMPILATION FAILED
+❌ cognitum-processor:   COMPILATION FAILED
+❌ cognitum-sim:         COMPILATION FAILED
 ```
 
 ---
@@ -309,12 +309,12 @@ Stress Tests Executed: 0 (blocked by compilation)
 
 ### Summary
 
-The Newport ASIC Simulator has **solid core components** (`newport-core`, `newport-raceway`) with **excellent test coverage** (97% of runnable tests pass). However, **critical compilation errors** block full system stress testing.
+The Cognitum ASIC Simulator has **solid core components** (`cognitum-core`, `cognitum-raceway`) with **excellent test coverage** (97% of runnable tests pass). However, **critical compilation errors** block full system stress testing.
 
 ### Blockers
 
-1. ⚠️ Missing `PhysAddr`/`VirtAddr` types prevent `newport-memory` compilation
-2. ⚠️ Cascade failures block `newport-processor` and `newport-sim`
+1. ⚠️ Missing `PhysAddr`/`VirtAddr` types prevent `cognitum-memory` compilation
+2. ⚠️ Cascade failures block `cognitum-processor` and `cognitum-sim`
 3. ⚠️ Two broadcast tests hang indefinitely
 
 ### Achievements
@@ -336,7 +336,7 @@ The Newport ASIC Simulator has **solid core components** (`newport-core`, `newpo
 
 ## Appendix A: Full Test Output
 
-### Newport-Core Test Results
+### Cognitum-Core Test Results
 
 ```
 running 42 tests
@@ -385,7 +385,7 @@ test types::tests::test_types_serialization ... ok
 test result: ok. 42 passed; 0 failed; 0 ignored
 ```
 
-### Newport-RaceWay Test Results
+### Cognitum-RaceWay Test Results
 
 ```
 running 18 tests
@@ -427,19 +427,19 @@ test test_column_broadcast ... TIMEOUT (>60s)
 
 ```
 error[E0432]: unresolved import `newport_core::memory::PhysAddr`
- --> crates/newport-memory/src/cache.rs:3:28
+ --> crates/cognitum-memory/src/cache.rs:3:28
   |
 3 | use newport_core::{Result, memory::PhysAddr};
   |                            ^^^^^^^^^^^^^^^^ no `PhysAddr` in `memory`
 
 error[E0432]: unresolved import `newport_core::memory::PhysAddr`
- --> crates/newport-memory/src/dram.rs:3:28
+ --> crates/cognitum-memory/src/dram.rs:3:28
   |
 3 | use newport_core::{Result, memory::PhysAddr};
   |                            ^^^^^^^^^^^^^^^^ no `PhysAddr` in `memory`
 
 error[E0432]: unresolved imports `newport_core::memory::PhysAddr`, `newport_core::memory::VirtAddr`
- --> crates/newport-memory/src/tlb.rs:3:37
+ --> crates/cognitum-memory/src/tlb.rs:3:37
   |
 3 | use newport_core::{Result, memory::{PhysAddr, VirtAddr}};
   |                                     ^^^^^^^^  ^^^^^^^^ no `VirtAddr` in `memory`

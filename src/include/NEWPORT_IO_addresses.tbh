@@ -7,7 +7,7 @@
 //   Limited Distribution to authorized Persons Only
 //   Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//   Project Name         :  NEWPORT
+//   Project Name         :  COGNITUM
 //
 //   Description          :  Address Definitions for A2S I/O and Tile Accesses
 //

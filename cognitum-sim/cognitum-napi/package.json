@@ -1,0 +1,62 @@
+{
+  "name": "@ruv/cognitum",
+  "version": "0.1.0",
+  "description": "Node.js native bindings for Cognitum ASIC simulator",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "cognitum",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-musl",
+        "armv7-unknown-linux-gnueabihf",
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">= 14"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "bench": "node --import @oxc-node/core/register ./bench/index.bench.ts",
+    "build": "napi build --platform --release --pipe \"prettier -w\"",
+    "build:debug": "napi build --platform --pipe \"prettier -w\"",
+    "format": "run-p format:prettier format:rs",
+    "format:prettier": "prettier . -w",
+    "format:rs": "cargo fmt",
+    "lint": "oxlint .",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "node --import @oxc-node/core/register --test test/*.spec.ts",
+    "version": "napi version"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.16.0",
+    "@oxc-node/core": "^0.0.24",
+    "@types/node": "^22.10.2",
+    "oxlint": "^0.16.1",
+    "prettier": "^3.4.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/cognitum"
+  },
+  "keywords": [
+    "napi",
+    "napi-rs",
+    "native",
+    "asic",
+    "simulator",
+    "cognitum",
+    "hardware",
+    "rust"
+  ],
+  "author": "Cognitum Team",
+  "license": "MIT",
+  "packageManager": "yarn@4.1.0"
+}

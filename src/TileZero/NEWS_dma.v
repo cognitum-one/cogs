@@ -8,7 +8,7 @@
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
 //
-//    Project Name   : NEWPORT NEWS DMA
+//    Project Name   : COGNITUM NEWS DMA
 //
 //    Description    : Pipe based DMA from Tile Zero Memory to the NEWS network
 //

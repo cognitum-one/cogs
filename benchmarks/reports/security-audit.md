@@ -1,15 +1,15 @@
-# Newport ASIC Simulator - Comprehensive Security Audit Report
+# Cognitum ASIC Simulator - Comprehensive Security Audit Report
 
 **Audit Date**: 2025-11-23
-**Auditor**: Security Auditing Specialist (Newport Benchmark Agent)
+**Auditor**: Security Auditing Specialist (Cognitum Benchmark Agent)
 **Scope**: Cryptographic coprocessors, key management, hardware root of trust
-**Version**: Newport ASIC Simulator v0.1.0
+**Version**: Cognitum ASIC Simulator v0.1.0
 
 ---
 
 ## Executive Summary
 
-This security audit evaluates the cryptographic implementations in Newport ASIC Simulator, focusing on the coprocessor implementations (`newport-coprocessor` crate). The audit covers AES-128/256 encryption, SHA-256 hashing, True Random Number Generation (TRNG), Physical Unclonable Functions (PUF), session key management, and TrustZone isolation.
+This security audit evaluates the cryptographic implementations in Cognitum ASIC Simulator, focusing on the coprocessor implementations (`cognitum-coprocessor` crate). The audit covers AES-128/256 encryption, SHA-256 hashing, True Random Number Generation (TRNG), Physical Unclonable Functions (PUF), session key management, and TrustZone isolation.
 
 ### Overall Security Rating: **B+ (Good with Minor Concerns)**
 
@@ -32,7 +32,7 @@ This security audit evaluates the cryptographic implementations in Newport ASIC 
 
 ## 1. AES Coprocessor Security Analysis
 
-**File**: `newport-sim/crates/newport-coprocessor/src/aes.rs`
+**File**: `cognitum-sim/crates/cognitum-coprocessor/src/aes.rs`
 
 ### 1.1 Implementation Review
 
@@ -140,7 +140,7 @@ All test vectors validated successfully.
 
 ## 2. SHA-256 Coprocessor Security Analysis
 
-**File**: `newport-sim/crates/newport-coprocessor/src/sha256.rs`
+**File**: `cognitum-sim/crates/cognitum-coprocessor/src/sha256.rs`
 
 ### 2.1 Implementation Review
 
@@ -199,7 +199,7 @@ Status: ✅ PASS
 
 ## 3. TRNG (True Random Number Generator) Security Analysis
 
-**File**: `newport-sim/crates/newport-coprocessor/src/trng.rs`
+**File**: `cognitum-sim/crates/cognitum-coprocessor/src/trng.rs`
 
 ### 3.1 Implementation Review
 
@@ -270,7 +270,7 @@ pub async fn zeroize(&mut self) -> Result<()> {
 
 ## 4. PUF (Physical Unclonable Function) Security Analysis
 
-**File**: `newport-sim/crates/newport-coprocessor/src/puf.rs`
+**File**: `cognitum-sim/crates/cognitum-coprocessor/src/puf.rs`
 
 ### 4.1 Implementation Review
 
@@ -372,7 +372,7 @@ if self.noise_enabled {
 
 ## 5. Session Key Management Security Analysis
 
-**File**: `newport-sim/crates/newport-coprocessor/src/aes.rs` (SessionKeyManager)
+**File**: `cognitum-sim/crates/cognitum-coprocessor/src/aes.rs` (SessionKeyManager)
 
 ### 5.1 Implementation Review
 
@@ -423,7 +423,7 @@ assert_ne!(key1, key2);  // ✅ PASS
 pub fn new(device_key: &Key128) -> Self {
     use sha2::{Sha256, Digest};
     let mut hasher = Sha256::new();
-    hasher.update(b"NEWPORT_MASTER_KEY");
+    hasher.update(b"COGNITUM_MASTER_KEY");
     hasher.update(unsafe { device_key.expose_secret() });
     let master_key: [u8; 32] = hasher.finalize().into();
     // ...
@@ -604,7 +604,7 @@ pub struct Hash256([u8; 32]);
 - Privilege level separation
 
 **Rust Simulator**: ⚠️ Not yet implemented
-- No TrustZone module in `newport-coprocessor`
+- No TrustZone module in `cognitum-coprocessor`
 - Security mode separation not simulated
 
 ### 9.3 Recommendations
@@ -896,7 +896,7 @@ pub mod crypto;
 
 ## 17. Conclusion
 
-The Newport ASIC Simulator demonstrates **strong cryptographic foundations** with industry-standard implementations, comprehensive test coverage, and proper secret management. The use of well-audited libraries (`aes`, `sha2`, `zeroize`) and NIST test vector validation provides confidence in the correctness of the implementations.
+The Cognitum ASIC Simulator demonstrates **strong cryptographic foundations** with industry-standard implementations, comprehensive test coverage, and proper secret management. The use of well-audited libraries (`aes`, `sha2`, `zeroize`) and NIST test vector validation provides confidence in the correctness of the implementations.
 
 ### Key Achievements
 

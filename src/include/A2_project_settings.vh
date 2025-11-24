@@ -28,9 +28,9 @@
 
 
 `ifndef  RELATIVE_FILENAMES
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_defines.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_defines.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_Registers.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_Registers.vh"
 `else
    `include "A2_defines.vh"
    `include "A2Sv2r3_defines.vh"

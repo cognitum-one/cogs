@@ -24,7 +24,7 @@
 
 // A2_mux #(8,32) i_XXX (.z(z[31:0]), .d(d[255:0]), .s(s[7:0]));
 `ifdef synthesis
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_src_a0/src//include/A2_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_src_a0/src//include/A2_defines.vh"
 `else
    `include "A2_defines.vh"
 `endif

@@ -7,7 +7,7 @@
     Limited Distribution to Authorized Persons Only
     Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 
-    Project Name         : Newport ASIC
+    Project Name         : Cognitum ASIC
 
     Description          : Fake Tile for debug of Raceway
 
@@ -58,9 +58,9 @@ module RacewayZero (
    );
 
 `ifdef   RELATIVE_FILENAMES
-`include "NEWPORT_IO_addresses.vh"
+`include "COGNITUM_IO_addresses.vh"
 `else
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
 `endif
 
 // Locals -----------------------------------------------------------------------------------------------------------------------

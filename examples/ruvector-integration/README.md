@@ -1,4 +1,4 @@
-# Newport + Ruvector: Production-Ready Neuromorphic AI Platform
+# Cognitum + Ruvector: Production-Ready Neuromorphic AI Platform
 
 **Combining 256-processor neuro-synaptic chips with vector databases for secure, cost-effective edge AI**
 
@@ -13,7 +13,7 @@
 
 ```bash
 # Clone and build
-git clone https://github.com/ruvnet/newport
+git clone https://github.com/USERNAME/cognitum
 cd newport/examples/ruvector-integration
 cargo build --release
 
@@ -28,14 +28,14 @@ cargo run --release --bin comparative-benchmarks # Industry comparisons
 
 ---
 
-## 💡 Why Newport + Ruvector?
+## 💡 Why Cognitum + Ruvector?
 
-This directory demonstrates the integration of **Ruvector** vector database capabilities with the **Newport neuro-synaptic chip** simulator, enabling advanced AI and neuromorphic computing workflows.
+This directory demonstrates the integration of **Ruvector** vector database capabilities with the **Cognitum neuro-synaptic chip** simulator, enabling advanced AI and neuromorphic computing workflows.
 
 ## 🧠 What This Integration Enables
 
 ### 1. **Neural Pattern Storage & Retrieval**
-- Store activation patterns from Newport's 256 processors as vector embeddings
+- Store activation patterns from Cognitum's 256 processors as vector embeddings
 - Perform similarity search on neural states across time
 - Enable pattern recognition and anomaly detection
 
@@ -45,17 +45,17 @@ This directory demonstrates the integration of **Ruvector** vector database capa
 - Adaptive routing based on processor state and workload
 
 ### 3. **Vector-Enhanced Neuromorphic Computing**
-- Combine Newport's message-passing architecture with vector similarity search
+- Combine Cognitum's message-passing architecture with vector similarity search
 - Enable semantic operations on distributed processor outputs
 - Support for hybrid symbolic-connectionist AI systems
 
 ## 🚀 Available Examples
 
 ### 1. Neural Embeddings (`neural_embeddings.rs`)
-Captures processor states from Newport tiles and stores them as vector embeddings in Ruvector.
+Captures processor states from Cognitum tiles and stores them as vector embeddings in Ruvector.
 
 **Features:**
-- Extract activation patterns from Newport processors
+- Extract activation patterns from Cognitum processors
 - Generate embeddings using processor register states
 - Similarity search across historical processor states
 - Time-series pattern matching
@@ -66,7 +66,7 @@ cargo run --bin neural-embeddings
 ```
 
 ### 2. Distributed Routing (`distributed_routing.rs`)
-Uses Tiny Dancer AI routing to distribute computational tasks across Newport's 256 processors.
+Uses Tiny Dancer AI routing to distribute computational tasks across Cognitum's 256 processors.
 
 **Features:**
 - Neural network-based task routing
@@ -86,7 +86,7 @@ Demonstrates high-performance vector similarity search on neuromorphic data.
 - HNSW indexing for fast nearest-neighbor search
 - Product quantization for memory efficiency
 - SIMD-accelerated similarity computation
-- Integration with Newport's SIMD coprocessor
+- Integration with Cognitum's SIMD coprocessor
 
 **Run:**
 ```bash
@@ -102,7 +102,7 @@ cargo run --bin vector-search-demo
 
 ### Our Solution: Best of All Worlds
 
-| Advantage | Newport + Ruvector | Competitors |
+| Advantage | Cognitum + Ruvector | Competitors |
 |-----------|-------------------|-------------|
 | **💰 Cost** | **$8.50** per chip | $25-$5,000 |
 | **⚡ Power** | **2.5W** | 0.07W-500W |
@@ -148,7 +148,7 @@ cargo run --bin vector-search-demo
   - Market sizing: $1.36B opportunity across 8 verticals
   - Revenue projections: $64.4M over 5 years (conservative)
 
-- **[Competitive Analysis](docs/comparisons/COMPETITIVE_ANALYSIS.md)** - Newport vs. industry leaders
+- **[Competitive Analysis](docs/comparisons/COMPETITIVE_ANALYSIS.md)** - Cognitum vs. industry leaders
   - IBM TrueNorth: 588× cheaper, more programmable
   - Intel Loihi 2: 353× cheaper, hardware crypto advantage
   - BrainChip Akida: 2.9× cheaper, 3.2× more cores
@@ -197,7 +197,7 @@ cargo run --bin vector-search-demo
 - **Pattern recognition** using vector similarity on neural activations
 
 ### Distributed Neural Networks
-- **Shard embeddings** across Newport's distributed memory (40MB)
+- **Shard embeddings** across Cognitum's distributed memory (40MB)
 - **Parallel search** using 256 processors for massive-scale retrieval
 - **Hardware-accelerated** vector operations via SIMD coprocessors
 
@@ -210,7 +210,7 @@ cargo run --bin vector-search-demo
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Newport ASIC (256 Processors)                │
+│                    Cognitum ASIC (256 Processors)                │
 │                                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐      ┌──────────┐   │
 │  │ Tile 0   │  │ Tile 1   │  │ Tile 2   │ ...  │ Tile 255 │   │
@@ -246,7 +246,7 @@ cargo run --bin vector-search-demo
 
 ### 1. Processor State → Vector Embeddings
 ```rust
-// Extract state from Newport processor
+// Extract state from Cognitum processor
 let processor_state = newport.tile(TileId(42)).get_state();
 
 // Convert to vector embedding
@@ -263,7 +263,7 @@ let optimal_tile = router
     .route_task(&task, &tile_states)
     .await?;
 
-// Execute on selected Newport processor
+// Execute on selected Cognitum processor
 newport.tile(optimal_tile).execute_task(&task).await?;
 ```
 
@@ -282,7 +282,7 @@ for (tile_id, similarity) in similar_states {
 
 ## 📊 Performance Characteristics
 
-| Metric | Newport Alone | With Ruvector | Speedup |
+| Metric | Cognitum Alone | With Ruvector | Speedup |
 |--------|---------------|---------------|---------|
 | **Pattern Search** | O(n) linear scan | O(log n) HNSW | ~100×+ |
 | **Task Routing** | Round-robin | Neural routing | ~3-5× better load balance |
@@ -292,12 +292,12 @@ for (tile_id, similarity) in similar_states {
 ## 🎓 Learning Resources
 
 ### Prerequisites
-- Understanding of [Newport Architecture](../../docs/architecture/00_SYSTEM_OVERVIEW.md)
+- Understanding of [Cognitum Architecture](../../docs/architecture/00_SYSTEM_OVERVIEW.md)
 - Familiarity with [vector databases](https://github.com/ruvnet/ruvector)
 - Basic knowledge of neuromorphic computing
 
 ### Related Documentation
-- [Newport Processor ISA](../../docs/modules/a2s-processor/ISA_REFERENCE.md)
+- [Cognitum Processor ISA](../../docs/modules/a2s-processor/ISA_REFERENCE.md)
 - [RaceWay Interconnect](../../docs/interconnect/RACEWAY_PROTOCOL.md)
 - [Ruvector Documentation](https://github.com/ruvnet/ruvector/blob/main/README.md)
 
@@ -324,7 +324,7 @@ cargo bench
 This integration enables novel research in:
 
 1. **Hybrid AI Architectures**
-   - Combine symbolic reasoning (Newport processors) with neural embeddings (Ruvector)
+   - Combine symbolic reasoning (Cognitum processors) with neural embeddings (Ruvector)
    - Explore neuro-symbolic AI on neuromorphic hardware
 
 2. **Scalable Vector Search**
@@ -336,12 +336,12 @@ This integration enables novel research in:
    - Self-organizing processor networks based on task similarity
 
 4. **Energy-Efficient AI**
-   - Leverage Newport's event-driven architecture with intelligent routing
+   - Leverage Cognitum's event-driven architecture with intelligent routing
    - Minimize unnecessary computation through vector-based task filtering
 
 ## 📝 License
 
-Dual-licensed under MIT OR Apache-2.0, consistent with both Newport and Ruvector projects.
+Dual-licensed under MIT OR Apache-2.0, consistent with both Cognitum and Ruvector projects.
 
 ## 🤝 Contributing
 
@@ -357,7 +357,7 @@ Contributions welcome! This integration is experimental and we encourage:
 
 ### Benchmarks vs. Industry Leaders
 
-| Benchmark | Newport+Ruvector | Best Competitor | Advantage |
+| Benchmark | Cognitum+Ruvector | Best Competitor | Advantage |
 |-----------|------------------|-----------------|-----------|
 | **Cost** | **$8.50** | BrainChip $25 | **2.9× cheaper** |
 | **Vector Search** | 10K QPS | Jetson 2K QPS | **5× faster** |
@@ -392,7 +392,7 @@ examples/ruvector-integration/
 │   └── vector_search_demo.rs         # High-performance similarity search
 │
 ├── benchmarks/                        # Performance testing
-│   └── comparative_benchmarks.rs     # Newport vs. TrueNorth/Loihi/Akida/Jetson/Coral
+│   └── comparative_benchmarks.rs     # Cognitum vs. TrueNorth/Loihi/Akida/Jetson/Coral
 │
 └── docs/                              # Comprehensive documentation
     │
@@ -474,7 +474,7 @@ cargo run --release --bin vector-search-demo
 
 ### Example 4: Competitive Benchmarks (10 min)
 
-Compare Newport+Ruvector against IBM TrueNorth, Intel Loihi 2, BrainChip Akida, NVIDIA Jetson, Google Coral:
+Compare Cognitum+Ruvector against IBM TrueNorth, Intel Loihi 2, BrainChip Akida, NVIDIA Jetson, Google Coral:
 
 ```bash
 cargo run --release --bin comparative-benchmarks
@@ -486,7 +486,7 @@ cargo run --release --bin comparative-benchmarks
 - Power efficiency metrics (ops/sec/watt)
 - Total cost of ownership comparisons
 
-**Results:** Newport leads in cost-performance, especially for crypto + vector workloads
+**Results:** Cognitum leads in cost-performance, especially for crypto + vector workloads
 
 ---
 
@@ -521,8 +521,8 @@ cargo run --release --bin comparative-benchmarks
 ### Getting Help
 
 - **📖 Documentation:** Browse the [docs/](docs/) directory
-- **🐛 Issues:** [GitHub Issues](https://github.com/ruvnet/newport/issues)
-- **💬 Discussions:** [GitHub Discussions](https://github.com/ruvnet/newport/discussions)
+- **🐛 Issues:** [GitHub Issues](https://github.com/USERNAME/cognitum/issues)
+- **💬 Discussions:** [GitHub Discussions](https://github.com/USERNAME/cognitum/discussions)
 - **📧 Email:** contact@ruv.io (commercial inquiries)
 
 ### Contributing
@@ -540,7 +540,7 @@ See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 ### Commercial Support
 
 **Available for:**
-- Custom silicon design (tailored Newport variants)
+- Custom silicon design (tailored Cognitum variants)
 - Volume manufacturing partnerships
 - Enterprise support contracts
 - Training and consulting
@@ -553,13 +553,13 @@ See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 ## 📜 License & Attribution
 
 ### Open Source Licenses
-- **Newport:** MIT OR Apache-2.0 (dual-licensed)
+- **Cognitum:** MIT OR Apache-2.0 (dual-licensed)
 - **Ruvector:** MIT OR Apache-2.0 (dual-licensed)
 - **This integration:** MIT OR Apache-2.0
 
 ### Credits
 
-**Newport ASIC Simulator:**
+**Cognitum ASIC Simulator:**
 - Created by rUv.io and TekStart
 - Powered by Claude Code (Anthropic) and Claude-Flow
 
@@ -644,12 +644,12 @@ cargo run --release --bin neural-embeddings
 
 **The future of computing is parallel, efficient, and private.**
 
-**Newport + Ruvector brings that future to your fingertips at a price anyone can afford.**
+**Cognitum + Ruvector brings that future to your fingertips at a price anyone can afford.**
 
 **What will you create?** 🚀
 
 ---
 
-**Built with ❤️ by the Newport & Ruvector communities**
+**Built with ❤️ by the Cognitum & Ruvector communities**
 
 *Bridging neuromorphic computing and modern vector databases*

@@ -1,6 +1,6 @@
 /*==============================================================================================================================
 
-   Copyright © 2003 Advanced Architectures
+   Copyright ï¿½ 2003 Advanced Architectures
 
    All rights reserved
    Confidential Information
@@ -25,8 +25,8 @@
    Notes for Use and Synthesis
 ==============================================================================================================================*/
 
-`ifndef  NEWPORT_defines
-`define  NEWPORT_defines
+`ifndef  COGNITUM_defines
+`define  COGNITUM_defines
 
 `define  XMOSI_WIDTH    1+1+8+8+8+8+32+32 // Raceway to Tile : 98 = {xresetn, xpush, xcmd[7:0],xtag[7:0],xdst[7:0],xsrc[7:0],xwrd[31:0],xadr[31:0]}
 `define  XMISO_WIDTH    1+1+8+8+8+8+32+32 // Tile to Raceway : 98 = {xtmo,    xordy, xack[7:0],xtag[7:0],xdst[7:0],xsrc[7:0],xrd0[31:0],xrd1[31:0]}
@@ -67,7 +67,7 @@
 // Raceway TILE addresses
 `define  TILEZ    8'b00000000
 
-`endif //  NEWPORT_defines
+`endif //  COGNITUM_defines
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

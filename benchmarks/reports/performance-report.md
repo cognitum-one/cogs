@@ -1,4 +1,4 @@
-# Newport ASIC Simulator - Performance Benchmarking Report
+# Cognitum ASIC Simulator - Performance Benchmarking Report
 
 **Generated:** 2025-11-23T23:50:00Z
 **Benchmarker:** Performance Benchmarking Specialist
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This report documents the comprehensive performance benchmarking effort for the Newport 256-processor ASIC simulator. Due to critical build errors in multiple crates, full benchmark execution was not possible. However, this report provides:
+This report documents the comprehensive performance benchmarking effort for the Cognitum 256-processor ASIC simulator. Due to critical build errors in multiple crates, full benchmark execution was not possible. However, this report provides:
 
 1. **Build Issue Analysis** - Documented blocking compilation errors
 2. **Benchmarking Framework** - Complete framework ready for execution once fixes are applied
@@ -20,21 +20,21 @@ This report documents the comprehensive performance benchmarking effort for the 
 ## Current Build Status
 
 ### ✅ Successfully Compiled Crates
-- **newport-core** - Core types and memory system
-- **newport-raceway** - Network packet routing (with warnings)
-- **newport-debug** - Debugging utilities
-- **newport-processor** - Partial compilation
+- **cognitum-core** - Core types and memory system
+- **cognitum-raceway** - Network packet routing (with warnings)
+- **cognitum-debug** - Debugging utilities
+- **cognitum-processor** - Partial compilation
 
 ### ❌ Build Failures
 
-#### 1. newport-memory (FIXED)
+#### 1. cognitum-memory (FIXED)
 **Issue:** Missing type aliases `PhysAddr` and `VirtAddr`
 **Fix Applied:** Created type aliases mapping to `MemoryAddress`
 **Status:** ✅ Resolved
 
-#### 2. newport-coprocessor (PENDING)
+#### 2. cognitum-coprocessor (PENDING)
 **Error:** `Default` trait not implemented for `[Option<Vec<u8>>; 128]`
-**Location:** `crates/newport-coprocessor/src/aes.rs:168`
+**Location:** `crates/cognitum-coprocessor/src/aes.rs:168`
 **Impact:** Prevents compilation of crypto benchmarks (394 lines of benchmark code)
 **Suggested Fix:**
 ```rust
@@ -45,7 +45,7 @@ sessions: Default::default(),
 sessions: std::array::from_fn(|_| None),
 ```
 
-#### 3. newport-sim (PENDING - CRITICAL)
+#### 3. cognitum-sim (PENDING - CRITICAL)
 **Multiple Errors:**
 - Private field access: `TileId.0` is private (lines 186, 188)
 - Missing trait: `TileId` doesn't implement `Display`
@@ -54,7 +54,7 @@ sessions: std::array::from_fn(|_| None),
 **Impact:** Blocks all simulation speed benchmarks
 **Suggested Fixes:**
 ```rust
-// In newport-core/src/types.rs
+// In cognitum-core/src/types.rs
 impl std::fmt::Display for TileId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Tile({})", self.0)
@@ -109,7 +109,7 @@ impl TileId {
 ## Benchmark Framework Overview
 
 A comprehensive benchmarking framework has been created at:
-`/home/user/newport/benchmarks/data/comprehensive-benchmark-framework.rs`
+`/home/user/cognitum/benchmarks/data/comprehensive-benchmark-framework.rs`
 
 ### Framework Capabilities
 
@@ -156,15 +156,15 @@ A comprehensive benchmarking framework has been created at:
 ## Benchmark Execution Plan
 
 ### Phase 1: Build Fixes (REQUIRED)
-1. ✅ Fix `newport-memory` type aliases
-2. ⏸️ Fix `newport-coprocessor` array initialization
-3. ⏸️ Fix `newport-sim` Display trait and field visibility
+1. ✅ Fix `cognitum-memory` type aliases
+2. ⏸️ Fix `cognitum-coprocessor` array initialization
+3. ⏸️ Fix `cognitum-sim` Display trait and field visibility
 4. ⏸️ Resolve all compilation warnings
 
 ### Phase 2: Basic Benchmarks
 Once builds succeed:
 ```bash
-cd /home/user/newport/newport-sim
+cd /home/user/cognitum/cognitum-sim
 
 # Run existing benchmarks
 cargo bench --workspace
@@ -196,7 +196,7 @@ cargo bench --bench comprehensive_benchmark_framework -- --save-baseline initial
 ### Successfully Located Benchmarks
 
 #### 1. simulation_bench.rs (218 lines)
-**Location:** `/home/user/newport/benches/simulation_bench.rs`
+**Location:** `/home/user/cognitum/benches/simulation_bench.rs`
 **Status:** ⚠️ Orphaned (no parent Cargo.toml)
 **Content:**
 - Memory operations (sequential read/write, random access)
@@ -205,10 +205,10 @@ cargo bench --bench comprehensive_benchmark_framework -- --save-baseline initial
 - Packet round-trip
 - Grid operations
 
-**Action Required:** Move to `newport-sim/benches/`
+**Action Required:** Move to `cognitum-sim/benches/`
 
 #### 2. crypto_ops.rs (394 lines)
-**Location:** `crates/newport-coprocessor/benches/crypto_ops.rs`
+**Location:** `crates/cognitum-coprocessor/benches/crypto_ops.rs`
 **Status:** ❌ Cannot compile
 **Content:**
 - AES-128 encryption (single block, burst mode)
@@ -223,7 +223,7 @@ cargo bench --bench comprehensive_benchmark_framework -- --save-baseline initial
 - TRNG: 32-bit random per cycle
 
 #### 3. raceway_bench.rs (54 lines)
-**Location:** `crates/newport-raceway/benches/raceway_bench.rs`
+**Location:** `crates/cognitum-raceway/benches/raceway_bench.rs`
 **Status:** ✅ Compiles but contains stub implementations
 **Content:**
 - Packet creation
@@ -234,16 +234,16 @@ cargo bench --bench comprehensive_benchmark_framework -- --save-baseline initial
 
 #### 4. Stub Benchmarks (1 line each)
 Files with only `fn main() {}`:
-- `crates/newport-sim/benches/simulation_ops.rs`
-- `crates/newport-raceway/benches/interconnect_ops.rs`
-- `crates/newport-memory/benches/cache_ops.rs`
-- `crates/newport-io/benches/io_ops.rs`
+- `crates/cognitum-sim/benches/simulation_ops.rs`
+- `crates/cognitum-raceway/benches/interconnect_ops.rs`
+- `crates/cognitum-memory/benches/cache_ops.rs`
+- `crates/cognitum-io/benches/io_ops.rs`
 
 **Action Required:** Implement benchmark suites
 
 ---
 
-## Newport Architecture Context
+## Cognitum Architecture Context
 
 ### Topology
 - **Total Tiles:** 256 (16x16 grid)
@@ -310,14 +310,14 @@ Broadcast (global):     ~30 cycles
 
 1. **Fix Build Errors**
    ```bash
-   # Apply fixes to newport-coprocessor and newport-sim
+   # Apply fixes to cognitum-coprocessor and cognitum-sim
    # Estimated time: 30 minutes
    ```
 
 2. **Move Orphaned Benchmark**
    ```bash
-   mv /home/user/newport/benches/simulation_bench.rs \
-      /home/user/newport/newport-sim/benches/
+   mv /home/user/cognitum/benches/simulation_bench.rs \
+      /home/user/cognitum/cognitum-sim/benches/
    ```
 
 3. **Update Cargo.toml**
@@ -426,7 +426,7 @@ rayon = "1.8" # Parallel benchmarks
 
 ## Conclusion
 
-The Newport ASIC Simulator project has a solid foundation with:
+The Cognitum ASIC Simulator project has a solid foundation with:
 - ✅ Well-defined performance targets
 - ✅ Comprehensive crate structure
 - ✅ Criterion benchmark integration
@@ -434,8 +434,8 @@ The Newport ASIC Simulator project has a solid foundation with:
 
 However, critical build issues prevent immediate benchmark execution. Once the three key fixes are applied:
 
-1. Fix `newport-coprocessor` array initialization
-2. Fix `newport-sim` Display trait and visibility
+1. Fix `cognitum-coprocessor` array initialization
+2. Fix `cognitum-sim` Display trait and visibility
 3. Move orphaned benchmark file
 
 The comprehensive benchmarking framework is ready to execute and will provide detailed performance analysis across all key metrics.
@@ -446,18 +446,18 @@ The comprehensive benchmarking framework is ready to execute and will provide de
 
 ## Appendix A: Build Error Details
 
-See `/home/user/newport/benchmarks/results/build-issues.json` for complete error logs and suggested fixes.
+See `/home/user/cognitum/benchmarks/results/build-issues.json` for complete error logs and suggested fixes.
 
 ## Appendix B: Performance Targets
 
-See `/home/user/newport/benchmarks/data/expected-performance-targets.json` for detailed target specifications.
+See `/home/user/cognitum/benchmarks/data/expected-performance-targets.json` for detailed target specifications.
 
 ## Appendix C: Benchmark Framework
 
-See `/home/user/newport/benchmarks/data/comprehensive-benchmark-framework.rs` for complete benchmark implementation.
+See `/home/user/cognitum/benchmarks/data/comprehensive-benchmark-framework.rs` for complete benchmark implementation.
 
 ---
 
 **Report Status:** Complete
 **Next Steps:** Apply build fixes and execute benchmark suite
-**Contact:** Performance Benchmarking Specialist via Newport project coordination system
+**Contact:** Performance Benchmarking Specialist via Cognitum project coordination system

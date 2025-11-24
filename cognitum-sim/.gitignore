@@ -1,0 +1,53 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# WASM
+pkg/
+wasm-pack.log
+
+# NAPI
+*.node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+*.profraw
+*.profdata
+coverage/
+cobertura.xml
+lcov.info
+
+# Documentation
+/target/doc/
+docs/_build/
+site/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# Agentic-jujutsu
+.jj/

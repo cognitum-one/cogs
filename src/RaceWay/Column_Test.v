@@ -7,7 +7,7 @@
 //    Limited Distribution to Authorized Persons Only
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//    Project Name         : Newport ASIC
+//    Project Name         : Cognitum ASIC
 //
 //    Description          : Column Vector or Array of Scrypt Tiles with Interconnect
 //
@@ -33,7 +33,7 @@
 `define No_Compile_TileOne
 
 
-`include "NEWPORT_defines.vh"
+`include "COGNITUM_defines.vh"
 
 module   Column #(
    parameter   [  4:0]  colID = 5'd1   //  Derived from previous level of hierachy

@@ -179,7 +179,7 @@ The A2S v2r3 implements a classic stack-based architecture where:
 ## Opcode Encoding Verification
 
 All implemented opcodes have been verified against the Verilog reference implementation at:
-- `/home/user/newport/src/A2S_v2r3/A2Sv2r3_ISA.v`
+- `/home/user/cognitum/src/A2S_v2r3/A2Sv2r3_ISA.v`
 
 ### Sample Verification
 
@@ -435,7 +435,7 @@ All tests pass, all implemented instructions work correctly, and all error handl
 ### Code Organization
 
 ```
-newport-processor/
+cognitum-processor/
 ├── src/
 │   ├── lib.rs           # Public API
 │   ├── error.rs         # Error types
@@ -507,10 +507,10 @@ newport-processor/
 
 ## Validation Metadata
 
-- **Validator**: Processor Validation Specialist (Newport Benchmark Team)
+- **Validator**: Processor Validation Specialist (Cognitum Benchmark Team)
 - **Date**: 2025-11-23
 - **Session**: newport-benchmark
-- **Location**: `/home/user/newport/newport-sim/crates/newport-processor/`
+- **Location**: `/home/user/cognitum/cognitum-sim/crates/cognitum-processor/`
 - **Test Count**: 83 tests (all passing)
 - **Coverage**: Phase 1 (42 instructions)
 - **Next Phase**: Phase 2 - Extended Instructions

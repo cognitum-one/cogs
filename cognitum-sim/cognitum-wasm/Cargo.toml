@@ -1,0 +1,41 @@
+[workspace]
+
+[package]
+name = "cognitum-wasm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cognitum Team"]
+description = "WebAssembly bindings for Cognitum ASIC simulator"
+license = "MIT OR Apache-2.0"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+web-sys = { version = "0.3", features = ["console"] }
+js-sys = "0.3"
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
+
+# Path dependency to main Cognitum crate (adjust path as needed)
+# cognitum = { path = "../cognitum-core" }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[features]
+default = ["console_error_panic_hook"]
+small_alloc = ["wee_alloc"]
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = false         # Disable LTO for WASM
+codegen-units = 1   # Reduce number of codegen units to increase optimizations
+panic = "abort"     # Abort on panic

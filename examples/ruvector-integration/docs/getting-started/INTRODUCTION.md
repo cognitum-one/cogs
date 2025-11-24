@@ -1,8 +1,8 @@
-# Getting Started with Newport + Ruvector
+# Getting Started with Cognitum + Ruvector
 
 ## 🌟 Welcome!
 
-This guide introduces the **Newport + Ruvector** integration in simple terms, perfect for newcomers to neuromorphic computing and vector databases.
+This guide introduces the **Cognitum + Ruvector** integration in simple terms, perfect for newcomers to neuromorphic computing and vector databases.
 
 ---
 
@@ -15,7 +15,7 @@ Imagine a computer chip that thinks more like a **brain** than a traditional com
 - They can process many things **at the same time** (called "parallel processing")
 - It's extremely **energy efficient** – using less power than a smartphone
 
-We've combined this brain-like chip (Newport) with a smart search system (Ruvector) that can find similar patterns in massive amounts of data, just like how you recognize a friend's face in a crowd.
+We've combined this brain-like chip (Cognitum) with a smart search system (Ruvector) that can find similar patterns in massive amounts of data, just like how you recognize a friend's face in a crowd.
 
 ---
 
@@ -52,22 +52,22 @@ We've combined this brain-like chip (Newport) with a smart search system (Ruvect
 ### 1. **Smart Health Watch**
 **Traditional smartwatch:** Sends your heartbeat data to the cloud, analyzes it there, sends results back (takes 1-2 seconds, drains battery, privacy concerns)
 
-**Newport watch:** Analyzes your heartbeat right on your wrist in 5 milliseconds, never sends data anywhere, lasts 30 days on a charge
+**Cognitum watch:** Analyzes your heartbeat right on your wrist in 5 milliseconds, never sends data anywhere, lasts 30 days on a charge
 
 ### 2. **Home Security Camera**
 **Traditional camera:** Streams video to cloud servers for AI analysis ($15/month fee, internet required, privacy risks)
 
-**Newport camera:** Recognizes people/objects instantly on-device, no monthly fees, works during internet outages, 100% private
+**Cognitum camera:** Recognizes people/objects instantly on-device, no monthly fees, works during internet outages, 100% private
 
 ### 3. **Self-Driving Car**
 **Traditional system:** Separate processors for camera, radar, GPS, planning (expensive, power-hungry, complex wiring)
 
-**Newport system:** One chip handles all sensors simultaneously, costs 90% less, uses 75% less power, safer (built-in redundancy)
+**Cognitum system:** One chip handles all sensors simultaneously, costs 90% less, uses 75% less power, safer (built-in redundancy)
 
 ### 4. **Factory Quality Control**
 **Traditional:** Human inspectors check 100 parts/hour, miss 5-10% of defects, cost $80K/year in labor
 
-**Newport:** AI inspects 5,000 parts/hour, catches 99.7% of defects, costs $1,200 one-time
+**Cognitum:** AI inspects 5,000 parts/hour, catches 99.7% of defects, costs $1,200 one-time
 
 ---
 
@@ -75,7 +75,7 @@ We've combined this brain-like chip (Newport) with a smart search system (Ruvect
 
 ### The Brain Analogy
 
-Think of Newport like a **miniature brain**:
+Think of Cognitum like a **miniature brain**:
 
 1. **256 Neurons (Processors):**
    - Each processor is like a neuron in your brain
@@ -119,7 +119,7 @@ Think of Newport like a **miniature brain**:
 ### Parallel Processing
 **Regular computer:** Does one thing at a time, very fast (like a super-fast single-lane highway)
 
-**Newport:** Does 256 things at once, pretty fast (like 256 lanes of moderate-speed highway – much higher total throughput!)
+**Cognitum:** Does 256 things at once, pretty fast (like 256 lanes of moderate-speed highway – much higher total throughput!)
 
 ### Edge Computing
 **Cloud computing:** Send data to distant servers, wait for response (like mailing a letter and waiting for a reply)
@@ -171,7 +171,7 @@ Think of Newport like a **miniature brain**:
 ### Step 1: Understand the Pieces
 
 ```
-Newport Chip (Hardware)
+Cognitum Chip (Hardware)
       ↓
    Your Code (Rust/C)
       ↓
@@ -184,7 +184,7 @@ Newport Chip (Hardware)
 
 ```bash
 # Clone the repository
-git clone https://github.com/ruvnet/newport
+git clone https://github.com/USERNAME/cognitum
 cd newport/examples/ruvector-integration
 
 # Build the examples
@@ -278,7 +278,7 @@ if similar_past_readings[0].led_to_failure {
 **A:** The simulator is production-ready. The chip design is based on proven Verilog (hardware description language) that's been extensively tested. Manufacturing would require foundry partnership.
 
 ### Q: What if I'm not building AI/ML applications?
-**A:** That's fine! Newport is great for:
+**A:** That's fine! Cognitum is great for:
 - High-speed networking (packet processing)
 - Cryptography (built-in AES, SHA-256)
 - Parallel simulations (physics, Monte Carlo)
@@ -288,14 +288,14 @@ if similar_past_readings[0].led_to_failure {
 ### Q: How is this different from Raspberry Pi?
 **A:**
 - **Raspberry Pi:** General-purpose Linux computer (like a tiny PC)
-- **Newport:** Specialized parallel processor (like a tiny supercomputer for specific tasks)
-- **Best use:** Newport for AI/crypto/parallel tasks; Pi for general computing, teaching, web servers
+- **Cognitum:** Specialized parallel processor (like a tiny supercomputer for specific tasks)
+- **Best use:** Cognitum for AI/crypto/parallel tasks; Pi for general computing, teaching, web servers
 
 ### Q: How is this different from NVIDIA GPUs?
 **A:**
 - **GPU:** 1000s of simple cores, high power, expensive ($200-$5000)
-- **Newport:** 256 smarter cores, low power, cheap ($8.50)
-- **Best use:** GPU for training huge neural networks; Newport for edge inference and distributed tasks
+- **Cognitum:** 256 smarter cores, low power, cheap ($8.50)
+- **Best use:** GPU for training huge neural networks; Cognitum for edge inference and distributed tasks
 
 ---
 
@@ -351,13 +351,13 @@ if similar_past_readings[0].led_to_failure {
 
 ## Success Stories (Future Vision)
 
-> **"We reduced quality control costs by 85% using Newport vision inspection."**
+> **"We reduced quality control costs by 85% using Cognitum vision inspection."**
 > – Manufacturing Director, Auto Parts Supplier
 
 > **"Our smart speakers now work offline with better privacy and 10-day battery life."**
 > – Founder, Privacy-First Smart Home Startup
 
-> **"Predictive maintenance with Newport saved us $2.3M in downtime last year."**
+> **"Predictive maintenance with Cognitum saved us $2.3M in downtime last year."**
 > – CTO, Industrial Equipment Company
 
 > **"We deployed fraud detection at the edge – 50× faster than cloud, zero ongoing costs."**
@@ -367,7 +367,7 @@ if similar_past_readings[0].led_to_failure {
 
 ## Start Building Today!
 
-The future of computing is parallel, efficient, and private. Newport + Ruvector brings that future to your fingertips at a price anyone can afford.
+The future of computing is parallel, efficient, and private. Cognitum + Ruvector brings that future to your fingertips at a price anyone can afford.
 
 **What will you create?**
 

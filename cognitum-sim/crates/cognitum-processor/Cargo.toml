@@ -1,0 +1,16 @@
+[package]
+name = "cognitum-processor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0"
+mockall = "0.12"
+
+[dev-dependencies]
+proptest = "1.5"
+mockall = "0.12"
+
+[lib]
+name = "cognitum_processor"
+path = "src/lib.rs"

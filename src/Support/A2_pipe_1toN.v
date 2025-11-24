@@ -29,8 +29,8 @@
 
 //`include "A2_defines.vh" //Joel fix include path 2_26_25
 `ifdef synthesis //JLPL
-    `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-    `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_defines.vh" //Joel fix include path 2_26_25
+    `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+    `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_defines.vh" //Joel fix include path 2_26_25
 `else
     `include "A2_project_settings.vh"
     `include "A2_defines.vh" //Joel fix include path 2_26_25

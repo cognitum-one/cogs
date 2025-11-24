@@ -1,8 +1,8 @@
-# 🏆 Newport ASIC Simulator - Benchmark Documentation
+# 🏆 Cognitum ASIC Simulator - Benchmark Documentation
 
 **Final Status: PERFECT 10.0/10 Rating Achieved**
 
-This directory contains comprehensive benchmarking results, performance analysis, and optimization documentation for the Newport ASIC Simulator project.
+This directory contains comprehensive benchmarking results, performance analysis, and optimization documentation for the Cognitum ASIC Simulator project.
 
 ---
 
@@ -363,16 +363,16 @@ OVERALL                      | A+    | 10.0/10| 100% PRODUCTION READY
 
 ```bash
 # Navigate to simulator directory
-cd /home/user/newport/newport-sim
+cd /home/user/cognitum/cognitum-sim
 
 # Run all benchmarks
 cargo bench --workspace
 
 # Run specific benchmark suites
-cargo bench --package newport-memory     # Memory benchmarks
-cargo bench --package newport-raceway    # Network benchmarks
-cargo bench --package newport-processor  # CPU benchmarks
-cargo bench --package newport-coprocessor # Crypto benchmarks
+cargo bench --package cognitum-memory     # Memory benchmarks
+cargo bench --package cognitum-raceway    # Network benchmarks
+cargo bench --package cognitum-processor  # CPU benchmarks
+cargo bench --package cognitum-coprocessor # Crypto benchmarks
 
 # Run stress tests
 cargo test --workspace -- --ignored --nocapture
@@ -438,11 +438,11 @@ cargo tarpaulin --workspace --out Html --output-dir coverage
 
 ## 🎊 Final Verdict
 
-The Newport ASIC Simulator has achieved **PERFECT 100% completion** of all Phase 1 objectives with exceptional quality:
+The Cognitum ASIC Simulator has achieved **PERFECT 100% completion** of all Phase 1 objectives with exceptional quality:
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║        NEWPORT ASIC SIMULATOR - MISSION COMPLETE         ║
+║        COGNITUM ASIC SIMULATOR - MISSION COMPLETE        ║
 ║                                                          ║
 ║            PERFECT 10.0/10 RATING ACHIEVED               ║
 ║                                                          ║

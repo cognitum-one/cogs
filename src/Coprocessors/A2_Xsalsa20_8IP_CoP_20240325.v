@@ -125,7 +125,7 @@ A2_reset  u_rst (.q(freset),.reset(reset),.clock(fast_clock));
 
 // imosi/imosi Interface ========================================================================================================
 // For correct operation and to prevent errors, reads and writes to the X buffer are only permitted when in the 'idle' state.
-`include "NEWPORT_IO_addresses.vh"
+`include "COGNITUM_IO_addresses.vh"
 
 localparam  LG2REGS  =  `LG2(NUM_REGS);
 
@@ -789,7 +789,7 @@ endmodule
 
 `ifdef   verify_salsa20_8           // Add this as a Simulator command line define
 
-`include "..//RTL//NEWPORT_IO_addresses.tbh"
+`include "..//RTL//COGNITUM_IO_addresses.tbh"
 module t;
 
 // Stimulii

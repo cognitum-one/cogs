@@ -29,7 +29,7 @@
 ===============================================================================================================================*/
 
 `ifdef  synthesis //JLSW
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh" //JLPL - 9_2_25
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh" //JLPL - 9_2_25
    //`include "A2_project_settings.vh" //JLPL - 9_2_25
 `else
    `include "A2_project_settings.vh"
@@ -76,14 +76,14 @@ module TileZero #(
    input  wire [97:0]   xmosi,         // xresetn, xpush,
    output wire          xmosi_fb,      //          xirdy
    // NEWS Interfaces
-   output wire [ 8:0]   nmosi_data, emosi_data, wmosi_data, smosi_data,    // NEWS Output Pipeline Outputs //JL per Roger's interface name change in Newport_core
+   output wire [ 8:0]   nmosi_data, emosi_data, wmosi_data, smosi_data,    // NEWS Output Pipeline Outputs //JL per Roger's interface name change in Cognitum_core
    output wire          nmosi_give, emosi_give, wmosi_give, smosi_give,    // NEWS Output Pipeline give
    input  wire          nmosi_take, emosi_take, wmosi_take, smosi_take,    // NEWS Output Pipeline take
    output wire          nmosi_clock,emosi_clock,wmosi_clock,smosi_clock,   // NEWS Output Pipeline Clock
    output wire          nmosi_reset,emosi_reset,wmosi_reset,smosi_reset,   // NEWS Output Pipeline Reset
    output wire          nmosi_clki, emosi_clki, wmosi_clki, smosi_clki,    // Individual clocks for serial interfaces -- direct to DFEs (clocki)
 
-   input  wire [ 8:0]   nmiso_data, emiso_data, wmiso_data, smiso_data,    // NEWS Input  Pipeline Inputs //JL per Roger's interface name change in Newport_core
+   input  wire [ 8:0]   nmiso_data, emiso_data, wmiso_data, smiso_data,    // NEWS Input  Pipeline Inputs //JL per Roger's interface name change in Cognitum_core
    input  wire          nmiso_give, emiso_give, wmiso_give, smiso_give,    // NEWS Input  Pipeline give
    output wire          nmiso_take, emiso_take, wmiso_take, smiso_take,    // NEWS Input  Pipeline take
    input  wire          nmiso_clock,emiso_clock,wmiso_clock,smiso_clock,   // NEWS Input  Pipeline Clock
@@ -112,13 +112,13 @@ module TileZero #(
    );
 
 `ifdef  synthesis //JLSW
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" //JLPL - 9_2_25
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh" //JLPL - 9_2_25
-//`include "NEWPORT_IO_addresses.vh" //JLPL - 9_2_25
-//`include "NEWPORT_defines.vh" //JLPL - 9_2_25
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" //JLPL - 9_2_25
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh" //JLPL - 9_2_25
+//`include "COGNITUM_IO_addresses.vh" //JLPL - 9_2_25
+//`include "COGNITUM_defines.vh" //JLPL - 9_2_25
 `else
-`include "NEWPORT_IO_addresses.vh"
-`include "NEWPORT_defines.vh"
+`include "COGNITUM_IO_addresses.vh"
+`include "COGNITUM_defines.vh"
 `endif
 
 // Buses ------------------------------------------------------------------------------------------------------------------------
@@ -492,18 +492,18 @@ always @(posedge zero_clock_boot)
 	
 always @(posedge zero_clock_boot)
 	begin
-	   if ( imosi_proc[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b110 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi_proc[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b110 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		SCRATCH <= imosi_data;	
 	end	
 	
 always @(*)
 	begin
-	   if ( imosi_proc[47] && imosi_add == 13'h1023 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi_proc[47] && imosi_add == 13'h1023 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		miso_scratch_ack <= #0.3 1'b1;
        else
 		miso_scratch_ack <= #0.3 1'b0;	
 		
-	   if ( imosi_proc[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b101 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi_proc[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b101 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		 imiso_scratch_read <= SCRATCH;	//JLPL - 9_15_25
 	   else
 	     imiso_scratch_read <= 32'h0;		
@@ -525,18 +525,18 @@ assign imosi_cmd = imosi[47:45];
 	
 always @(posedge zero_clock_boot)
 	begin
-	   if ( imosi[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b110 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b110 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		SCRATCH <= imosi_data;	
 	end	
 	
 always @(*)
 	begin
-	   if ( imosi[47] && imosi_add == 13'h1023 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi[47] && imosi_add == 13'h1023 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		miso_scratch_ack <= #0.3 1'b1;
        else
 		miso_scratch_ack <= #0.3 1'b0;	
 		
-	   if ( imosi[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b101 ) //JLPL - 10_8_25 -> Newport_IO_Addresses change
+	   if ( imosi[47] && imosi_add == 13'h1023 && imosi_cmd == 3'b101 ) //JLPL - 10_8_25 -> Cognitum_IO_Addresses change
 		 imiso_scratch_read <= SCRATCH;	//JLPL - 9_15_25
 	   else
 	     imiso_scratch_read <= 32'h0;		
@@ -1095,13 +1095,13 @@ A2_NEWS_CoP #(
    .nm_lwr     (nm_lwr), //JLPL breakout for compiler problem - Keep - 9_15_25
    .nm_uppr    (nm_uppr), //JLPL breakout for compiler problem - Keep - 9_15_25
    // NEWS output pipes
-   .nmosi      (nmosi_data_test), .emosi      (emosi_data), .wmosi      (wmosi_data), .smosi      (smosi_data),       // NEWS Data //JL per Roger's interface name change in Newport_core
+   .nmosi      (nmosi_data_test), .emosi      (emosi_data), .wmosi      (wmosi_data), .smosi      (smosi_data),       // NEWS Data //JL per Roger's interface name change in Cognitum_core
    .nmosi_give (nmosi_give), .emosi_give (emosi_give), .wmosi_give (wmosi_give), .smosi_give (smosi_give),  // NEWS give
    .nmosi_take (nmosi_take), .emosi_take (emosi_take), .wmosi_take (wmosi_take), .smosi_take (smosi_take),  // NEWS take
    .nmosi_clock(nmosi_clock),.emosi_clock(emosi_clock),.wmosi_clock(wmosi_clock),.smosi_clock(smosi_clock), // NEWS Clock
    .nmosi_reset(nmosi_reset),.emosi_reset(emosi_reset),.wmosi_reset(wmosi_reset),.smosi_reset(smosi_reset), // NEWS Reset
    // NEWS input  pipes
-   .nmiso      (nmiso_data), .emiso      (emiso_data), .wmiso      (wmiso_data), .smiso      (smiso_data),       // NEWS Data //JL per Roger's interface name change in Newport_core
+   .nmiso      (nmiso_data), .emiso      (emiso_data), .wmiso      (wmiso_data), .smiso      (smiso_data),       // NEWS Data //JL per Roger's interface name change in Cognitum_core
    .nmiso_give (nmiso_give), .emiso_give (emiso_give), .wmiso_give (wmiso_give), .smiso_give (smiso_give),  // NEWS give
    .nmiso_take (nmiso_take), .emiso_take (emiso_take), .wmiso_take (wmiso_take), .smiso_take (smiso_take),  // NEWS take
    .nmiso_clock (nmiso_clock), .emiso_clock (emiso_clock), .wmiso_clock (wmiso_clock), .smiso_clock (smiso_clock),  // NEWS take //JLSW 

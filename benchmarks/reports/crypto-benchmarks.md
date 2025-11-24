@@ -1,7 +1,7 @@
-# Newport Cryptographic Coprocessor Performance Report
+# Cognitum Cryptographic Coprocessor Performance Report
 
 **Date:** November 23, 2025
-**Platform:** Newport ASIC Simulator
+**Platform:** Cognitum ASIC Simulator
 **Target Frequency:** 1 GHz
 
 ## Executive Summary
@@ -270,7 +270,7 @@ All cryptographic coprocessors meet their cycle count targets:
 
 ## 11. Conclusion
 
-The Newport cryptographic coprocessor suite successfully meets all performance targets:
+The Cognitum cryptographic coprocessor suite successfully meets all performance targets:
 
 - **AES-128:** 14-cycle encryption with 128 session keys ✅
 - **SHA-256:** 70-cycle/block 3-stage pipeline ✅
@@ -299,6 +299,6 @@ The Newport cryptographic coprocessor suite successfully meets all performance t
 - Platform: Linux 4.4.0
 
 **Benchmark Artifacts:**
-- Raw output: `/home/user/newport/benchmarks/results/benchmark-output.txt`
-- JSON results: `/home/user/newport/benchmarks/results/crypto-performance.json`
+- Raw output: `/home/user/cognitum/benchmarks/results/benchmark-output.txt`
+- JSON results: `/home/user/cognitum/benchmarks/results/crypto-performance.json`
 - Criterion reports: `target/criterion/`

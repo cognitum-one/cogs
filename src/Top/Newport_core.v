@@ -1,13 +1,13 @@
 //===============================================================================================================================
 //
-//    Copyright © 2021..2025 Advanced Architectures
+//    Copyright ï¿½ 2021..2025 Advanced Architectures
 //
 //    All rights reserved
 //    Confidential Information
 //    Limited Distribution to Authorized Persons Only
 //    Created and Protected as an Unpublished Work under the U.S.Copyright act of 1976.
 //
-//    Project Name         : Newport
+//    Project Name         : Cognitum
 //
 //    Description          : core of 256 processor array
 //
@@ -24,7 +24,7 @@
 //
 //===============================================================================================================================
 
-module   Newport_core #(
+module   Cognitum_core #(
    parameter   NORTH_PIPE_DEPTH =  1,
    parameter    EAST_PIPE_DEPTH =  1,
    parameter    WEST_PIPE_DEPTH =  1,
@@ -278,7 +278,7 @@ wire           HO_reset; //JL
 wire  [10:0]   pmiso;
 wire  [15:0]   pmosi;
 
-// DFE Spare - Keep Internal ( Via loopback ) to Newport.core netlist for Now
+// DFE Spare - Keep Internal ( Via loopback ) to Cognitum.core netlist for Now
 wire [3:0]     dfe_west_spare_output, dfe_south_spare_output, dfe_east_spare_output, dfe_north_spare_output;
 //wire [3:0]   dfe_west_spare_input,  dfe_south_spare_input,  dfe_east_spare_input,  dfe_north_spare_input;
 

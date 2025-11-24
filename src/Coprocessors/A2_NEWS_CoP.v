@@ -27,12 +27,12 @@
 ===============================================================================================================================*/
 
 `ifdef  synthesis //JLSW
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
 `else //JL
    `include "A2_project_settings.vh"
 `endif //JL
 
-//  NEWS Higher Newport_Core Level Pipeline
+//  NEWS Higher Cognitum_Core Level Pipeline
 //**************************************************************************************************
 //  'i'  cardinal (NEWS)   -------- Example for depth == 4  --------
 //  'j'  pipe stage num
@@ -234,7 +234,7 @@ assign dummy_output = nmiso_clock & emiso_clock & wmiso_clock & smiso_clock & nm
 
 // I/O Module Number of Registers
 
-//`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh" - Put back in later after finding ncverilog compile sensitivity with local param header NEWPORT_IO_addresses.vh
+//`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh" - Put back in later after finding ncverilog compile sensitivity with local param header COGNITUM_IO_addresses.vh
 
 wire [7:0] iLI = 8'h55; //JL
 //assign nmosi[4] = 1'b0; //JLSW - TBD from Roger //JLPL - 11_3_25 - Remove multiple driver

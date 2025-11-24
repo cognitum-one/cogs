@@ -33,11 +33,11 @@
 
 `define  ECO_001
 `ifdef synthesis
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 `else
    `include "A2_project_settings.vh"
-   `include "NEWPORT_defines.vh"
+   `include "COGNITUM_defines.vh"
 `endif
 
 //`define  STANDALONE
@@ -77,12 +77,12 @@ module TileOne #(
    );
 
 `ifdef synthesis
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_ISA.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
-   `include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_Registers.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_ISA.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
+   `include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_Registers.vh"
 `else
    `include "A2Sv2r3_ISA.vh"
-   `include "NEWPORT_IO_addresses.vh"
+   `include "COGNITUM_IO_addresses.vh"
    `include "A2Sv2r3_Registers.vh"
 `endif
 
@@ -866,7 +866,7 @@ endmodule
 `define  CHECK_A2S_SOFTWARE
 `define  HIGH_SPEED_TEST
 
-`include "NEWPORT_IO_addresses.tbh"
+`include "COGNITUM_IO_addresses.tbh"
 
 module   t;
 

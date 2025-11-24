@@ -1,15 +1,15 @@
-# Newport ASIC Simulator - Code Quality Review
+# Cognitum ASIC Simulator - Code Quality Review
 
 **Review Date**: 2025-11-23
 **Reviewer**: Code Quality Agent
-**Scope**: Complete Newport Rust implementation
+**Scope**: Complete Cognitum Rust implementation
 **Version**: 0.1.0
 
 ---
 
 ## Executive Summary
 
-The Newport ASIC simulator demonstrates **strong code quality** with clean architecture, comprehensive testing, and adherence to Rust best practices. The codebase is well-structured with proper modularization across 10 crates.
+The Cognitum ASIC simulator demonstrates **strong code quality** with clean architecture, comprehensive testing, and adherence to Rust best practices. The codebase is well-structured with proper modularization across 10 crates.
 
 **Overall Quality Rating**: **8.5/10**
 
@@ -24,7 +24,7 @@ The Newport ASIC simulator demonstrates **strong code quality** with clean archi
 
 ### Critical Issues
 1. **Clippy error**: Manual implementation of `.is_multiple_of()` needs fix
-2. **Compilation errors**: Missing imports in `newport-memory` module
+2. **Compilation errors**: Missing imports in `cognitum-memory` module
 3. **Code formatting**: Multiple rustfmt violations (automated fix available)
 
 ### Areas for Improvement
@@ -54,16 +54,16 @@ The Newport ASIC simulator demonstrates **strong code quality** with clean archi
 
 ### Crate Structure
 ```
-newport-sim/
-├── newport-core           # Core types and primitives (TileId, Memory, etc.)
-├── newport-processor      # RISC-V processor simulation
-├── newport-memory         # Memory management (cache, TLB, RAM)
-├── newport-raceway        # Network-on-chip communication
-├── newport-coprocessor    # Crypto/AI coprocessors (AES, SHA-256, PUF)
-├── newport-io             # I/O and peripherals
-├── newport-sim            # Simulation engine
-├── newport-debug          # Debugging and tracing tools
-├── newport-cli            # Command-line interface
+cognitum-sim/
+├── cognitum-core           # Core types and primitives (TileId, Memory, etc.)
+├── cognitum-processor      # RISC-V processor simulation
+├── cognitum-memory         # Memory management (cache, TLB, RAM)
+├── cognitum-raceway        # Network-on-chip communication
+├── cognitum-coprocessor    # Crypto/AI coprocessors (AES, SHA-256, PUF)
+├── cognitum-io             # I/O and peripherals
+├── cognitum-sim            # Simulation engine
+├── cognitum-debug          # Debugging and tracing tools
+├── cognitum-cli            # Command-line interface
 └── newport                # Main SDK facade
 ```
 
@@ -76,7 +76,7 @@ newport-sim/
 ### Critical Errors (Must Fix)
 ```
 ❌ ERROR: Manual implementation of `.is_multiple_of()`
-Location: crates/newport-core/src/types.rs:43
+Location: crates/cognitum-core/src/types.rs:43
 Code: self.0 % alignment == 0
 Fix: self.0.is_multiple_of(alignment)
 Impact: HIGH - Causes build failure with -D warnings
@@ -125,7 +125,7 @@ Impact: HIGH - Causes build failure with -D warnings
 
 ### Detailed Review
 
-#### 1. `newport-coprocessor/src/aes.rs`
+#### 1. `cognitum-coprocessor/src/aes.rs`
 **Lines**: 54, 101, 163
 **Context**: Cryptographic key access
 ```rust
@@ -138,14 +138,14 @@ let cipher = Aes128::new_from_slice(unsafe { key.expose_secret() })
 - Keys are zeroized on drop (security best practice)
 - Limited scope, not exposed to public API
 
-#### 2. `newport-coprocessor/src/types.rs`
+#### 2. `cognitum-coprocessor/src/types.rs`
 **Lines**: N/A (type definition usage)
 **Context**: Key128 type definition
 
 **Analysis**: ✅ **JUSTIFIED**
 - Internal implementation detail for secure key storage
 
-#### 3. `newport-coprocessor/tests/aes_tests.rs`
+#### 3. `cognitum-coprocessor/tests/aes_tests.rs`
 **Lines**: Test fixtures
 **Context**: Test key creation
 
@@ -177,20 +177,20 @@ let cipher = Aes128::new_from_slice(unsafe { key.expose_secret() })
 #### High Priority (9) - SDK Implementation
 **File**: `newport/src/sdk.rs`
 ```
-Line 36:  TODO: Add Newport simulator instance when core is integrated
-Line 54:  TODO: Initialize Newport simulator with config
-Line 88:  TODO: Load program into Newport simulator
-Line 114: TODO: Run Newport simulator
-Line 149: TODO: Run Newport simulator for N cycles
-Line 173: TODO: Step Newport simulator
-Line 184: TODO: Reset Newport simulator
-Line 195: TODO: Check Newport simulator state
+Line 36:  TODO: Add Cognitum simulator instance when core is integrated
+Line 54:  TODO: Initialize Cognitum simulator with config
+Line 88:  TODO: Load program into Cognitum simulator
+Line 114: TODO: Run Cognitum simulator
+Line 149: TODO: Run Cognitum simulator for N cycles
+Line 173: TODO: Step Cognitum simulator
+Line 184: TODO: Reset Cognitum simulator
+Line 195: TODO: Check Cognitum simulator state
 ```
 
 **Assessment**: SDK facade is scaffolded but awaiting core integration.
 
 #### Medium Priority (9) - CLI Commands
-**Files**: `newport-cli/src/commands/*.rs`
+**Files**: `cognitum-cli/src/commands/*.rs`
 ```
 load.rs:63    - TODO: Implement disassembler
 debug.rs:66   - TODO: Implement interactive debugger
@@ -200,18 +200,18 @@ inspect.rs:60 - TODO: Display RaceWay metrics
 inspect.rs:71 - TODO: Display performance metrics
 benchmark.rs:55 - TODO: Run actual benchmark
 benchmark.rs:87 - TODO: Write results to file
-run.rs:45-47  - TODO: Create Newport instance, load program, run
+run.rs:45-47  - TODO: Create Cognitum instance, load program, run
 ```
 
 **Assessment**: CLI structure in place, implementation pending.
 
 #### Low Priority (6) - Core Features
 ```
-newport-memory/src/tlb.rs:39   - TODO: Implement TLB lookup
-newport-memory/src/cache.rs:24 - TODO: Implement cache lookup
-newport-memory/src/cache.rs:30 - TODO: Implement cache write
-newport-coprocessor/src/crypto.rs:16 - TODO: Implement AES (completed)
-newport-coprocessor/src/ai.rs:16     - TODO: Implement matrix multiplication
+cognitum-memory/src/tlb.rs:39   - TODO: Implement TLB lookup
+cognitum-memory/src/cache.rs:24 - TODO: Implement cache lookup
+cognitum-memory/src/cache.rs:30 - TODO: Implement cache write
+cognitum-coprocessor/src/crypto.rs:16 - TODO: Implement AES (completed)
+cognitum-coprocessor/src/ai.rs:16     - TODO: Implement matrix multiplication
 ```
 
 **Assessment**: Memory system and AI coprocessor need implementation.
@@ -245,7 +245,7 @@ newport-coprocessor/src/ai.rs:16     - TODO: Implement matrix multiplication
 
 2. **Builder Pattern**
    ```rust
-   NewportConfig::builder()
+   CognitumConfig::builder()
        .tiles(64)
        .trace(true)
        .build()?
@@ -285,13 +285,13 @@ newport-coprocessor/src/ai.rs:16     - TODO: Implement matrix multiplication
 
 | Concern | Implementation | Rating |
 |---------|---------------|--------|
-| **Core Types** | `newport-core` | ✅ Excellent |
-| **Processing** | `newport-processor` | ✅ Excellent |
-| **Memory Management** | `newport-memory` | ✅ Good |
-| **Networking** | `newport-raceway` | ✅ Excellent |
-| **Crypto/AI** | `newport-coprocessor` | ✅ Excellent |
-| **Simulation** | `newport-sim` | ✅ Good |
-| **User Interface** | `newport-cli` + `newport` | ⚠️ In Progress |
+| **Core Types** | `cognitum-core` | ✅ Excellent |
+| **Processing** | `cognitum-processor` | ✅ Excellent |
+| **Memory Management** | `cognitum-memory` | ✅ Good |
+| **Networking** | `cognitum-raceway` | ✅ Excellent |
+| **Crypto/AI** | `cognitum-coprocessor` | ✅ Excellent |
+| **Simulation** | `cognitum-sim` | ✅ Good |
+| **User Interface** | `cognitum-cli` + `newport` | ⚠️ In Progress |
 
 ### Dependency Management
 
@@ -400,7 +400,7 @@ Total Test Files: 19
 
 #### ✅ Comprehensive Unit Tests
 ```rust
-// From newport-core/src/types.rs
+// From cognitum-core/src/types.rs
 #[test]
 fn test_tile_id_valid_range() { ... }
 #[test]
@@ -416,7 +416,7 @@ fn test_memory_address_alignment_check() { ... }
 
 #### ✅ Integration Tests
 ```rust
-// From newport-sim/tests/newport_256_tests.rs
+// From cognitum-sim/tests/newport_256_tests.rs
 #[tokio::test]
 async fn test_newport_initialization() -> Result<()> { ... }
 ```
@@ -441,7 +441,7 @@ async fn test_newport_initialization() -> Result<()> { ... }
 ```rust
 //! AES-128 Coprocessor Implementation
 //!
-//! Simulates the Newport ASIC AES coprocessor with:
+//! Simulates the Cognitum ASIC AES coprocessor with:
 //! - 128 independent session key slots
 //! - ECC-protected key storage
 ```
@@ -555,14 +555,14 @@ pub fn value(&self) -> u8  // No doc comment
 ```
 error[E0432]: unresolved import `newport_core::memory::PhysAddr`
 error[E0432]: unresolved import `newport_core::memory::VirtAddr`
-Location: newport-memory crate
+Location: cognitum-memory crate
 ```
 
 **Impact**: HIGH - Prevents compilation of memory subsystem
 
-**Root Cause**: Missing type definitions in `newport-core`
+**Root Cause**: Missing type definitions in `cognitum-core`
 
-**Fix Required**: Define `PhysAddr` and `VirtAddr` types in `newport-core/src/memory.rs`
+**Fix Required**: Define `PhysAddr` and `VirtAddr` types in `cognitum-core/src/memory.rs`
 
 ### Build Configuration
 ✅ **Excellent** - Professional build setup:
@@ -655,7 +655,7 @@ resolver = "2"             # Modern dependency resolution
 
 ### Example 1: Type Safety with Validation
 ```rust
-// From newport-core/src/types.rs
+// From cognitum-core/src/types.rs
 impl TileId {
     pub fn new(id: u16) -> Result<Self> {
         if id > 255 {
@@ -674,7 +674,7 @@ impl TileId {
 
 ### Example 2: Secure Key Management
 ```rust
-// From newport-coprocessor/src/aes.rs
+// From cognitum-coprocessor/src/aes.rs
 impl Drop for SessionKeyManager {
     fn drop(&mut self) {
         self.master_key.zeroize();
@@ -695,7 +695,7 @@ impl Drop for SessionKeyManager {
 ### Example 3: Builder Pattern
 ```rust
 // From newport/src/config.rs (inferred)
-let config = NewportConfig::builder()
+let config = CognitumConfig::builder()
     .tiles(64)
     .trace(true)
     .max_cycles(1_000_000)
@@ -775,7 +775,7 @@ let config = NewportConfig::builder()
 
 ## Conclusion
 
-The Newport ASIC simulator demonstrates **exceptional code quality** in its architecture, type safety, and security implementation. The codebase follows Rust best practices and modern async patterns excellently.
+The Cognitum ASIC simulator demonstrates **exceptional code quality** in its architecture, type safety, and security implementation. The codebase follows Rust best practices and modern async patterns excellently.
 
 **Key Strengths**:
 - Clean, modular architecture
@@ -825,7 +825,7 @@ cargo outdated
 ### Fix Commands
 ```bash
 # Fix clippy issues
-# Edit crates/newport-core/src/types.rs:43
+# Edit crates/cognitum-core/src/types.rs:43
 # Change: self.0 % alignment == 0
 # To:     self.0.is_multiple_of(alignment)
 
@@ -833,7 +833,7 @@ cargo outdated
 cargo fmt --all
 
 # Add missing types
-# Add to crates/newport-core/src/lib.rs:
+# Add to crates/cognitum-core/src/lib.rs:
 pub mod memory {
     pub type PhysAddr = u64;
     pub type VirtAddr = u64;

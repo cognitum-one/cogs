@@ -30,8 +30,8 @@
 //
 //===============================================================================================================================
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2_project_settings.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_defines.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2_project_settings.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_defines.vh"
 //`define  STANDALONE
 //`define  FPGA_CLOCKS
 
@@ -68,8 +68,8 @@ module TileOne #(
    input  wire [             7:0]   myID        // Tile ID for use with 'src' and 'dst' fields
    );
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_Registers.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_Registers.vh"
 
 // Locals =======================================================================================================================
 // bmosi\bmiso can access all memories and co-processors within a tile.  It is also used to send requests to other tiles from
@@ -832,7 +832,7 @@ endmodule
 `define  CHECK_A2S_SOFTWARE
 `define  HIGH_SPEED_TEST
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/NEWPORT_IO_addresses.tbh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/COGNITUM_IO_addresses.tbh"
 
 module   t;
 
@@ -864,9 +864,9 @@ localparam  [31:0]   HEADERbase  =  32'h40002200,
                      nonce_end   =  ScryptTarget +    4,    // Pointer to Nonce_End vector (1 per Tile)
                      golden      =  nonce_end    + 1024;    // Pointer to Golden Nonce vector (1 per Tile)
 
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_ISA_params.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_Registers.vh"
-`include "/proj/TekStart/lokotech/soc/users/romeo/newport_a0/src/include/A2Sv2r3_ISAstring.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_ISA_params.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_Registers.vh"
+`include "/proj/TekStart/lokotech/soc/users/romeo/cognitum_a0/src/include/A2Sv2r3_ISAstring.vh"
 
 localparam  IDLE = 0, SEND = 1, WAIT = 2, DONE = 3, TIME = 4;
 reg   [95:0]   stimulus, response;
