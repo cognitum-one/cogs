@@ -1,0 +1,215 @@
+warning: unused variable: `addr`
+  --> crates/newport-memory/src/cache.rs:25:24
+   |
+25 |     pub fn read(&self, addr: PhysAddr) -> Result<Option<Vec<u8>>> {
+   |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `addr`
+  --> crates/newport-memory/src/cache.rs:31:29
+   |
+31 |     pub fn write(&mut self, addr: PhysAddr, data: &[u8]) -> Result<()> {
+   |                             ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+
+warning: unused variable: `data`
+  --> crates/newport-memory/src/cache.rs:31:45
+   |
+31 |     pub fn write(&mut self, addr: PhysAddr, data: &[u8]) -> Result<()> {
+   |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_data`
+
+warning: unused variable: `virt`
+  --> crates/newport-memory/src/tlb.rs:41:29
+   |
+41 |     pub fn translate(&self, virt: VirtAddr) -> Result<Option<PhysAddr>> {
+   |                             ^^^^ help: if this is intentional, prefix it with an underscore: `_virt`
+
+warning: fields `size` and `associativity` are never read
+  --> crates/newport-memory/src/cache.rs:13:5
+   |
+11 | pub struct Cache {
+   |            ----- fields in this struct
+12 |     /// Cache size in bytes
+13 |     size: usize,
+   |     ^^^^
+14 |     /// Associativity
+15 |     associativity: usize,
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `size` is never read
+  --> crates/newport-memory/src/dram.rs:10:5
+   |
+ 8 | pub struct Dram {
+   |            ---- field in this struct
+ 9 |     /// Memory size in bytes
+10 |     size: usize,
+   |     ^^^^
+
+warning: field `entries` is never read
+  --> crates/newport-memory/src/tlb.rs:22:5
+   |
+20 | pub struct Tlb {
+   |            --- field in this struct
+21 |     /// TLB entries
+22 |     entries: Vec<TlbEntry>,
+   |     ^^^^^^^
+
+warning: `newport-memory` (lib) generated 7 warnings
+warning: unused import: `async_trait::async_trait`
+  --> crates/newport-coprocessor/src/aes.rs:11:5
+   |
+11 | use async_trait::async_trait;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `CryptoError` and `Result`
+ --> crates/newport-coprocessor/src/gcm.rs:8:20
+  |
+8 | use crate::types::{CryptoError, Result};
+  |                    ^^^^^^^^^^^  ^^^^^^
+
+warning: unused variable: `key`
+  --> crates/newport-coprocessor/src/crypto.rs:15:44
+   |
+15 |     pub fn aes_encrypt(&self, data: &[u8], key: &[u8]) -> Result<Vec<u8>> {
+   |                                            ^^^ help: if this is intentional, prefix it with an underscore: `_key`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `newport-coprocessor` (lib) generated 3 warnings (run `cargo fix --lib -p newport-coprocessor` to apply 2 suggestions)
+   Compiling newport-coprocessor v0.1.0 (/home/user/newport/newport-sim/crates/newport-coprocessor)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 24.01s
+     Running benches/crypto_ops.rs (/home/user/newport/newport-sim/target/release/deps/crypto_ops-32c1266a87907e39)
+Gnuplot not found, using plotters backend
+Benchmarking aes_single_block/hardware
+Benchmarking aes_single_block/hardware: Analyzing
+aes_single_block/hardware
+                        time:   [1.1305 ms 1.1317 ms 1.1367 ms]
+Benchmarking aes_single_block/software
+Benchmarking aes_single_block/software: Analyzing
+aes_single_block/software
+                        time:   [71.937 ns 72.375 ns 72.485 ns]
+
+Benchmarking aes_burst/hardware_burst
+Benchmarking aes_burst/hardware_burst: Analyzing
+aes_burst/hardware_burst
+                        time:   [1.1389 ms 1.1480 ms 1.1843 ms]
+                        thrpt:  [52.775 KiB/s 54.444 KiB/s 54.878 KiB/s]
+Benchmarking aes_burst/software_sequential
+Benchmarking aes_burst/software_sequential: Analyzing
+aes_burst/software_sequential
+                        time:   [289.33 ns 289.85 ns 289.97 ns]
+                        thrpt:  [210.49 MiB/s 210.58 MiB/s 210.95 MiB/s]
+
+Benchmarking sha256/hardware/64
+Benchmarking sha256/hardware/64: Analyzing
+sha256/hardware/64      time:   [1.2257 ms 1.2690 ms 1.2798 ms]
+                        thrpt:  [48.835 KiB/s 49.251 KiB/s 50.990 KiB/s]
+Benchmarking sha256/software/64
+Benchmarking sha256/software/64: Analyzing
+sha256/software/64      time:   [138.23 ns 139.97 ns 140.40 ns]
+                        thrpt:  [434.71 MiB/s 436.06 MiB/s 441.56 MiB/s]
+Benchmarking sha256/hardware/512
+Benchmarking sha256/hardware/512: Analyzing
+sha256/hardware/512     time:   [1.3500 ms 1.3525 ms 1.3625 ms]
+                        thrpt:  [366.98 KiB/s 369.70 KiB/s 370.38 KiB/s]
+Benchmarking sha256/software/512
+Benchmarking sha256/software/512: Analyzing
+sha256/software/512     time:   [489.66 ns 490.55 ns 494.08 ns]
+                        thrpt:  [988.26 MiB/s 995.38 MiB/s 997.17 MiB/s]
+Benchmarking sha256/hardware/4096
+Benchmarking sha256/hardware/4096: Analyzing
+sha256/hardware/4096    time:   [2.5388 ms 2.5471 ms 2.5491 ms]
+                        thrpt:  [1.5324 MiB/s 1.5336 MiB/s 1.5386 MiB/s]
+Benchmarking sha256/software/4096
+Benchmarking sha256/software/4096: Analyzing
+sha256/software/4096    time:   [3.3009 µs 3.3295 µs 3.3366 µs]
+                        thrpt:  [1.1433 GiB/s 1.1457 GiB/s 1.1557 GiB/s]
+Benchmarking sha256/hardware/65536
+Benchmarking sha256/hardware/65536: Analyzing
+sha256/hardware/65536   time:   [21.765 ms 21.808 ms 21.819 ms]
+                        thrpt:  [2.8645 MiB/s 2.8659 MiB/s 2.8716 MiB/s]
+Benchmarking sha256/software/65536
+Benchmarking sha256/software/65536: Analyzing
+sha256/software/65536   time:   [51.832 µs 52.266 µs 52.375 µs]
+                        thrpt:  [1.1653 GiB/s 1.1678 GiB/s 1.1776 GiB/s]
+Benchmarking sha256/hardware/1048576
+Benchmarking sha256/hardware/1048576: Analyzing
+sha256/hardware/1048576 time:   [330.14 ms 330.23 ms 330.60 ms]
+                        thrpt:  [3.0248 MiB/s 3.0282 MiB/s 3.0290 MiB/s]
+Benchmarking sha256/software/1048576
+Benchmarking sha256/software/1048576: Analyzing
+sha256/software/1048576 time:   [907.47 µs 912.80 µs 934.13 µs]
+                        thrpt:  [1.0454 GiB/s 1.0699 GiB/s 1.0761 GiB/s]
+
+Benchmarking sha256_streaming/hardware_streaming
+Benchmarking sha256_streaming/hardware_streaming: Analyzing
+sha256_streaming/hardware_streaming
+                        time:   [4.7639 ms 4.8047 ms 4.8149 ms]
+                        thrpt:  [311.54 KiB/s 312.20 KiB/s 314.87 KiB/s]
+Benchmarking sha256_streaming/software_streaming
+Benchmarking sha256_streaming/software_streaming: Analyzing
+sha256_streaming/software_streaming
+                        time:   [1.3044 µs 1.3097 µs 1.3306 µs]
+                        thrpt:  [1.0751 GiB/s 1.0923 GiB/s 1.0966 GiB/s]
+
+Benchmarking hmac_sha256/hardware
+Benchmarking hmac_sha256/hardware: Analyzing
+hmac_sha256/hardware    time:   [2.4087 ms 2.4544 ms 2.4658 ms]
+                        thrpt:  [17.030 KiB/s 17.109 KiB/s 17.434 KiB/s]
+Benchmarking hmac_sha256/software
+Benchmarking hmac_sha256/software: Analyzing
+hmac_sha256/software    time:   [351.04 ns 361.88 ns 364.59 ns]
+                        thrpt:  [112.48 MiB/s 113.32 MiB/s 116.82 MiB/s]
+
+Benchmarking trng/generate_u32
+Benchmarking trng/generate_u32: Analyzing
+trng/generate_u32       time:   [1.1104 ms 1.1137 ms 1.1269 ms]
+Benchmarking trng/fill_1kb
+Benchmarking trng/fill_1kb: Analyzing
+trng/fill_1kb           time:   [285.38 ms 286.49 ms 286.76 ms]
+                        thrpt:  [3.4872 KiB/s 3.4905 KiB/s 3.5041 KiB/s]
+Benchmarking trng/software_rng_1kb
+Benchmarking trng/software_rng_1kb: Analyzing
+trng/software_rng_1kb   time:   [1.6005 µs 1.6012 µs 1.6014 µs]
+                        thrpt:  [609.82 MiB/s 609.89 MiB/s 610.18 MiB/s]
+
+Benchmarking trng_startup/startup_test
+Benchmarking trng_startup/startup_test: Analyzing
+trng_startup/startup_test
+                        time:   [11.180 ms 11.183 ms 11.183 ms]
+
+Benchmarking puf_challenge_response/single_crp
+Benchmarking puf_challenge_response/single_crp: Analyzing
+puf_challenge_response/single_crp
+                        time:   [1.1146 ms 1.1156 ms 1.1194 ms]
+Benchmarking puf_challenge_response/crp_with_noise
+Benchmarking puf_challenge_response/crp_with_noise: Analyzing
+puf_challenge_response/crp_with_noise
+                        time:   [1.1144 ms 1.1195 ms 1.1398 ms]
+
+Benchmarking puf_key_derivation/derive_device_key
+Benchmarking puf_key_derivation/derive_device_key: Analyzing
+puf_key_derivation/derive_device_key
+                        time:   [1.1171 ms 1.1232 ms 1.1247 ms]
+Benchmarking puf_key_derivation/generate_helper_data
+Benchmarking puf_key_derivation/generate_helper_data: Analyzing
+puf_key_derivation/generate_helper_data
+                        time:   [187.39 ns 188.38 ns 188.63 ns]
+Benchmarking puf_key_derivation/reconstruct_key
+Benchmarking puf_key_derivation/reconstruct_key: Analyzing
+puf_key_derivation/reconstruct_key
+                        time:   [144.27 ns 149.02 ns 150.20 ns]
+
+Benchmarking session_keys/derive_session_key
+Benchmarking session_keys/derive_session_key: Analyzing
+session_keys/derive_session_key
+                        time:   [580.52 ns 586.94 ns 612.63 ns]
+Benchmarking session_keys/get_session_key
+Benchmarking session_keys/get_session_key: Analyzing
+session_keys/get_session_key
+                        time:   [560.23 ns 562.27 ns 570.43 ns]
+
