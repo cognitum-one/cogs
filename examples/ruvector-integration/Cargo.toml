@@ -40,3 +40,7 @@ path = "src/distributed_routing.rs"
 [[bin]]
 name = "vector-search-demo"
 path = "src/vector_search_demo.rs"
+
+[[bin]]
+name = "comparative-benchmarks"
+path = "benchmarks/comparative_benchmarks.rs"
