@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-11-23T23:50:00Z",
+  "summary": "Build Issues Preventing Full Benchmark Execution",
+  "total_crates": 13,
+  "crates_with_issues": 3,
+  "issues": [
+    {
+      "crate": "newport-memory",
+      "severity": "FIXED",
+      "error": "Missing type aliases PhysAddr and VirtAddr",
+      "fix_applied": "Created type aliases mapping to MemoryAddress",
+      "files_modified": [
+        "crates/newport-memory/src/cache.rs",
+        "crates/newport-memory/src/dram.rs",
+        "crates/newport-memory/src/tlb.rs"
+      ]
+    },
+    {
+      "crate": "newport-coprocessor",
+      "severity": "HIGH",
+      "error": "Default trait not implemented for [Option<Vec<u8>>; 128]",
+      "location": "crates/newport-coprocessor/src/aes.rs:168",
+      "suggested_fix": "Use std::array::from_fn(|_| None) instead of Default::default()",
+      "status": "PENDING"
+    },
+    {
+      "crate": "newport-sim",
+      "severity": "HIGH",
+      "errors": [
+        "Field `0` of struct `TileId` is private (newport.rs:186, 188)",
+        "Method `as_display` not found for TileId (error.rs:8, 11)",
+        "TileId doesn't satisfy `std::fmt::Display` trait bound"
+      ],
+      "suggested_fixes": [
+        "Implement Display trait for TileId in newport-core",
+        "Add public accessor method for TileId's inner value",
+        "Or make TileId(u8) field pub(crate)"
+      ],
+      "status": "PENDING"
+    }
+  ],
+  "successfully_compiled_crates": [
+    "newport-core",
+    "newport-raceway",
+    "newport-debug",
+    "newport-processor (partial)"
+  ],
+  "benchmarks_available": {
+    "with_content": [
+      {
+        "file": "crates/newport-coprocessor/benches/crypto_ops.rs",
+        "lines": 394,
+        "status": "Cannot compile due to coprocessor build errors"
+      },
+      {
+        "file": "benches/simulation_bench.rs",
+        "lines": 218,
+        "status": "Orphaned (no Cargo.toml in parent directory)"
+      },
+      {
+        "file": "newport-raceway/benches/raceway_bench.rs",
+        "lines": 54,
+        "status": "Compiles but contains actual benchmark functions"
+      }
+    ],
+    "stubs_only": [
+      "crates/newport-sim/benches/simulation_ops.rs",
+      "crates/newport-raceway/benches/interconnect_ops.rs",
+      "crates/newport-memory/benches/cache_ops.rs",
+      "crates/newport-io/benches/io_ops.rs"
+    ]
+  },
+  "recommendations": [
+    "Fix Display trait implementation for TileId in newport-core",
+    "Fix array initialization in newport-coprocessor AES module",
+    "Move benches/simulation_bench.rs to newport-sim/benches/",
+    "Complete stub benchmark implementations",
+    "Add comprehensive integration tests before benchmarks",
+    "Set up CI/CD to catch build errors early"
+  ]
+}

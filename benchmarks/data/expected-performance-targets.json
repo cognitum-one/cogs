@@ -1,0 +1,112 @@
+{
+  "timestamp": "2025-11-23T23:50:00Z",
+  "source": "Newport README.md and documentation",
+  "performance_targets": {
+    "simulation_speed": {
+      "wasm": {
+        "cycles_per_second": 1000000,
+        "cycles_per_second_formatted": "~1M cycles/sec",
+        "description": "Browser-based WASM performance target"
+      },
+      "napi": {
+        "cycles_per_second_min": 10000000,
+        "cycles_per_second_max": 20000000,
+        "cycles_per_second_formatted": "10-20M cycles/sec",
+        "description": "Native Node.js performance target"
+      },
+      "per_tile_target": {
+        "mips_per_tile": ">1 MIPS",
+        "description": "Minimum 1 million instructions per second per tile"
+      },
+      "aggregate_target": {
+        "total_mips_256_tiles": ">256 MIPS",
+        "description": "Aggregate performance across all 256 processors"
+      }
+    },
+    "startup_time": {
+      "wasm": {
+        "startup_ms": "instant",
+        "description": "Near-instant initialization in browser"
+      },
+      "napi": {
+        "startup_ms": "<10",
+        "description": "Less than 10ms initialization time"
+      }
+    },
+    "interconnect_latency": {
+      "simulated_latency_ns": "<10",
+      "local_packet_cycles": "2-5",
+      "cross_hub_packet_cycles": "15-25",
+      "description": "Packet routing latency in simulated cycles"
+    },
+    "memory_footprint": {
+      "wasm": {
+        "bundle_size_kb": "~50",
+        "bundle_size_kb_gzipped": "~50",
+        "description": "Compressed WASM bundle size"
+      },
+      "napi": {
+        "memory_type": "native_heap",
+        "description": "Uses native heap allocation"
+      }
+    },
+    "network_topology": {
+      "total_tiles": 256,
+      "grid_size": "16x16",
+      "hubs": 16,
+      "tiles_per_hub": 16,
+      "broadcast_domains": ["COLUMN", "QUADRANT", "GLOBAL"],
+      "routing_modes": ["point-to-point", "broadcast"]
+    }
+  },
+  "benchmark_requirements": [
+    {
+      "category": "Simulation Speed",
+      "metrics": [
+        "Instructions executed per second (MIPS) per tile",
+        "Aggregate MIPS across all 256 tiles",
+        "Cycle accuracy validation",
+        "Throughput under sustained load"
+      ]
+    },
+    {
+      "category": "Startup Time",
+      "metrics": [
+        "Cold start initialization (1 tile)",
+        "Warm start initialization",
+        "Scaling initialization (1, 64, 128, 256 tiles)",
+        "Memory allocation overhead"
+      ]
+    },
+    {
+      "category": "Network Performance",
+      "metrics": [
+        "Local packet routing latency (same hub)",
+        "Cross-hub packet routing latency",
+        "Broadcast latency by domain type",
+        "Network throughput at 25%, 50%, 75%, 100% utilization",
+        "Packet serialization/deserialization overhead"
+      ]
+    },
+    {
+      "category": "Memory Footprint",
+      "metrics": [
+        "Base memory usage (single tile)",
+        "Per-tile memory overhead",
+        "Total memory for 256-tile configuration",
+        "Memory growth during sustained simulation",
+        "Cache effectiveness"
+      ]
+    },
+    {
+      "category": "Scalability",
+      "metrics": [
+        "Performance scaling from 1 to 256 tiles",
+        "Linear scalability coefficient",
+        "Amdahl's law analysis",
+        "Async/await concurrency overhead",
+        "Event-driven architecture efficiency"
+      ]
+    }
+  ]
+}

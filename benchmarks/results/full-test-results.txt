@@ -1,0 +1,401 @@
+warning: unused variable: `tile`
+   --> crates/newport-sim/src/newport.rs:199:21
+    |
+199 |             let mut tile = tile.lock().await;
+    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_tile`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/newport-sim/src/newport.rs:199:17
+    |
+199 |             let mut tile = tile.lock().await;
+    |                 ----^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `time` is never used
+  --> crates/newport-sim/src/event.rs:36:8
+   |
+35 | impl SimulationEvent {
+   | -------------------- method in this implementation
+36 |     fn time(&self) -> u64 {
+   |        ^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `config` is never read
+  --> crates/newport-sim/src/newport.rs:61:5
+   |
+60 | pub struct Newport {
+   |            ------- field in this struct
+61 |     config: NewportConfig,
+   |     ^^^^^^
+
+warning: fields `raceway_tx` and `packets_sent` are never read
+  --> crates/newport-sim/src/tile.rs:40:5
+   |
+24 | pub struct TileSimulator {
+   |            ------------- fields in this struct
+...
+40 |     raceway_tx: Option<mpsc::Sender<SimulationEvent>>,
+   |     ^^^^^^^^^^
+41 |     packets_received: u64,
+42 |     packets_sent: u64,
+   |     ^^^^^^^^^^^^
+
+warning: field `time_resolution` is never read
+  --> crates/newport-sim/src/time.rs:14:5
+   |
+ 6 | pub struct TimeManager {
+   |            ----------- field in this struct
+...
+14 |     time_resolution: u64,
+   |     ^^^^^^^^^^^^^^^
+
+warning: `newport-sim` (lib) generated 6 warnings (run `cargo fix --lib -p newport-sim` to apply 1 suggestion)
+   Compiling newport v0.1.0 (/home/user/newport/newport-sim/crates/newport)
+   Compiling wait-timeout v0.2.1
+   Compiling bit-vec v0.8.0
+   Compiling quick-error v1.2.3
+   Compiling fnv v1.0.7
+   Compiling rand v0.9.2
+   Compiling tempfile v3.23.0
+   Compiling rand_xorshift v0.4.0
+   Compiling rand_chacha v0.9.0
+   Compiling unarray v0.1.4
+error[E0432]: unresolved import `newport_core::ProgramCounter`
+  --> crates/newport/src/prelude.rs:15:39
+   |
+15 | pub use newport_core::{MemoryAddress, ProgramCounter, TileId};
+   |                                       ^^^^^^^^^^^^^^ no `ProgramCounter` in the root
+
+error[E0432]: unresolved import `newport_memory::MemoryError`
+  --> crates/newport/src/prelude.rs:16:9
+   |
+16 | pub use newport_memory::MemoryError;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `MemoryError` in the root
+   |
+help: consider importing one of these variants instead
+   |
+16 - pub use newport_memory::MemoryError;
+16 + pub use crate::NewportError::MemoryError;
+   |
+16 - pub use newport_memory::MemoryError;
+16 + pub use crate::SimulationError::MemoryError;
+   |
+16 - pub use newport_memory::MemoryError;
+16 + pub use newport_sim::SimulationError::MemoryError;
+   |
+
+error[E0432]: unresolved imports `newport_processor::ProcessorState`, `newport_processor::RegisterId`
+  --> crates/newport/src/prelude.rs:17:29
+   |
+17 | pub use newport_processor::{ProcessorState, RegisterId};
+   |                             ^^^^^^^^^^^^^^  ^^^^^^^^^^ no `RegisterId` in the root
+   |                             |
+   |                             no `ProcessorState` in the root
+
+error[E0432]: unresolved import `newport_raceway::PacketPriority`
+  --> crates/newport/src/prelude.rs:18:27
+   |
+18 | pub use newport_raceway::{PacketPriority, RaceWayPacket};
+   |                           ^^^^^^^^^^^^^^ no `PacketPriority` in the root
+
+   Compiling bit-set v0.8.0
+warning: ambiguous glob re-exports
+  --> crates/newport/src/lib.rs:31:9
+   |
+31 | pub use newport_core::*;
+   |         ^^^^^^^^^^^^^^^ the name `memory` in the type namespace is first re-exported here
+32 | pub use newport_memory::*;
+33 | pub use newport_processor::*;
+   |         -------------------- but the name `memory` in the type namespace is also re-exported here
+   |
+   = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: ambiguous glob re-exports
+  --> crates/newport/src/lib.rs:31:9
+   |
+31 | pub use newport_core::*;
+   |         ^^^^^^^^^^^^^^^ the name `Memory` in the type namespace is first re-exported here
+32 | pub use newport_memory::*;
+33 | pub use newport_processor::*;
+   |         -------------------- but the name `Memory` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+  --> crates/newport/src/lib.rs:31:9
+   |
+31 | pub use newport_core::*;
+   |         ^^^^^^^^^^^^^^^ the name `Instruction` in the type namespace is first re-exported here
+32 | pub use newport_memory::*;
+33 | pub use newport_processor::*;
+   |         -------------------- but the name `Instruction` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+  --> crates/newport/src/lib.rs:31:9
+   |
+31 | pub use newport_core::*;
+   |         ^^^^^^^^^^^^^^^ the name `TileId` in the type namespace is first re-exported here
+...
+34 | pub use newport_raceway::*;
+   |         ------------------ but the name `TileId` in the type namespace is also re-exported here
+
+warning: ambiguous glob re-exports
+  --> crates/newport/src/lib.rs:34:9
+   |
+34 | pub use newport_raceway::*;
+   |         ^^^^^^^^^^^^^^^^^^ the name `tile` in the type namespace is first re-exported here
+35 | pub use newport_sim::*;
+   |         -------------- but the name `tile` in the type namespace is also re-exported here
+
+   Compiling newport-debug v0.1.0 (/home/user/newport/newport-sim/crates/newport-debug)
+error[E0616]: field `0` of struct `newport_core::TileId` is private
+  --> crates/newport/src/sdk.rs:78:67
+   |
+78 |         info!("Loading {} bytes into tile {}", binary.len(), tile.0);
+   |                                                                   ^ private field
+
+error[E0616]: field `0` of struct `newport_core::TileId` is private
+  --> crates/newport/src/sdk.rs:81:17
+   |
+81 |         if tile.0 as usize >= self.config.tiles {
+   |                 ^ private field
+
+error[E0616]: field `0` of struct `newport_core::TileId` is private
+  --> crates/newport/src/sdk.rs:83:22
+   |
+83 |                 tile.0,
+   |                      ^ private field
+
+Some errors have detailed explanations: E0432, E0616.
+For more information about an error, try `rustc --explain E0432`.
+warning: `newport` (lib) generated 5 warnings
+error: could not compile `newport` (lib) due to 7 previous errors; 5 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+warning: unused variable: `debugger`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:12:9
+   |
+12 |     let debugger = Debugger::new();
+   |         ^^^^^^^^
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+help: if this is intentional, prefix it with an underscore
+   |
+12 |     let _debugger = Debugger::new();
+   |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+12 -     let debugger = Debugger::new();
+12 +     let newport_debug::debugger::Debugger = Debugger::new();
+   |
+
+warning: unused variable: `debugger`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:18:9
+   |
+18 |     let debugger = Debugger::default();
+   |         ^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+18 |     let _debugger = Debugger::default();
+   |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+18 -     let debugger = Debugger::default();
+18 +     let newport_debug::debugger::Debugger = Debugger::default();
+   |
+
+warning: unused variable: `debugger1`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:24:9
+   |
+24 |     let debugger1 = Debugger::new();
+   |         ^^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+24 |     let _debugger1 = Debugger::new();
+   |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+24 -     let debugger1 = Debugger::new();
+24 +     let newport_debug::debugger::Debugger = Debugger::new();
+   |
+
+warning: unused variable: `debugger2`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:25:9
+   |
+25 |     let debugger2 = Debugger::new();
+   |         ^^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+25 |     let _debugger2 = Debugger::new();
+   |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+25 -     let debugger2 = Debugger::new();
+25 +     let newport_debug::debugger::Debugger = Debugger::new();
+   |
+
+warning: unused variable: `debugger3`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:26:9
+   |
+26 |     let debugger3 = Debugger::default();
+   |         ^^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+26 |     let _debugger3 = Debugger::default();
+   |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+26 -     let debugger3 = Debugger::default();
+26 +     let newport_debug::debugger::Debugger = Debugger::default();
+   |
+
+warning: unused variable: `debugger`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:33:13
+   |
+33 |         let debugger = Debugger::new();
+   |             ^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+33 |         let _debugger = Debugger::new();
+   |             +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+33 -         let debugger = Debugger::new();
+33 +         let newport_debug::debugger::Debugger = Debugger::new();
+   |
+
+warning: unused variable: `debugger`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:41:13
+   |
+41 |         let debugger = Debugger::new();
+   |             ^^^^^^^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+41 |         let _debugger = Debugger::new();
+   |             +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+   |
+41 -         let debugger = Debugger::new();
+41 +         let newport_debug::debugger::Debugger = Debugger::new();
+   |
+
+warning: unused variable: `profiler`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:53:9
+   |
+53 |     let profiler = Profiler::new();
+   |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profiler`
+
+warning: unused variable: `profiler`
+  --> crates/newport-debug/tests/debug_comprehensive_tests.rs:59:9
+   |
+59 |     let profiler = Profiler::default();
+   |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profiler`
+
+warning: unused variable: `debugger`
+   --> crates/newport-debug/tests/debug_comprehensive_tests.rs:216:9
+    |
+216 |     let debugger = Debugger::new();
+    |         ^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+216 |     let _debugger = Debugger::new();
+    |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+    |
+216 -     let debugger = Debugger::new();
+216 +     let newport_debug::debugger::Debugger = Debugger::new();
+    |
+
+warning: unused variable: `debugger1`
+   --> crates/newport-debug/tests/debug_comprehensive_tests.rs:227:9
+    |
+227 |     let debugger1 = Debugger::new();
+    |         ^^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+227 |     let _debugger1 = Debugger::new();
+    |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+    |
+227 -     let debugger1 = Debugger::new();
+227 +     let newport_debug::debugger::Debugger = Debugger::new();
+    |
+
+warning: unused variable: `debugger2`
+   --> crates/newport-debug/tests/debug_comprehensive_tests.rs:228:9
+    |
+228 |     let debugger2 = Debugger::new();
+    |         ^^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+228 |     let _debugger2 = Debugger::new();
+    |         +
+help: you might have meant to pattern match on the similarly named struct `Debugger`
+    |
+228 -     let debugger2 = Debugger::new();
+228 +     let newport_debug::debugger::Debugger = Debugger::new();
+    |
+
+error[E0423]: cannot initialize a tuple struct which contains private fields
+   --> crates/newport/src/sdk.rs:238:39
+    |
+238 |         let result = sdk.load_program(newport_core::TileId(255), &program);
+    |                                       ^^^^^^^^^^^^^^^^^^^^
+    |
+note: constructor is not visible here due to private fields
+   --> /home/user/newport/newport-sim/crates/newport-core/src/types.rs:8:19
+    |
+  8 | pub struct TileId(u8);
+    |                   ^^ private field
+help: consider importing one of these tuple structs instead
+    |
+213 +     use crate::TileId;
+    |
+213 +     use newport_raceway::TileId;
+    |
+help: if you import `TileId`, refer to it directly
+    |
+238 -         let result = sdk.load_program(newport_core::TileId(255), &program);
+238 +         let result = sdk.load_program(TileId(255), &program);
+    |
+
+error[E0423]: cannot initialize a tuple struct which contains private fields
+   --> crates/newport/src/sdk.rs:241:39
+    |
+241 |         let result = sdk.load_program(newport_core::TileId(256), &program);
+    |                                       ^^^^^^^^^^^^^^^^^^^^
+    |
+note: constructor is not visible here due to private fields
+   --> /home/user/newport/newport-sim/crates/newport-core/src/types.rs:8:19
+    |
+  8 | pub struct TileId(u8);
+    |                   ^^ private field
+help: consider importing one of these tuple structs instead
+    |
+213 +     use crate::TileId;
+    |
+213 +     use newport_raceway::TileId;
+    |
+help: if you import `TileId`, refer to it directly
+    |
+241 -         let result = sdk.load_program(newport_core::TileId(256), &program);
+241 +         let result = sdk.load_program(TileId(256), &program);
+    |
+
+Some errors have detailed explanations: E0423, E0432, E0616.
+For more information about an error, try `rustc --explain E0423`.
+warning: `newport` (lib test) generated 5 warnings (5 duplicates)
+error: could not compile `newport` (lib test) due to 9 previous errors; 5 warnings emitted
+warning: `newport-debug` (test "debug_comprehensive_tests") generated 12 warnings (run `cargo fix --test "debug_comprehensive_tests"` to apply 10 suggestions)
