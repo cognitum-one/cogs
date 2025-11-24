@@ -1,0 +1,42 @@
+[build]
+# Use all available CPU cores for parallel compilation
+jobs = 8
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/LTCG"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# WASM target configuration
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "link-arg=--no-entry",
+    "-C", "opt-level=z",
+    "-C", "lto=fat",
+]
+
+[alias]
+# Useful cargo aliases
+check-all = "check --workspace --all-targets"
+test-all = "test --workspace --all-targets"
+bench-all = "bench --workspace"
+doc-open = "doc --workspace --no-deps --open"
+
+# Test aliases
+test-unit = "test --lib --all-features"
+test-integration = "test --test '*' --all-features"
+test-doc = "test --doc --all-features"
+test-stress = "test --release -- --ignored --test-threads=1"
+test-property = "test --test property_tests"
+test-quick = "test --lib --bins"
+
+# Coverage aliases
+coverage = "tarpaulin --out Html --output-dir coverage --all-features"
+coverage-xml = "tarpaulin --out Xml --all-features"

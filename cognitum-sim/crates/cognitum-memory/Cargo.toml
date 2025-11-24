@@ -1,0 +1,29 @@
+[package]
+name = "cognitum-memory"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Memory subsystem with ML-enhanced cache prediction for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+parking_lot.workspace = true
+memmap2.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "cache_ops"
+harness = false

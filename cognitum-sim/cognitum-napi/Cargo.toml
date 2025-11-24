@@ -1,0 +1,30 @@
+[workspace]
+
+[package]
+name = "cognitum-napi"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cognitum Team"]
+description = "Node.js native bindings for Cognitum ASIC simulator"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2.16.0", default-features = false, features = ["napi8", "async", "tokio_rt"] }
+napi-derive = "2.16.0"
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Path dependency to main Cognitum crate (adjust path as needed)
+# cognitum = { path = "../cognitum-core" }
+
+[build-dependencies]
+napi-build = "2.1.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

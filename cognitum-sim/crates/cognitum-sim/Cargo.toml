@@ -1,0 +1,39 @@
+[package]
+name = "cognitum-sim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Simulation engine with parallel execution for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+cognitum-processor.workspace = true
+cognitum-memory.workspace = true
+cognitum-raceway.workspace = true
+cognitum-coprocessor.workspace = true
+cognitum-io.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+tokio.workspace = true
+rayon.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[features]
+default = []
+wasm = []
+napi = []
+
+[[bench]]
+name = "simulation_ops"
+harness = false

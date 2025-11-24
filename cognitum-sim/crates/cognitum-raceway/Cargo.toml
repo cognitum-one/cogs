@@ -1,0 +1,31 @@
+[package]
+name = "cognitum-raceway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "RaceWay interconnect with adaptive routing for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+parking_lot.workspace = true
+crossbeam.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+bitvec = "1.0"
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "interconnect_ops"
+harness = false

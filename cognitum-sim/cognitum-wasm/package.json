@@ -1,0 +1,36 @@
+{
+  "name": "@ruv/cognitum-wasm",
+  "version": "0.1.0",
+  "description": "WebAssembly bindings for Cognitum ASIC simulator",
+  "main": "pkg/cognitum_wasm.js",
+  "types": "pkg/cognitum_wasm.d.ts",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg",
+    "build:nodejs": "wasm-pack build --target nodejs --out-dir pkg-node",
+    "build:bundler": "wasm-pack build --target bundler --out-dir pkg-bundler",
+    "build:all": "npm run build && npm run build:nodejs && npm run build:bundler",
+    "test": "wasm-pack test --headless --chrome",
+    "test:firefox": "wasm-pack test --headless --firefox",
+    "serve": "python3 -m http.server 8080"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/cognitum"
+  },
+  "keywords": [
+    "wasm",
+    "webassembly",
+    "asic",
+    "simulator",
+    "cognitum",
+    "hardware"
+  ],
+  "author": "Cognitum Team",
+  "license": "MIT OR Apache-2.0",
+  "devDependencies": {
+    "wasm-pack": "^0.12.0"
+  }
+}
