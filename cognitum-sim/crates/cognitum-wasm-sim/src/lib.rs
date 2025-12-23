@@ -194,6 +194,11 @@ impl WasmSimulator {
         self.topology.describe()
     }
 
+    /// Get topology reference
+    pub fn topology(&self) -> &dyn Topology {
+        &*self.topology
+    }
+
     /// Get scale info
     pub fn scale_info(&self) -> &ScaleConfig {
         &self.scale
