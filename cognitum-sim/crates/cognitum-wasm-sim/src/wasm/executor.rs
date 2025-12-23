@@ -1,15 +1,15 @@
 //! WASM instruction executor
 //!
-//! Executes decoded WASM instructions with full i32 support
+//! Executes decoded WASM instructions with full i32 support.
+//! Optimized for cache efficiency and minimal branching.
 
-use super::decoder::{DecodedInstruction, MemSize};
+use super::decoder::DecodedInstruction;
 use super::opcodes::{Opcode, SimdOpcode, NeuralOpcode};
 use super::stack::WasmStack;
 use super::memory::WasmMemory;
 use super::simd::SimdUnit;
 use super::ExecutionEffect;
 use crate::error::{Result, WasmSimError, WasmTrap};
-use crate::network::Packet;
 
 /// WASM instruction executor
 pub struct WasmExecutor {
@@ -51,6 +51,7 @@ enum BlockKind {
 
 impl WasmExecutor {
     /// Create new executor
+    #[inline]
     pub fn new(enable_simd: bool, enable_neural: bool) -> Self {
         Self {
             enable_simd,
@@ -61,6 +62,12 @@ impl WasmExecutor {
     }
 
     /// Execute a decoded instruction
+    ///
+    /// Hot path - optimized with:
+    /// - Inline hints for common operations
+    /// - Fast path for arithmetic (most common)
+    /// - Minimal branching in critical sections
+    #[inline]
     pub fn execute(
         &mut self,
         instr: &DecodedInstruction,
@@ -69,6 +76,24 @@ impl WasmExecutor {
         simd: &mut SimdUnit,
         pc: &mut u32,
     ) -> Result<ExecutionEffect> {
+        // Fast path: i32 arithmetic (most common instructions)
+        match instr.opcode {
+            Opcode::I32Add => return self.i32_binop_fast(stack, |a, b| a.wrapping_add(b)),
+            Opcode::I32Sub => return self.i32_binop_fast(stack, |a, b| a.wrapping_sub(b)),
+            Opcode::I32Mul => return self.i32_binop_fast(stack, |a, b| a.wrapping_mul(b)),
+            Opcode::I32And => return self.i32_binop_fast(stack, |a, b| a & b),
+            Opcode::I32Or => return self.i32_binop_fast(stack, |a, b| a | b),
+            Opcode::I32Xor => return self.i32_binop_fast(stack, |a, b| a ^ b),
+            Opcode::I32Shl => return self.i32_binop_fast(stack, |a, b| a.wrapping_shl(b as u32)),
+            Opcode::I32ShrU => return self.i32_binop_fast(stack, |a, b| ((a as u32).wrapping_shr(b as u32)) as i32),
+            Opcode::I32Const => {
+                stack.push(instr.immediate as i32)?;
+                return Ok(ExecutionEffect::None);
+            }
+            _ => {}
+        }
+
+        // Standard path for other instructions
         match instr.opcode {
             // ===== Control Flow =====
             Opcode::Unreachable => {
@@ -480,8 +505,44 @@ impl WasmExecutor {
         Ok(ExecutionEffect::None)
     }
 
+    /// Fast path for i32 binary operations - fully inlined
+    #[inline(always)]
+    fn i32_binop_fast<F>(&self, stack: &mut WasmStack, op: F) -> Result<ExecutionEffect>
+    where
+        F: FnOnce(i32, i32) -> i32,
+    {
+        let b = stack.pop()?;
+        let a = stack.pop()?;
+        stack.push(op(a, b))?;
+        Ok(ExecutionEffect::None)
+    }
+
+    /// Fast path for i32 unary operations - fully inlined
+    #[inline(always)]
+    fn i32_unop_fast<F>(&self, stack: &mut WasmStack, op: F) -> Result<ExecutionEffect>
+    where
+        F: FnOnce(i32) -> i32,
+    {
+        let a = stack.pop()?;
+        stack.push(op(a))?;
+        Ok(ExecutionEffect::None)
+    }
+
+    /// Fast path for i32 comparison operations - fully inlined
+    #[inline(always)]
+    fn i32_cmp_fast<F>(&self, stack: &mut WasmStack, op: F) -> Result<ExecutionEffect>
+    where
+        F: FnOnce(i32, i32) -> bool,
+    {
+        let b = stack.pop()?;
+        let a = stack.pop()?;
+        stack.push(if op(a, b) { 1 } else { 0 })?;
+        Ok(ExecutionEffect::None)
+    }
+
     /// Execute branch
-    fn branch(&mut self, depth: u32, stack: &mut WasmStack) -> Result<ExecutionEffect> {
+    #[inline]
+    fn branch(&mut self, depth: u32, _stack: &mut WasmStack) -> Result<ExecutionEffect> {
         if depth as usize >= self.block_stack.len() {
             return Err(WasmSimError::InvalidBytecode("Branch depth exceeds block stack".into()));
         }
@@ -661,6 +722,7 @@ impl WasmExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::decoder::MemSize;
 
     fn create_test_environment() -> (WasmExecutor, WasmStack, WasmMemory, SimdUnit) {
         (

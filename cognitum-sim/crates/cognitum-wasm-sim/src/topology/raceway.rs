@@ -7,7 +7,7 @@
 //! - 2 hubs (North/South for cross-quadrant routing)
 
 use super::Topology;
-use crate::error::{Result, WasmSimError};
+use crate::error::Result;
 use crate::scale::ScaleConfig;
 
 /// RaceWay topology implementation

@@ -13,9 +13,6 @@ pub use raceway::RaceWayTopology;
 pub use leaf_spine::{LeafSpineTopology, LeafSpineConfig};
 pub use hyperconverged::{HyperconvergedTopology, HyperconvergedConfig};
 
-use crate::error::Result;
-use crate::scale::ScaleConfig;
-
 /// Topology trait for network configuration
 pub trait Topology: Send + Sync {
     /// Get topology name

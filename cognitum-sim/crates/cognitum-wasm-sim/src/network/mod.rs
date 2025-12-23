@@ -15,7 +15,6 @@ pub use router::PacketRouter;
 pub use packet::Packet;
 pub use stats::NetworkStats;
 
-use crate::error::Result;
 use crate::topology::Topology;
 
 impl NetworkConfig {

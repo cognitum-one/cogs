@@ -2,14 +2,13 @@
 //!
 //! Provides routing, buffering, and congestion simulation
 
-use super::packet::{Packet, Priority, QoS};
+use super::packet::{Packet, QoS};
 use super::router::PacketRouter;
 use super::stats::NetworkStats;
 use crate::error::{Result, WasmSimError};
 
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 use std::cmp::Ordering;
-use tokio::sync::mpsc;
 
 /// Network configuration
 #[derive(Debug, Clone)]
