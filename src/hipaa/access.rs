@@ -3,7 +3,7 @@
 //! Implements role-based access control ensuring users only access
 //! the minimum PHI necessary for their role.
 
-use super::{HipaaError, PhiView, Result, User};
+use super::{PhiView, Result, User};
 use serde::{Deserialize, Serialize};
 
 /// RBAC roles for PHI access

@@ -34,3 +34,9 @@ pub use rbac::{
 };
 pub use roles::{RoleManager, Tier};
 pub use types::{KeyMetadata, KeyScope, TokenMetadata, UserClaims};
+
+// Re-export mock types for testing
+#[cfg(test)]
+pub use api_keys::MockApiKeyStore;
+#[cfg(test)]
+pub use jwt::MockTokenStore;

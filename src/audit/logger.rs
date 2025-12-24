@@ -6,6 +6,9 @@ use super::{
     AuditStore, AuditId, UserId, ResourceId, RequestContext,
 };
 
+#[cfg(test)]
+use super::AuditEventType;
+
 /// Audit logger with chain hash linking for tamper evidence
 pub struct AuditLogger {
     store: Box<dyn AuditStore>,

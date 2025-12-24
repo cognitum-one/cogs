@@ -32,6 +32,7 @@ pub trait VectorIndex: Send + Sync {
 pub struct HnswVectorIndex {
     dimension: usize,
     vectors: Arc<RwLock<HashMap<EmbeddingId, (Embedding, Metadata)>>>,
+    #[allow(dead_code)] // Stored for future HNSW optimization
     config: HnswConfig,
 }
 

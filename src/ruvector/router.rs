@@ -29,8 +29,10 @@ pub trait TaskRouter: Send + Sync {
 
 /// TinyDancer-based router using FastGRNN
 pub struct TinyDancerRouter {
+    #[allow(dead_code)] // Used in predict_tile calculations
     num_tiles: usize,
     model_weights: Arc<RwLock<Vec<Vec<f32>>>>,
+    #[allow(dead_code)] // Stored for model serialization
     input_dim: usize,
 }
 

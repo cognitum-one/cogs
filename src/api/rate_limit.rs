@@ -274,6 +274,7 @@ impl RateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::InMemoryStore;
 
     fn create_test_limiter() -> RateLimiter {
         let store = Arc::new(InMemoryStore::new());

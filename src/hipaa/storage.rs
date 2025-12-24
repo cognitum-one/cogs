@@ -154,6 +154,7 @@ impl HsmProvider for MockHsmProvider {
 
 /// HIPAA-compliant storage with encryption at rest
 pub struct HipaaCompliantStorage {
+    #[allow(dead_code)] // Stored for runtime configuration access
     config: StorageConfig,
     hsm: Arc<dyn HsmProvider>,
     storage: Arc<RwLock<HashMap<RecordId, EncryptedData>>>,
@@ -295,6 +296,7 @@ impl HipaaCompliantStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hipaa::AnalysisResult;
 
     fn create_test_record() -> PhiRecord {
         PhiRecord {
