@@ -1,6 +1,8 @@
 // Audit logging module for Cognitum chip v1 commercialization
 // Implements HIPAA-compliant tamper-evident audit logging
 
+use serde::{Deserialize, Serialize};
+
 pub mod events;
 pub mod logger;
 pub mod store;
@@ -16,7 +18,7 @@ pub use chrono::{DateTime, Utc};
 pub use std::net::IpAddr;
 
 /// User ID type for audit events
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UserId(String);
 
 impl UserId {
@@ -30,7 +32,7 @@ impl UserId {
 }
 
 /// Resource ID type for audit events
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ResourceId(String);
 
 impl ResourceId {
@@ -44,7 +46,7 @@ impl ResourceId {
 }
 
 /// Session ID type for audit events
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SessionId(String);
 
 impl SessionId {

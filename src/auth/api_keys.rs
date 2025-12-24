@@ -63,7 +63,7 @@ impl ApiKeyService {
         // Generate cryptographically secure random key
         let key_bytes = self.generate_key_bytes()?;
         let visible_key = format!("sk_live_{}", hex::encode(&key_bytes));
-        let key_id = self.generate_key_id();
+        let key_id = self.generate_key_id()?;
 
         // Hash the key before storage (never store raw key)
         let salt = SaltString::generate(&mut OsRng);
@@ -157,10 +157,11 @@ impl ApiKeyService {
     }
 
     /// Generate unique key ID
-    fn generate_key_id(&self) -> String {
+    fn generate_key_id(&self) -> AuthResult<String> {
         let mut id_bytes = [0u8; 16];
-        getrandom::getrandom(&mut id_bytes).expect("RNG failure");
-        format!("key_{}", hex::encode(&id_bytes))
+        getrandom::getrandom(&mut id_bytes)
+            .map_err(|e| AuthError::KeyGenerationFailed(format!("RNG failure: {}", e)))?;
+        Ok(format!("key_{}", hex::encode(&id_bytes)))
     }
 
     /// Derive key ID from key content (deterministic)

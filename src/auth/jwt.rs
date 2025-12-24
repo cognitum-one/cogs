@@ -128,8 +128,13 @@ impl JwtService {
         let claims_json =
             serde_json::to_vec(&payload.claims).map_err(|e| AuthError::Internal(e.to_string()))?;
 
-        let signature = Signature::from_bytes(&payload.signature)
+        // Convert Vec<u8> to [u8; 64] for Signature
+        let sig_bytes: [u8; 64] = payload
+            .signature
+            .as_slice()
+            .try_into()
             .map_err(|_| AuthError::InvalidSignature)?;
+        let signature = Signature::from_bytes(&sig_bytes);
 
         let verifying_key = self.signing_key.verifying_key();
         verifying_key
@@ -146,14 +151,14 @@ impl JwtService {
 
     /// Create a refresh token with long TTL
     pub async fn create_refresh_token(&self, user_id: &str) -> AuthResult<String> {
-        let token_id = self.generate_token_id();
+        let token_id = self.generate_token_id()?;
         let now = chrono::Utc::now();
 
         let metadata = TokenMetadata {
             user_id: user_id.to_string(),
             created_at: now,
             expires_at: now + self.config.refresh_token_ttl,
-            token_family: Some(self.generate_token_family()),
+            token_family: Some(self.generate_token_family()?),
         };
 
         self.store
@@ -229,17 +234,19 @@ impl JwtService {
     }
 
     /// Generate unique token ID
-    fn generate_token_id(&self) -> String {
+    fn generate_token_id(&self) -> AuthResult<String> {
         let mut id_bytes = [0u8; 32];
-        getrandom::getrandom(&mut id_bytes).expect("RNG failure");
-        hex::encode(&id_bytes)
+        getrandom::getrandom(&mut id_bytes)
+            .map_err(|e| AuthError::Internal(format!("RNG failure: {}", e)))?;
+        Ok(hex::encode(&id_bytes))
     }
 
     /// Generate token family ID for replay detection
-    fn generate_token_family(&self) -> String {
+    fn generate_token_family(&self) -> AuthResult<String> {
         let mut family_bytes = [0u8; 16];
-        getrandom::getrandom(&mut family_bytes).expect("RNG failure");
-        hex::encode(&family_bytes)
+        getrandom::getrandom(&mut family_bytes)
+            .map_err(|e| AuthError::Internal(format!("RNG failure: {}", e)))?;
+        Ok(hex::encode(&family_bytes))
     }
 }
 
