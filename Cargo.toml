@@ -1,0 +1,76 @@
+[package]
+name = "cognitum"
+version = "1.0.0"
+edition = "2021"
+authors = ["Cognitum Team"]
+description = "Cognitum chip v1 commercialization library"
+license = "MIT"
+
+[lib]
+name = "cognitum"
+path = "src/lib.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.48", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Cryptography
+argon2 = { version = "0.5", features = ["std"] }
+ed25519-dalek = "2.0"
+rand = "0.8"
+getrandom = "0.2"
+sha2 = "0.10"
+subtle = "2.5"
+hex = "0.4"
+base64 = "0.22"
+aes-gcm = "0.10"
+
+# Concurrency
+parking_lot = "0.12"
+
+# Mocking (used in trait definitions)
+mockall = "0.13"
+
+# UUID generation
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# Time and date
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+# Testing
+mockall = "0.13"
+tokio-test = "0.4"
+proptest = "1.5"
+
+# Test utilities
+pretty_assertions = "1.4"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = []
+test-utils = []
+
+[[test]]
+name = "acceptance_tests"
+path = "tests/acceptance/mod.rs"
+harness = false
+
+[[test]]
+name = "unit_tests"
+path = "tests/unit/mod.rs"
+harness = false
+
+[[bench]]
+name = "ruvector_bench"
+harness = false
