@@ -366,7 +366,8 @@ impl A2SProcessor {
                 }
             }
             Instruction::Call(offset) => {
-                self.rstack.push(self.pc)?;
+                // Save return address (instruction AFTER the call)
+                self.rstack.push(self.pc + 1)?;
                 self.pc = (self.pc as i32 + offset as i32) as u32;
             }
             Instruction::Return => {
@@ -799,11 +800,23 @@ Instruction::D2F => {
     }
 
     /// Run program until halt or error
+    ///
+    /// Uses the program counter (PC) to control execution flow.
+    /// Control flow instructions (Jump, Call, Return) modify PC.
     pub fn run(&mut self, program: &[Instruction]) -> Result<()> {
-        for instr in program {
-            self.execute(instr.clone())?;
-            if self.halted {
-                break;
+        self.pc = 0; // Reset PC at start
+        self.halted = false; // Reset halted flag for new program
+
+        while (self.pc as usize) < program.len() && !self.halted {
+            let pc_before = self.pc;
+            let instr = program[self.pc as usize].clone();
+            self.execute(instr)?;
+
+            // Only increment PC if it wasn't modified by a control flow instruction
+            // Control flow instructions (Jump, JumpZero, JumpNegative, Call, Return)
+            // directly set PC to the target address
+            if self.pc == pc_before && !self.halted {
+                self.pc += 1;
             }
         }
         Ok(())

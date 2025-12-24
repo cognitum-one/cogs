@@ -81,9 +81,11 @@ impl GcmCoprocessor {
         let h_block = self.aes.encrypt_block(key, &[0u8; 16]).await?;
 
         // Step 2: Create initial counter block from nonce
+        // Per NIST SP 800-38D: J_0 = nonce || 0^31 || 1 (counter=1)
+        // Plaintext encryption uses counter values starting at 2 (J_0 + 1)
         let mut counter_block = [0u8; 16];
         counter_block[..12].copy_from_slice(&self.nonce);
-        counter_block[12..].copy_from_slice(&[0, 0, 0, 1]); // Counter = 1
+        counter_block[12..].copy_from_slice(&[0, 0, 0, 2]); // Counter = 2 (J_0 + 1)
 
         // Step 3: Encrypt plaintext with AES-CTR
         let ciphertext = self.aes_ctr_encrypt(key, plaintext, &counter_block).await?;
@@ -91,10 +93,11 @@ impl GcmCoprocessor {
         // Step 4: Compute authentication tag with GHASH
         let tag = self.compute_ghash(&h_block, &self.aad, &ciphertext)?;
 
-        // Step 5: Encrypt tag with counter=0 to get final authentication tag
+        // Step 5: Encrypt J_0 (counter=1) for final authentication tag
+        // Per NIST SP 800-38D: T = MSB_t(GHASH XOR E(K, J_0))
         let mut tag_counter = [0u8; 16];
         tag_counter[..12].copy_from_slice(&self.nonce);
-        tag_counter[12..].copy_from_slice(&[0, 0, 0, 0]); // Counter = 0
+        tag_counter[12..].copy_from_slice(&[0, 0, 0, 1]); // Counter = 1 (J_0)
 
         let encrypted_tag_counter = self.aes.encrypt_block(key, &tag_counter).await?;
 
@@ -127,10 +130,11 @@ impl GcmCoprocessor {
         // Step 2: Recompute authentication tag
         let computed_tag_ghash = self.compute_ghash(&h_block, &self.aad, ciphertext)?;
 
-        // Step 3: Encrypt tag counter to get final tag
+        // Step 3: Encrypt J_0 (counter=1) to get final tag
+        // Per NIST SP 800-38D: T = MSB_t(GHASH XOR E(K, J_0))
         let mut tag_counter = [0u8; 16];
         tag_counter[..12].copy_from_slice(&self.nonce);
-        tag_counter[12..].copy_from_slice(&[0, 0, 0, 0]); // Counter = 0
+        tag_counter[12..].copy_from_slice(&[0, 0, 0, 1]); // Counter = 1 (J_0)
 
         let encrypted_tag_counter = self.aes.encrypt_block(key, &tag_counter).await?;
 
@@ -146,9 +150,10 @@ impl GcmCoprocessor {
         }
 
         // Step 5: Decrypt ciphertext with AES-CTR (only after tag verification!)
+        // Per NIST SP 800-38D: Decryption uses same counter values as encryption (starting at 2)
         let mut counter_block = [0u8; 16];
         counter_block[..12].copy_from_slice(&self.nonce);
-        counter_block[12..].copy_from_slice(&[0, 0, 0, 1]); // Counter = 1
+        counter_block[12..].copy_from_slice(&[0, 0, 0, 2]); // Counter = 2 (J_0 + 1)
 
         let plaintext = self.aes_ctr_encrypt(key, ciphertext, &counter_block).await?;
 
