@@ -158,6 +158,12 @@ impl LeakyIntegrateFireNeuron {
             return false;
         }
 
+        // Check for spike threshold BEFORE leak (spike decision at peak potential)
+        if self.potential >= self.threshold {
+            self.fire_spike(current_time);
+            return true;
+        }
+
         // Apply leak toward resting potential
         // leak_rate: 255 = minimal leak, 0 = maximum leak
         let diff = self.potential - self.resting_potential;
@@ -166,12 +172,6 @@ impl LeakyIntegrateFireNeuron {
 
         // Decay spike trace for STDP
         self.spike_trace = (self.spike_trace * 240) / 256; // ~6% decay
-
-        // Check for spike threshold
-        if self.potential >= self.threshold {
-            self.fire_spike(current_time);
-            return true;
-        }
 
         false
     }
@@ -344,6 +344,26 @@ impl NewsCoprocessor {
         self.output_spikes.clear();
         self.total_updates += 1;
 
+        // Process pending spike events for current time FIRST
+        // This delivers external inputs and inter-neuron spikes before neurons update
+        let current_time = self.time;
+        while let Some(event) = self.spike_queue.front() {
+            if event.time <= current_time {
+                let event = self.spike_queue.pop_front().unwrap();
+                if let Some(neuron) = self.neuron_mut(event.target) {
+                    // Use weight from event if source is external (255) or weight is non-zero
+                    let weight_override = if event.source == 255 || event.weight != 0 {
+                        Some(event.weight)
+                    } else {
+                        None
+                    };
+                    neuron.receive_spike(event.source, current_time, weight_override);
+                }
+            } else {
+                break;
+            }
+        }
+
         // Process all neurons for this time step
         for neuron_id in 0..self.neurons.len() {
             if self.neurons[neuron_id].update(self.time) {
@@ -371,25 +391,6 @@ impl NewsCoprocessor {
                     time: self.time,
                     weight: 0,
                 });
-            }
-        }
-
-        // Process pending spike events for current time
-        let current_time = self.time;
-        while let Some(event) = self.spike_queue.front() {
-            if event.time <= current_time {
-                let event = self.spike_queue.pop_front().unwrap();
-                if let Some(neuron) = self.neuron_mut(event.target) {
-                    // Use weight from event if source is external (255) or weight is non-zero
-                    let weight_override = if event.source == 255 || event.weight != 0 {
-                        Some(event.weight)
-                    } else {
-                        None
-                    };
-                    neuron.receive_spike(event.source, current_time, weight_override);
-                }
-            } else {
-                break;
             }
         }
 

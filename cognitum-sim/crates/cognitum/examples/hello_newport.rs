@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
     ];
 
     println!("Loading program ({} bytes) into Tile 0...", program.len());
-    cognitum.load_program(TileId(0), &program)?;
+    cognitum.load_program(TileId::new(0).unwrap(), &program)?;
 
     println!("Running simulation...\n");
 

@@ -12,6 +12,10 @@ keywords.workspace = true
 categories.workspace = true
 description = "Command-line interface for Cognitum ASIC simulator"
 
+[lib]
+name = "cognitum_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "cognitum"
 path = "src/main.rs"
@@ -31,3 +35,8 @@ tracing-subscriber.workspace = true
 colored = "2.1"
 toml = "0.8"
 indicatif = "0.17"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"

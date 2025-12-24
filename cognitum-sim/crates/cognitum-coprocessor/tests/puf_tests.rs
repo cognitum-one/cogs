@@ -7,7 +7,7 @@ use cognitum_coprocessor::{puf::PhysicalUF, types::Result};
 /// Test basic PUF challenge-response
 #[tokio::test]
 async fn test_puf_challenge_response() {
-    let puf = PhysicalUF::new(42); // Seed for simulation
+    let mut puf = PhysicalUF::new(42); // Seed for simulation
 
     let challenge = 0x123456789ABCDEF0;
     let response = puf.challenge_response(challenge).await.unwrap();
@@ -19,7 +19,7 @@ async fn test_puf_challenge_response() {
 /// Test PUF response consistency (same challenge = same response)
 #[tokio::test]
 async fn test_puf_consistency() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     let challenge = 0xDEADBEEFCAFEBABE;
 
@@ -35,7 +35,7 @@ async fn test_puf_consistency() {
 /// Test PUF uniqueness (different challenges = different responses)
 #[tokio::test]
 async fn test_puf_uniqueness() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     let c1 = 0x0000000000000001;
     let c2 = 0x0000000000000002;
@@ -52,8 +52,8 @@ async fn test_puf_uniqueness() {
 /// Test PUF chip uniqueness (different seeds = different responses)
 #[tokio::test]
 async fn test_puf_chip_uniqueness() {
-    let puf1 = PhysicalUF::new(42); // Chip 1
-    let puf2 = PhysicalUF::new(43); // Chip 2
+    let mut puf1 = PhysicalUF::new(42); // Chip 1
+    let mut puf2 = PhysicalUF::new(43); // Chip 2
 
     let challenge = 0x1234567890ABCDEF;
 
@@ -99,7 +99,7 @@ async fn test_puf_with_noise() {
 /// Test PUF helper data generation (for error correction)
 #[tokio::test]
 async fn test_puf_helper_data() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     let challenge = 0x1122334455667788;
     let response = puf.challenge_response(challenge).await.unwrap();
@@ -146,7 +146,7 @@ async fn test_puf_key_reconstruction() {
 /// Test PUF-based device key derivation
 #[tokio::test]
 async fn test_puf_device_key_derivation() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     // Derive 256-bit device key from PUF
     let device_key = puf.derive_device_key().await.unwrap();
@@ -164,8 +164,8 @@ async fn test_puf_device_key_derivation() {
 /// Test PUF chip ID generation
 #[tokio::test]
 async fn test_puf_chip_id() {
-    let puf1 = PhysicalUF::new(42);
-    let puf2 = PhysicalUF::new(43);
+    let mut puf1 = PhysicalUF::new(42);
+    let mut puf2 = PhysicalUF::new(43);
 
     let id1 = puf1.get_chip_id().await.unwrap();
     let id2 = puf2.get_chip_id().await.unwrap();
@@ -176,7 +176,7 @@ async fn test_puf_chip_id() {
 /// Test PUF entropy quality
 #[tokio::test]
 async fn test_puf_entropy() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     // Collect responses from different challenges
     let mut responses = vec![];
@@ -204,7 +204,7 @@ async fn test_puf_entropy() {
 /// Test PUF challenge avalanche effect
 #[tokio::test]
 async fn test_puf_avalanche() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     let c1 = 0x0000000000000000;
     let c2 = 0x0000000000000001; // Single bit different
@@ -248,7 +248,7 @@ async fn test_puf_tamper_detection() {
 /// Test PUF oscillator configuration
 #[tokio::test]
 async fn test_puf_oscillator_config() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     // Configure oscillator parameters
     puf.configure_oscillators(
@@ -265,7 +265,7 @@ async fn test_puf_oscillator_config() {
 /// Test PUF challenge-response pair (CRP) database
 #[tokio::test]
 async fn test_puf_crp_database() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     // Generate CRP database
     let mut crp_db = vec![];
@@ -289,8 +289,8 @@ async fn test_puf_crp_database() {
 /// Test PUF authentication protocol
 #[tokio::test]
 async fn test_puf_authentication() {
-    let puf_device = PhysicalUF::new(42);
-    let puf_verifier = PhysicalUF::new(42); // Same chip
+    let mut puf_device = PhysicalUF::new(42);
+    let mut puf_verifier = PhysicalUF::new(42); // Same chip
 
     // Authentication challenge
     let challenge = 0xDEADBEEF;
@@ -307,7 +307,7 @@ async fn test_puf_authentication() {
     );
 
     // Test with different chip (should fail)
-    let puf_impostor = PhysicalUF::new(99);
+    let mut puf_impostor = PhysicalUF::new(99);
     let impostor_response = puf_impostor.challenge_response(challenge).await.unwrap();
 
     assert_ne!(
@@ -319,7 +319,7 @@ async fn test_puf_authentication() {
 /// Test PUF key transfer to AES coprocessor
 #[tokio::test]
 async fn test_puf_key_transfer() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     // Derive key from PUF
     let device_key = puf.derive_device_key().await.unwrap();
@@ -337,7 +337,7 @@ async fn test_puf_key_transfer() {
 /// Test PUF performance: challenge-response latency
 #[tokio::test]
 async fn test_puf_latency() {
-    let puf = PhysicalUF::new(42);
+    let mut puf = PhysicalUF::new(42);
 
     let challenge = 0x1234567890ABCDEF;
 
