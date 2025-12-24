@@ -30,6 +30,76 @@ impl DefaultEmbeddingGenerator {
     pub fn new(dimension: usize) -> Self {
         Self { dimension }
     }
+
+    /// Generate embedding with graph context
+    ///
+    /// Incorporates neighbor states and relation types to produce
+    /// graph-aware embeddings for hybrid routing.
+    ///
+    /// # Arguments
+    ///
+    /// * `tile_state` - Current tile state
+    /// * `neighbors` - States of neighboring tiles
+    /// * `relation_types` - Relation type for each neighbor
+    ///
+    /// # Returns
+    ///
+    /// Enhanced embedding that includes graph context
+    pub fn generate_with_context(
+        &self,
+        tile_state: &TileState,
+        neighbors: &[TileState],
+        relation_types: &[crate::ruvector::fusion::RelationType],
+    ) -> Embedding {
+        // Start with base embedding
+        let mut base = self.from_tile_state(tile_state);
+
+        // If no neighbors, return base embedding
+        if neighbors.is_empty() || relation_types.is_empty() {
+            return base;
+        }
+
+        // Generate neighbor embeddings
+        let neighbor_embeddings: Vec<Embedding> = neighbors
+            .iter()
+            .map(|n| self.from_tile_state(n))
+            .collect();
+
+        // Weighted average based on relation strengths
+        let mut context = vec![0.0; self.dimension];
+        let mut total_weight = 0.0;
+
+        for (i, (emb, &rel_type)) in neighbor_embeddings
+            .iter()
+            .zip(relation_types.iter())
+            .enumerate()
+        {
+            if i >= neighbors.len() {
+                break;
+            }
+
+            let weight = rel_type.strength() as f32;
+            total_weight += weight;
+
+            for (j, &val) in emb.data.iter().enumerate() {
+                context[j] += val * weight;
+            }
+        }
+
+        // Normalize context
+        if total_weight > 0.0 {
+            for val in &mut context {
+                *val /= total_weight;
+            }
+        }
+
+        // Combine base and context (70% base, 30% context)
+        for i in 0..self.dimension {
+            base.data[i] = 0.7 * base.data[i] + 0.3 * context[i];
+        }
+
+        base
+    }
 }
 
 impl EmbeddingGenerator for DefaultEmbeddingGenerator {
