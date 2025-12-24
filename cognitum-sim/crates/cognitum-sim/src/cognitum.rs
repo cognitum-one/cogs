@@ -91,13 +91,25 @@ impl Cognitum {
         self.tiles.len()
     }
 
-    pub fn load_program(&mut self, tile_id: TileId, program: &[u32]) -> Result<()> {
+    /// Load program into a tile (async version for use within async context)
+    pub async fn load_program(&mut self, tile_id: TileId, program: &[u32]) -> Result<()> {
         let tile_idx = tile_id.value() as usize;
         if tile_idx >= 256 {
             return Err(SimulationError::InvalidTileId(tile_id.value()));
         }
 
-        // Load program synchronously (we're not in async context)
+        let tile = Arc::clone(&self.tiles[tile_idx]);
+        let mut tile = tile.lock().await;
+        tile.load_program(program)
+    }
+
+    /// Load program into a tile (sync version for non-async context)
+    pub fn load_program_sync(&mut self, tile_id: TileId, program: &[u32]) -> Result<()> {
+        let tile_idx = tile_id.value() as usize;
+        if tile_idx >= 256 {
+            return Err(SimulationError::InvalidTileId(tile_id.value()));
+        }
+
         let tile = Arc::clone(&self.tiles[tile_idx]);
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
@@ -160,7 +172,14 @@ impl Cognitum {
         Ok(())
     }
 
-    pub fn statistics(&self) -> SimulationStatistics {
+    /// Get simulation statistics (async version)
+    pub async fn statistics(&self) -> SimulationStatistics {
+        let stats = self.stats.lock().await;
+        stats.clone()
+    }
+
+    /// Get simulation statistics (sync version for non-async context)
+    pub fn statistics_sync(&self) -> SimulationStatistics {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let stats = self.stats.lock().await;
@@ -168,7 +187,19 @@ impl Cognitum {
         })
     }
 
-    pub fn tile_stack_top(&self, tile_id: TileId) -> Result<u32> {
+    /// Get top of stack for a tile (async version)
+    pub async fn tile_stack_top(&self, tile_id: TileId) -> Result<u32> {
+        let tile_idx = tile_id.value() as usize;
+        if tile_idx >= 256 {
+            return Err(SimulationError::InvalidTileId(tile_id.value()));
+        }
+
+        let tile = self.tiles[tile_idx].lock().await;
+        Ok(tile.peek_stack())
+    }
+
+    /// Get top of stack for a tile (sync version for non-async context)
+    pub fn tile_stack_top_sync(&self, tile_id: TileId) -> Result<u32> {
         let tile_idx = tile_id.value() as usize;
         if tile_idx >= 256 {
             return Err(SimulationError::InvalidTileId(tile_id.value()));
@@ -181,7 +212,19 @@ impl Cognitum {
         })
     }
 
-    pub fn tile_packets_received(&self, tile_id: TileId) -> Result<u64> {
+    /// Get packets received by a tile (async version)
+    pub async fn tile_packets_received(&self, tile_id: TileId) -> Result<u64> {
+        let tile_idx = tile_id.value() as usize;
+        if tile_idx >= 256 {
+            return Err(SimulationError::InvalidTileId(tile_id.value()));
+        }
+
+        let tile = self.tiles[tile_idx].lock().await;
+        Ok(tile.packets_received())
+    }
+
+    /// Get packets received by a tile (sync version for non-async context)
+    pub fn tile_packets_received_sync(&self, tile_id: TileId) -> Result<u64> {
         let tile_idx = tile_id.value() as usize;
         if tile_idx >= 256 {
             return Err(SimulationError::InvalidTileId(tile_id.value()));
@@ -214,22 +257,26 @@ mod tests {
         assert_eq!(cognitum.tile_count(), 256);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_load_and_run() {
         let mut cognitum = Cognitum::new(CognitumConfig::default());
 
-        let program = vec![
-            0x08000001, // LITERAL 1
-            0x3F000000, // HALT
+        // 32-bit instruction format: opcode in bits 31-26
+        // LITERAL (0x08) = 0x08 << 26 = 0x20000000, with value in lower 26 bits
+        // HALT (0x3F) = 0x3F << 26 = 0xFC000000
+        let program: Vec<u32> = vec![
+            0x20000001, // LITERAL 1 (opcode 0x08 << 26 | value 1)
+            0xFC000000, // HALT (opcode 0x3F << 26)
         ];
 
         cognitum
             .load_program(TileId::new(0).unwrap(), &program)
+            .await
             .unwrap();
 
         cognitum.run_for(10).await.unwrap();
 
-        let stack = cognitum.tile_stack_top(TileId::new(0).unwrap()).unwrap();
+        let stack = cognitum.tile_stack_top(TileId::new(0).unwrap()).await.unwrap();
         assert_eq!(stack, 1);
     }
 }

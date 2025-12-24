@@ -3,11 +3,8 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod commands;
-mod config;
-
-use commands::{benchmark, debug, inspect, load, run};
-use config::CognitumCliConfig;
+use cognitum_cli::{benchmark, debug, inspect, load, run};
+use cognitum_cli::config::CognitumCliConfig;
 
 /// Cognitum ASIC Simulator - Command Line Interface
 #[derive(Parser)]
@@ -44,7 +41,7 @@ enum Command {
         tiles: u16,
 
         /// Maximum number of cycles to run
-        #[arg(short, long)]
+        #[arg(short = 'n', long)]
         cycles: Option<u64>,
 
         /// Enable execution trace

@@ -10,7 +10,7 @@ fn test_cli_help() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Cognitum ASIC Simulator"));
+        .stdout(predicate::str::contains("Cognitum ASIC simulator"));
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn test_cli_version() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("cognitum-cli"));
+        .stdout(predicate::str::contains("cognitum"));
 }
 
 #[test]

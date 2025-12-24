@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
     // Load the same program into all 4 tiles
     println!("Loading program into 4 tiles...");
     for tile_id in 0..4 {
-        cognitum.load_program(TileId(tile_id), &program)?;
+        cognitum.load_program(TileId::new(tile_id as u16).unwrap(), &program)?;
         println!("  Tile {} loaded", tile_id);
     }
 
