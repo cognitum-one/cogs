@@ -1,11 +1,9 @@
 // Audit logger implementation with tamper-evident chaining
 
 use std::sync::{Arc, Mutex};
-use chrono::Utc;
-
 use super::{
-    AuditEvent, AuditEventType, AuditOutcome, AuditError, Result,
-    AuditStore, AuditId, UserId, ResourceId, RequestContext, User,
+    AuditEvent, AuditOutcome, AuditError, Result,
+    AuditStore, AuditId, UserId, ResourceId, RequestContext,
 };
 
 /// Audit logger with chain hash linking for tamper evidence

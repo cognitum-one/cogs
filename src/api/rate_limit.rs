@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use super::rate_limit_store::{RateLimitStore, InMemoryStore, RedisStore, StoreError};
+use super::rate_limit_store::{RateLimitStore, StoreError};
 
 /// Rate limiting errors
 #[derive(Debug, Error)]
