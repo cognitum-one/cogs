@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
 
     // Load a simple program
     let program = vec![0x30, 0x31, 0x28, 0x34];
-    cognitum.load_program(TileId(0), &program)?;
+    cognitum.load_program(TileId::new(0).unwrap(), &program)?;
 
     // Run simulation
     let results = cognitum.run().await?;

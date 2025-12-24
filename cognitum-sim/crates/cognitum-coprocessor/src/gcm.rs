@@ -58,8 +58,12 @@ impl GcmCoprocessor {
         self.aad = aad;
     }
 
-    /// Clear nonce history (for testing only - don't use in production!)
-    #[cfg(test)]
+    /// Clear nonce history
+    ///
+    /// # Security Warning
+    /// This is primarily for testing. In production, nonce reuse is a critical
+    /// security vulnerability - only clear if you're absolutely certain the key
+    /// will never be reused with any previously-used nonce.
     pub fn clear_nonce_history(&mut self) {
         self.used_nonces.clear();
     }

@@ -258,7 +258,7 @@ async fn test_concurrent_encryption() {
     let mut handles = vec![];
     for i in 0..10 {
         let aes_clone = aes.clone();
-        let key_clone = key.clone();
+        let key_clone = key.clone_key();
         let handle = tokio::spawn(async move {
             let mut aes_lock = aes_clone.lock().await;
             let plaintext = [i as u8; 16];

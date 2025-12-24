@@ -33,7 +33,8 @@ pub enum SimulationEvent {
 }
 
 impl SimulationEvent {
-    fn time(&self) -> u64 {
+    /// Get the time associated with this event
+    pub fn time(&self) -> u64 {
         match self {
             SimulationEvent::ClockTick { cycle } => *cycle,
             SimulationEvent::InstructionComplete { cycles, .. } => *cycles,
