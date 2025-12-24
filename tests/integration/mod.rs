@@ -5,3 +5,4 @@
 mod api_integration_test;
 mod auth_flow_test;
 mod simulation_flow_test;
+mod ruvector_e2e;

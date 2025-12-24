@@ -284,7 +284,7 @@ pub trait MinCutPartitioner: Send + Sync {
 /// Kernighan-Lin partitioner (fallback when ruvector-mincut not available)
 pub struct KernighanLinPartitioner {
     graph: Arc<RwLock<TileGraph>>,
-    max_iterations: usize,
+    pub max_iterations: usize,
 }
 
 impl KernighanLinPartitioner {

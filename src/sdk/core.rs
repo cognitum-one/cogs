@@ -7,6 +7,7 @@ use tokio::sync::Mutex;
 
 use super::errors::SdkError;
 use super::types::{ExecutionResult, MemorySnapshot, ProgramHandle, SimulatorConfig};
+use crate::ruvector::SimulatorBridge;
 
 /// Real Cognitum simulator wrapper
 pub struct CognitumSimulator {
@@ -21,6 +22,9 @@ pub struct CognitumSimulator {
 
     /// Current cycle count
     cycles: u64,
+
+    /// Optional ruvector routing bridge
+    routing_bridge: Option<SimulatorBridge>,
 }
 
 impl CognitumSimulator {
@@ -37,6 +41,7 @@ impl CognitumSimulator {
             config,
             program_loaded: false,
             cycles: 0,
+            routing_bridge: None,
         })
     }
 
@@ -164,6 +169,40 @@ impl CognitumSimulator {
             deterministic: config.deterministic,
             enable_tracing: config.trace_enabled,
         }
+    }
+
+    /// Enable ruvector-based intelligent routing
+    ///
+    /// This activates the simulator bridge which provides:
+    /// - Graph-based partitioning for optimal task placement
+    /// - Real-time workload monitoring and rebalancing
+    /// - Performance metrics collection
+    ///
+    /// # Returns
+    ///
+    /// Self for method chaining
+    pub fn with_ruvector_routing(mut self) -> Self {
+        let bridge = SimulatorBridge::new(Arc::clone(&self.cognitum));
+        self.routing_bridge = Some(bridge);
+        self
+    }
+
+    /// Get reference to the routing bridge if enabled
+    ///
+    /// # Returns
+    ///
+    /// Optional reference to the SimulatorBridge
+    pub fn get_routing_bridge(&self) -> Option<&SimulatorBridge> {
+        self.routing_bridge.as_ref()
+    }
+
+    /// Get mutable reference to the routing bridge if enabled
+    ///
+    /// # Returns
+    ///
+    /// Optional mutable reference to the SimulatorBridge
+    pub fn get_routing_bridge_mut(&mut self) -> Option<&mut SimulatorBridge> {
+        self.routing_bridge.as_mut()
     }
 }
 

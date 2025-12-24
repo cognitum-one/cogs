@@ -68,6 +68,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 mockall = "0.13"
 tokio-test = "0.4"
 proptest = "1.5"
+futures = "0.3"
 
 # Test utilities
 pretty_assertions = "1.4"
@@ -83,6 +84,10 @@ test-utils = []
 name = "acceptance_tests"
 path = "tests/acceptance/mod.rs"
 harness = false
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration/mod.rs"
 
 [[test]]
 name = "unit_tests"
