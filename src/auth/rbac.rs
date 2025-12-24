@@ -198,7 +198,7 @@ impl RbacService {
                     // Unknown role - deny by default
                     continue;
                 }
-                Err(e) => {
+                Err(_e) => {
                     // Store error - deny by default
                     return Ok(false);
                 }
@@ -230,7 +230,7 @@ impl RbacService {
                 // Resource or user not found - deny by default
                 Ok(false)
             }
-            Err(e) => {
+            Err(_e) => {
                 // Store error - deny by default
                 Ok(false)
             }

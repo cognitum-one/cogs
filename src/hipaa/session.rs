@@ -72,7 +72,7 @@ impl HipaaSessionManager {
     pub async fn create_session(&self, user_id: &UserId) -> Result<Session> {
         let now = Utc::now();
         let absolute_timeout_chrono = Duration::from_std(self.config.absolute_timeout)
-            .map_err(|e| HipaaError::InvalidSession)?;
+            .map_err(|_e| HipaaError::InvalidSession)?;
 
         let session = Session {
             id: SessionId::new(format!("sess_{}", uuid::Uuid::new_v4())),

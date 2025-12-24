@@ -11,6 +11,13 @@ name = "cognitum"
 path = "src/lib.rs"
 
 [dependencies]
+# Cognitum simulator dependencies
+cognitum-core = { path = "cognitum-sim/crates/cognitum-core" }
+cognitum-processor = { path = "cognitum-sim/crates/cognitum-processor" }
+cognitum-memory = { path = "cognitum-sim/crates/cognitum-memory" }
+cognitum-raceway = { path = "cognitum-sim/crates/cognitum-raceway" }
+cognitum-sim = { path = "cognitum-sim/crates/cognitum-sim" }
+
 # Async runtime
 tokio = { version = "1.48", features = ["full"] }
 
@@ -44,6 +51,17 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 
 # Time and date
 chrono = { version = "0.4", features = ["serde"] }
+
+# Web framework and HTTP
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
+hyper = { version = "1.0", features = ["full"] }
+http = "1.0"
+
+# Tracing and logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 # Testing
