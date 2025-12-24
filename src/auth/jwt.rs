@@ -278,17 +278,27 @@ mod tests {
     #[test]
     fn expired_token_is_rejected() {
         let mock_store = MockTokenStore::new();
-        let jwt_service = JwtService::new(Arc::new(mock_store), JwtConfig::default());
+        // Use a very short TTL (1ms) to test expiration
+        let config = JwtConfig {
+            access_token_ttl: chrono::Duration::milliseconds(1),
+            refresh_token_ttl: chrono::Duration::days(7),
+            issuer: "cognitum".to_string(),
+        };
+        let jwt_service = JwtService::new(Arc::new(mock_store), config);
 
         let claims = UserClaims::new(
             "user_123".to_string(),
             vec![],
             vec![],
             "cognitum".to_string(),
-            chrono::Duration::seconds(-1), // Already expired
+            chrono::Duration::seconds(1), // Not used by create_access_token
         );
 
         let token = jwt_service.create_access_token(&claims).unwrap();
+
+        // Wait for token to expire
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
         let result = jwt_service.decode_access_token(&token);
 
         assert!(matches!(result, Err(AuthError::TokenExpired)));

@@ -10,7 +10,7 @@ use crate::ruvector::{
 };
 use crate::ruvector::types::{TaskEmbedding, TileState};
 use cognitum_core::TileId as SimTileId;
-use cognitum_sim::{Cognitum, TileSimulator};
+use cognitum_sim::Cognitum;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

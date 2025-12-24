@@ -52,6 +52,9 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 # Time and date
 chrono = { version = "0.4", features = ["serde"] }
 
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate", "json"] }
+
 # Web framework and HTTP
 axum = "0.7"
 tower = { version = "0.4", features = ["util"] }
@@ -62,6 +65,9 @@ http = "1.0"
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Redis for distributed storage and rate limiting
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "aio"] }
 
 [dev-dependencies]
 # Testing
@@ -79,6 +85,11 @@ criterion = { version = "0.5", features = ["html_reports"] }
 [features]
 default = []
 test-utils = []
+
+# Binary targets
+[[bin]]
+name = "cognitum-api"
+path = "src/bin/cognitum-api.rs"
 
 [[test]]
 name = "acceptance_tests"

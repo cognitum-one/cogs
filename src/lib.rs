@@ -17,3 +17,5 @@ pub mod security;
 pub mod audit;
 pub mod ruvector;
 pub mod hipaa;
+pub mod storage;
+pub mod config;

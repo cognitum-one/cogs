@@ -195,11 +195,26 @@ mod tests {
         let api_key_store = Arc::new(MockApiKeyStore::new());
         let api_key_service = Arc::new(ApiKeyService::new(api_key_store));
 
+        // Create simulator
+        let simulator_config = crate::sdk::types::SimulatorConfig::default();
+        let simulator = crate::sdk::core::CognitumSimulator::new(simulator_config)
+            .expect("Failed to create simulator");
+
+        // Create ruvector
+        let ruvector_config = crate::ruvector::types::RuvectorConfig::default();
+        let ruvector = crate::ruvector::facade::CognitumRuvector::new(ruvector_config);
+
+        // Create user store
+        let user_store = Arc::new(crate::api::handlers::UserStore::new());
+
         Arc::new(ApiState {
             rate_limit_store,
             rate_limit_config,
             jwt_service,
             api_key_service,
+            user_store,
+            simulator: Arc::new(tokio::sync::Mutex::new(simulator)),
+            ruvector: Arc::new(ruvector),
         })
     }
 

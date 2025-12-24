@@ -7,17 +7,77 @@
 //! - `ruvector_handlers`: Vector search operations
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Extension},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::collections::HashMap;
+use parking_lot::RwLock;
+use argon2::{Argon2, PasswordHash, PasswordVerifier, PasswordHasher};
+use argon2::password_hash::{SaltString, rand_core::OsRng};
 
 use crate::api::{InMemoryStore, RateLimitConfig};
 use crate::auth::{ApiKeyService, JwtService, KeyScope};
-use crate::auth::types::UserId;
+use crate::auth::types::{UserId, UserClaims};
+use crate::sdk::core::CognitumSimulator;
+use crate::ruvector::facade::CognitumRuvector;
+
+/// User record for authentication
+#[derive(Debug, Clone)]
+pub struct User {
+    pub id: String,
+    pub username: String,
+    pub password_hash: String,
+    pub roles: Vec<String>,
+    pub tier: String,
+}
+
+/// Simple in-memory user store
+pub struct UserStore {
+    users: RwLock<HashMap<String, User>>,
+}
+
+impl UserStore {
+    pub fn new() -> Self {
+        Self {
+            users: RwLock::new(HashMap::new()),
+        }
+    }
+
+    pub fn create_user(&self, username: &str, password_hash: &str, tier: &str) -> Result<User, String> {
+        let mut users = self.users.write();
+
+        if users.contains_key(username) {
+            return Err("User already exists".to_string());
+        }
+
+        let user = User {
+            id: uuid::Uuid::new_v4().to_string(),
+            username: username.to_string(),
+            password_hash: password_hash.to_string(),
+            roles: vec!["user".to_string()],
+            tier: tier.to_string(),
+        };
+
+        users.insert(username.to_string(), user.clone());
+        Ok(user)
+    }
+
+    pub fn get_user_by_username(&self, username: &str) -> Option<User> {
+        let users = self.users.read();
+        users.get(username).cloned()
+    }
+}
+
+/// Authenticated user extracted from middleware
+#[derive(Debug, Clone)]
+pub struct AuthenticatedUser {
+    pub user_id: String,
+    pub roles: Vec<String>,
+}
 
 /// Shared application state passed to all handlers
 #[derive(Clone)]
@@ -26,6 +86,9 @@ pub struct ApiState {
     pub rate_limit_config: RateLimitConfig,
     pub jwt_service: Arc<JwtService>,
     pub api_key_service: Arc<ApiKeyService>,
+    pub user_store: Arc<UserStore>,
+    pub simulator: Arc<tokio::sync::Mutex<CognitumSimulator>>,
+    pub ruvector: Arc<CognitumRuvector>,
 }
 
 /// Standard API error response
@@ -115,6 +178,21 @@ pub mod auth_handlers {
         pub refresh_token: String,
     }
 
+    /// Register request body
+    #[derive(Debug, Deserialize)]
+    pub struct RegisterRequest {
+        pub username: String,
+        pub password: String,
+        pub tier: Option<String>,
+    }
+
+    /// Register response
+    #[derive(Debug, Serialize)]
+    pub struct RegisterResponse {
+        pub user_id: String,
+        pub username: String,
+    }
+
     /// Create API key request
     #[derive(Debug, Deserialize)]
     pub struct CreateApiKeyRequest {
@@ -157,11 +235,10 @@ pub mod auth_handlers {
     ///       description: Invalid credentials
     /// ```
     pub async fn login(
-        State(_state): State<Arc<ApiState>>,
+        State(state): State<Arc<ApiState>>,
         Json(request): Json<LoginRequest>,
     ) -> Result<Json<SuccessResponse<LoginResponse>>, ErrorResponse> {
-        // TODO: Integrate with actual user authentication service
-        // For now, validate basic credentials
+        // Validate basic input
         if request.username.is_empty() || request.password.is_empty() {
             return Err(ErrorResponse::new(
                 "Invalid credentials",
@@ -169,17 +246,117 @@ pub mod auth_handlers {
             ));
         }
 
-        // TODO: Verify username/password against user store
-        // TODO: Fetch user roles and permissions
-        // TODO: Create JWT access token
-        // TODO: Create refresh token
+        // Get user from store
+        let user = state
+            .user_store
+            .get_user_by_username(&request.username)
+            .ok_or_else(|| ErrorResponse::new("Invalid credentials", "INVALID_CREDENTIALS"))?;
 
-        // Placeholder response
+        // Verify password with Argon2
+        let parsed_hash = PasswordHash::new(&user.password_hash)
+            .map_err(|_| ErrorResponse::new("Authentication failed", "INTERNAL_ERROR"))?;
+
+        Argon2::default()
+            .verify_password(request.password.as_bytes(), &parsed_hash)
+            .map_err(|_| ErrorResponse::new("Invalid credentials", "INVALID_CREDENTIALS"))?;
+
+        // Create JWT claims
+        let permissions = vec!["simulator:execute".to_string(), "ruvector:search".to_string()];
+        let claims = UserClaims::new(
+            user.id.clone(),
+            user.roles.clone(),
+            permissions,
+            "cognitum".to_string(),
+            chrono::Duration::minutes(15),
+        );
+
+        // Create access token
+        let access_token = state
+            .jwt_service
+            .create_access_token(&claims)
+            .map_err(|e| ErrorResponse::new(format!("Token creation failed: {}", e), "INTERNAL_ERROR"))?;
+
+        // Create refresh token
+        let refresh_token = state
+            .jwt_service
+            .create_refresh_token(&user.id)
+            .await
+            .map_err(|e| ErrorResponse::new(format!("Token creation failed: {}", e), "INTERNAL_ERROR"))?;
+
         let response = LoginResponse {
-            access_token: "placeholder_access_token".to_string(),
-            refresh_token: "placeholder_refresh_token".to_string(),
+            access_token,
+            refresh_token,
             token_type: "Bearer".to_string(),
-            expires_in: 900, // 15 minutes
+            expires_in: 900,
+        };
+
+        Ok(Json(SuccessResponse::new(response)))
+    }
+
+    /// Register endpoint
+    ///
+    /// # OpenAPI
+    /// ```yaml
+    /// post:
+    ///   summary: Register new user account
+    ///   tags: [Authentication]
+    ///   requestBody:
+    ///     required: true
+    ///     content:
+    ///       application/json:
+    ///         schema:
+    ///           type: object
+    ///           required: [username, password]
+    ///           properties:
+    ///             username:
+    ///               type: string
+    ///             password:
+    ///               type: string
+    ///             tier:
+    ///               type: string
+    ///               enum: [free, pro, enterprise]
+    ///   responses:
+    ///     201:
+    ///       description: User registered successfully
+    ///     400:
+    ///       description: Invalid request or user already exists
+    /// ```
+    pub async fn register(
+        State(state): State<Arc<ApiState>>,
+        Json(request): Json<RegisterRequest>,
+    ) -> Result<Json<SuccessResponse<RegisterResponse>>, ErrorResponse> {
+        // Validate input
+        if request.username.is_empty() || request.password.is_empty() {
+            return Err(ErrorResponse::new(
+                "Username and password are required",
+                "INVALID_REQUEST",
+            ));
+        }
+
+        if request.password.len() < 8 {
+            return Err(ErrorResponse::new(
+                "Password must be at least 8 characters",
+                "INVALID_REQUEST",
+            ));
+        }
+
+        // Hash password with Argon2
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = Argon2::default()
+            .hash_password(request.password.as_bytes(), &salt)
+            .map_err(|e| ErrorResponse::new(format!("Password hashing failed: {}", e), "INTERNAL_ERROR"))?
+            .to_string();
+
+        // Create user with default tier "free"
+        let tier = request.tier.unwrap_or_else(|| "free".to_string());
+        let user = state
+            .user_store
+            .create_user(&request.username, &password_hash, &tier)
+            .map_err(|e| ErrorResponse::new(e, "INVALID_REQUEST"))?;
+
+        let response = RegisterResponse {
+            user_id: user.id,
+            username: user.username,
         };
 
         Ok(Json(SuccessResponse::new(response)))
@@ -267,10 +444,11 @@ pub mod auth_handlers {
     /// ```
     pub async fn create_api_key(
         State(state): State<Arc<ApiState>>,
+        Extension(user): Extension<crate::api::handlers::AuthenticatedUser>,
         Json(request): Json<CreateApiKeyRequest>,
     ) -> Result<Json<SuccessResponse<CreateApiKeyResponse>>, ErrorResponse> {
-        // TODO: Extract user_id from JWT claims in request extension
-        let user_id = UserId::new("user_placeholder");
+        // Extract user_id from authenticated user extension
+        let user_id = UserId::new(&user.user_id);
 
         let (api_key, key_id) = state
             .api_key_service
@@ -385,7 +563,8 @@ pub mod simulator_handlers {
     ///       description: Unauthorized
     /// ```
     pub async fn execute_simulation(
-        State(_state): State<Arc<ApiState>>,
+        State(state): State<Arc<ApiState>>,
+        Extension(_user): Extension<crate::api::handlers::AuthenticatedUser>,
         Json(request): Json<ExecuteSimulationRequest>,
     ) -> Result<Json<SuccessResponse<ExecuteSimulationResponse>>, ErrorResponse> {
         // Validate request
@@ -396,15 +575,47 @@ pub mod simulator_handlers {
             ));
         }
 
-        // TODO: Integrate with actual simulator
-        // TODO: Validate program syntax
-        // TODO: Execute simulation
-        // TODO: Return results
+        // Parse program as hex string to bytes
+        let bytecode = hex::decode(&request.program)
+            .map_err(|e| ErrorResponse::new(
+                format!("Invalid program format (expected hex): {}", e),
+                "INVALID_REQUEST",
+            ))?;
+
+        // Lock simulator and execute
+        let mut simulator = state.simulator.lock().await;
+
+        // Load program
+        let _handle = simulator
+            .create_program(&bytecode)
+            .await
+            .map_err(|e| ErrorResponse::new(
+                format!("Failed to load program: {}", e),
+                "INVALID_REQUEST",
+            ))?;
+
+        // Execute simulation
+        let max_cycles = request.max_steps.unwrap_or(10000);
+        let result = simulator
+            .execute(Some(max_cycles))
+            .await
+            .map_err(|e| ErrorResponse::new(
+                format!("Simulation execution failed: {}", e),
+                "INTERNAL_ERROR",
+            ))?;
+
+        // Build response with actual results
+        let result_json = serde_json::json!({
+            "cycles_executed": result.cycles_executed,
+            "instructions_executed": result.instructions_executed,
+            "halted": result.halted,
+            "status": if result.halted { "completed" } else { "timeout" },
+        });
 
         let response = ExecuteSimulationResponse {
             simulation_id: uuid::Uuid::new_v4().to_string(),
             status: "completed".to_string(),
-            result: Some(serde_json::json!({"output": "placeholder"})),
+            result: Some(result_json),
         };
 
         Ok(Json(SuccessResponse::new(response)))
@@ -427,12 +638,20 @@ pub mod simulator_handlers {
     ///       description: Unauthorized
     /// ```
     pub async fn get_status(
-        State(_state): State<Arc<ApiState>>,
+        State(state): State<Arc<ApiState>>,
+        Extension(_user): Extension<crate::api::handlers::AuthenticatedUser>,
     ) -> Result<Json<SuccessResponse<SimulatorStatusResponse>>, ErrorResponse> {
+        let simulator = state.simulator.lock().await;
+        let snapshot = simulator.get_snapshot().await
+            .map_err(|e| ErrorResponse::new(
+                format!("Failed to get simulator status: {}", e),
+                "INTERNAL_ERROR",
+            ))?;
+
         let response = SimulatorStatusResponse {
             status: "running".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
-            uptime_seconds: 0, // TODO: Track actual uptime
+            uptime_seconds: snapshot.cycles,
         };
 
         Ok(Json(SuccessResponse::new(response)))
@@ -522,7 +741,8 @@ pub mod ruvector_handlers {
     ///       description: Unauthorized
     /// ```
     pub async fn vector_search(
-        State(_state): State<Arc<ApiState>>,
+        State(state): State<Arc<ApiState>>,
+        Extension(_user): Extension<crate::api::handlers::AuthenticatedUser>,
         Json(request): Json<VectorSearchRequest>,
     ) -> Result<Json<SuccessResponse<VectorSearchResponse>>, ErrorResponse> {
         // Validate request
@@ -537,13 +757,33 @@ pub mod ruvector_handlers {
             return Err(ErrorResponse::new("top_k must be greater than 0", "INVALID_REQUEST"));
         }
 
-        // TODO: Integrate with Ruvector search engine
-        // TODO: Perform vector search
-        // TODO: Apply filters if provided
+        // Create embedding from query vector
+        let query_embedding = crate::ruvector::types::Embedding::new(request.query_vector);
+
+        // Perform search with timing
+        let start = std::time::Instant::now();
+        let search_results = state
+            .ruvector
+            .search_similar(&query_embedding, request.top_k)
+            .map_err(|e| ErrorResponse::new(
+                format!("Vector search failed: {}", e),
+                "INTERNAL_ERROR",
+            ))?;
+        let took_ms = start.elapsed().as_millis() as u64;
+
+        // Convert to response format
+        let results = search_results
+            .into_iter()
+            .map(|r| SearchResult {
+                id: r.id.0.to_string(),
+                score: r.similarity,
+                metadata: Some(serde_json::to_value(&r.metadata).unwrap_or(serde_json::Value::Null)),
+            })
+            .collect();
 
         let response = VectorSearchResponse {
-            results: vec![],
-            took_ms: 0,
+            results,
+            took_ms,
         };
 
         Ok(Json(SuccessResponse::new(response)))
@@ -588,7 +828,8 @@ pub mod ruvector_handlers {
     ///       description: Unauthorized
     /// ```
     pub async fn insert_vectors(
-        State(_state): State<Arc<ApiState>>,
+        State(state): State<Arc<ApiState>>,
+        Extension(_user): Extension<crate::api::handlers::AuthenticatedUser>,
         Json(request): Json<InsertVectorsRequest>,
     ) -> Result<Json<SuccessResponse<InsertVectorsResponse>>, ErrorResponse> {
         // Validate request
@@ -599,13 +840,51 @@ pub mod ruvector_handlers {
             ));
         }
 
-        // TODO: Integrate with Ruvector index
-        // TODO: Insert vectors
-        // TODO: Track failures
+        let mut inserted_count = 0;
+        let mut failed_ids = Vec::new();
+
+        // Insert each vector
+        for record in request.vectors {
+            // Validate vector dimensions
+            if record.vector.is_empty() {
+                failed_ids.push(record.id.clone());
+                continue;
+            }
+
+            // Parse ID as u64
+            let embedding_id = match record.id.parse::<u64>() {
+                Ok(id) => crate::ruvector::types::EmbeddingId(id),
+                Err(_) => {
+                    failed_ids.push(record.id);
+                    continue;
+                }
+            };
+
+            // Create embedding
+            let embedding = crate::ruvector::types::Embedding::new(record.vector);
+
+            // Create metadata
+            let mut metadata = crate::ruvector::types::Metadata::default();
+            if let Some(meta_value) = record.metadata {
+                if let Some(obj) = meta_value.as_object() {
+                    for (key, value) in obj {
+                        if let Some(s) = value.as_str() {
+                            metadata.custom.insert(key.clone(), s.to_string());
+                        }
+                    }
+                }
+            }
+
+            // Insert into index
+            match state.ruvector.store_embedding(embedding_id, &embedding, &metadata) {
+                Ok(_) => inserted_count += 1,
+                Err(_) => failed_ids.push(record.id),
+            }
+        }
 
         let response = InsertVectorsResponse {
-            inserted_count: request.vectors.len(),
-            failed_ids: vec![],
+            inserted_count,
+            failed_ids,
         };
 
         Ok(Json(SuccessResponse::new(response)))

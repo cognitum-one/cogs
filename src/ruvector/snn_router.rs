@@ -382,7 +382,8 @@ pub struct SnnRouter {
     /// Number of output tiles
     num_tiles: usize,
 
-    /// Input dimension
+    /// Input dimension (retained for future extensions)
+    #[allow(dead_code)]
     input_dim: usize,
 }
 

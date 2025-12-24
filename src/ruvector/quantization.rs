@@ -525,7 +525,8 @@ pub struct QuantizedHnswIndex {
     metadata: Arc<RwLock<HashMap<EmbeddingId, Metadata>>>,
     /// HNSW graph structure (simplified for now)
     neighbors: Arc<RwLock<HashMap<EmbeddingId, Vec<EmbeddingId>>>>,
-    /// Configuration
+    /// Configuration (retained for runtime inspection)
+    #[allow(dead_code)]
     config: QuantizedHnswConfig,
 }
 
