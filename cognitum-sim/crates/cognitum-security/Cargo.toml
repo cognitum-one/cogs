@@ -1,0 +1,48 @@
+[package]
+name = "cognitum-security"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Workspace dependencies
+anyhow.workspace = true
+thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+parking_lot.workspace = true
+
+# Cryptography dependencies
+aes-gcm = "0.10"
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+argon2 = { version = "0.5", features = ["std"] }
+rand = "0.8"
+rand_core = { version = "0.6", features = ["getrandom"] }
+sha2 = "0.10"
+zeroize = { version = "1.7", features = ["derive"] }
+subtle = "2.5"
+
+# Async and futures
+async-trait = "0.1"
+futures = "0.3"
+
+# Utility
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+[dev-dependencies]
+mockall = "0.12"
+tokio-test = "0.4"
+criterion = { workspace = true }
+
+[lib]
+name = "cognitum_security"
+path = "src/lib.rs"

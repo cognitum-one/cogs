@@ -47,10 +47,14 @@ pub mod config;
 pub mod error;
 pub mod prelude;
 pub mod results;
+
+// New SDK module with dependency injection
 pub mod sdk;
 
-// Re-export main SDK types
+// Legacy exports for backward compatibility
 pub use config::{CognitumConfig, CognitumConfigBuilder};
 pub use error::{CognitumError, Result};
 pub use results::SimulationResults;
+
+// Re-export new SDK
 pub use sdk::CognitumSDK;

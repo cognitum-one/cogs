@@ -12,6 +12,9 @@ members = [
     "crates/cognitum-cli",
     "crates/cognitum",
     "crates/cognitum-wasm-sim",
+    "crates/cognitum-security",
+    "crates/cognitum-license",
+    "crates/cognitum-api",
 ]
 
 [workspace.package]
@@ -37,6 +40,8 @@ cognitum-io = { path = "crates/cognitum-io", version = "0.1.0" }
 cognitum-sim = { path = "crates/cognitum-sim", version = "0.1.0" }
 cognitum-debug = { path = "crates/cognitum-debug", version = "0.1.0" }
 cognitum-wasm-sim = { path = "crates/cognitum-wasm-sim", version = "0.1.0" }
+cognitum-license = { path = "crates/cognitum-license", version = "0.1.0" }
+cognitum-security = { path = "crates/cognitum-security", version = "0.1.0" }
 
 # External dependencies
 anyhow = "1.0"
