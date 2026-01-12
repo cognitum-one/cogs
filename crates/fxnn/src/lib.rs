@@ -238,17 +238,7 @@ pub mod reality_stack;
 mod simulation;
 mod error;
 
-// Reality Stack modules (ADR-001)
-pub mod reality_stack;
-pub mod witness;
-pub mod governance;
-pub mod agency;
-pub mod perception;
-pub mod benchmark;
-
-// WASM bindings (only when wasm feature is enabled)
-#[cfg(feature = "wasm")]
-pub mod wasm;
+// Reality Stack modules (ADR-001) - declared above
 
 // Re-exports for convenient access
 pub use types::{Atom, SimulationBox, Topology, AtomType};
