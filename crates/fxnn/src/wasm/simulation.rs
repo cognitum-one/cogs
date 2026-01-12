@@ -523,6 +523,64 @@ impl WasmSimulation {
 
         Float32Array::from(com.as_slice())
     }
+
+    /// Set atom positions from a flat array.
+    ///
+    /// Used for restoring simulation state from snapshots.
+    ///
+    /// # Arguments
+    ///
+    /// * `positions` - Flat array [x0, y0, z0, x1, y1, z1, ...]
+    ///
+    /// # Panics
+    ///
+    /// Panics if the array length doesn't match the number of atoms * 3.
+    #[wasm_bindgen]
+    pub fn set_positions(&mut self, positions: &[f32]) {
+        let atoms = self.sim.atoms_mut();
+        let n_atoms = atoms.len();
+
+        if positions.len() != n_atoms * 3 {
+            panic!("positions array length must be {} (got {})", n_atoms * 3, positions.len());
+        }
+
+        for (i, atom) in atoms.iter_mut().enumerate() {
+            atom.position[0] = positions[i * 3];
+            atom.position[1] = positions[i * 3 + 1];
+            atom.position[2] = positions[i * 3 + 2];
+        }
+
+        self.cache_valid = false;
+    }
+
+    /// Set atom velocities from a flat array.
+    ///
+    /// Used for restoring simulation state from snapshots.
+    ///
+    /// # Arguments
+    ///
+    /// * `velocities` - Flat array [vx0, vy0, vz0, vx1, vy1, vz1, ...]
+    ///
+    /// # Panics
+    ///
+    /// Panics if the array length doesn't match the number of atoms * 3.
+    #[wasm_bindgen]
+    pub fn set_velocities(&mut self, velocities: &[f32]) {
+        let atoms = self.sim.atoms_mut();
+        let n_atoms = atoms.len();
+
+        if velocities.len() != n_atoms * 3 {
+            panic!("velocities array length must be {} (got {})", n_atoms * 3, velocities.len());
+        }
+
+        for (i, atom) in atoms.iter_mut().enumerate() {
+            atom.velocity[0] = velocities[i * 3];
+            atom.velocity[1] = velocities[i * 3 + 1];
+            atom.velocity[2] = velocities[i * 3 + 2];
+        }
+
+        self.cache_valid = false;
+    }
 }
 
 /// Simulation statistics for JSON serialization.

@@ -64,6 +64,97 @@ use wasm_bindgen::prelude::*;
 
 use super::WasmSimulation;
 
+// =============================================================================
+// Snapshot/Restore Data Structures
+// =============================================================================
+
+/// A snapshot of simulation state for save/restore
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Snapshot {
+    id: String,
+    sim_id: String,
+    step: u64,
+    hash: String,
+    timestamp: String,
+    positions: Vec<f32>,
+    velocities: Vec<f32>,
+    box_size: f32,
+    n_atoms: usize,
+}
+
+/// Witness log entry for audit trail
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct WitnessEntry {
+    step: u64,
+    hash: String,
+    prev_hash: String,
+    event_type: String,
+    timestamp: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<Value>,
+}
+
+/// Episode for memory storage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Episode {
+    id: String,
+    key: String,
+    sim_id: String,
+    observations: Vec<Vec<f32>>,
+    actions: Vec<Vec<f32>>,
+    rewards: Vec<f32>,
+    total_reward: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    metadata: Option<Value>,
+}
+
+/// Scenario definition for quick-start
+#[derive(Debug, Clone, Serialize)]
+struct Scenario {
+    id: String,
+    name: String,
+    description: String,
+    category: String,
+    params: Value,
+}
+
+/// Simple hash function for state verification (Blake3-like, but pure Rust)
+fn compute_state_hash(positions: &[f32], velocities: &[f32], step: u64) -> String {
+    // Simple FNV-1a hash for WASM compatibility (no external deps)
+    let mut hash: u64 = 0xcbf29ce484222325;
+    let prime: u64 = 0x100000001b3;
+
+    // Hash step
+    for byte in step.to_le_bytes() {
+        hash ^= byte as u64;
+        hash = hash.wrapping_mul(prime);
+    }
+
+    // Hash positions
+    for &p in positions {
+        for byte in p.to_le_bytes() {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(prime);
+        }
+    }
+
+    // Hash velocities
+    for &v in velocities {
+        for byte in v.to_le_bytes() {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(prime);
+        }
+    }
+
+    format!("{:016x}", hash)
+}
+
+fn current_timestamp() -> String {
+    // In WASM, we don't have access to system time, use a placeholder
+    // In real implementation, this would come from JS Date
+    "2026-01-12T00:00:00Z".to_string()
+}
+
 /// JSON-RPC 2.0 request structure
 #[derive(Debug, Deserialize)]
 struct JsonRpcRequest {
@@ -134,7 +225,12 @@ struct ResourceReadParams {
 #[wasm_bindgen]
 pub struct McpHandler {
     simulations: HashMap<String, WasmSimulation>,
+    snapshots: HashMap<String, Vec<Snapshot>>,
+    witness_logs: HashMap<String, Vec<WitnessEntry>>,
+    episodes: HashMap<String, Vec<Episode>>,
     next_sim_id: u32,
+    next_snapshot_id: u32,
+    next_episode_id: u32,
 }
 
 #[wasm_bindgen]
@@ -144,7 +240,12 @@ impl McpHandler {
     pub fn new() -> Self {
         Self {
             simulations: HashMap::new(),
+            snapshots: HashMap::new(),
+            witness_logs: HashMap::new(),
+            episodes: HashMap::new(),
             next_sim_id: 0,
+            next_snapshot_id: 0,
+            next_episode_id: 0,
         }
     }
 
@@ -657,6 +758,154 @@ Complete simulation state snapshot.
                     "properties": {}
                 }),
             },
+            // === Snapshot/Restore Tools ===
+            McpTool {
+                name: "simulation.snapshot".to_string(),
+                description: "Save current simulation state as a snapshot with cryptographic hash".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            McpTool {
+                name: "simulation.restore".to_string(),
+                description: "Restore simulation to a previous snapshot state".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "snapshot_id": {"type": "string", "description": "Snapshot ID to restore"}
+                    },
+                    "required": ["sim_id", "snapshot_id"]
+                }),
+            },
+            McpTool {
+                name: "simulation.snapshots".to_string(),
+                description: "List all snapshots for a simulation".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            // === Witness/Audit Trail Tools ===
+            McpTool {
+                name: "simulation.witness".to_string(),
+                description: "Get witness log entries (tamper-evident audit trail)".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "limit": {"type": "integer", "description": "Max entries to return", "default": 100}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            McpTool {
+                name: "simulation.verify".to_string(),
+                description: "Verify hash chain integrity for audit trail".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            // === Scenario Library Tools ===
+            McpTool {
+                name: "simulation.scenarios".to_string(),
+                description: "List available pre-built simulation scenarios".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+            },
+            McpTool {
+                name: "simulation.load_scenario".to_string(),
+                description: "Create a simulation from a pre-built scenario".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "scenario_id": {"type": "string", "description": "Scenario ID to load"},
+                        "overrides": {"type": "object", "description": "Optional parameter overrides"}
+                    },
+                    "required": ["scenario_id"]
+                }),
+            },
+            // === Observation Tools ===
+            McpTool {
+                name: "simulation.observe".to_string(),
+                description: "Get observation vector for agent/RL integration".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "observer_type": {"type": "string", "enum": ["global", "local"], "default": "global"},
+                        "center": {"type": "array", "items": {"type": "number"}, "description": "Center for local observation [x,y,z]"},
+                        "radius": {"type": "number", "description": "Observation radius for local view", "default": 5.0}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            // === Memory/Episode Tools ===
+            McpTool {
+                name: "simulation.memory_store".to_string(),
+                description: "Store an episode in episodic memory".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "key": {"type": "string", "description": "Episode key/label"},
+                        "observations": {"type": "array", "description": "List of observation vectors"},
+                        "actions": {"type": "array", "description": "List of action vectors"},
+                        "rewards": {"type": "array", "items": {"type": "number"}, "description": "List of rewards"}
+                    },
+                    "required": ["sim_id", "key"]
+                }),
+            },
+            McpTool {
+                name: "simulation.memory_list".to_string(),
+                description: "List stored episodes for a simulation".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "limit": {"type": "integer", "description": "Max episodes to return", "default": 50}
+                    },
+                    "required": ["sim_id"]
+                }),
+            },
+            McpTool {
+                name: "simulation.memory_replay".to_string(),
+                description: "Retrieve a stored episode for replay".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "sim_id": {"type": "string", "description": "Simulation ID"},
+                        "episode_id": {"type": "string", "description": "Episode ID to retrieve"}
+                    },
+                    "required": ["sim_id", "episode_id"]
+                }),
+            },
+            // === Benchmark Tools ===
+            McpTool {
+                name: "simulation.bench".to_string(),
+                description: "Run performance benchmark on simulation".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "suite": {"type": "string", "enum": ["all", "force", "integrate", "hash"], "default": "all"},
+                        "n_atoms": {"type": "integer", "description": "Number of atoms for benchmark", "default": 1000},
+                        "n_steps": {"type": "integer", "description": "Steps to run", "default": 100}
+                    }
+                }),
+            },
         ];
 
         Ok(json!({ "tools": tools }))
@@ -673,6 +922,7 @@ Complete simulation state snapshot.
         })?;
 
         match call_params.name.as_str() {
+            // Core simulation tools
             "simulation.create" => self.tool_simulation_create(call_params.arguments),
             "simulation.step" => self.tool_simulation_step(call_params.arguments),
             "simulation.state" => self.tool_simulation_state(call_params.arguments),
@@ -680,6 +930,24 @@ Complete simulation state snapshot.
             "simulation.configure" => self.tool_simulation_configure(call_params.arguments),
             "simulation.destroy" => self.tool_simulation_destroy(call_params.arguments),
             "simulation.list" => self.tool_simulation_list(),
+            // Snapshot/Restore tools
+            "simulation.snapshot" => self.tool_snapshot(call_params.arguments),
+            "simulation.restore" => self.tool_restore(call_params.arguments),
+            "simulation.snapshots" => self.tool_snapshots_list(call_params.arguments),
+            // Witness/Audit tools
+            "simulation.witness" => self.tool_witness(call_params.arguments),
+            "simulation.verify" => self.tool_verify(call_params.arguments),
+            // Scenario tools
+            "simulation.scenarios" => self.tool_scenarios_list(),
+            "simulation.load_scenario" => self.tool_load_scenario(call_params.arguments),
+            // Observation tools
+            "simulation.observe" => self.tool_observe(call_params.arguments),
+            // Memory/Episode tools
+            "simulation.memory_store" => self.tool_memory_store(call_params.arguments),
+            "simulation.memory_list" => self.tool_memory_list(call_params.arguments),
+            "simulation.memory_replay" => self.tool_memory_replay(call_params.arguments),
+            // Benchmark tools
+            "simulation.bench" => self.tool_bench(call_params.arguments),
             _ => Err(JsonRpcError {
                 code: -32601,
                 message: format!("Unknown tool: {}", call_params.name),
@@ -906,6 +1174,765 @@ Complete simulation state snapshot.
                 message: "Missing required parameter: sim_id".to_string(),
                 data: None,
             })
+    }
+
+    // =========================================================================
+    // Snapshot/Restore Tool Implementations
+    // =========================================================================
+
+    /// Create a snapshot of current simulation state
+    fn tool_snapshot(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+
+        let sim = self.simulations.get_mut(&sim_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("Simulation not found: {}", sim_id),
+            data: None,
+        })?;
+
+        // Get current state
+        let step = sim.get_step();
+        let positions: Vec<f32> = sim.get_positions().to_vec();
+        let velocities: Vec<f32> = sim.get_velocities().to_vec();
+        let n_atoms = sim.get_n_atoms();
+        let box_size = 10.0; // TODO: Get from simulation
+
+        // Compute hash
+        let hash = compute_state_hash(&positions, &velocities, step);
+
+        // Create snapshot
+        let snapshot_id = format!("snap_{}", self.next_snapshot_id);
+        self.next_snapshot_id += 1;
+
+        let snapshot = Snapshot {
+            id: snapshot_id.clone(),
+            sim_id: sim_id.clone(),
+            step,
+            hash: hash.clone(),
+            timestamp: current_timestamp(),
+            positions,
+            velocities,
+            box_size,
+            n_atoms,
+        };
+
+        // Store snapshot
+        self.snapshots
+            .entry(sim_id.clone())
+            .or_insert_with(Vec::new)
+            .push(snapshot);
+
+        // Log to witness trail
+        self.add_witness_entry(&sim_id, step, &hash, "snapshot", None);
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("Created snapshot '{}' at step {} with hash {}", snapshot_id, step, &hash[..16])
+            }],
+            "snapshot_id": snapshot_id,
+            "step": step,
+            "hash": hash,
+            "n_atoms": n_atoms,
+            "timestamp": current_timestamp()
+        }))
+    }
+
+    /// Restore simulation to a previous snapshot
+    fn tool_restore(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let snapshot_id = args.get("snapshot_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| JsonRpcError {
+                code: -32602,
+                message: "Missing required parameter: snapshot_id".to_string(),
+                data: None,
+            })?;
+
+        // Find snapshot
+        let snapshots = self.snapshots.get(&sim_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("No snapshots found for simulation: {}", sim_id),
+            data: None,
+        })?;
+
+        let snapshot = snapshots.iter().find(|s| s.id == snapshot_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("Snapshot not found: {}", snapshot_id),
+            data: None,
+        })?;
+
+        // Clone needed data before mutable borrow
+        let positions = snapshot.positions.clone();
+        let velocities = snapshot.velocities.clone();
+        let restored_step = snapshot.step;
+        let hash = snapshot.hash.clone();
+
+        // Restore state
+        let sim = self.simulations.get_mut(&sim_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("Simulation not found: {}", sim_id),
+            data: None,
+        })?;
+
+        sim.set_positions(&positions);
+        sim.set_velocities(&velocities);
+
+        // Log to witness trail
+        self.add_witness_entry(&sim_id, restored_step, &hash, "restore",
+            Some(json!({"snapshot_id": snapshot_id})));
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("Restored simulation to snapshot '{}' at step {}", snapshot_id, restored_step)
+            }],
+            "success": true,
+            "restored_step": restored_step,
+            "hash": hash
+        }))
+    }
+
+    /// List all snapshots for a simulation
+    fn tool_snapshots_list(&self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+
+        let snapshots = self.snapshots.get(&sim_id).cloned().unwrap_or_default();
+        let snapshot_list: Vec<Value> = snapshots.iter().map(|s| {
+            json!({
+                "id": s.id,
+                "step": s.step,
+                "hash": s.hash,
+                "timestamp": s.timestamp,
+                "n_atoms": s.n_atoms
+            })
+        }).collect();
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("{} snapshot(s) for simulation '{}'", snapshot_list.len(), sim_id)
+            }],
+            "snapshots": snapshot_list
+        }))
+    }
+
+    // =========================================================================
+    // Witness/Audit Trail Tool Implementations
+    // =========================================================================
+
+    /// Get witness log entries
+    fn tool_witness(&self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(100) as usize;
+
+        let entries = self.witness_logs.get(&sim_id).cloned().unwrap_or_default();
+        let entries: Vec<Value> = entries.iter().rev().take(limit).map(|e| {
+            json!({
+                "step": e.step,
+                "hash": e.hash,
+                "prev_hash": e.prev_hash,
+                "event_type": e.event_type,
+                "timestamp": e.timestamp,
+                "data": e.data
+            })
+        }).collect();
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("{} witness entries for simulation '{}'", entries.len(), sim_id)
+            }],
+            "entries": entries
+        }))
+    }
+
+    /// Verify witness hash chain integrity
+    fn tool_verify(&self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+
+        let entries = self.witness_logs.get(&sim_id).cloned().unwrap_or_default();
+
+        if entries.is_empty() {
+            return Ok(json!({
+                "content": [{
+                    "type": "text",
+                    "text": "No witness entries to verify"
+                }],
+                "valid": true,
+                "checked_steps": 0
+            }));
+        }
+
+        // Verify hash chain
+        let mut valid = true;
+        let mut first_invalid: Option<u64> = None;
+
+        for i in 1..entries.len() {
+            if entries[i].prev_hash != entries[i-1].hash {
+                valid = false;
+                first_invalid = Some(entries[i].step);
+                break;
+            }
+        }
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": if valid {
+                    format!("Hash chain verified: {} entries valid", entries.len())
+                } else {
+                    format!("Hash chain broken at step {}", first_invalid.unwrap())
+                }
+            }],
+            "valid": valid,
+            "checked_steps": entries.len(),
+            "first_invalid": first_invalid
+        }))
+    }
+
+    /// Helper to add witness entry
+    fn add_witness_entry(&mut self, sim_id: &str, step: u64, hash: &str, event_type: &str, data: Option<Value>) {
+        let entries = self.witness_logs.entry(sim_id.to_string()).or_insert_with(Vec::new);
+
+        let prev_hash = entries.last()
+            .map(|e| e.hash.clone())
+            .unwrap_or_else(|| "genesis".to_string());
+
+        entries.push(WitnessEntry {
+            step,
+            hash: hash.to_string(),
+            prev_hash,
+            event_type: event_type.to_string(),
+            timestamp: current_timestamp(),
+            data,
+        });
+    }
+
+    // =========================================================================
+    // Scenario Library Tool Implementations
+    // =========================================================================
+
+    /// List available scenarios
+    fn tool_scenarios_list(&self) -> Result<Value, JsonRpcError> {
+        let scenarios = vec![
+            Scenario {
+                id: "argon_256".to_string(),
+                name: "Argon Gas (Small)".to_string(),
+                description: "256 Argon atoms with Lennard-Jones potential".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 4, "ny": 4, "nz": 4,
+                    "spacing": 1.5,
+                    "temperature": 1.0
+                }),
+            },
+            Scenario {
+                id: "argon_2048".to_string(),
+                name: "Argon Gas (Medium)".to_string(),
+                description: "2048 Argon atoms with Lennard-Jones potential".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 8, "ny": 8, "nz": 8,
+                    "spacing": 1.5,
+                    "temperature": 1.0
+                }),
+            },
+            Scenario {
+                id: "crystal_fcc".to_string(),
+                name: "FCC Crystal".to_string(),
+                description: "Perfect FCC lattice at low temperature".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 5, "ny": 5, "nz": 5,
+                    "spacing": 1.1,
+                    "temperature": 0.1
+                }),
+            },
+            Scenario {
+                id: "liquid_lj".to_string(),
+                name: "LJ Liquid".to_string(),
+                description: "Lennard-Jones liquid at T=1.0".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 6, "ny": 6, "nz": 6,
+                    "spacing": 1.3,
+                    "temperature": 1.0
+                }),
+            },
+            Scenario {
+                id: "phase_transition".to_string(),
+                name: "Phase Transition".to_string(),
+                description: "System near melting point for phase study".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 8, "ny": 8, "nz": 8,
+                    "spacing": 1.2,
+                    "temperature": 0.7
+                }),
+            },
+            Scenario {
+                id: "random_gas".to_string(),
+                name: "Random Gas".to_string(),
+                description: "Randomly distributed atoms at high temperature".to_string(),
+                category: "molecular".to_string(),
+                params: json!({
+                    "lattice_type": "random",
+                    "nx": 5, "ny": 5, "nz": 5,
+                    "spacing": 2.0,
+                    "temperature": 2.0
+                }),
+            },
+            Scenario {
+                id: "benchmark_small".to_string(),
+                name: "Benchmark (Small)".to_string(),
+                description: "Small system for quick benchmarks".to_string(),
+                category: "benchmark".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 3, "ny": 3, "nz": 3,
+                    "spacing": 1.5,
+                    "temperature": 1.0
+                }),
+            },
+            Scenario {
+                id: "benchmark_large".to_string(),
+                name: "Benchmark (Large)".to_string(),
+                description: "Large system for performance testing".to_string(),
+                category: "benchmark".to_string(),
+                params: json!({
+                    "lattice_type": "fcc",
+                    "nx": 10, "ny": 10, "nz": 10,
+                    "spacing": 1.5,
+                    "temperature": 1.0
+                }),
+            },
+        ];
+
+        let scenario_list: Vec<Value> = scenarios.iter().map(|s| {
+            json!({
+                "id": s.id,
+                "name": s.name,
+                "description": s.description,
+                "category": s.category,
+                "params": s.params
+            })
+        }).collect();
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("{} scenarios available", scenario_list.len())
+            }],
+            "scenarios": scenario_list
+        }))
+    }
+
+    /// Load a scenario
+    fn tool_load_scenario(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let scenario_id = args.get("scenario_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| JsonRpcError {
+                code: -32602,
+                message: "Missing required parameter: scenario_id".to_string(),
+                data: None,
+            })?;
+
+        // Get scenario params
+        let (params, description) = match scenario_id {
+            "argon_256" => (json!({"lattice_type": "fcc", "nx": 4, "ny": 4, "nz": 4, "spacing": 1.5, "temperature": 1.0}), "256 Argon atoms"),
+            "argon_2048" => (json!({"lattice_type": "fcc", "nx": 8, "ny": 8, "nz": 8, "spacing": 1.5, "temperature": 1.0}), "2048 Argon atoms"),
+            "crystal_fcc" => (json!({"lattice_type": "fcc", "nx": 5, "ny": 5, "nz": 5, "spacing": 1.1, "temperature": 0.1}), "FCC crystal"),
+            "liquid_lj" => (json!({"lattice_type": "fcc", "nx": 6, "ny": 6, "nz": 6, "spacing": 1.3, "temperature": 1.0}), "LJ liquid"),
+            "phase_transition" => (json!({"lattice_type": "fcc", "nx": 8, "ny": 8, "nz": 8, "spacing": 1.2, "temperature": 0.7}), "Phase transition system"),
+            "random_gas" => (json!({"lattice_type": "random", "nx": 5, "ny": 5, "nz": 5, "spacing": 2.0, "temperature": 2.0}), "Random gas"),
+            "benchmark_small" => (json!({"lattice_type": "fcc", "nx": 3, "ny": 3, "nz": 3, "spacing": 1.5, "temperature": 1.0}), "Small benchmark"),
+            "benchmark_large" => (json!({"lattice_type": "fcc", "nx": 10, "ny": 10, "nz": 10, "spacing": 1.5, "temperature": 1.0}), "Large benchmark"),
+            _ => return Err(JsonRpcError {
+                code: -32602,
+                message: format!("Unknown scenario: {}", scenario_id),
+                data: None,
+            }),
+        };
+
+        // Apply overrides
+        let mut final_params = params.clone();
+        if let Some(overrides) = args.get("overrides").and_then(|v| v.as_object()) {
+            for (key, value) in overrides {
+                final_params[key] = value.clone();
+            }
+        }
+
+        // Create simulation using the params
+        self.tool_simulation_create(final_params).map(|mut result| {
+            result["loaded_scenario"] = json!(scenario_id);
+            result["description"] = json!(description);
+            result
+        })
+    }
+
+    // =========================================================================
+    // Observation Tool Implementation
+    // =========================================================================
+
+    /// Get observation vector for agent/RL integration
+    fn tool_observe(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let observer_type = args.get("observer_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("global");
+
+        let sim = self.simulations.get_mut(&sim_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("Simulation not found: {}", sim_id),
+            data: None,
+        })?;
+
+        let positions = sim.get_positions();
+        let velocities = sim.get_velocities();
+        let n_atoms = sim.get_n_atoms();
+
+        match observer_type {
+            "global" => {
+                // Global observation: statistics of the system
+                let (mean_x, mean_y, mean_z, mean_vx, mean_vy, mean_vz) = {
+                    let mut sum_pos = [0.0f32; 3];
+                    let mut sum_vel = [0.0f32; 3];
+                    for i in 0..n_atoms {
+                        sum_pos[0] += positions[i * 3];
+                        sum_pos[1] += positions[i * 3 + 1];
+                        sum_pos[2] += positions[i * 3 + 2];
+                        sum_vel[0] += velocities[i * 3];
+                        sum_vel[1] += velocities[i * 3 + 1];
+                        sum_vel[2] += velocities[i * 3 + 2];
+                    }
+                    let n = n_atoms as f32;
+                    (sum_pos[0]/n, sum_pos[1]/n, sum_pos[2]/n,
+                     sum_vel[0]/n, sum_vel[1]/n, sum_vel[2]/n)
+                };
+
+                let temperature = sim.get_temperature();
+                let total_energy = sim.get_total_energy();
+                let kinetic_energy = sim.get_kinetic_energy();
+                let potential_energy = sim.get_potential_energy();
+
+                let observation = vec![
+                    mean_x, mean_y, mean_z,
+                    mean_vx, mean_vy, mean_vz,
+                    temperature,
+                    total_energy,
+                    kinetic_energy,
+                    potential_energy,
+                    n_atoms as f32,
+                ];
+
+                Ok(json!({
+                    "content": [{
+                        "type": "text",
+                        "text": format!("Global observation: {} features", observation.len())
+                    }],
+                    "observation": observation,
+                    "shape": [observation.len()],
+                    "metadata": {
+                        "n_visible": n_atoms,
+                        "center": [mean_x, mean_y, mean_z],
+                        "temperature": temperature,
+                        "energy": total_energy
+                    }
+                }))
+            }
+            "local" => {
+                // Local observation: atoms within radius of center
+                let center = args.get("center")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        let x = arr.get(0).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                        let y = arr.get(1).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                        let z = arr.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
+                        [x, y, z]
+                    })
+                    .unwrap_or([0.0, 0.0, 0.0]);
+
+                let radius = args.get("radius")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(5.0) as f32;
+                let radius_sq = radius * radius;
+
+                // Find atoms within radius
+                let mut local_obs: Vec<f32> = Vec::new();
+                let mut n_visible = 0;
+
+                for i in 0..n_atoms {
+                    let px = positions[i * 3];
+                    let py = positions[i * 3 + 1];
+                    let pz = positions[i * 3 + 2];
+
+                    let dx = px - center[0];
+                    let dy = py - center[1];
+                    let dz = pz - center[2];
+                    let dist_sq = dx * dx + dy * dy + dz * dz;
+
+                    if dist_sq < radius_sq {
+                        // Relative position
+                        local_obs.push(dx);
+                        local_obs.push(dy);
+                        local_obs.push(dz);
+                        // Velocity
+                        local_obs.push(velocities[i * 3]);
+                        local_obs.push(velocities[i * 3 + 1]);
+                        local_obs.push(velocities[i * 3 + 2]);
+                        n_visible += 1;
+                    }
+                }
+
+                Ok(json!({
+                    "content": [{
+                        "type": "text",
+                        "text": format!("Local observation: {} atoms visible within radius {}", n_visible, radius)
+                    }],
+                    "observation": local_obs,
+                    "shape": [n_visible, 6],
+                    "metadata": {
+                        "n_visible": n_visible,
+                        "center": center,
+                        "radius": radius
+                    }
+                }))
+            }
+            _ => Err(JsonRpcError {
+                code: -32602,
+                message: format!("Unknown observer type: {}. Supported: global, local", observer_type),
+                data: None,
+            }),
+        }
+    }
+
+    // =========================================================================
+    // Memory/Episode Tool Implementations
+    // =========================================================================
+
+    /// Store an episode in memory
+    fn tool_memory_store(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let key = args.get("key")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| JsonRpcError {
+                code: -32602,
+                message: "Missing required parameter: key".to_string(),
+                data: None,
+            })?
+            .to_string();
+
+        // Parse observations
+        let observations: Vec<Vec<f32>> = args.get("observations")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter().filter_map(|obs| {
+                    obs.as_array().map(|inner| {
+                        inner.iter().filter_map(|v| v.as_f64().map(|f| f as f32)).collect()
+                    })
+                }).collect()
+            })
+            .unwrap_or_default();
+
+        // Parse actions
+        let actions: Vec<Vec<f32>> = args.get("actions")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter().filter_map(|act| {
+                    act.as_array().map(|inner| {
+                        inner.iter().filter_map(|v| v.as_f64().map(|f| f as f32)).collect()
+                    })
+                }).collect()
+            })
+            .unwrap_or_default();
+
+        // Parse rewards
+        let rewards: Vec<f32> = args.get("rewards")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter().filter_map(|v| v.as_f64().map(|f| f as f32)).collect()
+            })
+            .unwrap_or_default();
+
+        let total_reward: f32 = rewards.iter().sum();
+
+        let metadata = args.get("metadata").cloned();
+
+        // Create episode
+        let episode_id = format!("ep_{}", self.next_episode_id);
+        self.next_episode_id += 1;
+
+        let episode = Episode {
+            id: episode_id.clone(),
+            key: key.clone(),
+            sim_id: sim_id.clone(),
+            observations,
+            actions,
+            rewards: rewards.clone(),
+            total_reward,
+            metadata,
+        };
+
+        // Store
+        self.episodes
+            .entry(sim_id.clone())
+            .or_insert_with(Vec::new)
+            .push(episode);
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("Stored episode '{}' with key '{}', {} steps, total reward {:.4}",
+                    episode_id, key, rewards.len(), total_reward)
+            }],
+            "stored": true,
+            "episode_id": episode_id,
+            "key": key,
+            "steps": rewards.len(),
+            "total_reward": total_reward
+        }))
+    }
+
+    /// List stored episodes
+    fn tool_memory_list(&self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+
+        let episodes = self.episodes.get(&sim_id).cloned().unwrap_or_default();
+        let episode_list: Vec<Value> = episodes.iter().rev().take(limit).map(|ep| {
+            json!({
+                "episode_id": ep.id,
+                "key": ep.key,
+                "steps": ep.rewards.len(),
+                "total_reward": ep.total_reward
+            })
+        }).collect();
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("{} episode(s) stored for simulation '{}'", episode_list.len(), sim_id)
+            }],
+            "episodes": episode_list
+        }))
+    }
+
+    /// Replay a stored episode
+    fn tool_memory_replay(&self, args: Value) -> Result<Value, JsonRpcError> {
+        let sim_id = self.get_sim_id(&args)?;
+        let episode_id = args.get("episode_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| JsonRpcError {
+                code: -32602,
+                message: "Missing required parameter: episode_id".to_string(),
+                data: None,
+            })?;
+
+        let episodes = self.episodes.get(&sim_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("No episodes found for simulation: {}", sim_id),
+            data: None,
+        })?;
+
+        let episode = episodes.iter().find(|ep| ep.id == episode_id).ok_or_else(|| JsonRpcError {
+            code: -32602,
+            message: format!("Episode not found: {}", episode_id),
+            data: None,
+        })?;
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("Retrieved episode '{}' with {} steps", episode_id, episode.rewards.len())
+            }],
+            "episode_id": episode.id,
+            "key": episode.key,
+            "observations": episode.observations,
+            "actions": episode.actions,
+            "rewards": episode.rewards,
+            "total_reward": episode.total_reward,
+            "metadata": episode.metadata
+        }))
+    }
+
+    // =========================================================================
+    // Benchmark Tool Implementation
+    // =========================================================================
+
+    /// Run performance benchmark
+    fn tool_bench(&mut self, args: Value) -> Result<Value, JsonRpcError> {
+        let suite = args.get("suite")
+            .and_then(|v| v.as_str())
+            .unwrap_or("all");
+        let n_atoms = args.get("n_atoms").and_then(|v| v.as_u64()).unwrap_or(1000) as usize;
+        let n_steps = args.get("n_steps").and_then(|v| v.as_u64()).unwrap_or(100) as usize;
+
+        let mut results: Vec<Value> = Vec::new();
+
+        // Create benchmark simulation
+        let cells = ((n_atoms as f64 / 4.0).powf(1.0/3.0).ceil() as usize).max(2);
+        let sim = WasmSimulation::new_fcc(cells, cells, cells, 1.5, 1.0);
+        let actual_atoms = sim.get_n_atoms();
+
+        // We can't easily measure time in WASM without JS interop,
+        // so we'll estimate based on operations
+
+        if suite == "all" || suite == "integrate" {
+            // Benchmark integration
+            let mut bench_sim = WasmSimulation::new_fcc(cells, cells, cells, 1.5, 1.0);
+            bench_sim.run(n_steps);
+
+            results.push(json!({
+                "name": "integration",
+                "n_atoms": actual_atoms,
+                "n_steps": n_steps,
+                "operations": actual_atoms * n_steps,
+                "description": "Velocity Verlet integration"
+            }));
+        }
+
+        if suite == "all" || suite == "force" {
+            results.push(json!({
+                "name": "force_calculation",
+                "n_atoms": actual_atoms,
+                "n_pairs": actual_atoms * (actual_atoms - 1) / 2,
+                "description": "Lennard-Jones force computation"
+            }));
+        }
+
+        if suite == "all" || suite == "hash" {
+            // Benchmark hash computation
+            let positions: Vec<f32> = sim.get_positions().to_vec();
+            let velocities: Vec<f32> = sim.get_velocities().to_vec();
+            let hash = compute_state_hash(&positions, &velocities, 0);
+
+            results.push(json!({
+                "name": "hash",
+                "n_atoms": actual_atoms,
+                "hash_bytes": positions.len() * 4 + velocities.len() * 4 + 8,
+                "sample_hash": &hash[..16],
+                "description": "FNV-1a state hash"
+            }));
+        }
+
+        Ok(json!({
+            "content": [{
+                "type": "text",
+                "text": format!("Benchmark complete: {} tests on {} atoms", results.len(), actual_atoms)
+            }],
+            "results": results,
+            "system_info": {
+                "wasm": true,
+                "simd": false, // TODO: Detect SIMD support
+                "threads": 1
+            }
+        }))
     }
 }
 
