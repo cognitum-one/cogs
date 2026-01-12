@@ -51,6 +51,47 @@ pub enum FxnnError {
     /// Domain decomposition error
     #[error("Decomposition error: {0}")]
     Decomposition(String),
+
+    // =========================================================================
+    // Memory Module Errors (Layer 4: Agency)
+    // =========================================================================
+
+    /// Memory write rate limit exceeded
+    #[error("Memory write rate exceeded: {0}")]
+    MemoryRateExceeded(String),
+
+    /// Memory capacity exceeded
+    #[error("Memory capacity exceeded: {0}")]
+    MemoryCapacityExceeded(String),
+
+    /// Vector dimension mismatch
+    #[error("Dimension mismatch: expected {expected}, got {got}")]
+    DimensionMismatch {
+        /// Expected dimension
+        expected: usize,
+        /// Actual dimension
+        got: usize,
+    },
+
+    /// Invalid trajectory data
+    #[error("Invalid trajectory: {0}")]
+    InvalidTrajectory(String),
+
+    /// Checkpoint/restore failure
+    #[error("Checkpoint error: {0}")]
+    CheckpointError(String),
+
+    /// SONA adaptation error
+    #[error("SONA adaptation error: {0}")]
+    SonaError(String),
+
+    /// EWC consolidation error
+    #[error("EWC consolidation error: {0}")]
+    EwcError(String),
+
+    /// Reasoning bank error
+    #[error("Reasoning bank error: {0}")]
+    ReasoningBankError(String),
 }
 
 impl FxnnError {
@@ -87,6 +128,46 @@ impl FxnnError {
     /// Create an out of bounds error
     pub fn out_of_bounds(msg: impl Into<String>) -> Self {
         Self::OutOfBounds(msg.into())
+    }
+
+    /// Create a memory rate exceeded error
+    pub fn memory_rate_exceeded(msg: impl Into<String>) -> Self {
+        Self::MemoryRateExceeded(msg.into())
+    }
+
+    /// Create a memory capacity exceeded error
+    pub fn memory_capacity_exceeded(msg: impl Into<String>) -> Self {
+        Self::MemoryCapacityExceeded(msg.into())
+    }
+
+    /// Create a dimension mismatch error
+    pub fn dimension_mismatch(expected: usize, got: usize) -> Self {
+        Self::DimensionMismatch { expected, got }
+    }
+
+    /// Create an invalid trajectory error
+    pub fn invalid_trajectory(msg: impl Into<String>) -> Self {
+        Self::InvalidTrajectory(msg.into())
+    }
+
+    /// Create a checkpoint error
+    pub fn checkpoint_error(msg: impl Into<String>) -> Self {
+        Self::CheckpointError(msg.into())
+    }
+
+    /// Create a SONA error
+    pub fn sona_error(msg: impl Into<String>) -> Self {
+        Self::SonaError(msg.into())
+    }
+
+    /// Create an EWC error
+    pub fn ewc_error(msg: impl Into<String>) -> Self {
+        Self::EwcError(msg.into())
+    }
+
+    /// Create a reasoning bank error
+    pub fn reasoning_bank_error(msg: impl Into<String>) -> Self {
+        Self::ReasoningBankError(msg.into())
     }
 }
 

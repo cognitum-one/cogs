@@ -1,18 +1,35 @@
-//! # FXNN: Force-eXpanded Neural Network Molecular Dynamics
+//! # FXNN: Force-eXpanded Neural Network Simulation
+//!
+//! **The Physics Engine for Emergent Intelligence**
+//!
+//! Created by [rUv](https://github.com/ruvnet) and finn
 //!
 //! A high-performance molecular dynamics simulation library written in Rust,
-//! combining classical force fields with neural network potentials.
+//! designed to bridge classical physics simulation with neural network-driven
+//! force fields. Built for both scientific research and emergent AI systems.
 //!
-//! ## Overview
+//! ## The Five-Layer Reality Stack
 //!
-//! FXNN provides a comprehensive toolkit for atomistic simulations:
+//! FXNN implements a hierarchical architecture where each layer builds upon the previous:
+//!
+//! | Layer | Name | Description |
+//! |-------|------|-------------|
+//! | 5 | **Emergence** | Multi-agent coordination, swarm intelligence, collective behaviors |
+//! | 4 | **Agency** | Decision-making entities with sensors, actuators, and policies |
+//! | 3 | **Dynamics** | Time evolution via integrators (Verlet, Langevin) |
+//! | 2 | **Forces** | Classical potentials and neural network force fields |
+//! | 1 | **Substrate** | Atoms, simulation box, neighbor lists, SIMD kernels |
+//!
+//! ## Core Capabilities
 //!
 //! - **Classical Force Fields**: Lennard-Jones, Coulomb, and bonded interactions
-//! - **Neural Network Potentials**: Machine-learned force fields (with `neural` feature)
-//! - **Time Integration**: Velocity Verlet and Langevin dynamics (NVT ensemble)
+//! - **Neural Network Potentials**: SchNet-style ML force fields with SONA adaptation
+//! - **Time Integration**: Velocity Verlet (NVE) and Langevin dynamics (NVT)
 //! - **Neighbor Search**: Cell lists and Verlet lists for O(N) scaling
 //! - **SIMD Optimization**: Vectorized kernels for AVX2/AVX-512/NEON
 //! - **Parallel Execution**: Domain decomposition for multi-threaded runs
+//! - **Reality Budgets**: Computational resource management for adaptive quality
+//! - **Witness Logging**: Tamper-evident simulation history for reproducibility
 //!
 //! ## Quick Start
 //!
@@ -41,19 +58,36 @@
 //! println!("Temperature: {:.4}", sim.temperature());
 //! ```
 //!
-//! ## Architecture
+//! ## Module Architecture (by Reality Layer)
 //!
-//! The library is organized into several modules:
+//! ### Layer 1: Substrate
 //!
 //! | Module | Description |
 //! |--------|-------------|
 //! | [`types`] | Core data structures: [`Atom`], [`SimulationBox`], [`Topology`] |
-//! | [`force_field`] | Force field implementations and traits |
-//! | [`integrator`] | Time integration schemes |
-//! | [`neighbor`] | Neighbor list algorithms |
+//! | [`neighbor`] | O(N) neighbor list algorithms (cell lists, Verlet lists) |
 //! | [`simd`] | SIMD-optimized computational kernels |
+//!
+//! ### Layer 2: Forces
+//!
+//! | Module | Description |
+//! |--------|-------------|
+//! | [`force_field`] | Force field implementations: LJ, Coulomb, bonded, composite |
+//! | [`force_field::neural`] | Neural network potentials with SONA adaptation (requires `neural` feature) |
+//!
+//! ### Layer 3: Dynamics
+//!
+//! | Module | Description |
+//! |--------|-------------|
+//! | [`integrator`] | Time integration: Velocity Verlet (NVE), Langevin (NVT) |
 //! | [`observable`] | Thermodynamic property calculations |
+//!
+//! ### Support Modules
+//!
+//! | Module | Description |
+//! |--------|-------------|
 //! | [`io`] | File I/O for trajectories and configurations |
+//! | [`witness`] | Tamper-evident simulation logging |
 //! | [`decomposition`] | Domain decomposition for parallelization (with `parallel` feature) |
 //!
 //! ## Units
@@ -163,13 +197,43 @@ pub mod neighbor;
 pub mod simd;
 pub mod observable;
 pub mod io;
+pub mod governance;
+pub mod perception;
+pub mod agency;
 
 // Neural module is part of force_field
 #[cfg(feature = "neural")]
 pub use force_field::neural;
 
+// Memory module for self-learning neural architecture (Layer 4: Agency)
+// Includes SONA, ReasoningBank, Trajectory management, and EWC
+#[cfg(feature = "neural")]
+pub mod memory;
+
 #[cfg(feature = "parallel")]
 pub mod decomposition;
+
+// WASM bindings for browser-based simulations
+#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
+pub mod wasm;
+
+pub mod witness;
+pub mod benchmark;
+
+/// Five-Layer Reality Stack Architecture
+///
+/// The unified architecture for intelligent agents operating within physical simulations:
+///
+/// | Layer | Name | Description |
+/// |-------|------|-------------|
+/// | 5 | **GOVERNANCE** | Action gating, permissions, audit logging, budget enforcement |
+/// | 4 | **MEMORY** | SONA neural substrate, ReasoningBank, trajectories, EWC++ |
+/// | 3 | **PERCEPTION** | Partial observability, attention, bandwidth limits, noise |
+/// | 2 | **AGENCY** | Agents with sensors, actuators, policies, and goals |
+/// | 1 | **PHYSICS** | FXNN core with conservation law validation |
+///
+/// See ADR-001 for full architectural rationale.
+pub mod reality_stack;
 
 mod simulation;
 mod error;

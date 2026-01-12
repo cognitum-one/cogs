@@ -672,6 +672,109 @@ fn bench_simulation_energy(c: &mut Criterion) {
 }
 
 // ============================================================================
+// Performance Target Benchmarks (ADR-001)
+// ============================================================================
+
+/// Benchmark against ADR-001 performance targets
+/// Target: 10,000 atoms @ 50,000 timesteps/sec
+///         100,000 atoms @ 5,000 timesteps/sec (8 threads)
+fn bench_performance_targets(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Performance_Targets");
+
+    // Target 1: 10,000 atoms single-threaded
+    {
+        let n_atoms = 10_000;
+        let (atoms, sim_box) = generate_test_system(n_atoms);
+        let lj = LennardJones::argon();
+        let integrator = VelocityVerlet::new();
+
+        let mut sim = Simulation::new(atoms, sim_box, lj, integrator)
+            .with_timestep(0.001);
+
+        group.throughput(Throughput::Elements(1)); // 1 timestep
+        group.bench_function("10k_atoms_single_step", |b| {
+            b.iter(|| {
+                sim.step_forward();
+            });
+        });
+    }
+
+    // Target 2: 100,000 atoms (measures raw step time)
+    {
+        let n_atoms = 100_000;
+        let (atoms, sim_box) = generate_test_system(n_atoms);
+        let lj = LennardJones::argon();
+        let integrator = VelocityVerlet::new();
+
+        let mut sim = Simulation::new(atoms, sim_box, lj, integrator)
+            .with_timestep(0.001);
+
+        group.throughput(Throughput::Elements(1));
+        group.bench_function("100k_atoms_single_step", |b| {
+            b.iter(|| {
+                sim.step_forward();
+            });
+        });
+    }
+
+    // Real-time target: 100 agents @ 60 FPS (16.7ms per frame)
+    {
+        let n_atoms = 100;
+        let (atoms, sim_box) = generate_test_system(n_atoms);
+        let lj = LennardJones::argon();
+        let integrator = VelocityVerlet::new();
+
+        let mut sim = Simulation::new(atoms, sim_box, lj, integrator)
+            .with_timestep(0.001);
+
+        // Measure how many steps can be done in 16.7ms
+        group.throughput(Throughput::Elements(100)); // 100 steps
+        group.bench_function("100_atoms_100_steps_realtime", |b| {
+            b.iter(|| {
+                for _ in 0..100 {
+                    sim.step_forward();
+                }
+            });
+        });
+    }
+
+    group.finish();
+}
+
+/// Measure timesteps per second for reporting
+fn bench_timesteps_per_second(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Timesteps_Per_Second");
+    group.sample_size(20); // Fewer samples for large systems
+
+    for n_atoms in [1000, 5000, 10_000, 50_000, 100_000] {
+        let (atoms, sim_box) = generate_test_system(n_atoms);
+        let lj = LennardJones::argon();
+        let integrator = VelocityVerlet::new();
+
+        let mut sim = Simulation::new(atoms, sim_box, lj, integrator)
+            .with_timestep(0.001);
+
+        // Run 10 steps to get more stable timing
+        let steps = 10;
+        group.throughput(Throughput::Elements(steps as u64));
+
+        group.bench_with_input(
+            BenchmarkId::new("10_steps", n_atoms),
+            &n_atoms,
+            |b, _| {
+                b.iter(|| {
+                    for _ in 0..steps {
+                        sim.step_forward();
+                    }
+                });
+            },
+        );
+    }
+
+    group.finish();
+}
+
+// ============================================================================
 // Scaling Analysis Benchmarks
 // ============================================================================
 
@@ -905,6 +1008,12 @@ criterion_group!(
     bench_neighbor_list_scaling,
 );
 
+criterion_group!(
+    target_benchmarks,
+    bench_performance_targets,
+    bench_timesteps_per_second,
+);
+
 // Neural benchmarks (conditional)
 #[cfg(feature = "neural")]
 criterion_group!(
@@ -922,6 +1031,7 @@ criterion_main!(
     simd_benchmarks,
     simulation_benchmarks,
     scaling_benchmarks,
+    target_benchmarks,
 );
 
 #[cfg(feature = "neural")]
@@ -931,5 +1041,6 @@ criterion_main!(
     simd_benchmarks,
     simulation_benchmarks,
     scaling_benchmarks,
+    target_benchmarks,
     neural_benchmarks_group,
 );
