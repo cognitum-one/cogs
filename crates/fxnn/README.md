@@ -1,23 +1,46 @@
-# FXNN - Fast Molecular Dynamics in Rust
+# Cognitum - Constrained Reality Sandbox
 
-A high-performance molecular dynamics library written in Rust, designed for computational chemistry and physics research.
+A high-performance simulation engine in Rust that creates deterministic, replayable environments where agents can learn within enforced physical and logical constraints.
 
-## Overview
+## Philosophy
 
-FXNN (pronounced "finn" or "fiction") provides a complete toolkit for running classical and neural network-based molecular dynamics simulations. Built with performance as a primary goal, it leverages Rust's zero-cost abstractions, SIMD vectorization, and cache-friendly algorithms to deliver competitive performance with established MD packages.
+**This is a small, strict world that runs inside a computer and refuses to let impossible things happen.**
+
+Cognitum is not just a physics engine - it's a reality-checking sandbox where:
+
+- **State persists** - Every action has consequences that remain
+- **Rules are enforced** - Invalid states are rejected, not ignored
+- **Everything is deterministic** - Same inputs always produce same outputs
+- **All actions are witnessed** - Tamper-evident audit trail with cryptographic hashes
+- **Intelligence must play by the rules** - Agents succeed by understanding constraints, not bypassing them
+
+## Core Capabilities
+
+### Simulation Types
+
+| Type | Description | Use Cases |
+|------|-------------|-----------|
+| **Molecular Dynamics** | Physics-based particle simulations with force fields | Drug discovery, materials science, protein folding |
+| **Agent-Based** | Single agent with observations, policy, and learning | Reinforcement learning, decision making |
+| **Multi-Agent** | Swarm coordination and emergent behavior | Social dynamics, market simulation, collective intelligence |
+| **Gridworld** | Discrete environments for RL and planning | Pathfinding, puzzle solving, game AI |
+| **Physics Sandbox** | General physics experiments with constraints | Engineering simulation, robotics |
+| **Control Systems** | Feedback loops, PID controllers, stability analysis | Industrial automation, control theory |
 
 ### Key Features
 
-- **Classical Force Fields**: Lennard-Jones, Coulomb, bonded interactions (bonds, angles, dihedrals)
-- **Neural Network Potentials**: SchNet-style continuous-filter convolutions with online learning
-- **Efficient Neighbor Lists**: Cell list and Verlet list algorithms for O(N) scaling
-- **Symplectic Integrators**: Velocity Verlet for NVE, Langevin for NVT ensembles
-- **SIMD Optimization**: Vectorized force calculations using the `wide` crate
+- **Deterministic Execution**: Bit-exact reproducibility with configurable validation modes
+- **Witness Logging**: Blake3 hashed state transitions for tamper-evident audit trails
+- **Constraint Enforcement**: Invalid actions are rejected with detailed error information
+- **Snapshot/Restore**: Save and restore complete simulation state at any point
+- **MCP Protocol**: JSON-RPC 2.0 interface for AI agent communication
+- **WASM Support**: Run simulations in browsers or sandboxed environments
+- **SIMD Optimization**: Vectorized calculations using the `wide` crate
 - **Parallel Execution**: Optional Rayon-based parallelization for large systems
 
 ## Installation
 
-Add FXNN to your `Cargo.toml`:
+Add Cognitum to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -34,204 +57,150 @@ fxnn = "0.1"
 | `wasm` | No | WebAssembly support with MCP integration |
 | `python` | No | Python bindings via PyO3 |
 
-Enable features as needed:
-
-```toml
-[dependencies]
-fxnn = { version = "0.1", features = ["parallel", "neural"] }
-
-# For WASM/browser usage:
-fxnn = { version = "0.1", features = ["wasm"] }
-```
-
 ## Quick Start
 
-### Simple Lennard-Jones Simulation
+### Molecular Dynamics Simulation
 
 ```rust
 use fxnn::{Simulation, SimulationBox, LennardJones, VelocityVerlet};
 use fxnn::generators::{fcc_lattice, maxwell_boltzmann_velocities};
 
 fn main() {
-    // Create a face-centered cubic lattice of atoms
-    let mut atoms = fcc_lattice(4, 4, 4, 1.5);  // 4x4x4 unit cells
-
-    // Initialize velocities at temperature T=1.0
+    // Create a face-centered cubic lattice
+    let mut atoms = fcc_lattice(4, 4, 4, 1.5);
     maxwell_boltzmann_velocities(&mut atoms, 1.0, 1.0);
 
-    // Create simulation box and force field
+    // Build simulation with constraints
     let box_ = SimulationBox::cubic(6.0);
-    let lj = LennardJones::argon();  // Reduced units: epsilon=1, sigma=1
+    let lj = LennardJones::argon();
     let integrator = VelocityVerlet::new();
 
-    // Build simulation
     let mut sim = Simulation::new(atoms, box_, lj, integrator)
-        .with_timestep(0.001);
+        .with_timestep(0.001)
+        .with_witness_logging(true);
 
-    // Print initial state
-    println!("Initial energy: {:.4}", sim.total_energy());
-    println!("Initial temperature: {:.4}", sim.temperature());
-
-    // Run equilibration (10,000 steps)
-    for i in 0..100 {
+    // Run with full state verification
+    for _ in 0..100 {
         sim.run(100);
-        println!(
-            "Step {:5}: E = {:8.4}, T = {:6.4}",
+        println!("Step {}: E={:.4}, hash={}",
             sim.step(),
             sim.total_energy(),
-            sim.temperature()
+            sim.state_hash()
         );
     }
-
-    println!("Final energy: {:.4}", sim.total_energy());
 }
 ```
 
-### NVT Simulation with Langevin Thermostat
+### Agent-Based Simulation
 
 ```rust
-use fxnn::{Simulation, SimulationBox, LennardJones, Langevin};
-use fxnn::generators::random_atoms;
+use fxnn::agency::{Agent, Environment, Policy};
 
 fn main() {
-    // Random initial configuration
-    let box_ = SimulationBox::cubic(10.0);
-    let atoms = random_atoms(500, &box_);
+    // Create environment with constraints
+    let env = Environment::gridworld(10, 10)
+        .with_obstacles(vec![(5, 5), (5, 6), (6, 5)])
+        .with_goal((9, 9));
 
-    // Langevin thermostat at T=1.5 with friction gamma=1.0
-    let thermostat = Langevin::reduced_units(1.0, 1.5);
-    let lj = LennardJones::argon();
+    // Create agent with random policy
+    let mut agent = Agent::new()
+        .with_policy(Policy::random())
+        .with_learning_rate(0.1);
 
-    let mut sim = Simulation::new(atoms, box_, lj, thermostat)
-        .with_timestep(0.002);
+    // Run episodes with witness logging
+    for episode in 0..1000 {
+        let mut state = env.reset();
+        let mut total_reward = 0.0;
 
-    // Equilibrate
-    sim.run(5000);
+        while !state.is_terminal() {
+            let action = agent.act(&state);
+            let (next_state, reward, done) = env.step(action);
+            agent.learn(&state, action, reward, &next_state);
+            total_reward += reward;
+            state = next_state;
+        }
 
-    // Production run - temperature should fluctuate around 1.5
-    for _ in 0..10 {
-        sim.run(1000);
-        println!("T = {:.3}", sim.temperature());
+        println!("Episode {}: reward={:.2}", episode, total_reward);
     }
 }
 ```
 
 ## Architecture
 
-### Core Components
+### Reality Stack (ADR-001)
 
 ```
-fxnn
-├── types/           # Core data structures (Atom, SimulationBox, Topology)
-├── force_field/     # Force field implementations
-│   ├── LennardJones
-│   ├── Coulomb
-│   ├── BondedForces (bonds, angles, dihedrals)
-│   ├── CompositeForceField
-│   └── neural/ (optional)
-├── integrator/      # Time integration schemes
-│   ├── VelocityVerlet (NVE)
-│   └── Langevin (NVT)
-├── neighbor/        # Neighbor list algorithms
-│   ├── CellList
-│   └── VerletList
-├── observable/      # Thermodynamic calculators
-├── generators/      # System setup utilities
-└── simulation.rs    # Main simulation engine
+┌─────────────────────────────────────────────────┐
+│             Layer 5: Governance                  │
+│  Rules about rules, meta-constraints, policies   │
+├─────────────────────────────────────────────────┤
+│             Layer 4: Agency                      │
+│  Agents, goals, learning, decision-making        │
+├─────────────────────────────────────────────────┤
+│             Layer 3: Perception                  │
+│  Observations, sensors, attention, memory        │
+├─────────────────────────────────────────────────┤
+│             Layer 2: Witness                     │
+│  Hash chains, state verification, audit trails   │
+├─────────────────────────────────────────────────┤
+│             Layer 1: Physics                     │
+│  MD engine, force fields, integrators, SIMD      │
+└─────────────────────────────────────────────────┘
 ```
 
-### Data Flow
+### Module Organization
 
 ```
-           ┌─────────────────┐
-           │    Simulation   │
-           │  (orchestrator) │
-           └────────┬────────┘
-                    │
-    ┌───────────────┼───────────────┐
-    │               │               │
-    ▼               ▼               ▼
-┌────────┐   ┌────────────┐   ┌──────────┐
-│ Atoms  │   │ ForceField │   │Integrator│
-└────────┘   └────────────┘   └──────────┘
-    │               │               │
-    │               ▼               │
-    │        ┌────────────┐        │
-    └───────►│NeighborList│◄───────┘
-             └────────────┘
+fxnn/
+├── src/
+│   ├── types/          # Core data structures (Atom, SimulationBox)
+│   ├── force_field/    # Force field implementations
+│   │   ├── lennard_jones.rs
+│   │   ├── coulomb.rs
+│   │   ├── bonded.rs
+│   │   └── neural/     # ML-based force fields
+│   ├── integrator/     # Time integration schemes
+│   │   ├── velocity_verlet.rs  # NVE
+│   │   └── langevin.rs         # NVT
+│   ├── neighbor/       # Neighbor list algorithms
+│   ├── witness/        # Hash chains and verification
+│   ├── agency/         # Agent-based simulation
+│   ├── perception/     # Observation and sensing
+│   ├── governance/     # Rules and constraints
+│   ├── wasm/           # WebAssembly bindings
+│   └── benchmark/      # Performance tests
+└── tests/              # Integration tests
 ```
 
-## Units
+## MCP Protocol (cognitum.* Tools)
 
-FXNN supports both reduced (dimensionless) and real units:
+Cognitum exposes its functionality via Model Context Protocol for AI agent integration:
 
-### Reduced Units (Default)
+### Tools
 
-| Quantity | Unit | Typical Value |
-|----------|------|---------------|
-| Length | sigma | 1.0 |
-| Energy | epsilon | 1.0 |
-| Mass | m | 1.0 |
-| Time | tau = sigma * sqrt(m/epsilon) | ~2.15 ps |
-| Temperature | epsilon/k_B | ~120 K for argon |
+| Tool | Description |
+|------|-------------|
+| `cognitum.create` | Create new simulation with configuration |
+| `cognitum.load_scenario` | Load predefined scenario |
+| `cognitum.step` | Advance simulation by N steps |
+| `cognitum.snapshot` | Save current state |
+| `cognitum.restore` | Restore from snapshot |
+| `cognitum.observe` | Get observation from perspective |
+| `cognitum.metrics.get` | Get performance metrics |
+| `cognitum.memory.put_episode` | Store episode in memory |
+| `cognitum.memory.search` | Search episodic memory |
+| `cognitum.bench.run` | Run performance benchmark |
 
-### Real Units
+### Resources
 
-| Quantity | Unit | Example |
-|----------|------|---------|
-| Length | nm | 0.34 nm (sigma for argon) |
-| Energy | kJ/mol | 0.996 kJ/mol (epsilon for argon) |
-| Mass | amu | 39.948 amu (argon) |
-| Time | ps | 0.001 ps |
-| Temperature | K | 300 K |
+| Resource | Description |
+|----------|-------------|
+| `cognitum://config/defaults` | Default parameters |
+| `cognitum://config/scenarios` | Available scenarios |
+| `cognitum://docs/api` | API documentation |
+| `cognitum://simulation/{id}/state` | Simulation snapshot |
 
-## Performance
-
-FXNN achieves high performance through several optimizations:
-
-### Algorithmic Complexity
-
-| Operation | Complexity |
-|-----------|------------|
-| Force calculation (with neighbor list) | O(N) |
-| Neighbor list build (cell list) | O(N) |
-| Energy calculation | O(N) |
-
-### SIMD Vectorization
-
-Force calculations are vectorized using 4-wide SIMD (SSE/NEON) or 8-wide (AVX2):
-
-```rust
-// Automatically vectorized LJ force loop
-// Processes 4 atom pairs per iteration
-for chunk in pairs.chunks(4) {
-    // SIMD distance calculation
-    // SIMD force computation
-    // SIMD force accumulation
-}
-```
-
-### Cache Optimization
-
-- Atom data uses `#[repr(C)]` for predictable memory layout
-- Structure-of-Arrays (SoA) layout available for maximum SIMD efficiency
-- Cell list uses half-shell iteration to minimize memory writes
-
-### Benchmark Results
-
-Typical performance on a modern CPU (single-threaded):
-
-| System Size | Steps/second |
-|-------------|--------------|
-| 1,000 atoms | ~50,000 |
-| 10,000 atoms | ~5,000 |
-| 100,000 atoms | ~400 |
-
-## WASM/MCP Integration
-
-FXNN includes full WebAssembly support with Model Context Protocol (MCP) integration for AI agents.
-
-### Browser Usage
+### Browser Usage (WASM)
 
 ```javascript
 import init, { McpHandler, WasmSimulation } from 'fxnn';
@@ -239,111 +208,119 @@ import init, { McpHandler, WasmSimulation } from 'fxnn';
 async function main() {
     await init();
 
-    // Option 1: Direct simulation API
-    const sim = WasmSimulation.new_fcc(4, 4, 4, 1.5, 1.0);
-    sim.run(1000);
-    console.log(`Energy: ${sim.get_total_energy()}`);
-
-    // Option 2: MCP protocol for AI agents
+    // Create MCP handler
     const mcp = new McpHandler();
-
-    // List available tools
-    const tools = mcp.handle_request(JSON.stringify({
-        jsonrpc: "2.0", id: 1, method: "tools/list"
-    }));
 
     // Create simulation via MCP
     const result = mcp.handle_request(JSON.stringify({
+        jsonrpc: "2.0", id: 1,
+        method: "tools/call",
+        params: {
+            name: "cognitum.create",
+            arguments: {
+                type: "molecular",
+                lattice_type: "fcc",
+                nx: 4, ny: 4, nz: 4,
+                determinism: "standard"
+            }
+        }
+    }));
+
+    // Step simulation
+    mcp.handle_request(JSON.stringify({
         jsonrpc: "2.0", id: 2,
         method: "tools/call",
         params: {
-            name: "simulation.create",
-            arguments: { lattice_type: "fcc", nx: 4, ny: 4, nz: 4 }
+            name: "cognitum.step",
+            arguments: { sim_id: "sim_0", steps: 100 }
         }
     }));
 }
 ```
 
-### MCP Tools
+## Determinism Modes
 
-| Tool | Description |
-|------|-------------|
-| `simulation.create` | Create new simulation |
-| `simulation.step` | Advance simulation |
-| `simulation.state` | Get current state |
-| `simulation.energy` | Get energy breakdown |
-| `simulation.configure` | Update parameters |
-| `simulation.destroy` | Clean up resources |
-| `simulation.list` | List active simulations |
+| Mode | Description | Performance |
+|------|-------------|-------------|
+| `fast` | No validation, maximum speed | 1.0x |
+| `standard` | Hash validation at checkpoints | 0.95x |
+| `strict` | Full state verification every step | 0.7x |
 
-### MCP Resources
+## Performance
 
-| Resource | Description |
-|----------|-------------|
-| `fxnn://config/defaults` | Default parameters |
-| `fxnn://config/forcefields` | Available force fields |
-| `fxnn://docs/api` | API documentation |
-| `fxnn://simulation/{id}/state` | Simulation snapshot |
+### Algorithmic Complexity
+
+| Operation | Complexity |
+|-----------|------------|
+| Force calculation (with neighbor list) | O(N) |
+| Neighbor list build (cell list) | O(N) |
+| State hash (Blake3) | O(N) |
+| Snapshot/restore | O(N) |
+
+### Benchmark Results (Single-threaded)
+
+| System Size | Steps/second | With Witness |
+|-------------|--------------|--------------|
+| 1,000 atoms | ~50,000 | ~45,000 |
+| 10,000 atoms | ~5,000 | ~4,500 |
+| 100,000 atoms | ~400 | ~360 |
+
+## Why "Cognitum"?
+
+From Latin *cognitus* (known, understood) + *um* (place/thing):
+
+> A place where knowledge is grounded in physical reality.
+
+Unlike hallucination-prone language models, Cognitum provides:
+
+1. **Grounded truth** - States are computed, not generated
+2. **Causal consistency** - Effects follow from causes
+3. **Verifiable history** - Every transition is hashed and logged
+4. **Constraint satisfaction** - Invalid states cannot exist
+
+This makes it ideal for training agents that must operate in the real world, where "making things up" has consequences.
 
 ## Examples
 
-See the `examples/` directory for complete working examples:
+See the `examples/` directory:
 
-- `argon_gas.rs` - Simple LJ simulation of argon
-- `water_box.rs` - TIP3P water with bonds and angles
-- `neural_training.rs` - Training a neural network potential
-
-Run examples with:
+- `argon_gas.rs` - Simple LJ simulation
+- `water_box.rs` - TIP3P water with bonds
+- `agent_maze.rs` - RL agent in gridworld
+- `multi_agent.rs` - Swarm coordination
 
 ```bash
 cargo run --example argon_gas --release
+cargo run --example agent_maze --release
 ```
 
 ## Documentation
-
-Full API documentation is available via:
 
 ```bash
 cargo doc --open
 ```
 
-### Tutorials & Guides
+### Guides
 
-- **[Getting Started Tutorial](docs/tutorials/getting-started.md)** - Your first simulation
-- **[Force Field Guide](docs/tutorials/force-fields.md)** - Understanding force field parameters
-- **[WASM/MCP Guide](docs/tutorials/wasm-mcp.md)** - Browser and AI agent integration
-- **[Performance Tuning](docs/guides/performance.md)** - Optimizing simulation speed
+- **[Getting Started](docs/tutorials/getting-started.md)** - Your first simulation
+- **[Force Fields](docs/tutorials/force-fields.md)** - Understanding force field parameters
+- **[Agent Training](docs/tutorials/agent-training.md)** - RL in constrained environments
+- **[WASM/MCP Integration](docs/tutorials/wasm-mcp.md)** - Browser and AI agent integration
 - **[ADR-001: Reality Stack](docs/adr/ADR-001-five-layer-reality-stack.md)** - Architecture decisions
-
-## Contributing
-
-Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## License
 
 Licensed under either of:
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
-
-## Acknowledgments
-
-FXNN draws inspiration from established MD packages including:
-- GROMACS
-- OpenMM
-- LAMMPS
-- ASE (Atomic Simulation Environment)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 ## Citation
 
-If you use FXNN in your research, please cite:
-
 ```bibtex
-@software{fxnn,
-  title = {FXNN: Fast Molecular Dynamics in Rust},
-  url = {https://github.com/your-org/fxnn},
+@software{cognitum,
+  title = {Cognitum: Constrained Reality Sandbox},
+  url = {https://github.com/ruvnet/newport},
   version = {0.1.0},
   year = {2024}
 }
