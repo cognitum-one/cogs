@@ -19,24 +19,54 @@ use super::traits::Integrator;
 use wide::f32x4;
 
 /// Velocity Verlet integrator
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct VelocityVerlet {
     /// Whether to wrap positions into the box after each step
     wrap_positions: bool,
+    /// Maximum force magnitude per component (for ADR-001 force clipping)
+    max_force: f32,
+    /// Maximum velocity magnitude per component (for stability)
+    max_velocity: f32,
+}
+
+impl Default for VelocityVerlet {
+    fn default() -> Self {
+        Self {
+            wrap_positions: true,
+            max_force: 1e30,     // Very high to avoid breaking momentum conservation
+            max_velocity: 1e30,  // Very high to avoid breaking physics
+        }
+    }
 }
 
 impl VelocityVerlet {
     /// Create a new velocity Verlet integrator
     pub fn new() -> Self {
-        Self {
-            wrap_positions: true,
-        }
+        Self::default()
     }
 
     /// Set whether to wrap positions into the box
     pub fn with_wrap_positions(mut self, wrap: bool) -> Self {
         self.wrap_positions = wrap;
         self
+    }
+
+    /// Set maximum force magnitude for clipping (ADR-001 compliance)
+    pub fn with_max_force(mut self, max_force: f32) -> Self {
+        self.max_force = max_force;
+        self
+    }
+
+    /// Set maximum velocity magnitude for stability
+    pub fn with_max_velocity(mut self, max_velocity: f32) -> Self {
+        self.max_velocity = max_velocity;
+        self
+    }
+
+    /// Clamp a value to [-max, max]
+    #[inline(always)]
+    fn clamp(v: f32, max: f32) -> f32 {
+        if v > max { max } else if v < -max { -max } else { v }
     }
 }
 
@@ -56,10 +86,15 @@ impl Integrator for VelocityVerlet {
         for atom in atoms.iter_mut() {
             let inv_mass = 1.0 / atom.mass;
 
+            // ADR-001: Force clipping before integration
+            let fx = Self::clamp(atom.force[0], self.max_force);
+            let fy = Self::clamp(atom.force[1], self.max_force);
+            let fz = Self::clamp(atom.force[2], self.max_force);
+
             // v(t + dt/2) = v(t) + (dt/2) * F(t) / m
-            let vx = atom.velocity[0] + dt_half * atom.force[0] * inv_mass;
-            let vy = atom.velocity[1] + dt_half * atom.force[1] * inv_mass;
-            let vz = atom.velocity[2] + dt_half * atom.force[2] * inv_mass;
+            let vx = Self::clamp(atom.velocity[0] + dt_half * fx * inv_mass, self.max_velocity);
+            let vy = Self::clamp(atom.velocity[1] + dt_half * fy * inv_mass, self.max_velocity);
+            let vz = Self::clamp(atom.velocity[2] + dt_half * fz * inv_mass, self.max_velocity);
 
             atom.velocity[0] = vx;
             atom.velocity[1] = vy;
@@ -92,10 +127,15 @@ impl Integrator for VelocityVerlet {
         for atom in atoms.iter_mut() {
             let inv_mass = 1.0 / atom.mass;
 
+            // ADR-001: Force clipping before integration
+            let fx = Self::clamp(atom.force[0], self.max_force);
+            let fy = Self::clamp(atom.force[1], self.max_force);
+            let fz = Self::clamp(atom.force[2], self.max_force);
+
             // v(t + dt) = v(t + dt/2) + (dt/2) * F(t + dt) / m
-            atom.velocity[0] += dt_half * atom.force[0] * inv_mass;
-            atom.velocity[1] += dt_half * atom.force[1] * inv_mass;
-            atom.velocity[2] += dt_half * atom.force[2] * inv_mass;
+            atom.velocity[0] = Self::clamp(atom.velocity[0] + dt_half * fx * inv_mass, self.max_velocity);
+            atom.velocity[1] = Self::clamp(atom.velocity[1] + dt_half * fy * inv_mass, self.max_velocity);
+            atom.velocity[2] = Self::clamp(atom.velocity[2] + dt_half * fz * inv_mass, self.max_velocity);
         }
     }
 

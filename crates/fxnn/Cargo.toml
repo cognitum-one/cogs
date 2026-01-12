@@ -14,7 +14,7 @@ default = ["simd", "parallel"]
 simd = []
 parallel = ["rayon"]
 neural = []
-wasm = ["wasm-bindgen"]
+wasm = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "serde-wasm-bindgen"]
 python = ["pyo3"]
 
 [dependencies]
@@ -50,8 +50,15 @@ tracing = "0.1"
 indexmap = "2.0"
 smallvec = "1.13"
 
+# Cryptographic hashing (for determinism tests per ADR-001)
+blake3 = "1.5"
+
 # WASM support (optional)
 wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["Window", "Performance", "console"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
 
 # Python bindings (optional)
 pyo3 = { version = "0.20", features = ["extension-module"], optional = true }

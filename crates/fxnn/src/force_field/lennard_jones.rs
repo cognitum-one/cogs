@@ -19,6 +19,8 @@ use wide::f32x4;
 /// Lennard-Jones force field
 ///
 /// Implements the 12-6 Lennard-Jones potential with optional tail corrections.
+/// Includes ADR-001 compliant force capping to prevent numerical instabilities
+/// while preserving Newton's third law (momentum conservation).
 #[derive(Debug, Clone)]
 pub struct LennardJones {
     /// Pair parameters for each atom type pair
@@ -29,6 +31,9 @@ pub struct LennardJones {
     n_types: usize,
     /// Whether to apply energy shift at cutoff
     shift: bool,
+    /// Maximum force magnitude (ADR-001: Force Clipping)
+    /// Applied symmetrically to preserve Newton's 3rd law
+    max_force: f32,
 }
 
 impl LennardJones {
@@ -39,6 +44,7 @@ impl LennardJones {
             cutoff,
             n_types,
             shift: true,
+            max_force: 1e6, // Default max force (ADR-001 compliance)
         }
     }
 
@@ -57,6 +63,27 @@ impl LennardJones {
         lj
     }
 
+    /// Set maximum force magnitude for ADR-001 force clipping
+    /// Applied symmetrically to preserve Newton's 3rd law
+    pub fn with_max_force(mut self, max_force: f32) -> Self {
+        self.max_force = max_force;
+        self
+    }
+
+    /// Clamp force magnitude while preserving direction
+    /// This preserves Newton's 3rd law (momentum conservation)
+    #[inline(always)]
+    fn clamp_force_vector(&self, fx: f32, fy: f32, fz: f32) -> (f32, f32, f32) {
+        let mag_sq = fx * fx + fy * fy + fz * fz;
+        let max_sq = self.max_force * self.max_force;
+        if mag_sq > max_sq && mag_sq > 0.0 {
+            let scale = self.max_force / mag_sq.sqrt();
+            (fx * scale, fy * scale, fz * scale)
+        } else {
+            (fx, fy, fz)
+        }
+    }
+
     /// Set parameters for a pair of atom types
     pub fn set_parameters(&mut self, type_i: usize, type_j: usize, epsilon: f32, sigma: f32) {
         let params = PairParameters::new(epsilon, sigma, self.cutoff);
@@ -68,6 +95,28 @@ impl LennardJones {
     pub fn with_shift(mut self, shift: bool) -> Self {
         self.shift = shift;
         self
+    }
+
+    /// Get the cutoff radius
+    pub fn cutoff(&self) -> f32 {
+        self.cutoff
+    }
+
+    /// Get the epsilon parameter for atom type pair (i, j)
+    /// Returns the epsilon for the (0, 0) pair if no arguments specified
+    pub fn epsilon(&self) -> f32 {
+        self.parameters[0][0].epsilon
+    }
+
+    /// Get the sigma parameter for atom type pair (i, j)
+    /// Returns the sigma for the (0, 0) pair if no arguments specified
+    pub fn sigma(&self) -> f32 {
+        self.parameters[0][0].sigma
+    }
+
+    /// Get parameters for a specific atom type pair
+    pub fn get_parameters(&self, type_i: usize, type_j: usize) -> &PairParameters {
+        &self.parameters[type_i][type_j]
     }
 
     /// Compute LJ potential and force for a pair
@@ -185,21 +234,38 @@ impl LennardJones {
                 let r2 = dx * dx + dy * dy + dz * dz;
 
                 // Combined cutoff check
-                if r2 < cutoff2 && r2 > min_r2 {
+                if r2 < cutoff2 {
                     let params = &self.parameters[type_i][type_j];
-                    let force_over_r = self.pair_force_only(r2, params);
 
-                    // Force on i points away from j for repulsion
-                    let fx = -force_over_r * dx;
-                    let fy = -force_over_r * dy;
-                    let fz = -force_over_r * dz;
+                    // Handle extreme overlap (ADR-001: No Overlap invariant)
+                    let (raw_fx, raw_fy, raw_fz) = if r2 <= min_r2 {
+                        // Atoms are essentially at the same position
+                        // Apply strong repulsive force in deterministic direction based on indices
+                        let sigma = params.sigma;
+                        let epsilon = params.epsilon;
+                        // Maximum force magnitude at 0.5*sigma separation
+                        let overlap_force = 48.0 * epsilon / sigma;
+                        // Use index-based direction for determinism
+                        let dir_x = if (i + j) % 3 == 0 { 1.0_f32 } else { 0.0 };
+                        let dir_y = if (i + j) % 3 == 1 { 1.0_f32 } else { 0.0 };
+                        let dir_z = if (i + j) % 3 == 2 { 1.0_f32 } else { 0.0 };
+                        let norm = (dir_x * dir_x + dir_y * dir_y + dir_z * dir_z).sqrt().max(1.0);
+                        (-overlap_force * dir_x / norm, -overlap_force * dir_y / norm, -overlap_force * dir_z / norm)
+                    } else {
+                        let force_over_r = self.pair_force_only(r2, params);
+                        // Force on i points away from j for repulsion
+                        (-force_over_r * dx, -force_over_r * dy, -force_over_r * dz)
+                    };
+
+                    // ADR-001: Symmetric force clamping preserves Newton's 3rd law
+                    let (fx, fy, fz) = self.clamp_force_vector(raw_fx, raw_fy, raw_fz);
 
                     // Accumulate to local variable
                     fx_i += fx;
                     fy_i += fy;
                     fz_i += fz;
 
-                    // Apply Newton's third law
+                    // Apply Newton's third law (same clamped force to both atoms)
                     atoms[j].force[0] -= fx;
                     atoms[j].force[1] -= fy;
                     atoms[j].force[2] -= fz;
@@ -257,18 +323,36 @@ impl LennardJones {
 
                 let r2 = dx * dx + dy * dy + dz * dz;
 
-                if r2 < cutoff2 && r2 > min_r2 {
+                if r2 < cutoff2 {
                     let params = &self.parameters[type_i][type_j];
-                    let force_over_r = self.pair_force_only(r2, params);
 
-                    let fx = -force_over_r * dx;
-                    let fy = -force_over_r * dy;
-                    let fz = -force_over_r * dz;
+                    // Handle extreme overlap (ADR-001: No Overlap invariant)
+                    let (raw_fx, raw_fy, raw_fz) = if r2 <= min_r2 {
+                        // Atoms are essentially at the same position
+                        // Apply strong repulsive force in deterministic direction based on indices
+                        let sigma = params.sigma;
+                        let epsilon = params.epsilon;
+                        // Maximum force magnitude at 0.5*sigma separation
+                        let overlap_force = 48.0 * epsilon / sigma;
+                        // Use index-based direction for determinism
+                        let dir_x = if (i + j) % 3 == 0 { 1.0_f32 } else { 0.0 };
+                        let dir_y = if (i + j) % 3 == 1 { 1.0_f32 } else { 0.0 };
+                        let dir_z = if (i + j) % 3 == 2 { 1.0_f32 } else { 0.0 };
+                        let norm = (dir_x * dir_x + dir_y * dir_y + dir_z * dir_z).sqrt().max(1.0);
+                        (-overlap_force * dir_x / norm, -overlap_force * dir_y / norm, -overlap_force * dir_z / norm)
+                    } else {
+                        let force_over_r = self.pair_force_only(r2, params);
+                        (-force_over_r * dx, -force_over_r * dy, -force_over_r * dz)
+                    };
+
+                    // ADR-001: Symmetric force clamping preserves Newton's 3rd law
+                    let (fx, fy, fz) = self.clamp_force_vector(raw_fx, raw_fy, raw_fz);
 
                     fx_i += fx;
                     fy_i += fy;
                     fz_i += fz;
 
+                    // Apply Newton's third law (same clamped force to both atoms)
                     atoms[j].force[0] -= fx;
                     atoms[j].force[1] -= fy;
                     atoms[j].force[2] -= fz;

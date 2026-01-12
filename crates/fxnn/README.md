@@ -29,15 +29,19 @@ fxnn = "0.1"
 | Feature | Default | Description |
 |---------|---------|-------------|
 | `simd` | Yes | SIMD-optimized force calculations |
-| `parallel` | No | Multi-threaded execution via Rayon |
+| `parallel` | Yes | Multi-threaded execution via Rayon |
 | `neural` | No | Neural network force fields (SchNet) |
-| `serde` | Yes | Serialization support for checkpointing |
+| `wasm` | No | WebAssembly support with MCP integration |
+| `python` | No | Python bindings via PyO3 |
 
 Enable features as needed:
 
 ```toml
 [dependencies]
 fxnn = { version = "0.1", features = ["parallel", "neural"] }
+
+# For WASM/browser usage:
+fxnn = { version = "0.1", features = ["wasm"] }
 ```
 
 ## Quick Start
@@ -223,6 +227,64 @@ Typical performance on a modern CPU (single-threaded):
 | 10,000 atoms | ~5,000 |
 | 100,000 atoms | ~400 |
 
+## WASM/MCP Integration
+
+FXNN includes full WebAssembly support with Model Context Protocol (MCP) integration for AI agents.
+
+### Browser Usage
+
+```javascript
+import init, { McpHandler, WasmSimulation } from 'fxnn';
+
+async function main() {
+    await init();
+
+    // Option 1: Direct simulation API
+    const sim = WasmSimulation.new_fcc(4, 4, 4, 1.5, 1.0);
+    sim.run(1000);
+    console.log(`Energy: ${sim.get_total_energy()}`);
+
+    // Option 2: MCP protocol for AI agents
+    const mcp = new McpHandler();
+
+    // List available tools
+    const tools = mcp.handle_request(JSON.stringify({
+        jsonrpc: "2.0", id: 1, method: "tools/list"
+    }));
+
+    // Create simulation via MCP
+    const result = mcp.handle_request(JSON.stringify({
+        jsonrpc: "2.0", id: 2,
+        method: "tools/call",
+        params: {
+            name: "simulation.create",
+            arguments: { lattice_type: "fcc", nx: 4, ny: 4, nz: 4 }
+        }
+    }));
+}
+```
+
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `simulation.create` | Create new simulation |
+| `simulation.step` | Advance simulation |
+| `simulation.state` | Get current state |
+| `simulation.energy` | Get energy breakdown |
+| `simulation.configure` | Update parameters |
+| `simulation.destroy` | Clean up resources |
+| `simulation.list` | List active simulations |
+
+### MCP Resources
+
+| Resource | Description |
+|----------|-------------|
+| `fxnn://config/defaults` | Default parameters |
+| `fxnn://config/forcefields` | Available force fields |
+| `fxnn://docs/api` | API documentation |
+| `fxnn://simulation/{id}/state` | Simulation snapshot |
+
 ## Examples
 
 See the `examples/` directory for complete working examples:
@@ -244,6 +306,14 @@ Full API documentation is available via:
 ```bash
 cargo doc --open
 ```
+
+### Tutorials & Guides
+
+- **[Getting Started Tutorial](docs/tutorials/getting-started.md)** - Your first simulation
+- **[Force Field Guide](docs/tutorials/force-fields.md)** - Understanding force field parameters
+- **[WASM/MCP Guide](docs/tutorials/wasm-mcp.md)** - Browser and AI agent integration
+- **[Performance Tuning](docs/guides/performance.md)** - Optimizing simulation speed
+- **[ADR-001: Reality Stack](docs/adr/ADR-001-five-layer-reality-stack.md)** - Architecture decisions
 
 ## Contributing
 

@@ -206,6 +206,11 @@ impl Atom {
     ///
     /// A new `Atom` at position (0, 0, 0) with zero velocity and force.
     ///
+    /// # Panics
+    ///
+    /// Panics if `mass` is not positive (must be > 0 to prevent division by zero
+    /// in integrators).
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -218,6 +223,27 @@ impl Atom {
     /// let reduced = Atom::new(0, 0, 1.0);
     /// ```
     pub fn new(id: u32, atom_type: u16, mass: f32) -> Self {
+        assert!(mass > 0.0, "Atom mass must be positive (got {})", mass);
+        Self {
+            position: [0.0; 3],
+            velocity: [0.0; 3],
+            force: [0.0; 3],
+            mass,
+            atom_type,
+            charge: 0.0,
+            id,
+        }
+    }
+
+    /// Create a new atom with optional mass validation bypass.
+    ///
+    /// # Safety
+    ///
+    /// Use only when mass is guaranteed to be valid, such as when deserializing
+    /// trusted data. Using zero or negative mass will cause undefined behavior
+    /// in physics calculations.
+    #[doc(hidden)]
+    pub fn new_unchecked(id: u32, atom_type: u16, mass: f32) -> Self {
         Self {
             position: [0.0; 3],
             velocity: [0.0; 3],

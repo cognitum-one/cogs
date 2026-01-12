@@ -52,8 +52,19 @@ pub struct PairParameters {
 }
 
 impl PairParameters {
+    /// Minimum allowed parameter value to prevent division by zero
+    const MIN_VALUE: f32 = 1e-10;
+
     /// Create new pair parameters
+    ///
+    /// # Panics
+    ///
+    /// Panics if `sigma` or `cutoff` are not positive, or if `epsilon` is negative.
     pub fn new(epsilon: f32, sigma: f32, cutoff: f32) -> Self {
+        assert!(epsilon >= 0.0, "Epsilon must be non-negative (got {})", epsilon);
+        assert!(sigma > Self::MIN_VALUE, "Sigma must be positive (got {})", sigma);
+        assert!(cutoff > Self::MIN_VALUE, "Cutoff must be positive (got {})", cutoff);
+
         // Calculate shift for smooth cutoff
         let r6 = (sigma / cutoff).powi(6);
         let r12 = r6 * r6;

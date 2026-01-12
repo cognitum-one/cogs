@@ -18,8 +18,16 @@ pub struct SimulationBox {
 }
 
 impl SimulationBox {
+    /// Minimum allowed box dimension to prevent division by zero
+    const MIN_DIMENSION: f32 = 1e-10;
+
     /// Create a cubic box with side length L
+    ///
+    /// # Panics
+    ///
+    /// Panics if `length` is not positive.
     pub fn cubic(length: f32) -> Self {
+        assert!(length > Self::MIN_DIMENSION, "Box length must be positive (got {})", length);
         Self {
             dimensions: [length, length, length],
             periodic: [true, true, true],
@@ -28,7 +36,13 @@ impl SimulationBox {
     }
 
     /// Create an orthorhombic box
+    ///
+    /// # Panics
+    ///
+    /// Panics if any dimension is not positive.
     pub fn orthorhombic(lx: f32, ly: f32, lz: f32) -> Self {
+        assert!(lx > Self::MIN_DIMENSION && ly > Self::MIN_DIMENSION && lz > Self::MIN_DIMENSION,
+            "All box dimensions must be positive (got [{}, {}, {}])", lx, ly, lz);
         Self {
             dimensions: [lx, ly, lz],
             periodic: [true, true, true],
@@ -37,7 +51,13 @@ impl SimulationBox {
     }
 
     /// Create a non-periodic box (for isolated systems)
+    ///
+    /// # Panics
+    ///
+    /// Panics if any dimension is not positive.
     pub fn non_periodic(lx: f32, ly: f32, lz: f32) -> Self {
+        assert!(lx > Self::MIN_DIMENSION && ly > Self::MIN_DIMENSION && lz > Self::MIN_DIMENSION,
+            "All box dimensions must be positive (got [{}, {}, {}])", lx, ly, lz);
         Self {
             dimensions: [lx, ly, lz],
             periodic: [false, false, false],
