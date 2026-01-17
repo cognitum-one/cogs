@@ -1,0 +1,72 @@
+[package]
+name = "thermal-brain"
+version = "0.1.0"
+edition = "2021"
+description = "Neuromorphic sparse spiking neural system with thermal self-regulation"
+license = "MIT"
+repository = "https://github.com/ruvnet/newport"
+keywords = ["neuromorphic", "spiking-neural-network", "embedded", "wasm", "edge-ai"]
+categories = ["embedded", "wasm", "science", "simulation"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Core dependencies (no_std compatible)
+heapless = "0.8"
+libm = "0.2"
+
+# WASM support
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["console"] }
+getrandom = { version = "0.2", features = ["js"], optional = true }
+
+# Serialization (optional)
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+postcard = { version = "1.0", default-features = false, optional = true }
+
+# ESP32-S3 specific (optional)
+# esp-idf-sys = { version = "0.35", features = ["binstart"], optional = true }
+# esp-idf-hal = { version = "0.44", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[features]
+default = ["std"]
+
+# Standard library support
+std = []
+
+# WebAssembly target
+wasm = ["wasm-bindgen", "js-sys", "web-sys", "getrandom", "std"]
+
+# Serialization support
+serde-support = ["serde", "postcard"]
+
+# Platform targets (mutually exclusive runtime)
+esp32s3 = ["simd-pie", "full-hnsw"]
+cognitum-v1 = ["int8-only", "mini-hnsw"]
+cognitum-v2 = ["int8-simd", "mini-hnsw", "shadow-regs"]
+
+# Capability flags
+simd-pie = []        # ESP32-S3 PIE SIMD extensions
+int8-only = []       # 8-bit datapath only (Cognitum V1)
+int8-simd = []       # 8-bit SIMD (Cognitum V2)
+full-hnsw = []       # Full HNSW (M=8, 2000 vectors)
+mini-hnsw = []       # Mini HNSW (M=4, 64-128 vectors)
+shadow-regs = []     # Shadow register contexts (Cognitum V2)
+
+# Debug features
+trace = []           # Enable detailed tracing
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = "z"

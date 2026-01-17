@@ -1,0 +1,31 @@
+{
+  "name": "fixel-tests",
+  "version": "1.0.0",
+  "description": "FIXEL (Finn Pixel) Cognitive Fabric Test Suite",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "npx tsx index.ts",
+    "test:watch": "npx tsx --watch index.ts",
+    "build": "tsc",
+    "test:compiled": "tsc && node dist/index.js",
+    "test:cognitum": "npx tsx -e \"import './cognitum.test'; import { printSummary } from './test-runner'; setTimeout(printSummary, 100);\"",
+    "test:fabric": "npx tsx -e \"import './fabric.test'; import { printSummary } from './test-runner'; setTimeout(printSummary, 100);\"",
+    "test:neural": "npx tsx -e \"import './neural.test'; import { printSummary } from './test-runner'; setTimeout(printSummary, 100);\"",
+    "test:benchmark": "npx tsx -e \"import './benchmark.test'; import { printSummary } from './test-runner'; setTimeout(printSummary, 100);\""
+  },
+  "keywords": [
+    "fixel",
+    "cognitum",
+    "neuromorphic",
+    "pixel",
+    "display",
+    "testing"
+  ],
+  "author": "FIXEL Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0"
+  }
+}
