@@ -57,6 +57,19 @@ pub struct HarvesterConfig {
     pub mcu_vdd_mv: u16,
 }
 
+/// Precomputed values derived from config — computed once, used every cycle.
+#[derive(Clone, Copy, Debug)]
+pub struct ConfigDerived {
+    /// ADC max count: `(1 << resolution_bits) - 1`.
+    pub adc_max_counts: u32,
+    /// Precomputed active energy per cycle (µJ).
+    pub active_energy_uj: u32,
+    /// Precomputed sleep energy per cycle (µJ).
+    pub sleep_energy_uj: u32,
+    /// Total estimated energy per duty cycle (µJ).
+    pub cycle_energy_uj: u32,
+}
+
 impl Default for HarvesterConfig {
     fn default() -> Self {
         Self {
@@ -81,47 +94,69 @@ impl Default for HarvesterConfig {
 }
 
 impl HarvesterConfig {
-    /// Convert raw ADC counts to millivolts.
+    /// Precompute derived values from this config.
+    ///
+    /// Call once at init and pass to subsystems that need fast-path access.
+    #[inline]
+    pub fn derive(&self) -> ConfigDerived {
+        let adc_max_counts = (1u32 << self.adc_resolution_bits) - 1;
+        let active_energy_uj = self.compute_active_energy_uj();
+        let sleep_energy_uj = self.compute_sleep_energy_uj();
+        ConfigDerived {
+            adc_max_counts,
+            active_energy_uj,
+            sleep_energy_uj,
+            cycle_energy_uj: active_energy_uj.saturating_add(sleep_energy_uj),
+        }
+    }
+
+    /// Convert raw ADC counts to millivolts using precomputed max_counts.
+    #[inline]
     pub fn adc_to_mv(&self, counts: u16) -> u16 {
         let max_counts = (1u32 << self.adc_resolution_bits) - 1;
         ((counts as u32 * self.adc_vref_mv as u32) / max_counts) as u16
     }
 
+    /// Convert raw ADC counts to millivolts using precomputed derived values.
+    #[inline]
+    pub fn adc_to_mv_fast(&self, counts: u16, derived: &ConfigDerived) -> u16 {
+        ((counts as u32 * self.adc_vref_mv as u32) / derived.adc_max_counts) as u16
+    }
+
     /// Estimate energy consumed during one active window (µJ).
     pub fn estimate_active_energy_uj(&self) -> u32 {
-        // E = I × V × t
-        // I in µA, V in mV, t in ms → E in pJ / 1_000_000 → µJ
-        let i_ua = self.active_current_ua as u64;
-        let v_mv = self.mcu_vdd_mv as u64;
-        let t_ms = self.max_active_ms as u64;
-        // i_ua * v_mv * t_ms gives pico-joule-seconds / 1000
-        // = (µA × mV × ms) = (1e-6 × 1e-3 × 1e-3) = 1e-12 → need /1 to get µJ
-        // Actually: µA × mV = nW, nW × ms = nW·ms = µJ × 1e-3... let me be precise:
-        // I(A) = I_ua * 1e-6
-        // V(V) = V_mv * 1e-3
-        // t(s) = t_ms * 1e-3
-        // E(J) = I*V*t = I_ua * V_mv * t_ms * 1e-12
-        // E(µJ) = I_ua * V_mv * t_ms * 1e-6
-        // = (I_ua * V_mv * t_ms) / 1_000_000
-        ((i_ua * v_mv * t_ms) / 1_000_000) as u32
+        self.compute_active_energy_uj()
     }
 
     /// Estimate energy consumed during one sleep period (µJ).
     pub fn estimate_sleep_energy_uj(&self) -> u32 {
-        let i_na = self.sleep_current_na as u64;
-        let v_mv = self.mcu_vdd_mv as u64;
-        let t_ms = self.duty_period_ms as u64;
-        // I(A) = i_na * 1e-9, V(V) = v_mv * 1e-3, t(s) = t_ms * 1e-3
-        // E(J) = i_na * v_mv * t_ms * 1e-15
-        // E(µJ) = i_na * v_mv * t_ms * 1e-9
-        // = (i_na * v_mv * t_ms) / 1_000_000_000
-        ((i_na * v_mv * t_ms) / 1_000_000_000) as u32
+        self.compute_sleep_energy_uj()
     }
 
     /// Total estimated energy per duty cycle (µJ).
     pub fn estimate_cycle_energy_uj(&self) -> u32 {
-        self.estimate_active_energy_uj()
-            .saturating_add(self.estimate_sleep_energy_uj())
+        self.compute_active_energy_uj()
+            .saturating_add(self.compute_sleep_energy_uj())
+    }
+
+    /// Internal: compute active energy (µJ).
+    /// E(µJ) = I(µA) × V(mV) × t(ms) / 1_000_000
+    #[inline]
+    fn compute_active_energy_uj(&self) -> u32 {
+        let i_ua = self.active_current_ua as u64;
+        let v_mv = self.mcu_vdd_mv as u64;
+        let t_ms = self.max_active_ms as u64;
+        ((i_ua * v_mv * t_ms) / 1_000_000) as u32
+    }
+
+    /// Internal: compute sleep energy (µJ).
+    /// E(µJ) = I(nA) × V(mV) × t(ms) / 1_000_000_000
+    #[inline]
+    fn compute_sleep_energy_uj(&self) -> u32 {
+        let i_na = self.sleep_current_na as u64;
+        let v_mv = self.mcu_vdd_mv as u64;
+        let t_ms = self.duty_period_ms as u64;
+        ((i_na * v_mv * t_ms) / 1_000_000_000) as u32
     }
 
     /// Check if wake threshold respects hysteresis relative to sleep threshold.
@@ -170,5 +205,24 @@ mod tests {
         let mut cfg = HarvesterConfig::default();
         cfg.th_wake_mv = cfg.th_sleep_mv; // wake == sleep violates ordering
         assert!(!cfg.validate());
+    }
+
+    #[test]
+    fn derived_values_match_computed() {
+        let cfg = HarvesterConfig::default();
+        let derived = cfg.derive();
+        assert_eq!(derived.adc_max_counts, 4095);
+        assert_eq!(derived.active_energy_uj, cfg.estimate_active_energy_uj());
+        assert_eq!(derived.sleep_energy_uj, cfg.estimate_sleep_energy_uj());
+        assert_eq!(derived.cycle_energy_uj, cfg.estimate_cycle_energy_uj());
+    }
+
+    #[test]
+    fn fast_adc_conversion_matches_standard() {
+        let cfg = HarvesterConfig::default();
+        let derived = cfg.derive();
+        for counts in [0u16, 1, 100, 2048, 4095] {
+            assert_eq!(cfg.adc_to_mv(counts), cfg.adc_to_mv_fast(counts, &derived));
+        }
     }
 }

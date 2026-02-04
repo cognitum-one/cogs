@@ -3,6 +3,9 @@
 //! Uses fixed-point microjoule (µJ) accounting to avoid floating-point
 //! operations on bare-metal targets. Maintains a circular buffer of energy
 //! slots, each representing one duty cycle's energy transactions.
+//!
+//! Optimization: caches `balance_ratio_pct` with a dirty flag to avoid
+//! redundant u64 division on the hot path (called 2-3× per cycle).
 
 use heapless::Vec;
 
@@ -22,6 +25,7 @@ pub struct EnergySlot {
 
 impl EnergySlot {
     /// Net energy for this slot (positive = surplus, may underflow if consumed > harvested).
+    #[inline]
     pub fn net_uj(&self) -> i32 {
         self.harvested_uj as i32 - self.consumed_uj as i32
     }
@@ -46,6 +50,10 @@ pub struct EnergyLedger {
     fault_count: u32,
     /// Maximum capacity (number of slots).
     capacity: usize,
+    /// Cached balance ratio (×100). Invalidated on `record()`.
+    cached_ratio: u16,
+    /// Whether `cached_ratio` is valid.
+    ratio_dirty: bool,
 }
 
 impl EnergyLedger {
@@ -62,6 +70,8 @@ impl EnergyLedger {
             sum_consumed_uj: 0,
             fault_count: 0,
             capacity: capped,
+            cached_ratio: u16::MAX,
+            ratio_dirty: true,
         }
     }
 
@@ -97,19 +107,25 @@ impl EnergyLedger {
 
         self.total_cycles = self.total_cycles.saturating_add(1);
         self.cursor = (self.cursor + 1) % self.capacity;
+
+        // Invalidate cached ratio
+        self.ratio_dirty = true;
     }
 
     /// Total harvested energy across the rolling window (µJ).
+    #[inline]
     pub fn total_harvested_uj(&self) -> u64 {
         self.sum_harvested_uj
     }
 
     /// Total consumed energy across the rolling window (µJ).
+    #[inline]
     pub fn total_consumed_uj(&self) -> u64 {
         self.sum_consumed_uj
     }
 
     /// Net energy balance across the window (µJ, signed).
+    #[inline]
     pub fn net_balance_uj(&self) -> i64 {
         self.sum_harvested_uj as i64 - self.sum_consumed_uj as i64
     }
@@ -117,7 +133,29 @@ impl EnergyLedger {
     /// Energy balance ratio (×100 for fixed-point percentage).
     ///
     /// Returns `harvested * 100 / consumed`. Returns `u16::MAX` if consumed is zero.
-    pub fn balance_ratio_pct(&self) -> u16 {
+    /// Result is cached — repeated calls within the same cycle avoid u64 division.
+    #[inline]
+    pub fn balance_ratio_pct(&mut self) -> u16 {
+        if !self.ratio_dirty {
+            return self.cached_ratio;
+        }
+        let ratio = if self.sum_consumed_uj == 0 {
+            u16::MAX
+        } else {
+            let r = (self.sum_harvested_uj * 100) / self.sum_consumed_uj;
+            r.min(u16::MAX as u64) as u16
+        };
+        self.cached_ratio = ratio;
+        self.ratio_dirty = false;
+        ratio
+    }
+
+    /// Read-only ratio for contexts that can't mutate (uses cached if valid).
+    #[inline]
+    pub fn balance_ratio_pct_readonly(&self) -> u16 {
+        if !self.ratio_dirty {
+            return self.cached_ratio;
+        }
         if self.sum_consumed_uj == 0 {
             return u16::MAX;
         }
@@ -126,26 +164,31 @@ impl EnergyLedger {
     }
 
     /// Check if energy budget is sustainable (ratio >= threshold).
-    pub fn is_sustainable(&self, threshold_pct: u16) -> bool {
+    #[inline]
+    pub fn is_sustainable(&mut self, threshold_pct: u16) -> bool {
         self.balance_ratio_pct() >= threshold_pct
     }
 
     /// Check if energy surplus permits extra activity (ratio >= surplus threshold).
-    pub fn has_surplus(&self, surplus_pct: u16) -> bool {
+    #[inline]
+    pub fn has_surplus(&mut self, surplus_pct: u16) -> bool {
         self.balance_ratio_pct() >= surplus_pct
     }
 
     /// Number of cycles recorded in the ledger (may exceed window size).
+    #[inline]
     pub fn total_cycles(&self) -> u32 {
         self.total_cycles
     }
 
     /// Number of active slots in the buffer.
+    #[inline]
     pub fn active_slots(&self) -> usize {
         self.slots.len()
     }
 
     /// Number of fault events in the current window.
+    #[inline]
     pub fn fault_count(&self) -> u32 {
         self.fault_count
     }
@@ -159,8 +202,9 @@ impl EnergyLedger {
     ///
     /// Returns true if the current VSTOR voltage is above the wake threshold
     /// AND the energy ledger indicates sustainability.
+    #[inline]
     pub fn budget_permits_execution(
-        &self,
+        &mut self,
         vstor_mv: u16,
         th_wake_mv: u16,
         sustainability_pct: u16,
@@ -173,13 +217,15 @@ impl EnergyLedger {
     /// - If ratio < sustainability: increase duty period (less frequent wakes)
     /// - If ratio > surplus: decrease duty period (more frequent wakes)
     /// - Otherwise: keep current period
+    ///
+    /// Uses the already-cached ratio from the current cycle to avoid re-division.
     pub fn suggest_duty_period_ms(
-        &self,
+        &mut self,
         current_period_ms: u32,
         sustainability_pct: u16,
         surplus_pct: u16,
     ) -> u32 {
-        let ratio = self.balance_ratio_pct();
+        let ratio = self.balance_ratio_pct(); // uses cache if available
 
         if ratio < sustainability_pct {
             // Energy deficit — back off
@@ -195,7 +241,7 @@ impl EnergyLedger {
     }
 
     /// Generate a summary report of the energy ledger state.
-    pub fn summary(&self) -> LedgerSummary {
+    pub fn summary(&mut self) -> LedgerSummary {
         LedgerSummary {
             total_cycles: self.total_cycles,
             active_slots: self.active_slots() as u16,
@@ -227,7 +273,7 @@ mod tests {
 
     #[test]
     fn empty_ledger() {
-        let ledger = EnergyLedger::new(16);
+        let mut ledger = EnergyLedger::new(16);
         assert_eq!(ledger.total_cycles(), 0);
         assert_eq!(ledger.active_slots(), 0);
         assert_eq!(ledger.total_harvested_uj(), 0);
@@ -334,5 +380,28 @@ mod tests {
         assert_eq!(summary.total_consumed_uj, 900);
         assert_eq!(summary.balance_ratio_pct, 200);
         assert_eq!(summary.fault_count, 1);
+    }
+
+    #[test]
+    fn ratio_caching_avoids_redundant_division() {
+        let mut ledger = EnergyLedger::new(16);
+        ledger.record(1000, 500, false);
+
+        // First call computes
+        let r1 = ledger.balance_ratio_pct();
+        assert_eq!(r1, 200);
+        assert!(!ledger.ratio_dirty);
+
+        // Second call uses cache (no division)
+        let r2 = ledger.balance_ratio_pct();
+        assert_eq!(r2, 200);
+
+        // Record invalidates cache
+        ledger.record(500, 500, false);
+        assert!(ledger.ratio_dirty);
+
+        // Next call recomputes
+        let r3 = ledger.balance_ratio_pct();
+        assert_eq!(r3, 150);
     }
 }

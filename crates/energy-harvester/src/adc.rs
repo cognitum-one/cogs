@@ -2,6 +2,9 @@
 //!
 //! Uses `embedded-hal` traits for portability across MCU families.
 //! Supports oversampling with averaging for noise reduction.
+//!
+//! Optimization: precomputes `adc_max_counts` at construction to avoid
+//! shift+subtract on every read.
 
 use crate::config::HarvesterConfig;
 
@@ -26,10 +29,11 @@ pub struct AdcReader {
     vstor: AdcReading,
     /// Current harvester input current reading (µA).
     harvest_current_ua: u32,
-    /// Configuration reference.
+    /// Configuration values (cached at construction).
     oversampling: u8,
     adc_vref_mv: u16,
-    adc_resolution_bits: u8,
+    /// Precomputed: `(1 << resolution_bits) - 1`. Avoids per-read shift.
+    adc_max_counts: u32,
     /// Simulated ADC values for host testing.
     #[cfg(feature = "std")]
     sim_vstor_mv: u16,
@@ -45,7 +49,7 @@ impl AdcReader {
             harvest_current_ua: 0,
             oversampling: config.adc_oversampling,
             adc_vref_mv: config.adc_vref_mv,
-            adc_resolution_bits: config.adc_resolution_bits,
+            adc_max_counts: (1u32 << config.adc_resolution_bits) - 1,
             #[cfg(feature = "std")]
             sim_vstor_mv: config.th_wake_mv, // start at wake threshold
             #[cfg(feature = "std")]
@@ -57,12 +61,12 @@ impl AdcReader {
     ///
     /// On real hardware, this performs N ADC conversions and averages.
     /// In simulation, returns the injected value.
+    #[inline]
     pub fn read_vstor(&mut self) -> AdcReading {
         #[cfg(feature = "std")]
         {
             let mv = self.sim_vstor_mv;
-            let max_counts = (1u32 << self.adc_resolution_bits) - 1;
-            let counts = ((mv as u32 * max_counts) / self.adc_vref_mv as u32) as u16;
+            let counts = ((mv as u32 * self.adc_max_counts) / self.adc_vref_mv as u32) as u16;
             self.vstor = AdcReading {
                 counts,
                 voltage_mv: mv,
@@ -78,14 +82,15 @@ impl AdcReader {
             //     sum += adc.read(&mut vstor_pin).unwrap() as u32;
             // }
             // let avg = (sum / self.oversampling as u32) as u16;
-            // ... convert to mV ...
-            // For now, return last known value
+            // let mv = self.counts_to_mv(avg);
+            // self.vstor = AdcReading { counts: avg, voltage_mv: mv, samples: self.oversampling };
         }
 
         self.vstor
     }
 
     /// Read harvester input current in µA.
+    #[inline]
     pub fn read_harvest_current(&mut self) -> u32 {
         #[cfg(feature = "std")]
         {
@@ -96,19 +101,21 @@ impl AdcReader {
     }
 
     /// Get the most recent VSTOR reading without re-sampling.
+    #[inline]
     pub fn last_vstor(&self) -> AdcReading {
         self.vstor
     }
 
     /// Get the most recent harvest current without re-sampling.
+    #[inline]
     pub fn last_harvest_current(&self) -> u32 {
         self.harvest_current_ua
     }
 
-    /// Convert raw ADC counts to millivolts.
+    /// Convert raw ADC counts to millivolts using precomputed max_counts.
+    #[inline]
     pub fn counts_to_mv(&self, counts: u16) -> u16 {
-        let max_counts = (1u32 << self.adc_resolution_bits) - 1;
-        ((counts as u32 * self.adc_vref_mv as u32) / max_counts) as u16
+        ((counts as u32 * self.adc_vref_mv as u32) / self.adc_max_counts) as u16
     }
 
     // --- Simulation helpers (host only) ---
@@ -167,5 +174,13 @@ mod tests {
 
         adc.set_sim_current_ua(250);
         assert_eq!(adc.read_harvest_current(), 250);
+    }
+
+    #[test]
+    fn precomputed_max_counts() {
+        let cfg = HarvesterConfig::default();
+        let adc = AdcReader::new(&cfg);
+        // Verify precomputed value matches expected
+        assert_eq!(adc.adc_max_counts, 4095);
     }
 }

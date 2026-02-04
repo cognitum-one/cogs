@@ -38,9 +38,6 @@ pub struct PowerManager {
     watchdog_armed: bool,
     /// Watchdog timeout in ms (mirrors config.max_active_ms).
     watchdog_timeout_ms: u16,
-    /// Simulated elapsed time since load enable (ms), for host testing.
-    #[cfg(feature = "std")]
-    sim_elapsed_ms: u32,
 }
 
 impl PowerManager {
@@ -51,24 +48,19 @@ impl PowerManager {
             stats: PowerStats::default(),
             watchdog_armed: false,
             watchdog_timeout_ms,
-            #[cfg(feature = "std")]
-            sim_elapsed_ms: 0,
         }
     }
 
     /// Enable the compute load (connect VSTOR to MCU core).
     ///
-    /// On hardware: sets GPIO high → MOSFET/PMIC load enable.
+    /// On hardware: sets GPIO high -> MOSFET/PMIC load enable.
     /// Arms the watchdog timer.
+    #[inline]
     pub fn enable_core(&mut self) {
         if self.state == LoadState::Disabled {
             self.state = LoadState::Enabled;
             self.stats.enable_count = self.stats.enable_count.saturating_add(1);
             self.watchdog_armed = true;
-            #[cfg(feature = "std")]
-            {
-                self.sim_elapsed_ms = 0;
-            }
             // On hardware:
             // gpio_load_en.set_high().unwrap();
             // watchdog.start(self.watchdog_timeout_ms);
@@ -77,8 +69,9 @@ impl PowerManager {
 
     /// Disable the compute load (disconnect VSTOR from MCU core).
     ///
-    /// On hardware: sets GPIO low → MOSFET/PMIC load disable.
+    /// On hardware: sets GPIO low -> MOSFET/PMIC load disable.
     /// Disarms the watchdog.
+    #[inline]
     pub fn disable_core(&mut self) {
         if self.state == LoadState::Enabled {
             self.state = LoadState::Disabled;
@@ -93,6 +86,7 @@ impl PowerManager {
     /// Emergency load cutoff — immediate disconnect regardless of state.
     ///
     /// Called when VSTOR drops below TH_CRITICAL during execution.
+    #[inline]
     pub fn emergency_cutoff(&mut self) {
         self.state = LoadState::Disabled;
         self.watchdog_armed = false;
@@ -103,6 +97,7 @@ impl PowerManager {
     }
 
     /// Record a watchdog-triggered cutoff (called by ISR or duty cycle controller).
+    #[inline]
     pub fn watchdog_cutoff(&mut self) {
         self.state = LoadState::Disabled;
         self.watchdog_armed = false;
@@ -113,6 +108,7 @@ impl PowerManager {
     ///
     /// On hardware: enters Stop/Standby mode with RTC wakeup.
     /// In simulation: no-op (returns immediately).
+    #[inline]
     pub fn sleep_ms(&self, _duration_ms: u32) {
         // On hardware:
         // rtc.set_wakeup(duration_ms);
@@ -124,27 +120,32 @@ impl PowerManager {
     }
 
     /// Get current load switch state.
+    #[inline]
     pub fn state(&self) -> LoadState {
         self.state
     }
 
     /// Get cumulative power statistics.
+    #[inline]
     pub fn stats(&self) -> PowerStats {
         self.stats
     }
 
     /// Check if watchdog is currently armed.
+    #[inline]
     pub fn watchdog_armed(&self) -> bool {
         self.watchdog_armed
     }
 
     /// Get watchdog timeout setting.
+    #[inline]
     pub fn watchdog_timeout_ms(&self) -> u16 {
         self.watchdog_timeout_ms
     }
 
     /// Check if execution has exceeded watchdog timeout (simulation only).
     #[cfg(feature = "std")]
+    #[inline]
     pub fn check_watchdog(&mut self, elapsed_ms: u32) -> bool {
         if self.watchdog_armed && elapsed_ms >= self.watchdog_timeout_ms as u32 {
             self.watchdog_cutoff();

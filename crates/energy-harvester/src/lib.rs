@@ -23,7 +23,7 @@ pub mod power_manager;
 pub mod telemetry;
 pub mod wasm_gate;
 
-pub use config::HarvesterConfig;
+pub use config::{ConfigDerived, HarvesterConfig};
 pub use duty_cycle::{DutyCycleController, PowerState};
 pub use energy_ledger::EnergyLedger;
 pub use power_manager::PowerManager;

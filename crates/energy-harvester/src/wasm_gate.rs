@@ -108,6 +108,7 @@ impl Default for ThresholdKernel {
 }
 
 impl MicroKernel for ThresholdKernel {
+    #[inline]
     fn execute(&mut self, sensor_value: u16, cycle_id: u32) -> ActionToken {
         let (action, confidence) = if sensor_value >= self.actuate_threshold {
             (Action::Actuate, 255)
@@ -205,6 +206,7 @@ impl MinCutKernel {
 }
 
 impl MicroKernel for MinCutKernel {
+    #[inline]
     fn execute(&mut self, sensor_value: u16, cycle_id: u32) -> ActionToken {
         // Add to sliding window
         self.window[self.cursor] = sensor_value;
@@ -270,6 +272,7 @@ impl<K: MicroKernel> WasmGate<K> {
     ///
     /// Returns the ActionToken. The caller is responsible for metering
     /// energy consumption and filling in `energy_consumed_uj`.
+    #[inline]
     pub fn run(&mut self, sensor_value: u16, cycle_id: u32) -> ActionToken {
         let token = self.kernel.execute(sensor_value, cycle_id);
         self.execution_count = self.execution_count.saturating_add(1);
