@@ -1,0 +1,87 @@
+[package]
+name = "agentvm-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI tool for Agentic VM - Accountable Agent Runtime"
+license = "Apache-2.0"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["agentic", "vm", "cli", "capsule", "evidence"]
+categories = ["command-line-utilities", "development-tools"]
+authors = ["Cognitum Architecture Team"]
+
+[dependencies]
+# CLI framework
+clap = { version = "4.5", features = ["derive", "env", "color", "suggestions"] }
+
+# Async runtime
+tokio = { version = "1.48", features = ["full", "signal"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Output formatting
+tabled = { version = "0.15", features = ["ansi"] }
+indicatif = { version = "0.17", features = ["tokio"] }
+colored = "2.1"
+console = "0.15"
+
+# UUID and time
+uuid = { version = "1.11", features = ["v4", "v7", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Cryptography
+sha2 = "0.10"
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+base64 = "0.22"
+hex = "0.4"
+
+# File system and path handling
+dirs = "5.0"
+walkdir = "2.5"
+
+# Statistics for benchmarking
+statrs = "0.17"
+
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Process management
+nix = { version = "0.28", features = ["process", "signal"] }
+
+# HTTP client (for future VMM integration)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+
+[dev-dependencies]
+tempfile = "3.10"
+assert_cmd = "2.0"
+predicates = "3.1"
+mockall = "0.13"
+tokio-test = "0.4"
+
+[features]
+default = []
+# VMM integration (QEMU/Firecracker)
+vmm = []
+# Hardware security module support
+hsm = []
+# TPM signing support
+tpm = []
+# Transparency log integration
+transparency = []
+
+[[bin]]
+name = "agentvm"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
