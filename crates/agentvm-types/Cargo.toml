@@ -1,0 +1,19 @@
+[package]
+name = "agentvm-types"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Core types for Agentic VM - capabilities, budgets, evidence, and capsules"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["agentic", "vm", "capability", "security"]
+categories = ["embedded", "no-std"]
+
+[features]
+default = ["std"]
+std = []
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[dev-dependencies]

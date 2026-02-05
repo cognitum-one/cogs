@@ -1,0 +1,68 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/agentvm-types",
+    "crates/agentvm-capability",
+    "crates/agentvm-evidence",
+    "crates/agentvm-scheduler",
+    "crates/agentvm-proxy",
+    "crates/agentvm-cli",
+    "crates/agentvm-test",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/ruvnet/cognitum"
+authors = ["Cognitum Team"]
+
+[workspace.dependencies]
+# Core types crate
+agentvm-types = { path = "crates/agentvm-types" }
+agentvm-capability = { path = "crates/agentvm-capability" }
+agentvm-evidence = { path = "crates/agentvm-evidence" }
+agentvm-scheduler = { path = "crates/agentvm-scheduler" }
+agentvm-proxy = { path = "crates/agentvm-proxy" }
+
+# Cryptography (no_std compatible)
+sha2 = { version = "0.10", default-features = false }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["alloc", "rand_core"] }
+rand_core = { version = "0.6", default-features = false }
+
+# Serialization
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
+# Identifiers
+uuid = { version = "1.7", default-features = false }
+
+# Async runtime (std only)
+tokio = { version = "1.36", features = ["full"] }
+
+# CLI (std only)
+clap = { version = "4.5", features = ["derive"] }
+
+# HTTP client (std only)
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging/tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Testing
+proptest = "1.4"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

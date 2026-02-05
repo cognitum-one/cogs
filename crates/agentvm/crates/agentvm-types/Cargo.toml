@@ -1,0 +1,22 @@
+[package]
+name = "agentvm-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core types for Agentic VM - accountable agent capsule runtime"
+
+[features]
+default = []
+std = []
+serde = ["dep:serde", "dep:serde_json", "uuid/serde"]
+alloc = []
+
+[dependencies]
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
