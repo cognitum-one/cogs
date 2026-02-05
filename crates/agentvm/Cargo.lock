@@ -126,6 +126,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "agentvm-test"
+version = "0.1.0"
+dependencies = [
+ "agentvm-types",
+]
+
+[[package]]
 name = "agentvm-types"
 version = "0.1.0"
 dependencies = [
