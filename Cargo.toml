@@ -108,3 +108,7 @@ harness = false
 [[bench]]
 name = "ruvector_bench"
 harness = false
+
+[[bench]]
+name = "page_index_bench"
+harness = false

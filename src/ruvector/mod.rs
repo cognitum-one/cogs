@@ -14,6 +14,7 @@ pub mod partitioning;
 pub mod fusion;
 pub mod simulator_bridge;
 pub mod quantization;
+pub mod page_index;
 
 // Re-export main types
 pub use embedding::{EmbeddingGenerator, DefaultEmbeddingGenerator};
@@ -40,3 +41,4 @@ pub use quantization::{
     QuantizationType, MemoryEstimate, estimate_memory,
     QuantizedHnswConfig,
 };
+pub use page_index::PageAlignedIndex;
