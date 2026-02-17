@@ -90,11 +90,26 @@ impl Platform for WasmPlatform {
     fn feature_dims() -> usize { 16 }
 }
 
+/// Pi Zero 2W platform (BCM2710A1, 4x Cortex-A53 @ 1.0GHz, 512MB PoP DRAM)
+#[cfg(feature = "pi-zero-2w")]
+pub struct PiZero2WPlatform;
+
+#[cfg(feature = "pi-zero-2w")]
+impl Platform for PiZero2WPlatform {
+    fn name() -> &'static str { "Pi Zero 2W" }
+    fn max_patterns() -> usize { 2000 }
+    fn hnsw_m() -> usize { 8 }
+    fn hnsw_max_vectors() -> usize { 2000 }
+    fn has_simd() -> bool { true } // NEON on Cortex-A53
+    fn has_fft() -> bool { true }
+    fn feature_dims() -> usize { 16 }
+}
+
 /// Standard platform (default)
-#[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm"))))]
+#[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm", feature = "pi-zero-2w"))))]
 pub struct StdPlatform;
 
-#[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm"))))]
+#[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm", feature = "pi-zero-2w"))))]
 impl Platform for StdPlatform {
     fn name() -> &'static str { "Standard" }
     fn max_patterns() -> usize { 2000 }
@@ -116,9 +131,11 @@ pub fn platform_info() -> PlatformInfo {
         name: "Cognitum V2",
         #[cfg(feature = "wasm")]
         name: "WASM",
-        #[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm"))))]
+        #[cfg(feature = "pi-zero-2w")]
+        name: "Pi Zero 2W",
+        #[cfg(all(feature = "std", not(any(feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm", feature = "pi-zero-2w"))))]
         name: "Standard",
-        #[cfg(not(any(feature = "std", feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm")))]
+        #[cfg(not(any(feature = "std", feature = "esp32s3", feature = "cognitum-v1", feature = "cognitum-v2", feature = "wasm", feature = "pi-zero-2w")))]
         name: "no_std",
 
         max_patterns: get_max_patterns(),
