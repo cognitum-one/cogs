@@ -47,6 +47,9 @@ mod temporal_coding;
 mod predictive_thermal;
 mod meta_plasticity;
 
+// Graph-Theoretic Thermal Analysis
+mod thermal_graph;
+
 // Re-exports - Power Management
 pub use dvfs::*;
 pub use power_gating::*;
@@ -68,3 +71,6 @@ pub use event_driven::*;
 pub use temporal_coding::*;
 pub use predictive_thermal::*;
 pub use meta_plasticity::*;
+
+// Re-exports - Graph-Theoretic Thermal Analysis
+pub use thermal_graph::*;

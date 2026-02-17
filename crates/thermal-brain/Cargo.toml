@@ -49,6 +49,7 @@ serde-support = ["serde", "postcard"]
 esp32s3 = ["simd-pie", "full-hnsw"]
 cognitum-v1 = ["int8-only", "mini-hnsw"]
 cognitum-v2 = ["int8-simd", "mini-hnsw", "shadow-regs"]
+pi-zero-2w = ["std", "full-hnsw"]  # BCM2710A1 4x Cortex-A53, 512MB PoP DRAM
 
 # Capability flags
 simd-pie = []        # ESP32-S3 PIE SIMD extensions
