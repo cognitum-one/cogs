@@ -1,0 +1,35 @@
+@layer components {
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(185 70% 65%) 100%);
+  }
+
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(160 60% 55%) 100%);
+  }
+
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-accent {
+    box-shadow: var(--shadow-glow-accent);
+  }
+
+  .card-elevated {
+    background: var(--gradient-card);
+    @apply border border-border/50;
+    box-shadow: var(--shadow-card);
+  }
+
+  .line-glow {
+    @apply relative;
+  }
+
+  .line-glow::after {
+    content: '';
+    @apply absolute inset-x-0 -bottom-px h-px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent);
+  }
+}
