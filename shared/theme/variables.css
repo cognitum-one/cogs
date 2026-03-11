@@ -1,0 +1,65 @@
+:root {
+  /* Cognitum Dark Theme - Calm, Sparse, Sophisticated */
+  --background: 220 25% 6%;
+  --foreground: 210 20% 92%;
+
+  --card: 220 20% 10%;
+  --card-foreground: 210 20% 92%;
+
+  --popover: 220 20% 10%;
+  --popover-foreground: 210 20% 92%;
+
+  /* Primary - Cyan/Teal from chip imagery */
+  --primary: 185 80% 50%;
+  --primary-foreground: 220 25% 6%;
+
+  /* Secondary - Muted dark surface */
+  --secondary: 220 20% 14%;
+  --secondary-foreground: 210 20% 80%;
+
+  /* Accent - Green from logo dot */
+  --accent: 142 70% 50%;
+  --accent-foreground: 220 25% 6%;
+
+  --muted: 220 15% 15%;
+  --muted-foreground: 215 15% 55%;
+
+  --destructive: 0 65% 50%;
+  --destructive-foreground: 210 20% 92%;
+
+  --border: 220 15% 18%;
+  --input: 220 15% 18%;
+  --ring: 185 80% 50%;
+
+  --radius: 0.75rem;
+
+  /* Custom Cognitum tokens */
+  --glow-primary: 185 80% 50%;
+  --glow-accent: 142 70% 50%;
+  --surface-elevated: 220 20% 12%;
+  --surface-overlay: 220 20% 8%;
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(135deg, hsl(220 25% 6%) 0%, hsl(220 20% 10%) 50%, hsl(200 25% 8%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(220 20% 12%) 0%, hsl(220 20% 8%) 100%);
+  --gradient-glow: radial-gradient(ellipse at center, hsl(185 80% 50% / 0.15) 0%, transparent 70%);
+
+  /* Shadows */
+  --shadow-glow: 0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-glow-accent: 0 0 40px -10px hsl(142 70% 50% / 0.4);
+  --shadow-card: 0 8px 32px -8px hsl(220 25% 2% / 0.8);
+
+  /* Typography */
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Sidebar */
+  --sidebar-background: 220 20% 8%;
+  --sidebar-foreground: 210 20% 85%;
+  --sidebar-primary: 185 80% 50%;
+  --sidebar-primary-foreground: 220 25% 6%;
+  --sidebar-accent: 220 15% 15%;
+  --sidebar-accent-foreground: 210 20% 85%;
+  --sidebar-border: 220 15% 18%;
+  --sidebar-ring: 185 80% 50%;
+}
