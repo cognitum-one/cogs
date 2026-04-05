@@ -36,6 +36,7 @@ fn http_request(addr: &str, method: &str, path: &str, body: Option<&[u8]>) -> Re
             Ok(0) => break,
             Ok(n) => { buf.extend_from_slice(&tmp[..n]); if buf.len() > 262144 { break; } }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => break,
+            Err(_) if !buf.is_empty() => break,
             Err(e) => return Err(format!("read: {e}")),
         }
     }
