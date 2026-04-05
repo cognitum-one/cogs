@@ -1,0 +1,24 @@
+[cog]
+id = "prompt-shield"
+name = "Prompt Shield"
+version = "1.0.0"
+category = "security"
+description = "Signal replay and injection attack detector via fingerprint matching and anomaly detection"
+binary = "cog-prompt-shield-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Scan interval"
+description = "Seconds between security scans"
+default = 2
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

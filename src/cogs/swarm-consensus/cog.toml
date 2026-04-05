@@ -1,0 +1,38 @@
+[cog]
+id = "swarm-consensus"
+name = "Swarm Consensus"
+version = "1.0.0"
+category = "swarm"
+description = "Multi-seed voting protocol with simple 2-phase commit for coordinated decisions"
+binary = "cog-swarm-consensus-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Consensus interval"
+description = "Seconds between consensus rounds"
+default = 60
+min = 10
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peers]
+type = "string"
+label = "Peer addresses"
+description = "Comma-separated IP addresses of peer seeds to vote with"
+default = ""
+cli_arg = "--peers"
+
+[config.propose]
+type = "string"
+label = "Proposal"
+description = "Action to propose for voting (e.g. enable-cog:presence)"
+default = ""
+cli_arg = "--propose"
+
+[console]
+allowed_commands = ["--once --peers 169.254.42.2 --propose enable-cog:presence", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

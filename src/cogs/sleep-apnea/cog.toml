@@ -1,0 +1,24 @@
+[cog]
+id = "sleep-apnea"
+name = "Sleep Apnea Detector"
+version = "1.0.0"
+category = "health"
+description = "Detect breathing cessation during sleep via variance spike analysis and CUSUM drift detection"
+binary = "cog-sleep-apnea-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 5
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 3", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

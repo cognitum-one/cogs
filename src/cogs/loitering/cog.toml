@@ -1,0 +1,34 @@
+[cog]
+id = "loitering"
+name = "Loitering Detection"
+version = "1.0.0"
+category = "security"
+description = "State machine that detects stationary presence beyond a configurable time threshold"
+binary = "cog-loitering-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.loiter_time]
+type = "integer"
+label = "Loiter time"
+description = "Seconds of stationary presence before triggering an alert"
+default = 120
+min = 10
+max = 3600
+unit = "seconds"
+cli_arg = "--loiter-time"
+
+[console]
+allowed_commands = ["--once", "--once --loiter-time 30", "--once --loiter-time 300", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

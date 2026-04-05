@@ -1,0 +1,24 @@
+[cog]
+id = "confined-space"
+name = "Confined Space"
+version = "1.0.0"
+category = "industrial"
+description = "Monitor workers in confined spaces with presence duration tracking, breathing analysis, and inactivity alerts"
+binary = "cog-confined-space-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 2
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

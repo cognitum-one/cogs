@@ -1,0 +1,35 @@
+[cog]
+id = "music-conductor"
+name = "Music Conductor"
+version = "1.0.0"
+category = "research"
+description = "Extract tempo from periodic arm gestures via autocorrelation for conductor gesture reading"
+binary = "cog-music-conductor-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.sample_rate]
+type = "float"
+label = "Sample rate"
+description = "Expected sensor sampling rate for tempo calculation"
+default = 100.0
+min = 10.0
+max = 1000.0
+unit = "Hz"
+cli_arg = "--sample-rate"
+advanced = true
+
+[console]
+allowed_commands = ["--once", "--once --sample-rate 50", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

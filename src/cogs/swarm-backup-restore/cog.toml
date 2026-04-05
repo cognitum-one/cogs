@@ -1,0 +1,39 @@
+[cog]
+id = "swarm-backup-restore"
+name = "Swarm Backup & Restore"
+version = "1.0.0"
+category = "swarm"
+description = "Replicate local vector store to peer seed with lag tracking and failure recovery"
+binary = "cog-swarm-backup-restore-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Backup interval"
+description = "Seconds between backup cycles"
+default = 120
+min = 10
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peer]
+type = "string"
+label = "Peer address"
+description = "IP address of the peer seed to backup to or restore from"
+default = "169.254.42.1"
+cli_arg = "--peer"
+
+[config.mode]
+type = "select"
+label = "Operation mode"
+description = "Whether to backup local data to peer or restore from peer"
+default = "backup"
+options = ["backup", "restore"]
+cli_arg = "--mode"
+
+[console]
+allowed_commands = ["--once --peer 169.254.42.2 --mode backup", "--once --peer 169.254.42.2 --mode restore", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

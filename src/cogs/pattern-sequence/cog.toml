@@ -1,0 +1,24 @@
+[cog]
+id = "pattern-sequence"
+name = "Pattern Sequence"
+version = "1.0.0"
+category = "ai"
+description = "Daily routine detection via hourly pattern matching and deviation scoring"
+binary = "cog-pattern-sequence-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 60
+min = 10
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 30", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

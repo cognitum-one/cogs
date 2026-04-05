@@ -1,0 +1,88 @@
+[cog]
+id = "vital-trend"
+name = "Vital Trend Monitor"
+version = "1.0.0"
+category = "health"
+description = "Tracks breathing and heart rate trends using bandpass filtering and zero-crossing BPM"
+binary = "cog-vital-trend-arm"
+
+[config]
+# Each field maps to a CLI argument
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.breathing_low]
+type = "float"
+label = "Breathing filter low frequency"
+description = "Lower bound of bandpass filter for breathing extraction"
+default = 0.1
+min = 0.05
+max = 0.3
+unit = "Hz"
+cli_arg = "--breathing-low"
+advanced = true
+
+[config.breathing_high]
+type = "float"
+label = "Breathing filter high frequency"
+description = "Upper bound of bandpass filter for breathing extraction"
+default = 0.5
+min = 0.3
+max = 1.0
+unit = "Hz"
+cli_arg = "--breathing-high"
+advanced = true
+
+[config.hr_low]
+type = "float"
+label = "Heart rate filter low frequency"
+default = 0.8
+min = 0.5
+max = 1.5
+unit = "Hz"
+cli_arg = "--hr-low"
+advanced = true
+
+[config.hr_high]
+type = "float"
+label = "Heart rate filter high frequency"
+default = 2.0
+min = 1.5
+max = 4.0
+unit = "Hz"
+cli_arg = "--hr-high"
+advanced = true
+
+[config.tachypnea_threshold]
+type = "float"
+label = "Tachypnea alert threshold"
+description = "Breathing rate above this triggers alert"
+default = 30.0
+min = 20.0
+max = 60.0
+unit = "BPM"
+cli_arg = "--tachypnea-threshold"
+
+[config.tachycardia_threshold]
+type = "float"
+label = "Tachycardia alert threshold"
+description = "Heart rate above this triggers alert"
+default = 100.0
+min = 80.0
+max = 200.0
+unit = "BPM"
+cli_arg = "--tachycardia-threshold"
+
+[console]
+# Commands available in the secure console
+allowed_commands = ["--once", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

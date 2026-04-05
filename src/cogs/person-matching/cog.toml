@@ -1,0 +1,33 @@
+[cog]
+id = "person-matching"
+name = "Person Matching"
+version = "1.0.0"
+category = "signal"
+description = "Distinguish multiple people in the same room via signal feature clustering"
+binary = "cog-person-matching-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.max_people]
+type = "integer"
+label = "Maximum people"
+description = "Maximum number of distinct people to track simultaneously"
+default = 5
+min = 2
+max = 20
+cli_arg = "--max-people"
+
+[console]
+allowed_commands = ["--once", "--once --max-people 3", "--once --max-people 10", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

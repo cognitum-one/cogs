@@ -1,0 +1,24 @@
+[cog]
+id = "energy-harvester"
+name = "Energy Harvester"
+version = "1.0.0"
+category = "research"
+description = "Monitor power metrics, track solar input vs battery drain, compute energy balance and duty cycle recommendations"
+binary = "cog-energy-harvester-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 30", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

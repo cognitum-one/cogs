@@ -1,0 +1,35 @@
+[cog]
+id = "swarm-deploy"
+name = "Swarm Deploy"
+version = "1.0.0"
+category = "swarm"
+description = "Install or remove cogs on peer seeds via apps API fan-out"
+binary = "cog-swarm-deploy-arm"
+
+[config]
+
+[config.peers]
+type = "string"
+label = "Peer addresses"
+description = "Comma-separated IP addresses of peer seeds to deploy to"
+default = ""
+cli_arg = "--peers"
+
+[config.install]
+type = "string"
+label = "Install cog"
+description = "Cog ID to install on all peers (e.g. cog-presence)"
+default = ""
+cli_arg = "--install"
+
+[config.uninstall]
+type = "string"
+label = "Uninstall cog"
+description = "Cog ID to uninstall from all peers"
+default = ""
+cli_arg = "--uninstall"
+
+[console]
+allowed_commands = ["--once --peers 169.254.42.2 --install cog-presence", "--once --peers 169.254.42.2 --uninstall cog-presence", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

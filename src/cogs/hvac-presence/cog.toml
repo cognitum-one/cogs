@@ -1,0 +1,24 @@
+[cog]
+id = "hvac-presence"
+name = "HVAC Presence"
+version = "1.0.0"
+category = "building"
+description = "Arrival/departure detection with debounce timers for HVAC control and schedule pattern tracking"
+binary = "cog-hvac-presence-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

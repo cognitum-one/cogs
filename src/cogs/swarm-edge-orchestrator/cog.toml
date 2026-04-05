@@ -1,0 +1,34 @@
+[cog]
+id = "swarm-edge-orchestrator"
+name = "Edge Orchestrator"
+version = "1.0.0"
+category = "swarm"
+description = "Manage ESP32 sensor nodes via UDP CSI and serial proxy"
+binary = "cog-swarm-edge-orchestrator-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Poll interval"
+description = "Seconds between node polls"
+default = 2
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.udp_port]
+type = "integer"
+label = "UDP port"
+description = "Port for ESP32 CSI data reception"
+default = 5005
+min = 1024
+max = 65535
+cli_arg = "--udp-port"
+advanced = true
+
+[console]
+allowed_commands = ["--once", "--once --udp-port 5005", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

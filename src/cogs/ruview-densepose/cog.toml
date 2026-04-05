@@ -1,0 +1,24 @@
+[cog]
+id = "ruview-densepose"
+name = "RuView WiFi DensePose"
+version = "0.5.0"
+category = "research"
+description = "ESP32 CSI to 17-keypoint skeleton proxy via Hampel outlier rejection and phase sanitization"
+binary = "cog-ruview-densepose-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between pose estimations"
+default = 1
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

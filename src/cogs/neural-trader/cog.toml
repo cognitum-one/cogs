@@ -1,0 +1,24 @@
+[cog]
+id = "neural-trader"
+name = "Neural Trader"
+version = "1.0.0"
+category = "ai"
+description = "Market data analysis with OHLCV embedding, pattern matching, and trend detection"
+binary = "cog-neural-trader-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Analysis interval"
+description = "Seconds between market data analysis cycles"
+default = 60
+min = 5
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 30", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

@@ -1,0 +1,24 @@
+[cog]
+id = "swarm-mesh-manager"
+name = "Swarm Mesh Manager"
+version = "1.0.0"
+category = "swarm"
+description = "Discover peer seeds via subnet scan and build mesh topology registry"
+binary = "cog-swarm-mesh-manager-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Scan interval"
+description = "Seconds between network discovery scans"
+default = 30
+min = 5
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 10", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

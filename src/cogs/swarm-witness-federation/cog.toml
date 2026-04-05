@@ -1,0 +1,31 @@
+[cog]
+id = "swarm-witness-federation"
+name = "Witness Chain Federation"
+version = "1.0.0"
+category = "swarm"
+description = "Share and cross-attest witness chain entries between seeds for tamper detection"
+binary = "cog-swarm-witness-federation-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Attestation interval"
+description = "Seconds between federation rounds"
+default = 30
+min = 5
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peers]
+type = "string"
+label = "Peer addresses"
+description = "Comma-separated IP addresses of peer seeds in the federation"
+default = ""
+cli_arg = "--peers"
+
+[console]
+allowed_commands = ["--once --peers 169.254.42.2", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

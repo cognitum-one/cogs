@@ -1,0 +1,24 @@
+[cog]
+id = "air-quality-index"
+name = "Air Quality Monitor"
+version = "1.0.0"
+category = "health"
+description = "AQI from PM2.5/CO2 proxy using EPA breakpoint formulas with Welford online statistics"
+binary = "cog-air-quality-index-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 30
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 60", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

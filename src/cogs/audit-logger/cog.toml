@@ -1,0 +1,32 @@
+[cog]
+id = "audit-logger"
+name = "Audit Trail Logger"
+version = "1.0.0"
+category = "security"
+description = "Tamper-proof event logging with hash-chain and witness attestation, optional cloud forwarding"
+binary = "cog-audit-logger-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between audit checks"
+default = 5
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.cloud]
+type = "string"
+label = "Cloud endpoint"
+description = "HTTP endpoint to forward audit events to (e.g. https://audit.example.com/ingest)"
+default = ""
+cli_arg = "--cloud"
+advanced = true
+
+[console]
+allowed_commands = ["--once", "--once --cloud http://localhost:8080/audit", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

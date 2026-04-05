@@ -1,0 +1,24 @@
+[cog]
+id = "psycho-symbolic"
+name = "Psycho-Symbolic"
+version = "1.0.0"
+category = "developer"
+description = "Hybrid reasoning over knowledge graphs with entity-relation event detection"
+binary = "cog-psycho-symbolic-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between reasoning cycles"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

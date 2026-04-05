@@ -1,0 +1,24 @@
+[cog]
+id = "time-series-forecast"
+name = "Time Series Forecast"
+version = "1.0.0"
+category = "ai"
+description = "Holt-Winters exponential smoothing for sensor value forecasting and trend prediction"
+binary = "cog-time-series-forecast-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between forecast updates"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 30", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

@@ -1,0 +1,31 @@
+[cog]
+id = "swarm-mqtt-bridge"
+name = "MQTT Bridge"
+version = "1.0.0"
+category = "swarm"
+description = "Lightweight TCP-based pub/sub event sharing between seeds"
+binary = "cog-swarm-mqtt-bridge-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Publish interval"
+description = "Seconds between event publish cycles"
+default = 5
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peers]
+type = "string"
+label = "Peer addresses"
+description = "Comma-separated IP addresses of peer seeds to share events with"
+default = ""
+cli_arg = "--peers"
+
+[console]
+allowed_commands = ["--once --peers 169.254.42.2", "--once --peers 169.254.42.2,169.254.42.3", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

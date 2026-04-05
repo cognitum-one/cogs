@@ -1,0 +1,34 @@
+[cog]
+id = "structural-vibration"
+name = "Structural Vibration"
+version = "1.0.0"
+category = "industrial"
+description = "Detect dangerous vibrations in buildings or machines via high-pass filter and RMS energy analysis"
+binary = "cog-structural-vibration-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 1
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.threshold]
+type = "float"
+label = "RMS threshold"
+description = "RMS energy level above which vibration is considered dangerous"
+default = 50.0
+min = 5.0
+max = 500.0
+step = 5.0
+cli_arg = "--threshold"
+
+[console]
+allowed_commands = ["--once", "--once --threshold 25.0", "--once --threshold 100.0", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

@@ -1,0 +1,24 @@
+[cog]
+id = "meta-adapt"
+name = "Meta Adapt"
+version = "1.0.0"
+category = "ai"
+description = "Self-tuning cog that auto-adjusts thresholds via golden section search optimization"
+binary = "cog-meta-adapt-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between optimization cycles"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

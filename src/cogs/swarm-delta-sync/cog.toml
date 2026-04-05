@@ -1,0 +1,31 @@
+[cog]
+id = "swarm-delta-sync"
+name = "Swarm Delta Sync"
+version = "1.0.0"
+category = "swarm"
+description = "Bi-directional vector sync between seeds with epoch tracking — only sends changes"
+binary = "cog-swarm-delta-sync-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sync interval"
+description = "Seconds between sync cycles"
+default = 60
+min = 10
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peer]
+type = "string"
+label = "Peer address"
+description = "IP address of the peer seed to sync with"
+default = "169.254.42.1"
+cli_arg = "--peer"
+
+[console]
+allowed_commands = ["--once --peer 169.254.42.2", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

@@ -1,0 +1,24 @@
+[cog]
+id = "pagerank-influence"
+name = "PageRank Influence"
+version = "1.0.0"
+category = "ai"
+description = "Graph-based influence detection using channel correlation PageRank to find the most influential person"
+binary = "cog-pagerank-influence-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+description = "Seconds between measurements"
+default = 10
+min = 1
+max = 3600
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536
