@@ -1,0 +1,20 @@
+[package]
+name = "cog-breathing-sync"
+version = "1.0.0"
+edition = "2021"
+description = "Breathing synchrony — cross-correlation and phase coherence between sensor channels"
+
+[[bin]]
+name = "cog-breathing-sync"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

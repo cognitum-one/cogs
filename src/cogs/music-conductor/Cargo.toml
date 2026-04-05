@@ -1,0 +1,20 @@
+[package]
+name = "cog-music-conductor"
+version = "1.0.0"
+edition = "2021"
+description = "Music conductor — extract tempo from periodic arm gestures via autocorrelation"
+
+[[bin]]
+name = "cog-music-conductor"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

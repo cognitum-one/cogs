@@ -1,0 +1,20 @@
+[package]
+name = "cog-energy-audit"
+version = "1.0.0"
+edition = "2021"
+description = "Learn daily usage patterns with hourly Welford stats, detect wasted energy"
+
+[[bin]]
+name = "cog-energy-audit"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

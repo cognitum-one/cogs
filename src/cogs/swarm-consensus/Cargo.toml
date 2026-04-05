@@ -1,0 +1,20 @@
+[package]
+name = "cog-swarm-consensus"
+version = "1.0.0"
+edition = "2021"
+description = "Multi-seed voting protocol with simple 2-phase commit"
+
+[[bin]]
+name = "cog-swarm-consensus"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

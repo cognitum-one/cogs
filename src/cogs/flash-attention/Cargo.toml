@@ -1,0 +1,20 @@
+[package]
+name = "cog-flash-attention"
+version = "1.0.0"
+edition = "2021"
+description = "Flash attention — adaptive sensing, focus on highest-information channels"
+
+[[bin]]
+name = "cog-flash-attention"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

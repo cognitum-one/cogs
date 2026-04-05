@@ -1,0 +1,20 @@
+[package]
+name = "cog-pattern-sequence"
+version = "1.0.0"
+edition = "2021"
+description = "Daily routine detection — hourly pattern matching and deviation scoring"
+
+[[bin]]
+name = "cog-pattern-sequence"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

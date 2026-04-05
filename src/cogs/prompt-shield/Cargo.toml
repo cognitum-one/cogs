@@ -1,0 +1,20 @@
+[package]
+name = "cog-prompt-shield"
+version = "1.0.0"
+edition = "2021"
+description = "Signal replay/injection attack detector — fingerprint matching and anomaly detection"
+
+[[bin]]
+name = "cog-prompt-shield"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

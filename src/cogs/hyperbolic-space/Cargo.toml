@@ -1,0 +1,20 @@
+[package]
+name = "cog-hyperbolic-space"
+version = "1.0.0"
+edition = "2021"
+description = "Hyperbolic space — Poincare ball model for hierarchical signal relationships"
+
+[[bin]]
+name = "cog-hyperbolic-space"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
