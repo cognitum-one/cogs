@@ -1,0 +1,161 @@
+name: WASM Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'newport-wasm/**'
+      - '.github/workflows/wasm.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'newport-wasm/**'
+      - '.github/workflows/wasm.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build WASM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: newport-sim/newport-wasm
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Build for web target
+        working-directory: newport-sim/newport-wasm
+        run: wasm-pack build --target web --out-dir pkg
+
+      - name: Build for Node.js target
+        working-directory: newport-sim/newport-wasm
+        run: wasm-pack build --target nodejs --out-dir pkg-node
+
+      - name: Build for bundler target
+        working-directory: newport-sim/newport-wasm
+        run: wasm-pack build --target bundler --out-dir pkg-bundler
+
+      - name: Upload web artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-web
+          path: newport-sim/newport-wasm/pkg
+
+      - name: Upload Node.js artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-nodejs
+          path: newport-sim/newport-wasm/pkg-node
+
+      - name: Upload bundler artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-bundler
+          path: newport-sim/newport-wasm/pkg-bundler
+
+  test:
+    name: Test WASM
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: newport-sim/newport-wasm
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Install Chrome
+        if: matrix.browser == 'chrome'
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Install Firefox
+        if: matrix.browser == 'firefox'
+        uses: browser-actions/setup-firefox@latest
+
+      - name: Run tests in ${{ matrix.browser }}
+        working-directory: newport-sim/newport-wasm
+        run: wasm-pack test --headless --${{ matrix.browser }}
+
+  size-check:
+    name: Check bundle size
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download web artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-web
+          path: pkg
+
+      - name: Check bundle size
+        run: |
+          echo "## WASM Bundle Size" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size | Gzipped |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|---------|" >> $GITHUB_STEP_SUMMARY
+          for file in pkg/*.wasm; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file")
+              GZIPPED=$(gzip -c "$file" | wc -c)
+              echo "| $(basename $file) | $(numfmt --to=iec-i --suffix=B $SIZE) | $(numfmt --to=iec-i --suffix=B $GZIPPED) |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  lint:
+    name: Lint WASM code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: newport-sim/newport-wasm
+
+      - name: Run rustfmt
+        working-directory: newport-sim/newport-wasm
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        working-directory: newport-sim/newport-wasm
+        run: cargo clippy --all-targets --all-features -- -D warnings

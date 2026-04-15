@@ -1,0 +1,96 @@
+[package]
+name = "fxnn"
+version = "0.1.0"
+edition = "2021"
+authors = ["FXNN Contributors"]
+description = "High-speed atomic simulation with neural force fields"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ruvnet/newport"
+keywords = ["molecular-dynamics", "simulation", "neural-network", "physics"]
+categories = ["science", "simulation"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["simd", "parallel"]
+simd = []
+parallel = ["rayon"]
+neural = []
+wasm = ["wasm-bindgen", "js-sys", "web-sys", "console_error_panic_hook", "serde-wasm-bindgen"]
+python = ["pyo3"]
+
+[dependencies]
+# Core numeric
+num-traits = "0.2"
+approx = "0.5"
+
+# SIMD and performance
+wide = "0.7"
+pulp = "0.18"
+
+# Parallelism
+rayon = { version = "1.10", optional = true }
+
+# Random number generation
+rand = "0.8"
+rand_distr = "0.4"
+rand_xoshiro = "0.6"
+getrandom = { version = "0.2", features = ["js"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+log = "0.4"
+tracing = "0.1"
+
+# Collections
+indexmap = "2.0"
+smallvec = "1.13"
+
+# Cryptographic hashing (for determinism tests per ADR-001)
+blake3 = "1.5"
+
+# WASM support (optional)
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["Window", "Performance", "console"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+
+# Python bindings (optional)
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+test-case = "3.3"
+rand = "0.8"
+
+[[bench]]
+name = "benchmarks"
+harness = false
+
+# Examples (uncomment when files exist)
+# [[example]]
+# name = "argon_gas"
+# path = "examples/argon_gas.rs"
+
+# [[example]]
+# name = "water_box"
+# path = "examples/water_box.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+[profile.bench]
+lto = true
+codegen-units = 1

@@ -1,0 +1,216 @@
+// This filelist assumes that jfechter user is at the tip of the GIT repo ( pulls completed for synchronization )
+//Global Defines ... Compile First
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/NEWPORT_project_settings.v
+// LVDS
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/decode.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/encode.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_clock.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_control.v //Modify Almost Empty to 10 so don't overflow @ 2x
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/lvds_control.v //Modification for Simulation with Change to Almost Empty to 10 so don't overflow @ 2x
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_piso.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_sipo.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_dfe.v 
+// Support
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_adFIFO.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_CDC.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_reset.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_digital_filter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync_Rst1.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_1toN.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_Nto1.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_halfpipe.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_for2.v
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_enc.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_mux21.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority_broadcast.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipeline.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arb3.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_4.v
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_force.v
+
+// TileZero
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/Recrypt.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_squaresparrow.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe141.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/A2_jtag_interface.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_PVT_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/AnalogBits/verilog/ABKSGBB2.v
+
+//IO
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_gpio/io_gppr_12lpplus_t18_mv08_mv18_fs18_rvt_dr.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_base_rvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_base_lvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_base_slvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_hpk_slvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_hpk_lvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_hpk_rvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_eco_rvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_eco_lvt_c14.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/arm_sc/sc7p5mcpp84_12lpplus_eco_slvt_c14.v
+
+
+//IO_Ring and AFE
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_pads.v
+
+//TileZero_Test and Column_Test Incremental Compile Core
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v
+
+//TileZero
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v
+
+//Raceway - Rogers Latest - Not Checked In and Waiting for BlackBox with Column_Test
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Raceway.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Quadrant.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Column.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/Column_Test.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Hub.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/ColumnZero.v
+//   /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_src_a0/src/Support/A2_pipe_priority.v
+//   /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_src_a0/src/Support/A2_pipe_mux21.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_enc.v
+
+// AFE 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx_top.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_drv_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_lvsft_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_tx_top.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_slew_ctl_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvl_sft_sl_1p8_14n.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/ts_por.v   //Final top simulation
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/ts_pmu.v   //Final top simulation
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_por.v   //Final top simulation
+//   /proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_pmu.v   //Final top simulation
+
+// Testbench and Dummy Top
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v
+/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/Top_tb.v
+
+//TileOne Compilation Files
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3.v
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r4.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Tz.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SPFPU.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_LIFO.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SIMD.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_v.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_c.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_lib.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m_wrap.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m1.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m2.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250723.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_gateway_CoP.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_BW_multiply_BSW.v 
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/support/A2_CDC.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockDiv.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockGen.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockMux.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_div_r2.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_reset.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_RingOscillator.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_shifter_BSW.v 
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_2P.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/wRAM.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/mRAM.v
+//   /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileOne/TileOne_20250407.v 
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileOne/TileOne_20250706.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/PUF_OSC.v
+
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_3PX.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/RAM/mx8/rfsphse2KX32_mx8a.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/RAM/WM2/rfsphs512X128WM2.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_2Pax.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/preicg1.v
+
+//GCM Support Files
+//     /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_4.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult128_3.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult64_3.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult32.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult16.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/poly_multiplier.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/poly_reducer.v
+
+//AES Support Files
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+
+//Coprocessors
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_RPUF_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_GCM_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_NEWS_CoP.v
+
+//LPF
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/apb_ro_puf.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/sbox.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_select.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_row_id.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_puf_reg_interface.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_puf_ip.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_id.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_compare.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_col_id.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_puf_control.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_puf.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_enable.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_challenge.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_bank_element.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ro_bank.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ring_oscillator.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/repetition_encoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/repetition_decoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/register_file.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/key_store_ecc_gen.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/key_manager.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/hasher.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/hash_function.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/e_ring_lfsr.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/e_mod_cnter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/d_ctrl_cnter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_syndrome.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_primitive.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_post_filter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_math.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_encoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_decoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_constant.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/bch_chien.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/vnm_post_filter.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/trng_ro_bank.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/trng.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/sha_constant.v
+//    /proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/sha_constant.mem
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_shift_row.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_mix_column.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_key_gen.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_engine.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_byte_sub.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/aes_add_roundkey.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/trng_rosc.v
+
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/A2_ecc128.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ibs_decoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ibs_encoder.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/rng_chlg.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/rot_interface.v
+/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/sync_fifo.v

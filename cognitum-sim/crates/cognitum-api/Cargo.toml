@@ -1,0 +1,63 @@
+[package]
+name = "cognitum-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Workspace dependencies
+cognitum = { path = "../cognitum" }
+cognitum-sim = { path = "../cognitum-sim" }
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+parking_lot.workspace = true
+
+# Actix-web framework
+actix-web = "4.9"
+actix-cors = "0.7"
+actix-web-actors = "4.3"
+actix-rt = "2.10"
+actix = "0.13"
+
+# Authentication & Security
+jsonwebtoken = "9.3"
+sha2 = "0.10"
+hmac = "0.12"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# Rate limiting
+governor = "0.6"
+nonzero_ext = "0.3"
+
+# Async utilities
+async-trait = "0.1"
+futures = "0.3"
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+regex = "1.11"
+
+# Metrics
+prometheus = "0.13"
+
+# Utilities
+lazy_static = "1.5"
+
+[dev-dependencies]
+mockall = "0.13"
+actix-test = "0.1"
+serial_test = "3.2"

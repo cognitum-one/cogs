@@ -1,0 +1,29 @@
+# Minimal Newport Configuration
+# For testing and development with reduced resources
+
+[simulation]
+event_driven = true
+cycle_accurate = false
+max_cycles = 1_000_000
+performance_mode = true
+
+[hardware]
+# Only 4 tiles for testing (2x2 grid)
+tiles = 4
+clock_freq_mhz = 1000
+code_memory_kb = 8
+data_memory_kb = 8
+work_memory_kb = 64
+ecc_enabled = false
+
+[logging]
+level = "debug"
+trace_packets = true
+trace_instructions = true
+trace_memory = false
+
+[performance]
+worker_threads = 2
+metrics_enabled = true
+packet_timeout_ms = 100
+parallel_execution = true

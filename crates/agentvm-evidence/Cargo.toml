@@ -1,0 +1,22 @@
+[package]
+name = "agentvm-evidence"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Evidence chain and Merkle tree implementation for Agentic VM"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["agentic", "vm", "merkle", "evidence", "audit"]
+categories = ["embedded", "cryptography"]
+
+[features]
+default = ["std"]
+std = ["agentvm-types/std"]
+serde = ["agentvm-types/serde", "dep:serde"]
+
+[dependencies]
+agentvm-types = { path = "../agentvm-types", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["hazmat"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[dev-dependencies]

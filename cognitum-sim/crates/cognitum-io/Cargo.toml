@@ -1,0 +1,29 @@
+[package]
+name = "cognitum-io"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "I/O interfaces (PCIe, Ethernet, USB) for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+cognitum-memory.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "io_ops"
+harness = false

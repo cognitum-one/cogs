@@ -1,0 +1,30 @@
+[package]
+name = "cognitum-wasm-sim"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cognitum Team"]
+description = "WASM execution engine simulation with enterprise network topologies (Arista leaf-spine, Nutanix hyperconverged)"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
+[dependencies]
+cognitum-core = { path = "../cognitum-core" }
+tokio = { version = "1.35", features = ["full", "sync", "time"] }
+async-trait = "0.1"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1"
+rand = "0.8"
+dashmap = "5.5"
+parking_lot = "0.12"
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[features]
+default = ["simd"]
+simd = []
+neural = []
+full = ["simd", "neural"]

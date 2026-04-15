@@ -1,0 +1,21 @@
+[package]
+name = "agentvm-capability"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Capability protocol implementation for Agentic VM"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["agentic", "vm", "capability", "security", "ocap"]
+categories = ["embedded", "no-std"]
+
+[features]
+default = ["std"]
+std = ["agentvm-types/std"]
+serde = ["agentvm-types/serde"]
+
+[dependencies]
+agentvm-types = { path = "../agentvm-types", default-features = false }
+crc32fast = "1.3"
+hashbrown = { version = "0.14", default-features = false, features = ["ahash"] }
+
+[dev-dependencies]

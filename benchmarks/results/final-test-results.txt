@@ -1,0 +1,100 @@
+   |
+ 8 | pub struct TileId(u8);
+   |                   ^^ private field
+help: consider importing one of these tuple structs instead
+   |
+ 3 + use newport::TileId;
+   |
+ 3 + use newport_raceway::TileId;
+   |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `tracing_subscriber`
+ --> crates/newport/examples/hello_newport.rs:8:5
+  |
+8 |     tracing_subscriber::fmt::init();
+  |     ^^^^^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `tracing_subscriber`
+  |
+  = help: if you wanted to use a crate named `tracing_subscriber`, use `cargo add tracing_subscriber` to add it to your `Cargo.toml`
+
+error[E0423]: cannot initialize a tuple struct which contains private fields
+  --> crates/newport/examples/hello_newport.rs:24:26
+   |
+24 |     newport.load_program(TileId(0), &program)?;
+   |                          ^^^^^^
+   |
+note: constructor is not visible here due to private fields
+  --> /home/user/newport/newport-sim/crates/newport-core/src/types.rs:8:19
+   |
+ 8 | pub struct TileId(u8);
+   |                   ^^ private field
+help: consider importing one of these tuple structs instead
+   |
+ 3 + use newport::TileId;
+   |
+ 3 + use newport_raceway::TileId;
+   |
+
+error[E0423]: cannot initialize a tuple struct which contains private fields
+  --> crates/newport/examples/multi_tile.rs:27:30
+   |
+27 |         newport.load_program(TileId(tile_id), &program)?;
+   |                              ^^^^^^
+   |
+note: constructor is not visible here due to private fields
+  --> /home/user/newport/newport-sim/crates/newport-core/src/types.rs:8:19
+   |
+ 8 | pub struct TileId(u8);
+   |                   ^^ private field
+help: consider importing one of these tuple structs instead
+   |
+ 3 + use newport::TileId;
+   |
+ 3 + use newport_raceway::TileId;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `TileId`
+   --> crates/newport/src/sdk.rs:238:39
+    |
+238 |         let result = sdk.load_program(TileId::new(255), &program);
+    |                                       ^^^^^^ use of undeclared type `TileId`
+    |
+help: consider importing one of these structs
+    |
+213 +     use crate::TileId;
+    |
+213 +     use crate::tile::TileId;
+    |
+213 +     use newport_core::TileId;
+    |
+213 +     use newport_raceway::TileId;
+    |
+    = and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `TileId`
+   --> crates/newport/src/sdk.rs:241:39
+    |
+241 |         let result = sdk.load_program(TileId::new(256), &program);
+    |                                       ^^^^^^ use of undeclared type `TileId`
+    |
+help: consider importing one of these structs
+    |
+213 +     use crate::TileId;
+    |
+213 +     use crate::tile::TileId;
+    |
+213 +     use newport_core::TileId;
+    |
+213 +     use newport_raceway::TileId;
+    |
+    = and 1 other candidate
+
+For more information about this error, try `rustc --explain E0423`.
+Some errors have detailed explanations: E0423, E0433.
+For more information about an error, try `rustc --explain E0423`.
+error: could not compile `newport` (example "config_builder") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `newport` (example "hello_newport") due to 2 previous errors
+error: could not compile `newport` (example "multi_tile") due to 1 previous error
+For more information about this error, try `rustc --explain E0433`.
+warning: `newport` (lib test) generated 5 warnings (5 duplicates)
+error: could not compile `newport` (lib test) due to 2 previous errors; 5 warnings emitted

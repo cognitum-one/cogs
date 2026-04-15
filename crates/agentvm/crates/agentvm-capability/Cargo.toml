@@ -1,0 +1,26 @@
+[package]
+name = "agentvm-capability"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Capability protocol for Agentic VM - token signing, derivation, validation, and wire format"
+
+[features]
+default = []
+std = ["agentvm-types/std", "ed25519-dalek/std"]
+serde = ["dep:serde", "agentvm-types/serde"]
+alloc = ["agentvm-types/alloc"]
+
+[dependencies]
+agentvm-types = { workspace = true }
+serde = { workspace = true, optional = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand_core = { workspace = true }
+crc32c = { version = "0.6", default-features = false }
+heapless = "0.8"
+
+[dev-dependencies]
+proptest = { workspace = true }
+rand = "0.8"
+hex = "0.4"

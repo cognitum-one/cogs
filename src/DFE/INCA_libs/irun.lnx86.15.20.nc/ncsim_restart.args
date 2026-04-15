@@ -1,0 +1,25 @@
+//
+// File created by:  ncverilog
+// Do not modify this file
+//
++nstimescale+1ns/1ps
++access+rw
+-MESSAGES
++EMGRLOG
+ncverilog.log
+-XLSTIME
+1740432525
+-XLKEEP
+-XLMODE
+./INCA_libs/irun.lnx86.15.20.nc
+-RUNMODE
+-CDSLIB
+./INCA_libs/irun.lnx86.15.20.nc/cds.lib
+-HDLVAR
+./INCA_libs/irun.lnx86.15.20.nc/hdl.var
+-XLNAME
+ncverilog
+-XLVERSION
+"TOOL:	ncverilog	15.20-s044"
+-XLNAME
+./INCA_libs/irun.lnx86.15.20.nc/siartcs6.siart.local_9350

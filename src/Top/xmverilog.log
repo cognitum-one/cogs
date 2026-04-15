@@ -1,0 +1,1242 @@
+xmverilog: 23.02-a071: (c) Copyright 1995-2023 Cadence Design Systems, Inc.
+TOOL:	xmverilog	23.02-a071: Started on May 28, 2025 at 21:04:32 PDT
+/tools/XCELIUMAGILE_23.02.071/tools/bin/xmverilog
+	-f fileslistRepo2_Top
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/decode.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/encode.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_clock.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_control.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_piso.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_sipo.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/DFE/lvds_dfe.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_adFIFO.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_CDC.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_reset.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_digital_filter.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_sync_Rst1.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_1toN.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_Nto1.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_halfpipe.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_for2.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arbiter_enc.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_mux21.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_priority_broadcast.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipeline.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_arb3.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_4.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_force.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/Recrypt.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_squaresparrow.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe141.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/A2_jtag_interface.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_PVT_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/AnalogBits/verilog/ABKSGBB2.v
+		/proj/TekStart/lokotech/soc/users/jfechter/Simulation/William/Simulation/io_gppr_12lpplus_t18_mv08_mv18_fs18_rvt_dr.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_pads.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Raceway.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Quadrant.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Column.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/Hub.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/ColumnZero.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_rx_top.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_drv_14n.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_lvsft_14n.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_tx_top.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_14n.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_slew_ctl_14n.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvl_sft_sl_1p8_14n.v
+		/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_por.v
+		/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/ts_pmu.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v
+		/proj/TekStart/lokotech/soc/users/jfechter/Simulation/TOP/Top_tb.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SPFPU.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_LIFO.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_SIMD.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_v.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_c.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_lib.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m_wrap.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m1.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/FPU/A2F_m2.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_gateway_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_BW_multiply_BSW.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockDiv.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockGen.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockMux.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_div_r2.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_RingOscillator.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_shifter_BSW.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_2P.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/wRAM.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/mRAM.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileOne/TileOne_20250407.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/PUF_OSC.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_3PX.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult128_3.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult64_3.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult32.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/ktsuba_mult16.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/poly_multiplier.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_ip_a0/ip/LPF/poly_reducer.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_RPUF_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_GCM_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v
+		/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_NEWS_CoP.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/apb_ro_puf.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/sbox.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_select.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_row_id.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_reg_interface.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_ip.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_id.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_compare.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_col_id.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_control.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_enable.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_challenge.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_bank_element.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_bank.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ring_oscillator.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/repetition_encoder.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/repetition_decoder.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/register_file.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/key_store_ecc_gen.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/key_manager.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/hasher.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/hash_function.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/e_ring_lfsr.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/e_mod_cnter.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/d_ctrl_cnter.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_syndrome.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_primitive.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_post_filter.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_math.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_encoder.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_decoder.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_constant.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/bch_chien.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/vnm_post_filter.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/trng_ro_bank.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/trng.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/sha_constant.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_shift_row.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_mix_column.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_key_gen.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_engine.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_byte_sub.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/aes_add_roundkey.v
+		/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/trng_rosc.v
+	-sysv2009
+	+access+rw
+	+incdir+../../newport_src_a0/src/include+../../newport_src_a0/src/A2S_v2r3+../../newport_ip_a0/ip/LPF
+	-gui
+	+define+MIXED_SIGNAL+POWER_PINS+ARM_NO_WARN_ON_FLOATING+synthesis+RELATIVE_FILENAMES
+Recompiling... reason: file '/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v' is newer than expected.
+	expected: Wed May 28 15:05:18 2025
+	actual:   Wed May 28 20:53:36 2025
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+	module worklib.A2_mux:v
+		errors: 0, warnings: 0
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_Nto1.v
+`define TT  {ld_skid, ld_pipe, sel_data, sel_shft, sel_skid, inc_byF, dec_by1, inc_byFm1}
+                                                                                         |
+xmvlog: *W,MACRDF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_Nto1.v,94|89): text macro 'TT' redefined - replaced with new definition, Previous definition was found here ('/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_1toN.v',100|11 ).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+	module worklib.A2_ecc32_incrementer:v
+		errors: 0, warnings: 0
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+	module worklib.A2_AES128_ENC:v
+		errors: 0, warnings: 0
+	module worklib.sbox:v
+		errors: 0, warnings: 0
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v
+   parameter   [12:0]   BASE = 13'h00000,             // Base Address of Module
+                                       |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v,70|39): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+assign  IOk  =  |write[`NUM_REGS-1:0] |  |read[`NUM_REGS-1:0];
+                                         |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v,319|41): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/A2_jtag_interface.v
+   parameter   [12:0]   BASE     = 13'h00000,
+                                           |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/A2_jtag_interface.v,61|43): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_PVT_CoP.v
+   parameter   [12:0]   BASE     = 13'h00000,
+                                           |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_PVT_CoP.v,77|43): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+wire  IOk   = |write[NUM_REGS-1:0] |  |read[NUM_REGS-1:0];
+                                      |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_PVT_CoP.v,133|38): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v
+	module worklib.Newport_core:v
+		errors: 0, warnings: 0
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v
+   .BASE       (13'h00000),
+                        |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,379|24): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+   .BASE(13'h00000),
+                 |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,753|17): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v
+   parameter   [12:0]   BASE        = 13'h00000,
+                                              |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,32|46): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+wire  IOk  =  |write[NUM_REGS-1:0] |  |read[NUM_REGS-1:0];
+                                      |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,151|38): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_lvsft_14n.v
+`define MIXED_SIGNAL
+                    |
+xmvlog: *W,MACNDF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_lvsft_14n.v,14|20): The text macro 'MIXED_SIGNAL' has also been defined on the command line using the -DEFINE command line option.  The compiler will ignore the definition found in the Verilog source code.
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_14n.v
+`define MIXED_SIGNAL
+                    |
+xmvlog: *W,MACNDF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_14n.v,14|20): The text macro 'MIXED_SIGNAL' has also been defined on the command line using the -DEFINE command line option.  The compiler will ignore the definition found in the Verilog source code.
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_slew_ctl_14n.v
+`define MIXED_SIGNAL
+                    |
+xmvlog: *W,MACNDF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/AFE_models/lvds_out_slew_ctl_14n.v,14|20): The text macro 'MIXED_SIGNAL' has also been defined on the command line using the -DEFINE command line option.  The compiler will ignore the definition found in the Verilog source code.
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v
+   parameter   [12:0]   BASE     = 13'h00000,
+                                           |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v,44|43): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+wire  IOk  =  |write[NUM_REGS-1:0] |  |read[NUM_REGS-1:0];
+                                      |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_sha256_CoP.v,146|38): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v
+﻿/* ******************************************************************************************************************************
+|
+xmvlog: *W,NONPRT (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v,1|0): non-printable character (0xef) ignored.
+﻿/* ******************************************************************************************************************************
+ |
+xmvlog: *W,NONPRT (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v,1|1): non-printable character (0xbb) ignored.
+﻿/* ******************************************************************************************************************************
+  |
+xmvlog: *W,NONPRT (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v,1|2): non-printable character (0xbf) ignored.
+   parameter   [12:0]   BASE     = 13'h00000,
+                                           |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_Xsalsa20_8IP_CoP_20250203.v,77|43): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_gateway_CoP.v
+   parameter   [12:0]         BASE = 13'h00000,  // Base Address of Co-processor
+                                             |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_gateway_CoP.v,57|45): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v
+module A2_mux #(
+            |
+xmvlog: *W,RECOME (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v,27|12): recompiling design unit worklib.A2_mux:v.
+	First compiled from line 27 of /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_mux.v.
+	module worklib.A2_mux:v
+		errors: 0, warnings: 1
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v
+module   A2_ecc32_incrementer (
+                            |
+xmvlog: *W,RECOME (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v,22|28): recompiling design unit worklib.A2_ecc32_incrementer:v.
+	First compiled from line 22 of /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ecc32_incrementer.v.
+	module worklib.A2_ecc32_incrementer:v
+		errors: 0, warnings: 1
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v
+module A2_AES128_ENC (
+                   |
+xmvlog: *W,RECOME (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v,28|19): recompiling design unit worklib.A2_AES128_ENC:v.
+	First compiled from line 28 of /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v.
+	module worklib.A2_AES128_ENC:v
+		errors: 0, warnings: 1
+module sbox (
+          |
+xmvlog: *W,RECOME (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v,414|10): recompiling design unit worklib.sbox:v.
+	First compiled from line 414 of /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_AES128_ENC.v.
+	module worklib.sbox:v
+		errors: 0, warnings: 1
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v
+`define NUM_REGS                      7  //Hard Coded Number of TRNG Registers //JL
+                                                                                    |
+xmvlog: *W,MACRDF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v,29|84): text macro 'NUM_REGS' redefined - replaced with new definition, Previous definition was found here ('/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v',121|16 ).
+   parameter   [12:0]   BASE = 13'h00000
+                                       |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v,38|39): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+assign  IOk  =  |write[`NUM_REGS-1:0] |  |read[`NUM_REGS-1:0];
+                                         |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v,158|41): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_RPUF_CoP.v
+   parameter   [12:0]   BASE = 13'h00000, //JL
+                                       |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_RPUF_CoP.v,32|39): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_GCM_CoP.v
+   parameter   [12:0]        BASE = 13'h00000,  // Base Address of Co-processor
+                                            |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_GCM_CoP.v,39|44): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v
+   parameter   [12:0]   BASE = 13'h00000, // Base Address of Co-processor must end in 8'h00!!
+                                       |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,117|39): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_NEWS_CoP.v
+   parameter   [12:0]   BASE = 13'h00000
+                                       |
+xmvlog: *W,INTOVF (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_NEWS_CoP.v,63|39): bit overflow during conversion from text [2.5(IEEE)] (13 bits).
+file: /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_reg_interface.v
+`define LG2REGS                       6   //Joel 11_3_24 - Hard Coded Logarithic Bit Field Search Value
+                                                                                                       |
+xmvlog: *W,MACRDF (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_reg_interface.v,137|103): text macro 'LG2REGS' redefined - replaced with new definition, Previous definition was found here ('/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/NEWS.v',120|15 ).
+assign  IOk  =  |write[`RO_PUF_REG_CNT-1:0] |  |read[`RO_PUF_REG_CNT-1:0];
+                                               |
+xmvlog: *W,DUPBWO (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_reg_interface.v,250|47): error prone bit-wise OR ('|') sequence detected [4.1.11(IEEE)].
+file: /proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/hasher.v
+`timescale 1ns / 1ps
+                   |
+xmvlog: *W,TMSERX (../../newport_ip_a0/ip/LPF/hash_function.v,1|19): `timescale must be used outside of design units; directive ignored [19.8(IEEE Std 1364-2005)].
+	Total errors/warnings found outside modules and primitives:
+		errors: 0, warnings: 7
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+  hasher hash_inst (
+                 |
+xmelab: *W,CUVWSP (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/key_manager.v,434|17): 1 output port was not connected:
+xmelab: (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/hasher.v,26): o_debug_port
+
+  rpt_encoder_inst (
+                 |
+xmelab: *W,CUVWSP (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/ro_puf_ip.v,579|17): 1 output port was not connected:
+xmelab: (/proj/TekStart/lokotech/soc/users/roger/NEWPORT/newport_ip_a0/ip/LPF/repetition_encoder.v,27): o_mem_wr_addr
+
+	Column #(ColID[i]) i_col ( //JL
+	             |
+xmelab: *W,BNDWRN (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v,147|14): Bit-select or part-select index out of declared bounds.
+	Column #(ColID[i]) i_col ( //JL
+	             |
+xmelab: *W,BNDWRN (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v,147|14): Bit-select or part-select index out of declared bounds.
+	Column #(ColID[i]) i_col ( //JL
+	             |
+xmelab: *W,BNDWRN (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/RaceWay/QuadrantZero.v,147|14): Bit-select or part-select index out of declared bounds.
+A2_ClockDiv i_CD (
+               |
+xmelab: *W,CUVWSP (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileOne/TileOne_20250407.v,225|15): 1 output port was not connected:
+xmelab: (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_ClockDiv.v,90): db3_clock
+
+always @(*)
+       |
+xmelab: *W,STARMT (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_TRNG_CoP.v,120|7): This @* expands to empty list, will never wake up.
+   always @* Last = 1'b0;
+          |
+xmelab: *W,STARMT (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/A2_pipe_mux21.v,100|10): This @* expands to empty list, will never wake up.
+   .Wlvds_spare_in      (Wlvds_spare_in),          .Slvds_spare_in      (slvds_spare_in),
+                                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,294|38): port sizes differ in port connection(1/6) for the instance(t.mut) .
+   .Wlvds_spare_in      (Wlvds_spare_in),          .Slvds_spare_in      (slvds_spare_in),
+                                                                                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,294|86): port sizes differ in port connection(1/6) for the instance(t.mut) .
+   .Wlvds_spare_out     (Wlvds_spare_out),         .Slvds_spare_out     (Slvds_spare_out),
+                                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,295|39): port sizes differ in port connection(1/8) for the instance(t.mut) .
+   .Wlvds_spare_out     (Wlvds_spare_out),         .Slvds_spare_out     (Slvds_spare_out),
+                                                                                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,295|87): port sizes differ in port connection(1/8) for the instance(t.mut) .
+   .Elvds_spare_in      (Elvds_spare_in),          .Nlvds_spare_in      (Nlvds_spare_in),
+                                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,310|38): port sizes differ in port connection(1/6) for the instance(t.mut) .
+   .Elvds_spare_in      (Elvds_spare_in),          .Nlvds_spare_in      (Nlvds_spare_in),
+                                                                                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,310|86): port sizes differ in port connection(1/6) for the instance(t.mut) .
+   .Elvds_spare_out     (Elvds_spare_out),         .Nlvds_spare_out     (Nlvds_spare_out),
+                                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,311|39): port sizes differ in port connection(1/8) for the instance(t.mut) .
+   .Elvds_spare_out     (Elvds_spare_out),         .Nlvds_spare_out     (Nlvds_spare_out),
+                                                                                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_die.v,311|87): port sizes differ in port connection(1/8) for the instance(t.mut) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[7].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[6].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[5].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[4].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[3].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[2].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[1].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[3].CB.iQ1.cols[0].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[7].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[6].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[5].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[4].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[3].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[2].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[1].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[2].CB.iQ1.cols[0].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[7].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[6].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[5].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[4].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[3].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[2].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[1].i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[1].CB.iQ1.cols[0].i_col.Tiles[0].iT01.i_A2S) .
+         .RT_zero    (RT_zero),
+                            |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,530|28): port sizes differ in port connection(1/98) for the instance(t.mut.i_CORE.C[0]) .
+         .TR_zero    (TR_zero), //JL
+                            |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,533|28): port sizes differ in port connection(1/98) for the instance(t.mut.i_CORE.C[0]) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[7].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[6].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[5].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[4].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[3].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[2].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[7].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[6].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[5].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[4].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[3].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[2].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[1].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[1].genblk1.i_col.Tiles[0].iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[7].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[6].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[5].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[4].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[3].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[2].genblk1.iT01.i_A2S) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.C[0].CA.iQZ.cols[0].genblk1.QCZ.Tiles[1].genblk1.iT01.i_A2S) .
+   .HO_or   (HO_or),
+                 |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,603|17): port sizes differ in port connection(1/4) for the instance(t.mut.i_CORE) .
+   .HO_rd   (HO_rd),
+                 |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,604|17): port sizes differ in port connection(1/4) for the instance(t.mut.i_CORE) .
+   .HI_wr   (HI_wr),
+                 |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,608|17): port sizes differ in port connection(1/4) for the instance(t.mut.i_CORE) .
+   .HI_ir   (HI_ir),
+                 |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,609|17): port sizes differ in port connection(1/4) for the instance(t.mut.i_CORE) .
+   .xmiso      (TR_zero    ),          // xtmo,    xordy, xack[7:0],xtag[7:0],xdst[7:0],xsrc[7:0],xrd0[31:0],xrd1[31:0]} //JL
+                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,683|22): port sizes differ in port connection(1/98) for the instance(t.mut.i_CORE) .
+   .xmosi      (RT_zero    ),          // xresetn, xpush, //JL
+                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,687|22): port sizes differ in port connection(1/98) for the instance(t.mut.i_CORE) .
+   .imiso      (imiso_cg),
+                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,399|23): port sizes differ in port connection(1/33) for the instance(t.mut.i_CORE.iTZ) .
+A2_Johnson_Count #(16) iTileDiv (.div_clock(tile_base_clock), .ref_clock(tile_osc), .divider(TCC[`OSC_DIVIDE]), .reset(tile_reset));
+                                                                                               |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,159|95): port sizes differ in port connection(3/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(16) iRaceDiv (.div_clock(race_base_clock), .ref_clock(race_osc), .divider(RCC[`OSC_DIVIDE]), .reset(race_reset));
+                                                                                               |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,160|95): port sizes differ in port connection(3/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(16) iNEWSDiv (.div_clock(news_base_clock), .ref_clock(news_osc), .divider(NCC[`OSC_DIVIDE]), .reset(news_reset));
+                                                                                               |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,161|95): port sizes differ in port connection(3/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(8) iRaceTrim (.div_clock( race_trim_clock),.ref_clock( race_log2_clock),.divider(RCC[ 8+`DIV_TRIM]+8 ),.reset(race_reset));
+                                                                                                                     |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,176|117): port sizes differ in port connection(32/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(8) iNtrim    (.div_clock(north_trim_clock),.ref_clock(north_log2_clock),.divider(NDC[24+`DIV_TRIM]+24),.reset(news_reset));
+                                                                                                                     |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,177|117): port sizes differ in port connection(32/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(8) iEtrim    (.div_clock( east_trim_clock),.ref_clock( east_log2_clock),.divider(NDC[16+`DIV_TRIM]+16),.reset(news_reset));
+                                                                                                                     |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,178|117): port sizes differ in port connection(32/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(8) iWtrim    (.div_clock( west_trim_clock),.ref_clock( west_log2_clock),.divider(NDC[ 8+`DIV_TRIM]+8 ),.reset(news_reset));
+                                                                                                                     |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,179|117): port sizes differ in port connection(32/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+A2_Johnson_Count #(8) iStrim    (.div_clock(south_trim_clock),.ref_clock(south_log2_clock),.divider(NDC[   `DIV_TRIM]   ),.reset(news_reset));
+                                                                                                      |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero_clocks.v,180|102): port sizes differ in port connection(3/4) for the instance(t.mut.i_CORE.iTZ.i_CGZ) .
+   .aRAM    (aRAM[   LG2D-1:0]),    // Address
+                |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Support/RAM_3PX.v,167|16): port sizes differ in port connection(11/14) for the instance(t.mut.i_CORE.iTZ.i_XM) .
+A2_sync  u_cdc_f (.q(intpt_flag), .d(flag_in), .reset(tile_reset), .clock(tile_clock));   // Synchronise flag to Tile clock
+                                           |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,552|43): port sizes differ in port connection(255/1) for the instance(t.mut.i_CORE.iTZ) .
+   .ccode   (cond),
+                |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,575|16): port sizes differ in port connection(4/10) for the instance(t.mut.i_CORE.iTZ) .
+   .imiso   ({IOk_fp, IOo_fp }),       // I/O data out to  A2S  33 {IOk, IOo[31:0] }
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/A2S_v2r3/A2Sv2r3_Extensions.v,200|13): port sizes differ in port connection(2/33) for the instance(t.mut.i_CORE.iTZ.i_A2S) .
+   .mosi       (amosi      ),          // <----  //***
+                    |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,599|20): port sizes differ in port connection(97/96) for the instance(t.mut.i_CORE.iTZ) .
+A2_mux i_IO (.z(rd_data), .s(read), .d({X[31:0],En[31:0],Ez[31:0],H[31:0],T[31:0],LAC[31:0],CSR[31:0]})); //JL
+                                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_GCM_CoP.v,143|39): port sizes differ in port connection(224/256) for the instance(t.mut.i_CORE.iTZ.i_GCM) .
+   .amiso_rd   (ymiso_rd),             // Takes
+                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,685|23): port sizes differ in port connection(1/2) for the instance(t.mut.i_CORE.iTZ) .
+   .imiso      (imiso_ae),
+                       |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,688|23): port sizes differ in port connection(33/32) for the instance(t.mut.i_CORE.iTZ) .
+      .Co  (ERRfixed[7*i+:6]),  // Output 7 Check bits & 32 bit data bits //JL
+                   |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,310|19): port sizes differ in port connection(6/7) for the instance(t.mut.i_CORE.iTZ.i_AES.A[1]) .
+      .Co  (ERRfixed[7*i+:6]),  // Output 7 Check bits & 32 bit data bits //JL
+                   |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,310|19): port sizes differ in port connection(6/7) for the instance(t.mut.i_CORE.iTZ.i_AES.A[0]) .
+   .prd  (amiso_rd & ECBlast      ),   // read  in
+                   |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,464|19): port sizes differ in port connection(2/1) for the instance(t.mut.i_CORE.iTZ.i_AES) .
+      .iD (RFo[39*i+:38])        // Input  38 bit Protected input data to be checked and corrected and output //JL - 39 bits ?
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,314|13): port sizes differ in port connection(38/39) for the instance(t.mut.i_CORE.iTZ.i_AES.A[1]) .
+      .iD (RFo[39*i+:38])        // Input  38 bit Protected input data to be checked and corrected and output //JL - 39 bits ?
+             |
+xmelab: *W,CUVMPW (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Coprocessors/A2_AES_CoP.v,314|13): port sizes differ in port connection(38/39) for the instance(t.mut.i_CORE.iTZ.i_AES.A[0]) .
+	Building instance overlay tables: 
+assign FLAGi[0][255:253] = 3'b000;
+           |
+xmelab: *E,BNDPERR (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,663|11): Part-select range [255:253] is out of declared bounds [63:0] for 'FLAGi'(/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,515|18).
+assign FLAGi[1][255:253] = 3'b000;
+           |
+xmelab: *E,BNDPERR (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,665|11): Part-select range [255:253] is out of declared bounds [63:0] for 'FLAGi'(/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,515|18).
+assign FLAGi[2][255:253] = 3'b000;
+           |
+xmelab: *E,BNDPERR (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,667|11): Part-select range [255:253] is out of declared bounds [63:0] for 'FLAGi'(/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,515|18).
+assign FLAGi[3][255:253] = 3'b000;
+           |
+xmelab: *E,BNDPERR (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,669|11): Part-select range [255:253] is out of declared bounds [63:0] for 'FLAGi'(/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/Top/Newport_core.v,515|18).
+...................
+   )(
+    |
+xmelab: *E,NOMODN (/proj/TekStart/lokotech/soc/users/jfechter/newport_src_a0/src/TileZero/TileZero.v,756|4): Missing module instance name [12.1.2(IEEE)].
+. Done
+xmverilog: *E,ELBERR: Error (*E) or soft error (*SE) occurred during elaboration (status 1), exiting.
+TOOL:	xmverilog	23.02-a071: Exiting on May 28, 2025 at 21:05:04 PDT  (total: 00:00:32)

@@ -1,0 +1,3 @@
+s1(24Feb2025:13:05:32):  /tools/ldv/v15.2/tools/bin/ncverilog ./A2_CDC.v -sysv2009 +access+rw +nstimescale+1ns/1ps 
+s2(24Feb2025:13:06:14):  /tools/ldv/v15.2/tools/bin/ncverilog ./A2_CDC.v ./A2_sync.v -sysv2009 +access+rw +nstimescale+1ns/1ps 
+s3(24Feb2025:13:28:45):  /tools/ldv/v15.2/tools/bin/ncverilog ../Support/A2_CDC.v ../Support//A2_sync.v -sysv2009 +access+rw +nstimescale+1ns/1ps 

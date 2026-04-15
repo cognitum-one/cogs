@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newport ASIC - Test Coverage Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            margin: 30px 0 15px;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            margin: 20px 0 10px;
+            color: #764ba2;
+        }
+
+        .alert {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+
+        .alert-danger {
+            background: #fee;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .subtext {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            transition: width 0.5s ease;
+        }
+
+        .coverage-bar {
+            margin: 10px 0;
+        }
+
+        .coverage-bar-fill {
+            height: 25px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .cov-excellent { background: #28a745; }
+        .cov-good { background: #5cb85c; }
+        .cov-moderate { background: #ffc107; color: #333; }
+        .cov-poor { background: #dc3545; }
+        .cov-critical { background: #721c24; }
+
+        .section {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .error-list {
+            list-style: none;
+        }
+
+        .error-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fee;
+            border-left: 4px solid #dc3545;
+            border-radius: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 Newport ASIC Simulator</h1>
+            <h2 style="color: white; border: none; margin-top: 10px;">Test Coverage Analysis Report</h2>
+            <p style="margin-top: 15px; font-size: 1.1em;">Analysis Date: 2025-11-23 | Analyzer: Coverage Analyzer Agent</p>
+        </header>
+
+        <div class="alert alert-danger">
+            <h3 style="margin-top: 0; color: #721c24;">⚠️ CRITICAL FINDING</h3>
+            <p><strong>The claimed >80% test coverage CANNOT BE VERIFIED due to compilation errors that prevent coverage tools from running.</strong></p>
+            <p style="margin-top: 10px;">9 compilation errors block all coverage measurement. See details below.</p>
+        </div>
+
+        <div class="section">
+            <h2>📊 Executive Summary</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Tests</h4>
+                    <div class="value">290</div>
+                    <div class="subtext">177 standard + 113 async</div>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Source Lines</h4>
+                    <div class="value">6,798</div>
+                    <div class="subtext">Across 10 crates</div>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Test Lines</h4>
+                    <div class="value">3,615</div>
+                    <div class="subtext">Test code written</div>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Test/Source Ratio</h4>
+                    <div class="value">53%</div>
+                    <div class="subtext">Overall ratio</div>
+                </div>
+            </div>
+
+            <h3>Estimated Coverage (Manual Analysis)</h3>
+            <div class="alert alert-warning">
+                <strong>Conservative Estimate:</strong> 35-45% line coverage<br>
+                <strong>Optimistic Estimate:</strong> 50-60% line coverage<br>
+                <strong>Claimed Target:</strong> >80% line coverage<br>
+                <strong>Gap:</strong> <span style="color: #dc3545; font-weight: bold;">20-45 percentage points below target</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Coverage by Crate</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Crate</th>
+                        <th>Source LOC</th>
+                        <th>Tests</th>
+                        <th>Test/Source Ratio</th>
+                        <th>Status</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>newport-processor</strong></td>
+                        <td>871</td>
+                        <td>83 (9 inline + 74 files)</td>
+                        <td>152%</td>
+                        <td><span class="badge badge-success">EXCELLENT</span></td>
+                        <td><strong>A+</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-coprocessor</strong></td>
+                        <td>1,063</td>
+                        <td>67 async</td>
+                        <td>110%</td>
+                        <td><span class="badge badge-success">GOOD</span></td>
+                        <td><strong>A</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-sim</strong></td>
+                        <td>888</td>
+                        <td>26 (6 + 20 async)</td>
+                        <td>51%</td>
+                        <td><span class="badge badge-warning">MODERATE</span></td>
+                        <td><strong>C</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-raceway</strong></td>
+                        <td>1,361</td>
+                        <td>46 (21 + 25 async)</td>
+                        <td>39%</td>
+                        <td><span class="badge badge-warning">MODERATE</span></td>
+                        <td><strong>C-</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-core</strong></td>
+                        <td>688</td>
+                        <td>42 inline</td>
+                        <td>0%*</td>
+                        <td><span class="badge badge-warning">INCOMPLETE</span></td>
+                        <td><strong>B</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-cli</strong></td>
+                        <td>902</td>
+                        <td>13 (3 + 10 files)</td>
+                        <td>12%</td>
+                        <td><span class="badge badge-danger">POOR</span></td>
+                        <td><strong>D</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport</strong></td>
+                        <td>759</td>
+                        <td>10 (9 + 1 async)</td>
+                        <td>0%*</td>
+                        <td><span class="badge badge-warning">INCOMPLETE</span></td>
+                        <td><strong>D</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-memory</strong></td>
+                        <td>137</td>
+                        <td>1</td>
+                        <td>0%</td>
+                        <td><span class="badge badge-danger">CRITICAL</span></td>
+                        <td><strong>F</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-io</strong></td>
+                        <td>60</td>
+                        <td>1</td>
+                        <td>0%</td>
+                        <td><span class="badge badge-danger">CRITICAL</span></td>
+                        <td><strong>F</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>newport-debug</strong></td>
+                        <td>69</td>
+                        <td>1</td>
+                        <td>0%</td>
+                        <td><span class="badge badge-danger">CRITICAL</span></td>
+                        <td><strong>F</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">*Inline tests only, no dedicated test files</p>
+        </div>
+
+        <div class="section">
+            <h2>🐛 Compilation Errors Blocking Coverage</h2>
+
+            <div class="alert alert-danger">
+                <h3 style="margin-top: 0; color: #721c24;">9 Critical Errors Found</h3>
+                <p>All coverage measurement tools are blocked until these errors are resolved.</p>
+            </div>
+
+            <h3>Error 1-6: Private Field Access (TileId)</h3>
+            <p><strong>Location:</strong> <code>newport-sim/src/newport.rs</code></p>
+            <p><strong>Issue:</strong> Attempting to access private field <code>TileId.0</code></p>
+            <pre><code>// Lines 96, 98, 173, 175, 186
+let tile_idx = tile_id.0 as usize;  // ❌ ERROR: field `0` is private</code></pre>
+
+            <h3>Error 7-8: Missing Display Trait</h3>
+            <p><strong>Location:</strong> <code>newport-sim/src/error.rs</code></p>
+            <p><strong>Issue:</strong> TileId doesn't implement <code>std::fmt::Display</code></p>
+            <pre><code>#[error("Tile {0} execution fault: {1}")]  // ❌ ERROR: TileId: !Display</code></pre>
+
+            <h3>Error 9: Type Inference Failure</h3>
+            <p><strong>Location:</strong> <code>newport-sim/src/newport.rs:102</code></p>
+            <p><strong>Issue:</strong> Arc type annotations needed</p>
+            <pre><code>let tile = Arc::clone(&self.tiles[tile_idx]);  // ❌ ERROR: needs type</code></pre>
+
+            <h3>Additional Issues</h3>
+            <ul class="error-list">
+                <li><strong>20+ Warnings:</strong> Unused variables, imports, and fields</li>
+                <li><strong>Broken Test Files:</strong> Several test files exist but don't compile</li>
+                <li><strong>Dead Code:</strong> Struct fields that are never read</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🔴 Critical Gaps in Coverage</h2>
+
+            <h3>1. Memory Subsystem (newport-memory)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-critical" style="width: 5%;">~5-15% (CRITICAL)</div>
+            </div>
+            <ul>
+                <li><code>cache.rs</code> - 35 LOC - Cache operations untested</li>
+                <li><code>dram.rs</code> - 38 LOC - DRAM simulation untested</li>
+                <li><code>tlb.rs</code> - 45 LOC - TLB translation untested</li>
+            </ul>
+
+            <h3>2. I/O Controllers (newport-io)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-critical" style="width: 5%;">~5-15% (CRITICAL)</div>
+            </div>
+            <ul>
+                <li>All I/O controller code minimally tested</li>
+                <li>USB, UART, GPIO, SPI controllers lack tests</li>
+            </ul>
+
+            <h3>3. CLI Commands (newport-cli)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-poor" style="width: 20%;">~15-25% (POOR)</div>
+            </div>
+            <ul>
+                <li><code>main.rs</code> - 226 LOC - Command dispatch untested</li>
+                <li><code>benchmark.rs</code> - 144 LOC - Benchmark command untested</li>
+                <li><code>run.rs</code> - 83 LOC - Simulation run untested</li>
+                <li><code>inspect.rs</code> - 79 LOC - State inspection untested</li>
+            </ul>
+
+            <h3>4. Debug Tools (newport-debug)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-critical" style="width: 5%;">~5-15% (CRITICAL)</div>
+            </div>
+            <ul>
+                <li><code>profiler.rs</code> - 34 LOC - Performance profiling untested</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>✅ Well-Tested Components</h2>
+
+            <h3>1. Processor (newport-processor)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-excellent" style="width: 80%;">~75-85% (EXCELLENT)</div>
+            </div>
+            <p>7 dedicated test files with comprehensive coverage:</p>
+            <ul>
+                <li>Arithmetic operations (12 tests)</li>
+                <li>Bitwise operations (7 tests)</li>
+                <li>Control flow (10 tests)</li>
+                <li>Memory operations (8 tests)</li>
+                <li>Stack operations (11 tests)</li>
+                <li>Program execution (10 tests)</li>
+                <li>Comprehensive validation (16 tests)</li>
+            </ul>
+
+            <h3>2. Coprocessor (newport-coprocessor)</h3>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill cov-good" style="width: 70%;">~65-75% (GOOD)</div>
+            </div>
+            <p>4 test files with NIST test vectors:</p>
+            <ul>
+                <li>AES encryption tests with NIST vectors</li>
+                <li>SHA-256 hashing tests</li>
+                <li>PUF (Physical Unclonable Function) tests</li>
+                <li>TRNG (True Random Number Generator) tests</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>📋 Recommendations</h2>
+
+            <h3 style="color: #dc3545;">🔴 Critical (Fix Immediately)</h3>
+            <ol>
+                <li><strong>Fix Compilation Errors</strong>
+                    <ul>
+                        <li>Add getter method for TileId: <code>pub fn as_u8(&self) -> u8</code></li>
+                        <li>Implement Display trait for TileId</li>
+                        <li>Add type annotations for Arc usage</li>
+                        <li><em>Estimated time: 2-4 hours</em></li>
+                    </ul>
+                </li>
+                <li><strong>Add Memory Subsystem Tests</strong>
+                    <ul>
+                        <li>Create comprehensive tests for cache, DRAM, TLB</li>
+                        <li>Target: 80%+ coverage</li>
+                        <li><em>Estimated time: 8-12 hours</em></li>
+                    </ul>
+                </li>
+                <li><strong>Add I/O Controller Tests</strong>
+                    <ul>
+                        <li>Test all controller types</li>
+                        <li>Target: 75%+ coverage</li>
+                        <li><em>Estimated time: 6-10 hours</em></li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3 style="color: #ffc107;">🟡 High Priority</h3>
+            <ol start="4">
+                <li><strong>Fix Broken Test Files</strong>
+                    <ul>
+                        <li>Debug raceway test compilation issues</li>
+                        <li>Debug sim test compilation issues</li>
+                        <li>Restore ~100+ blocked tests</li>
+                        <li><em>Estimated time: 4-8 hours</em></li>
+                    </ul>
+                </li>
+                <li><strong>Add CLI Integration Tests</strong>
+                    <ul>
+                        <li>Test command dispatch and execution</li>
+                        <li>Target: 60%+ coverage</li>
+                        <li><em>Estimated time: 8-12 hours</em></li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3 style="color: #17a2b8;">🔵 Medium Priority</h3>
+            <ol start="6">
+                <li>Add workspace-level integration tests</li>
+                <li>Implement claimed property-based tests (not found in codebase)</li>
+                <li>Verify and document stress tests</li>
+                <li>Remove dead code and fix warnings</li>
+            </ol>
+
+            <h3 style="color: #28a745;">🟢 Low Priority</h3>
+            <ol start="10">
+                <li>Set up cargo-tarpaulin in CI/CD</li>
+                <li>Generate coverage badges</li>
+                <li>Add benchmark regression tests</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>⏱️ Timeline to Achieve 80% Coverage</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Tasks</th>
+                        <th>Estimated Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Phase 1</strong></td>
+                        <td>Fix compilation errors</td>
+                        <td>2-4 hours</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 2</strong></td>
+                        <td>Restore broken tests</td>
+                        <td>4-8 hours</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 3</strong></td>
+                        <td>Add critical subsystem tests</td>
+                        <td>16-24 hours</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 4</strong></td>
+                        <td>Achieve 80% coverage target</td>
+                        <td>20-30 hours</td>
+                    </tr>
+                    <tr style="background: #fff3cd; font-weight: bold;">
+                        <td colspan="2"><strong>TOTAL ESTIMATED TIME</strong></td>
+                        <td><strong>42-66 hours (1-2 weeks)</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ Coverage Tool Setup (After Fixes)</h2>
+
+            <h3>1. cargo-tarpaulin (Recommended)</h3>
+            <pre><code>cargo install cargo-tarpaulin
+cargo tarpaulin --workspace --out Html --output-dir coverage
+cargo tarpaulin --workspace --out Json
+open coverage/index.html</code></pre>
+
+            <h3>2. cargo-llvm-cov (Alternative)</h3>
+            <pre><code>cargo install cargo-llvm-cov
+cargo llvm-cov --html --open
+cargo llvm-cov --json --output-path coverage.json</code></pre>
+
+            <h3>3. CI/CD Integration</h3>
+            <pre><code># .github/workflows/coverage.yml
+- name: Generate coverage
+  run: cargo tarpaulin --out Xml
+- name: Upload to Codecov
+  uses: codecov/codecov-action@v3</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>📊 Test Distribution</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Type</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Standard Tests</td>
+                        <td>177</td>
+                        <td>61%</td>
+                        <td><span class="badge badge-success">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Async Tests (tokio)</td>
+                        <td>113</td>
+                        <td>39%</td>
+                        <td><span class="badge badge-success">Good</span></td>
+                    </tr>
+                    <tr>
+                        <td>Property Tests</td>
+                        <td>0</td>
+                        <td>0%</td>
+                        <td><span class="badge badge-warning">Claimed but not found</span></td>
+                    </tr>
+                    <tr>
+                        <td>Integration Tests</td>
+                        <td>Limited</td>
+                        <td>?</td>
+                        <td><span class="badge badge-warning">Needs expansion</span></td>
+                    </tr>
+                    <tr>
+                        <td>Stress Tests</td>
+                        <td>?</td>
+                        <td>?</td>
+                        <td><span class="badge badge-danger">Cannot verify</span></td>
+                    </tr>
+                    <tr>
+                        <td>Benchmark Tests</td>
+                        <td>?</td>
+                        <td>?</td>
+                        <td><span class="badge badge-danger">Cannot verify</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="alert alert-danger">
+            <h3 style="margin-top: 0; color: #721c24;">⚠️ Final Verdict</h3>
+            <p style="font-size: 1.1em;"><strong>Coverage Claim Status: UNVERIFIED ❌</strong></p>
+            <p style="margin-top: 10px;">The claimed >80% test coverage cannot be verified and is likely inaccurate. Based on manual analysis:</p>
+            <ul style="margin: 15px 0 15px 30px;">
+                <li><strong>Estimated Actual Coverage: 40-50%</strong></li>
+                <li><strong>Gap from Target: 30-40 percentage points</strong></li>
+                <li><strong>Critical Subsystems Untested: Memory, I/O, Debug</strong></li>
+                <li><strong>Compilation Errors: 9 blocking all tools</strong></li>
+                <li><strong>Work Required: 42-66 hours to achieve 80%</strong></li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p><strong>Newport Coverage Analysis Report</strong></p>
+            <p>Generated: 2025-11-23 | Analyzer: Coverage Analyzer Agent</p>
+            <p style="margin-top: 10px; color: #999;">Next analysis: After compilation fixes</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+[package]
+name = "agentvm-test"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Test utilities for Agentic VM - mocks, fixtures, and property test generators"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["agentic", "vm", "testing", "mock"]
+categories = ["development-tools::testing"]
+
+[features]
+default = ["std"]
+std = ["agentvm-types/std"]
+serde = ["agentvm-types/serde"]
+
+[dependencies]
+agentvm-types = { path = "../agentvm-types", default-features = false }
+hashbrown = { version = "0.14", default-features = false, features = ["ahash"] }
+spin = { version = "0.9", default-features = false, features = ["mutex", "rwlock"] }
+
+[dev-dependencies]

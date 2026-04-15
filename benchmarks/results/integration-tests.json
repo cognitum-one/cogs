@@ -1,0 +1,310 @@
+{
+  "test_execution": {
+    "timestamp": "2025-11-23T23:42:24Z",
+    "command": "cargo test --workspace",
+    "total_duration_ms": null,
+    "status": "COMPILATION_FAILED"
+  },
+  "workspace_crates": {
+    "total": 10,
+    "compiled_successfully": 4,
+    "compilation_failed": 6
+  },
+  "crate_results": {
+    "newport-core": {
+      "status": "PASSED",
+      "compilation": "SUCCESS",
+      "tests": {
+        "unit_tests": 42,
+        "integration_tests": 0,
+        "doc_tests": 0,
+        "total": 42,
+        "passed": 42,
+        "failed": 0,
+        "ignored": 0
+      },
+      "test_suites": [
+        "error::tests (7 tests)",
+        "memory::tests (16 tests)",
+        "memory::property_tests (3 tests)",
+        "types::tests (16 tests)"
+      ]
+    },
+    "newport-processor": {
+      "status": "PASSED",
+      "compilation": "SUCCESS",
+      "tests": {
+        "unit_tests": 9,
+        "integration_tests": 68,
+        "doc_tests": 0,
+        "total": 77,
+        "passed": 77,
+        "failed": 0,
+        "ignored": 0
+      },
+      "test_suites": [
+        "memory::tests (4 tests)",
+        "stack::tests (5 tests)",
+        "arithmetic_operations (12 tests)",
+        "bitwise_operations (7 tests)",
+        "control_flow (10 tests)",
+        "memory_operations (8 tests)",
+        "programs (10 tests)",
+        "stack_operations (11 tests)"
+      ],
+      "warnings": [
+        "unused variable `pc2` in control_flow.rs:85"
+      ]
+    },
+    "newport-raceway": {
+      "status": "PASSED",
+      "compilation": "SUCCESS",
+      "tests": {
+        "unit_tests": 18,
+        "integration_tests": 6,
+        "doc_tests": 0,
+        "total": 24,
+        "passed": 22,
+        "failed": 0,
+        "ignored": 0,
+        "hanging": 2
+      },
+      "test_suites": [
+        "broadcast::tests (4 tests)",
+        "hub::tests (3 tests)",
+        "column::tests (2 tests)",
+        "packet::tests (3 tests)",
+        "tile::tests (4 tests)",
+        "network::tests (2 tests)",
+        "broadcast_tests (8 tests, 2 hanging)"
+      ],
+      "hanging_tests": [
+        "test_broadcast_loop_completion",
+        "test_column_broadcast"
+      ],
+      "warnings": [
+        "5 unused imports in lib",
+        "12 warnings in tests"
+      ]
+    },
+    "newport-io": {
+      "status": "PASSED",
+      "compilation": "SUCCESS",
+      "tests": {
+        "unit_tests": 1,
+        "integration_tests": 0,
+        "doc_tests": 0,
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "warnings": [
+        "3 dead_code warnings (unused struct fields)"
+      ]
+    },
+    "newport-memory": {
+      "status": "COMPILATION_FAILED",
+      "compilation": "FAILED",
+      "errors": [
+        {
+          "type": "E0432",
+          "file": "crates/newport-memory/src/cache.rs:3",
+          "message": "unresolved import `newport_core::memory::PhysAddr`",
+          "note": "PhysAddr type does not exist in newport_core::memory"
+        },
+        {
+          "type": "E0432",
+          "file": "crates/newport-memory/src/dram.rs:3",
+          "message": "unresolved import `newport_core::memory::PhysAddr`"
+        },
+        {
+          "type": "E0432",
+          "file": "crates/newport-memory/src/tlb.rs:3",
+          "message": "unresolved imports `newport_core::memory::PhysAddr`, `newport_core::memory::VirtAddr`",
+          "note": "Neither PhysAddr nor VirtAddr exist in newport_core::memory"
+        }
+      ],
+      "root_cause": "newport-memory uses undefined types (PhysAddr, VirtAddr) that don't exist in newport-core. Only MemoryAddress type exists.",
+      "warnings": [
+        "7 warnings about unused variables and dead code"
+      ]
+    },
+    "newport-coprocessor": {
+      "status": "COMPILATION_FAILED",
+      "compilation": "FAILED",
+      "errors": [
+        {
+          "type": "E0433",
+          "files": [
+            "crates/newport-coprocessor/src/aes.rs:43",
+            "crates/newport-coprocessor/src/sha256.rs:37",
+            "crates/newport-coprocessor/src/trng.rs:92",
+            "crates/newport-coprocessor/src/puf.rs:44"
+          ],
+          "message": "failed to resolve: use of unresolved module or unlinked crate `tokio`",
+          "note": "Code uses tokio::time::sleep but tokio is not in Cargo.toml dependencies"
+        },
+        {
+          "type": "E0609",
+          "file": "crates/newport-coprocessor/src/aes.rs:46",
+          "message": "no field `simulate_double_bit` on type `&mut AesCoprocessor`",
+          "help": "a field with a similar name exists: `simulate_ecc_double_bit`"
+        },
+        {
+          "type": "E0277",
+          "file": "crates/newport-coprocessor/src/aes.rs:168",
+          "message": "the trait bound `[Option<Vec<u8>>; 128]: Default` is not satisfied"
+        }
+      ],
+      "root_cause": "Missing tokio dependency and field name mismatch",
+      "warnings": [
+        "3 warnings about unused imports"
+      ]
+    },
+    "newport-sim": {
+      "status": "COMPILATION_FAILED",
+      "compilation": "FAILED",
+      "errors": [
+        {
+          "type": "E0616",
+          "files": [
+            "crates/newport-sim/src/newport.rs:96",
+            "crates/newport-sim/src/newport.rs:98",
+            "crates/newport-sim/src/newport.rs:173",
+            "crates/newport-sim/src/newport.rs:175",
+            "crates/newport-sim/src/newport.rs:186",
+            "crates/newport-sim/src/newport.rs:188"
+          ],
+          "message": "field `0` of struct `TileId` is private",
+          "note": "Code tries to access TileId.0 directly but TileId is an opaque wrapper"
+        },
+        {
+          "type": "E0599",
+          "files": [
+            "crates/newport-sim/src/error.rs:8",
+            "crates/newport-sim/src/error.rs:11"
+          ],
+          "message": "the method `as_display` exists for reference `&TileId`, but its trait bounds were not satisfied",
+          "note": "TileId doesn't implement std::fmt::Display required for error formatting"
+        },
+        {
+          "type": "E0282",
+          "file": "crates/newport-sim/src/newport.rs:102",
+          "message": "type annotations needed for `Arc<_, _>`"
+        },
+        {
+          "type": "E0425",
+          "message": "cannot find function `resume` in module `tokio::time`",
+          "note": "tokio::time::resume is gated behind the `test-util` feature"
+        }
+      ],
+      "root_cause": "Incorrect access to private TileId field; missing Display trait; missing tokio test-util feature",
+      "warnings": [
+        "5 warnings about unused imports and variables"
+      ]
+    },
+    "newport-debug": {
+      "status": "NOT_TESTED",
+      "compilation": "NOT_ATTEMPTED",
+      "note": "Depends on newport-sim which failed to compile"
+    },
+    "newport-cli": {
+      "status": "NOT_TESTED",
+      "compilation": "NOT_ATTEMPTED",
+      "note": "Depends on newport-sim which failed to compile"
+    },
+    "newport": {
+      "status": "NOT_TESTED",
+      "compilation": "IN_PROGRESS",
+      "note": "SDK library - compilation in progress"
+    }
+  },
+  "integration_test_coverage": {
+    "processor_memory": "NOT_TESTED - newport-memory compilation failed",
+    "processor_coprocessor": "NOT_TESTED - newport-coprocessor compilation failed",
+    "network_processor": "NOT_TESTED - integration requires newport-sim",
+    "multi_tile_coordination": "NOT_TESTED - requires newport-sim",
+    "cli_commands": "NOT_TESTED - newport-cli compilation failed",
+    "sdk_library": "NOT_TESTED - compilation in progress",
+    "end_to_end_workflows": "NOT_TESTED - requires working newport-sim"
+  },
+  "test_count_verification": {
+    "claimed_in_docs": 79,
+    "actual_runnable": 143,
+    "breakdown": {
+      "newport-core": 42,
+      "newport-processor": 77,
+      "newport-raceway": 24,
+      "newport-io": 1,
+      "failed_crates": "6 crates could not be tested"
+    },
+    "discrepancy": "Documentation claims 79+ tests. We found 143 passing tests across 4 compiling crates, but 6 crates failed to compile preventing full test count."
+  },
+  "critical_issues": [
+    {
+      "severity": "HIGH",
+      "component": "newport-memory",
+      "issue": "Type system mismatch - uses PhysAddr/VirtAddr types that don't exist",
+      "impact": "Blocks all memory subsystem integration testing",
+      "recommendation": "Change PhysAddr/VirtAddr to MemoryAddress or add these types to newport-core"
+    },
+    {
+      "severity": "HIGH",
+      "component": "newport-coprocessor",
+      "issue": "Missing tokio dependency in Cargo.toml",
+      "impact": "Blocks crypto coprocessor testing",
+      "recommendation": "Add tokio = { version = \"1.48\", features = [\"time\"] } to dependencies"
+    },
+    {
+      "severity": "HIGH",
+      "component": "newport-coprocessor",
+      "issue": "Field name mismatch: simulate_double_bit vs simulate_ecc_double_bit",
+      "impact": "AES coprocessor cannot instantiate",
+      "recommendation": "Rename field to simulate_ecc_double_bit or update usage"
+    },
+    {
+      "severity": "HIGH",
+      "component": "newport-sim",
+      "issue": "Direct access to private TileId field",
+      "impact": "Simulation engine cannot access tile IDs",
+      "recommendation": "Add TileId::value() accessor method calls or make field public"
+    },
+    {
+      "severity": "HIGH",
+      "component": "newport-sim",
+      "issue": "TileId missing Display trait",
+      "impact": "Error messages cannot format TileId",
+      "recommendation": "Implement Display for TileId in newport-core"
+    },
+    {
+      "severity": "MEDIUM",
+      "component": "newport-sim",
+      "issue": "Missing tokio test-util feature",
+      "impact": "Cannot use tokio::time::resume for testing",
+      "recommendation": "Add test-util feature to tokio dependency"
+    },
+    {
+      "severity": "MEDIUM",
+      "component": "newport-raceway",
+      "issue": "Two integration tests hang indefinitely",
+      "impact": "Broadcast loop tests don't complete",
+      "recommendation": "Investigate deadlock in test_broadcast_loop_completion and test_column_broadcast"
+    }
+  ],
+  "summary": {
+    "workspace_compilation": "FAILED - 6 of 10 crates cannot compile",
+    "tests_passed": 143,
+    "tests_failed": 0,
+    "tests_hanging": 2,
+    "integration_gaps": [
+      "No processor + memory integration tests (memory crate broken)",
+      "No processor + coprocessor integration tests (coprocessor crate broken)",
+      "No network + processor integration tests (sim crate broken)",
+      "No multi-tile coordination tests (sim crate broken)",
+      "No CLI integration tests (cli crate broken)",
+      "No SDK end-to-end tests (SDK compilation incomplete)",
+      "Raceway broadcast tests incomplete (2 hanging)"
+    ]
+  }
+}

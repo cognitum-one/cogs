@@ -1,0 +1,8 @@
+target/
+node_modules/
+*.node
+npm-debug.log
+yarn-error.log
+.DS_Store
+index.js
+index.d.ts

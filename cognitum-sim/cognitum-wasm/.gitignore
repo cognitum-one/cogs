@@ -1,0 +1,10 @@
+target/
+pkg/
+pkg-node/
+pkg-bundler/
+node_modules/
+wasm-pack.log
+*.wasm
+*.js
+*.ts
+!src/**/*.rs

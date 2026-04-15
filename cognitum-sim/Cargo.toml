@@ -1,0 +1,93 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cognitum-core",
+    "crates/cognitum-processor",
+    "crates/cognitum-memory",
+    "crates/cognitum-raceway",
+    "crates/cognitum-coprocessor",
+    "crates/cognitum-io",
+    "crates/cognitum-sim",
+    "crates/cognitum-debug",
+    "crates/cognitum-cli",
+    "crates/cognitum",
+    "crates/cognitum-wasm-sim",
+    "crates/cognitum-security",
+    "crates/cognitum-license",
+    "crates/cognitum-api",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["rUv.io", "TekStart"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ruvnet/cognitum"
+homepage = "https://github.com/ruvnet/cognitum"
+documentation = "https://docs.rs/cognitum"
+keywords = ["asic", "simulator", "hardware", "risc-v", "architecture"]
+categories = ["simulation", "hardware-support", "development-tools"]
+
+[workspace.dependencies]
+# Internal crates
+cognitum-core = { path = "crates/cognitum-core", version = "0.1.0" }
+cognitum-processor = { path = "crates/cognitum-processor", version = "0.1.0" }
+cognitum-memory = { path = "crates/cognitum-memory", version = "0.1.0" }
+cognitum-raceway = { path = "crates/cognitum-raceway", version = "0.1.0" }
+cognitum-coprocessor = { path = "crates/cognitum-coprocessor", version = "0.1.0" }
+cognitum-io = { path = "crates/cognitum-io", version = "0.1.0" }
+cognitum-sim = { path = "crates/cognitum-sim", version = "0.1.0" }
+cognitum-debug = { path = "crates/cognitum-debug", version = "0.1.0" }
+cognitum-wasm-sim = { path = "crates/cognitum-wasm-sim", version = "0.1.0" }
+cognitum-license = { path = "crates/cognitum-license", version = "0.1.0" }
+cognitum-security = { path = "crates/cognitum-security", version = "0.1.0" }
+
+# External dependencies
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.4", features = ["derive"] }
+parking_lot = "0.12"
+crossbeam = "0.8"
+rayon = "1.8"
+bitflags = "2.4"
+byteorder = "1.5"
+memmap2 = "0.9"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# WASM support
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = "0.3"
+
+# NAPI-RS support
+napi = "2.14"
+napi-derive = "2.14"
+
+# Ruvector - Vector database and AI routing
+ruvector-core = { git = "https://github.com/ruvnet/ruvector" }
+ruvector-tiny-dancer-core = { git = "https://github.com/ruvnet/ruvector" }
+ruvector-router-core = { git = "https://github.com/ruvnet/ruvector" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.test]
+opt-level = 1

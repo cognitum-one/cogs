@@ -1,0 +1,46 @@
+[package]
+name = "cognitum-ruvector-integration"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cognitum Project", "rUv.io"]
+description = "Integration example demonstrating ruvector vector database with Cognitum neuro-synaptic chips"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Cognitum simulator crates
+cognitum-core = { path = "../../newport-sim/crates/newport-core" }
+cognitum-processor = { path = "../../newport-sim/crates/newport-processor" }
+cognitum-coprocessor = { path = "../../newport-sim/crates/newport-coprocessor" }
+cognitum-raceway = { path = "../../newport-sim/crates/newport-raceway" }
+cognitum-sim = { path = "../../newport-sim/crates/newport-sim" }
+
+# Ruvector crates for vector operations and AI routing
+ruvector-core = { git = "https://github.com/ruvnet/ruvector" }
+ruvector-tiny-dancer-core = { git = "https://github.com/ruvnet/ruvector" }
+ruvector-router-core = { git = "https://github.com/ruvnet/ruvector" }
+
+# Supporting dependencies
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ndarray = "0.15"
+rayon = "1.8"
+
+[[bin]]
+name = "neural-embeddings"
+path = "src/neural_embeddings.rs"
+
+[[bin]]
+name = "distributed-routing"
+path = "src/distributed_routing.rs"
+
+[[bin]]
+name = "vector-search-demo"
+path = "src/vector_search_demo.rs"
+
+[[bin]]
+name = "comparative-benchmarks"
+path = "benchmarks/comparative_benchmarks.rs"

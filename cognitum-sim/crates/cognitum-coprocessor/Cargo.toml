@@ -1,0 +1,42 @@
+[package]
+name = "cognitum-coprocessor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Crypto and AI coprocessor implementations for Cognitum ASIC simulator"
+
+[dependencies]
+cognitum-core.workspace = true
+cognitum-memory.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+rayon.workspace = true
+tracing.workspace = true
+tokio = { version = "1", features = ["time", "rt"] }
+
+# Crypto dependencies
+zeroize = { version = "1.7", features = ["derive"] }
+sha2 = "0.10"
+aes = "0.8"
+rand = "0.8"
+rand_core = "0.6"
+async-trait = "0.1"
+hex = "0.4"
+ghash = "0.5"
+subtle = "2.5"
+
+[dev-dependencies]
+criterion.workspace = true
+tokio = { version = "1", features = ["full", "test-util", "macros", "rt-multi-thread"] }
+
+[[bench]]
+name = "crypto_ops"
+harness = false

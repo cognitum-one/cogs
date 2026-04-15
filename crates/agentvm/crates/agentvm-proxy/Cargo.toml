@@ -1,0 +1,67 @@
+[package]
+name = "agentvm-proxy"
+version = "0.1.0"
+edition = "2021"
+description = "Capability proxy for Agentic VM - manages capability invocation, budget tracking, and evidence logging"
+license = "Apache-2.0"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["capability", "proxy", "security", "agent", "vm"]
+categories = ["network-programming", "authentication"]
+
+[features]
+default = ["std"]
+std = []
+mock = []  # Enable mock executors for testing
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full", "sync", "net", "io-util", "time", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "rustls-tls", "stream", "gzip", "brotli"] }
+
+# File watching
+notify = { version = "6.1", features = ["serde"] }
+
+# Hashing and crypto
+sha2 = "0.10"
+crc32c = "0.6"
+
+# URL parsing
+url = "2.5"
+
+# Utilities
+uuid = { version = "1.6", features = ["v4", "serde"] }
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+bytes = "1.5"
+parking_lot = "0.12"
+dashmap = "5.5"
+governor = "0.6"
+regex = "1.10"
+glob = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.9"
+wiremock = "0.5"
+proptest = "1.4"
+test-log = { version = "0.2", features = ["trace"] }
+mockall = "0.12"
+assert_matches = "1.5"
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

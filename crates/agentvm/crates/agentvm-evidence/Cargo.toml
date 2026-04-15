@@ -1,0 +1,37 @@
+[package]
+name = "agentvm-evidence"
+version = "0.1.0"
+edition = "2021"
+description = "Evidence chain implementation for Agentic VM - no_std compatible"
+license = "Apache-2.0"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["evidence", "merkle", "signing", "audit", "no_std"]
+categories = ["cryptography", "no-std"]
+
+[features]
+default = []
+std = ["sha2/std", "ed25519-dalek/std", "base64/std"]
+serde = ["dep:serde", "dep:serde_json"]
+# Hardware security module support
+hsm = []
+# TPM support
+tpm = []
+# Transparency log (Rekor) integration
+rekor = ["std"]
+
+[dependencies]
+# Core cryptography - all no_std compatible
+sha2 = { version = "0.10", default-features = false }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["alloc", "rand_core"] }
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+rand_core = { version = "0.6", default-features = false }
+
+# Optional serialization
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"], optional = true }
+
+[dev-dependencies]
+# Testing utilities
+proptest = "1.4"
+rand = "0.8"
+hex = "0.4"

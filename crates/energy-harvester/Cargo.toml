@@ -1,0 +1,80 @@
+[package]
+name = "energy-harvester"
+version = "0.1.0"
+edition = "2021"
+description = "Energy-harvesting duty-cycled micro-agent with budget-gated execution"
+license = "MIT"
+repository = "https://github.com/ruvnet/cognitum"
+keywords = ["energy-harvesting", "embedded", "wasm", "duty-cycle", "micro-agent"]
+categories = ["embedded", "no-std", "wasm"]
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+# Core (no_std compatible)
+heapless = "0.8"
+libm = "0.2"
+
+# Embedded HAL traits
+embedded-hal = "1.0"
+
+# Fixed-point arithmetic for energy calculations
+fixed = "1.28"
+
+# Serialization (optional)
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+postcard = { version = "1.0", default-features = false, optional = true }
+
+# WASM support (optional, for host-side simulation)
+wasm-bindgen = { version = "0.2", optional = true }
+
+# Defmt logging for embedded (optional)
+defmt = { version = "0.3", optional = true }
+
+[dev-dependencies]
+embedded-hal-mock = "0.11"
+
+[features]
+default = ["std"]
+
+# Standard library support (for host simulation)
+std = []
+
+# no_std bare-metal target
+bare-metal = []
+
+# WebAssembly target
+wasm = ["wasm-bindgen", "std"]
+
+# Serialization support
+serde-support = ["serde", "postcard"]
+
+# Defmt structured logging
+defmt-logging = ["defmt"]
+
+# Platform targets
+stm32l0 = ["bare-metal"]
+stm32u5 = ["bare-metal"]
+stm32wl = ["bare-metal"]
+
+# Capability flags
+hybrid-harvest = []   # Multi-source harvesting (PV + piezo + RF)
+radio = []            # Radio TX support (BLE/LoRa)
+wasm-gate = []        # WASM micro-kernel support
+ina219 = []           # INA219 power monitor support
+
+# Debug features
+trace = []            # Enable detailed tracing
+energy-trace = []     # Log every energy transaction
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.release-embedded]
+inherits = "release"
+opt-level = "z"
+strip = true

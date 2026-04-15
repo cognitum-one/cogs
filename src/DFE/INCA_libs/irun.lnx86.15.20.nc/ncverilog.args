@@ -1,0 +1,9 @@
+//
+// File created by:  ncverilog
+// Do not modify this file
+//
+../Support/A2_CDC.v
+../Support//A2_sync.v
+-sysv2009
++access+rw
++nstimescale+1ns/1ps

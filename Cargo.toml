@@ -1,0 +1,114 @@
+[package]
+name = "cognitum"
+version = "1.0.0"
+edition = "2021"
+authors = ["Cognitum Team"]
+description = "Cognitum chip v1 commercialization library"
+license = "MIT"
+
+[lib]
+name = "cognitum"
+path = "src/lib.rs"
+
+[dependencies]
+# Cognitum simulator dependencies
+cognitum-core = { path = "cognitum-sim/crates/cognitum-core" }
+cognitum-processor = { path = "cognitum-sim/crates/cognitum-processor" }
+cognitum-memory = { path = "cognitum-sim/crates/cognitum-memory" }
+cognitum-raceway = { path = "cognitum-sim/crates/cognitum-raceway" }
+cognitum-sim = { path = "cognitum-sim/crates/cognitum-sim" }
+
+# Async runtime
+tokio = { version = "1.48", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Cryptography
+argon2 = { version = "0.5", features = ["std"] }
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+rand = "0.8"
+getrandom = "0.2"
+sha2 = "0.10"
+subtle = "2.5"
+hex = "0.4"
+base64 = "0.22"
+aes-gcm = "0.10"
+
+# Concurrency
+parking_lot = "0.12"
+
+# Mocking (used in trait definitions)
+mockall = "0.13"
+
+# UUID generation
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# Time and date
+chrono = { version = "0.4", features = ["serde"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate", "json"] }
+
+# Web framework and HTTP
+axum = "0.7"
+tower = { version = "0.4", features = ["util"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
+hyper = { version = "1.0", features = ["full"] }
+http = "1.0"
+
+# Tracing and logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Redis for distributed storage and rate limiting
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "aio"] }
+
+[dev-dependencies]
+# Testing
+mockall = "0.13"
+tokio-test = "0.4"
+proptest = "1.5"
+futures = "0.3"
+
+# Test utilities
+pretty_assertions = "1.4"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = []
+test-utils = []
+
+# Binary targets
+[[bin]]
+name = "cognitum-api"
+path = "src/bin/cognitum-api.rs"
+
+[[test]]
+name = "acceptance_tests"
+path = "tests/acceptance/mod.rs"
+harness = false
+
+[[test]]
+name = "integration_tests"
+path = "tests/integration/mod.rs"
+
+[[test]]
+name = "unit_tests"
+path = "tests/unit/mod.rs"
+harness = false
+
+[[bench]]
+name = "ruvector_bench"
+harness = false
+
+[[bench]]
+name = "page_index_bench"
+harness = false

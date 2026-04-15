@@ -1,0 +1,57 @@
+[package]
+name = "cognitum-license"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+keywords = ["license", "authentication", "billing", "monetization"]
+categories = ["authentication", "development-tools"]
+description = "Licensing and usage metering system for Cognitum chip simulator"
+
+[dependencies]
+# Workspace dependencies
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tokio = { workspace = true, features = ["sync", "time"] }
+tracing.workspace = true
+parking_lot.workspace = true
+
+# Cryptography
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.21"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Mocking support
+mockall = "0.12"
+
+# Billing integration (Stripe) - using mock implementation for now
+# stripe = { version = "0.27", optional = true, default-features = false, features = ["webhook-endpoints", "checkout"] }
+reqwest = { version = "0.11", optional = true, features = ["json"] }
+
+[dev-dependencies]
+tempfile = "3.8"
+tokio = { workspace = true, features = ["test-util", "macros"] }
+criterion.workspace = true
+
+[features]
+default = []
+billing = ["reqwest"]
+
+[[bench]]
+name = "license_validation"
+harness = false
+
+[[bench]]
+name = "usage_metering"
+harness = false
