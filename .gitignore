@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Node
+node_modules/
+
+# IDE
+.idea/
+.vscode/
