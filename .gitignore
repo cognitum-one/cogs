@@ -12,3 +12,8 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+
+# Claude tooling
+.agentic-qe/
+.claude-flow/
+*.db
