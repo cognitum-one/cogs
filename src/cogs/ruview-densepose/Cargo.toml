@@ -1,16 +1,26 @@
 [package]
 name = "cog-ruview-densepose"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
-description = "RuView integration — ESP32 CSI to 17-keypoint skeleton proxy via Hampel + phase sanitization"
+description = "RuView integration — ESP32 CSI to 17-keypoint skeleton proxy via Hampel + phase sanitization. Self-contained sensor sources (seed-stream / esp32-uart / esp32-udp)."
 
 [[bin]]
 name = "cog-ruview-densepose"
 path = "src/main.rs"
 
+[features]
+default = []
+# Direct ESP32 serial-port reader (--source esp32-uart=PATH).
+esp32-uart = ["dep:serialport"]
+# Explicit UDP listener with configurable bind addr (--source esp32-udp=HOST:PORT).
+# No extra deps — uses std::net::UdpSocket. Independent of the legacy
+# auto-fallback UDP behavior on hardcoded port 5005 (still on by default).
+esp32-udp = []
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serialport = { version = "4", optional = true, default-features = false }
 
 [profile.release]
 opt-level = "s"

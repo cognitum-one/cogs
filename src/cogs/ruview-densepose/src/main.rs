@@ -1,8 +1,8 @@
 //! Cognitum Cog: RuView DensePose
 //!
-//! Full RuView integration stub. Connects to ESP32 CSI stream (UDP or
-//! local sensor API), runs Hampel filter + phase sanitization, and
-//! outputs a 17-keypoint skeleton proxy from processed CSI features.
+//! Full RuView integration stub. Connects to ESP32 CSI stream and
+//! runs Hampel filter + phase sanitization, outputting a 17-keypoint
+//! skeleton proxy from processed CSI features.
 //!
 //! Keypoints (COCO format):
 //!   0=nose, 1=left_eye, 2=right_eye, 3=left_ear, 4=right_ear,
@@ -11,8 +11,17 @@
 //!   13=left_knee, 14=right_knee, 15=left_ankle, 16=right_ankle
 //!
 //! Usage:
-//!   cog-ruview-densepose --once
-//!   cog-ruview-densepose --interval 1
+//!   cog-ruview-densepose [--once] [--interval 1] [--source SOURCE]
+//!
+//! Sources (--source, ADR-091):
+//!   auto                    (default — try UDP :5005 first, fall back to seed-stream)
+//!   seed-stream             agent's /api/v1/sensor/stream over loopback
+//!   esp32-uart=<path>       ESP32 serial port; build with --features esp32-uart
+//!   esp32-udp=<host:port>   bind UDP, parse ADR-069 0xC5110003 packets;
+//!                           build with --features esp32-udp
+//!
+//! ADR-091: cogs are self-contained. The cog brings its own sensor
+//! source rather than depending on the agent's sensor/stream aggregator.
 
 use std::io::{Read, Write};
 use std::net::{TcpStream, UdpSocket};
@@ -212,23 +221,136 @@ struct DensePoseReport {
     timestamp: u64,
 }
 
-fn run_once(state: &mut DensePoseState) -> Result<DensePoseReport, String> {
-    // Try UDP CSI first, fall back to HTTP sensor API
-    let (mut features, source) = {
-        let udp = try_udp_csi();
-        if !udp.is_empty() {
-            (udp, "udp_csi")
-        } else {
+// ── Sensor sources (ADR-091) ─────────────────────────────────────────
+
+enum Source {
+    /// Default — try UDP :5005 first, fall back to seed-stream (v1.0.0 behavior).
+    Auto,
+    /// Agent's /api/v1/sensor/stream only.
+    SeedStream,
+    /// ESP32 serial-port reader; gated behind --features esp32-uart.
+    Esp32Uart(String),
+    /// Explicit UDP listener with configurable bind addr; gated behind --features esp32-udp.
+    Esp32Udp(String),
+}
+
+fn parse_source_arg(spec: &str) -> Result<Source, String> {
+    if spec == "auto" || spec.is_empty() { return Ok(Source::Auto); }
+    if spec == "seed-stream" { return Ok(Source::SeedStream); }
+    if let Some(p) = spec.strip_prefix("esp32-uart=") {
+        if p.is_empty() { return Err("esp32-uart= requires a path (e.g. COM8 or /dev/ttyACM0)".into()); }
+        return Ok(Source::Esp32Uart(p.to_string()));
+    }
+    if let Some(a) = spec.strip_prefix("esp32-udp=") {
+        if a.is_empty() { return Err("esp32-udp= requires bind_host:port (e.g. 0.0.0.0:5006)".into()); }
+        return Ok(Source::Esp32Udp(a.to_string()));
+    }
+    Err(format!("unknown source '{}'; expected: auto | seed-stream | esp32-uart=PATH | esp32-udp=HOST:PORT", spec))
+}
+
+#[cfg(feature = "esp32-uart")]
+fn fetch_from_esp32_uart(path: &str, window_ms: u64, max_samples: usize) -> Result<Vec<f64>, String> {
+    let mut port = serialport::new(path, 115_200)
+        .timeout(Duration::from_millis(200))
+        .data_bits(serialport::DataBits::Eight)
+        .stop_bits(serialport::StopBits::One)
+        .parity(serialport::Parity::None)
+        .flow_control(serialport::FlowControl::None)
+        .open()
+        .map_err(|e| format!("open {}: {}", path, e))?;
+    let mut buf = Vec::with_capacity(8192);
+    let mut tmp = [0u8; 1024];
+    let deadline = Instant::now() + Duration::from_millis(window_ms);
+    while Instant::now() < deadline && buf.len() < 65536 {
+        match port.read(&mut tmp) {
+            Ok(0) => continue,
+            Ok(n) => buf.extend_from_slice(&tmp[..n]),
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
+            Err(e) => return Err(format!("uart read: {}", e)),
+        }
+    }
+    let text = String::from_utf8_lossy(&buf);
+    let amps: Vec<f64> = text.split_whitespace()
+        .filter_map(|t| t.strip_prefix("rssi="))
+        .filter_map(|s| s.trim_end_matches(',').parse::<f64>().ok())
+        .map(|dbm| ((dbm + 65.0) / 35.0).clamp(-1.0, 1.0))
+        .take(max_samples).collect();
+    if amps.is_empty() {
+        return Err(format!("no rssi=N tokens in {}B from {} — esp32-csi-node firmware running?", buf.len(), path));
+    }
+    Ok(amps)
+}
+
+#[cfg(not(feature = "esp32-uart"))]
+fn fetch_from_esp32_uart(_p: &str, _w: u64, _m: usize) -> Result<Vec<f64>, String> {
+    Err("--source esp32-uart not enabled in this build (rebuild with --features esp32-uart)".into())
+}
+
+#[cfg(feature = "esp32-udp")]
+fn fetch_from_esp32_udp(addr: &str, window_ms: u64, max_samples: usize) -> Result<Vec<f64>, String> {
+    const MAGIC_FEATURES: u32 = 0xC511_0003;
+    const FEATURE_PKT_SIZE: usize = 48;
+    let socket = UdpSocket::bind(addr).map_err(|e| format!("bind {}: {}", addr, e))?;
+    socket.set_read_timeout(Some(Duration::from_millis(window_ms.min(2000))))
+        .map_err(|e| format!("set timeout: {}", e))?;
+    let mut amps: Vec<f64> = Vec::new();
+    let deadline = Instant::now() + Duration::from_millis(window_ms);
+    let mut pkt = [0u8; 256];
+    while Instant::now() < deadline && amps.len() < max_samples {
+        match socket.recv_from(&mut pkt) {
+            Ok((n, _)) if n >= FEATURE_PKT_SIZE => {
+                let magic = u32::from_le_bytes([pkt[0], pkt[1], pkt[2], pkt[3]]);
+                if magic != MAGIC_FEATURES { continue; }
+                for i in 0..8 {
+                    let off = 16 + i * 4;
+                    if off + 4 > n { break; }
+                    let f = f32::from_le_bytes([pkt[off], pkt[off+1], pkt[off+2], pkt[off+3]]);
+                    if f.is_finite() { amps.push((f as f64).clamp(-1.0, 1.0)); }
+                }
+            }
+            Ok(_) => continue,
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => break,
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
+            Err(e) => return Err(format!("udp recv: {}", e)),
+        }
+    }
+    if amps.is_empty() {
+        return Err(format!("no ADR-069 packets on {} within {}ms", addr, window_ms));
+    }
+    Ok(amps)
+}
+
+#[cfg(not(feature = "esp32-udp"))]
+fn fetch_from_esp32_udp(_a: &str, _w: u64, _m: usize) -> Result<Vec<f64>, String> {
+    Err("--source esp32-udp not enabled in this build (rebuild with --features esp32-udp)".into())
+}
+
+fn run_once(state: &mut DensePoseState, source: &Source, window_ms: u64) -> Result<DensePoseReport, String> {
+    let (mut features, src_tag) = match source {
+        Source::Auto => {
+            // v1.0.0 behavior preserved: try UDP :5005 first, fall back to seed-stream.
+            let udp = try_udp_csi();
+            if !udp.is_empty() {
+                (udp, "udp_csi")
+            } else {
+                let sensors = fetch_sensors()?;
+                let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
+                let vals: Vec<f64> = samples.iter()
+                    .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
+                (vals, "sensor_api")
+            }
+        }
+        Source::SeedStream => {
             let sensors = fetch_sensors()?;
-            let samples = sensors.get("samples")
-                .and_then(|c| c.as_array())
-                .ok_or("no samples")?;
+            let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
             let vals: Vec<f64> = samples.iter()
-                .filter_map(|s| s.get("value").and_then(|v| v.as_f64()))
-                .collect();
+                .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
             (vals, "sensor_api")
         }
+        Source::Esp32Uart(path) => (fetch_from_esp32_uart(path, window_ms, 256)?, "esp32-uart"),
+        Source::Esp32Udp(addr) => (fetch_from_esp32_udp(addr, window_ms, 256)?, "esp32-udp"),
     };
+    let source_str = src_tag;
 
     if features.is_empty() {
         return Err("no CSI data available".into());
@@ -289,7 +411,7 @@ fn run_once(state: &mut DensePoseState) -> Result<DensePoseReport, String> {
         num_keypoints: keypoints.len(),
         avg_confidence: avg_conf,
         keypoints,
-        source: source.to_string(),
+        source: source_str.to_string(),
         raw_features: raw_count,
         hampel_corrections: total_corrections,
         timestamp: std::time::SystemTime::now()
@@ -306,13 +428,30 @@ fn main() {
         .and_then(|i| args.get(i + 1))
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(1);
+    let source_spec = args.iter()
+        .position(|a| a == "--source")
+        .and_then(|i| args.get(i + 1))
+        .cloned()
+        .unwrap_or_else(|| "auto".into());
+    let source = match parse_source_arg(&source_spec) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[cog-ruview-densepose] {}", e);
+            std::process::exit(2);
+        }
+    };
+    let window_ms: u64 = args.iter()
+        .position(|a| a == "--window-ms")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(1000);
 
-    eprintln!("[cog-ruview-densepose] starting (interval={interval}s)");
+    eprintln!("[cog-ruview-densepose] starting (interval={interval}s source={source_spec} window_ms={window_ms})");
     let mut state = DensePoseState::new();
 
     loop {
         let start = Instant::now();
-        match run_once(&mut state) {
+        match run_once(&mut state, &source, window_ms) {
             Ok(report) => {
                 println!("{}", serde_json::to_string(&report).unwrap_or_default());
             }
