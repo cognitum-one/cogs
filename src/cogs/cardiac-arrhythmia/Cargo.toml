@@ -1,6 +1,6 @@
 [package]
 name = "cog-cardiac-arrhythmia"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Cardiac arrhythmia detection — HRV analysis using RMSSD and pNN50"
 
@@ -9,6 +9,7 @@ name = "cog-cardiac-arrhythmia"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

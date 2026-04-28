@@ -207,27 +207,7 @@ fn now_ts() -> u64 {
 }
 
 fn fetch_sensors() -> Result<serde_json::Value, String> {
-    let mut conn = std::net::TcpStream::connect("127.0.0.1:80")
-        .map_err(|e| format!("connect: {e}"))?;
-    conn.set_read_timeout(Some(std::time::Duration::from_secs(5))).ok();
-    conn.set_write_timeout(Some(std::time::Duration::from_secs(5))).ok();
-    use std::io::Write;
-    write!(conn, "GET /api/v1/sensor/stream HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
-        .map_err(|e| format!("write: {e}"))?;
-    let mut buf = Vec::with_capacity(8192);
-    let mut tmp = [0u8; 4096];
-    loop {
-        match conn.read(&mut tmp) {
-            Ok(0) => break,
-            Ok(n) => { buf.extend_from_slice(&tmp[..n]); if buf.len() > 262144 { break; } }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => break,
-            Err(_) if !buf.is_empty() => break,
-            Err(e) => return Err(format!("read: {e}")),
-        }
-    }
-    let body = String::from_utf8_lossy(&buf);
-    let json_start = body.find('{').ok_or("no JSON")?;
-    serde_json::from_str(&body[json_start..]).map_err(|e| format!("parse: {e}"))
+    cog_sensor_sources::fetch_sensors()
 }
 
 fn store_vector(report: &TailgateReport) -> Result<(), String> {

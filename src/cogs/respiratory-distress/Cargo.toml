@@ -1,6 +1,6 @@
 [package]
 name = "cog-respiratory-distress"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Respiratory distress monitoring — breathing rate, effort, Cheyne-Stokes detection"
 
@@ -9,6 +9,7 @@ name = "cog-respiratory-distress"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
