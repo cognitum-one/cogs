@@ -4,8 +4,17 @@
 //! Outputs unified health JSON with all metrics per reading.
 //!
 //! Usage:
-//!   cog-health-monitor --once
-//!   cog-health-monitor --interval 10
+//!   cog-health-monitor [--once] [--interval 10] [--source SOURCE]
+//!
+//! Sources (--source):
+//!   seed-stream            (default — read 127.0.0.1:80/api/v1/sensor/stream)
+//!   esp32-uart=<path>      ESP32 serial port; <path> = "COM8" / "/dev/ttyACM0"
+//!                          Build with --features esp32-uart.
+//!   esp32-udp=<host:port>  Bind UDP, parse ADR-069 packets (0xC5110003).
+//!                          Build with --features esp32-udp.
+//!
+//! ADR-091: cogs are self-contained. The cog brings its own sensor source
+//! rather than depending on the agent's sensor/stream aggregator.
 
 use std::io::Read;
 use std::time::{Duration, Instant};
@@ -162,7 +171,67 @@ struct HealthReport {
     timestamp: u64,
 }
 
-fn fetch_sensors() -> Result<serde_json::Value, String> {
+// ── Sensor sources (ADR-091) ─────────────────────────────────────────
+
+/// Where the cog reads samples from. Selected at startup via `--source`;
+/// the same DSP pipeline consumes samples regardless of source.
+enum Source {
+    /// Default — read agent's `/api/v1/sensor/stream` over loopback HTTP.
+    SeedStream,
+    /// Direct ESP32 serial port (115200 8N1). Requires `--features esp32-uart`.
+    /// Param: device path (`COM8` on Windows, `/dev/ttyACM0` on Linux).
+    Esp32Uart(String),
+    /// Bind UDP for ADR-069 feature packets. Requires `--features esp32-udp`.
+    /// Param: `bind_host:port` (e.g. `0.0.0.0:5006`).
+    Esp32Udp(String),
+}
+
+/// A normalized batch of samples for the DSP pipeline. Values are in
+/// `[-1.0, 1.0]`. The DSP code only needs raw amplitudes — it doesn't
+/// care which source produced them.
+struct SensorBatch {
+    /// Per-channel amplitude samples (normalized).
+    amplitudes: Vec<f64>,
+    /// Tag for the report's `sensor` field — useful when comparing
+    /// `seed-stream` (synthetic) vs real ESP32 output side-by-side.
+    source_tag: &'static str,
+}
+
+fn parse_source_arg(spec: &str) -> Result<Source, String> {
+    if spec == "seed-stream" {
+        return Ok(Source::SeedStream);
+    }
+    if let Some(path) = spec.strip_prefix("esp32-uart=") {
+        if path.is_empty() {
+            return Err("esp32-uart= requires a path (e.g. COM8 or /dev/ttyACM0)".into());
+        }
+        return Ok(Source::Esp32Uart(path.to_string()));
+    }
+    if let Some(addr) = spec.strip_prefix("esp32-udp=") {
+        if addr.is_empty() {
+            return Err("esp32-udp= requires bind_host:port (e.g. 0.0.0.0:5006)".into());
+        }
+        return Ok(Source::Esp32Udp(addr.to_string()));
+    }
+    Err(format!(
+        "unknown source '{}'; expected one of: seed-stream | esp32-uart=PATH | esp32-udp=HOST:PORT",
+        spec
+    ))
+}
+
+/// Fetch one sample batch from the configured source. Returns at most
+/// `max_samples` amplitude readings — typically the most recent window.
+fn fetch_batch(source: &Source, window_ms: u64, max_samples: usize) -> Result<SensorBatch, String> {
+    match source {
+        Source::SeedStream => fetch_from_seed_stream(max_samples),
+        Source::Esp32Uart(path) => fetch_from_esp32_uart(path, window_ms, max_samples),
+        Source::Esp32Udp(addr) => fetch_from_esp32_udp(addr, window_ms, max_samples),
+    }
+}
+
+// ── Source: agent's sensor/stream (default, backward compatible) ────
+
+fn fetch_from_seed_stream(max_samples: usize) -> Result<SensorBatch, String> {
     let mut conn = std::net::TcpStream::connect("127.0.0.1:80")
         .map_err(|e| format!("connect: {e}"))?;
     conn.set_read_timeout(Some(std::time::Duration::from_secs(5))).ok();
@@ -183,7 +252,123 @@ fn fetch_sensors() -> Result<serde_json::Value, String> {
     }
     let body = String::from_utf8_lossy(&buf);
     let json_start = body.find('{').ok_or("no JSON")?;
-    serde_json::from_str(&body[json_start..]).map_err(|e| format!("parse: {e}"))
+    let v: serde_json::Value = serde_json::from_str(&body[json_start..]).map_err(|e| format!("parse: {e}"))?;
+    let chs = v.get("samples").and_then(|c| c.as_array())
+        .ok_or("no samples array in /api/v1/sensor/stream")?;
+    let amps: Vec<f64> = chs.iter().take(max_samples)
+        .filter_map(|ch| ch.get("value").and_then(|v| v.as_f64()))
+        .collect();
+    if amps.is_empty() {
+        return Err("sensor/stream returned 0 samples".into());
+    }
+    Ok(SensorBatch { amplitudes: amps, source_tag: "seed-stream" })
+}
+
+// ── Source: ESP32 serial-port direct read ───────────────────────────
+
+#[cfg(feature = "esp32-uart")]
+fn fetch_from_esp32_uart(path: &str, window_ms: u64, max_samples: usize) -> Result<SensorBatch, String> {
+    use std::time::Duration;
+
+    // Open serial at 115200 8N1 with a short read timeout; we'll loop until
+    // window_ms elapses or we have enough samples.
+    let mut port = serialport::new(path, 115_200)
+        .timeout(Duration::from_millis(200))
+        .data_bits(serialport::DataBits::Eight)
+        .stop_bits(serialport::StopBits::One)
+        .parity(serialport::Parity::None)
+        .flow_control(serialport::FlowControl::None)
+        .open()
+        .map_err(|e| format!("open {}: {}", path, e))?;
+
+    let mut buf = Vec::with_capacity(8192);
+    let mut tmp = [0u8; 1024];
+    let deadline = std::time::Instant::now() + Duration::from_millis(window_ms);
+    while std::time::Instant::now() < deadline && buf.len() < 65536 {
+        match port.read(&mut tmp) {
+            Ok(0) => continue,
+            Ok(n) => buf.extend_from_slice(&tmp[..n]),
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => continue,
+            Err(e) => return Err(format!("uart read: {}", e)),
+        }
+    }
+
+    // The esp32-csi-node firmware emits a line per CSI callback:
+    //   I (12345) csi_collector: CSI cb #800: len=128 rssi=-51 ch=5
+    // Extract every rssi=<int> token across the whole buffer in one pass.
+    let text = String::from_utf8_lossy(&buf);
+    let amps: Vec<f64> = text.split_whitespace()
+        .filter_map(|t| t.strip_prefix("rssi="))
+        .filter_map(|s| s.trim_end_matches(',').parse::<f64>().ok())
+        // Normalize dBm to [-1, 1]: -100 dBm -> -1, -30 dBm -> +1
+        .map(|dbm| ((dbm + 65.0) / 35.0).clamp(-1.0, 1.0))
+        .take(max_samples)
+        .collect();
+
+    if amps.is_empty() {
+        return Err(format!(
+            "no rssi=N tokens found in {}B from {} — is the ESP32 esp32-csi-node firmware running?",
+            buf.len(), path
+        ));
+    }
+    Ok(SensorBatch { amplitudes: amps, source_tag: "esp32-uart" })
+}
+
+#[cfg(not(feature = "esp32-uart"))]
+fn fetch_from_esp32_uart(_path: &str, _window_ms: u64, _max_samples: usize) -> Result<SensorBatch, String> {
+    Err("--source esp32-uart not enabled in this build (rebuild with --features esp32-uart)".into())
+}
+
+// ── Source: ESP32 UDP (ADR-069 feature packets) ─────────────────────
+
+#[cfg(feature = "esp32-udp")]
+fn fetch_from_esp32_udp(addr: &str, window_ms: u64, max_samples: usize) -> Result<SensorBatch, String> {
+    use std::net::UdpSocket;
+    use std::time::Duration;
+
+    const MAGIC_FEATURES: u32 = 0xC511_0003;
+    const FEATURE_PKT_SIZE: usize = 48; // 4 + 1 + 1 + 2 + 8 + 8*4
+
+    let socket = UdpSocket::bind(addr).map_err(|e| format!("bind {}: {}", addr, e))?;
+    socket.set_read_timeout(Some(Duration::from_millis(window_ms.min(2000))))
+        .map_err(|e| format!("set timeout: {}", e))?;
+
+    let mut amps: Vec<f64> = Vec::new();
+    let deadline = std::time::Instant::now() + Duration::from_millis(window_ms);
+    let mut pkt = [0u8; 256];
+    while std::time::Instant::now() < deadline && amps.len() < max_samples {
+        match socket.recv_from(&mut pkt) {
+            Ok((n, _)) if n >= FEATURE_PKT_SIZE => {
+                let magic = u32::from_le_bytes([pkt[0], pkt[1], pkt[2], pkt[3]]);
+                if magic != MAGIC_FEATURES { continue; }
+                // Skip header (4+1+1+2+8 = 16 bytes), read 8 LE f32 features.
+                for i in 0..8 {
+                    let off = 16 + i * 4;
+                    if off + 4 > n { break; }
+                    let f = f32::from_le_bytes([pkt[off], pkt[off+1], pkt[off+2], pkt[off+3]]);
+                    if f.is_finite() {
+                        amps.push((f as f64).clamp(-1.0, 1.0));
+                    }
+                }
+            }
+            Ok(_) => continue,
+            Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => break,
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
+            Err(e) => return Err(format!("udp recv: {}", e)),
+        }
+    }
+    if amps.is_empty() {
+        return Err(format!(
+            "no ADR-069 feature packets received on {} within {}ms — is the ESP32 sending here?",
+            addr, window_ms
+        ));
+    }
+    Ok(SensorBatch { amplitudes: amps, source_tag: "esp32-udp" })
+}
+
+#[cfg(not(feature = "esp32-udp"))]
+fn fetch_from_esp32_udp(_addr: &str, _window_ms: u64, _max_samples: usize) -> Result<SensorBatch, String> {
+    Err("--source esp32-udp not enabled in this build (rebuild with --features esp32-udp)".into())
 }
 
 fn store_report(report: &HealthReport) -> Result<(), String> {
@@ -223,8 +408,29 @@ fn main() {
         .and_then(|i| args.get(i + 1))
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(10);
+    // --source SPEC; default = seed-stream (backward compat with v1.0.0)
+    let source_spec = args.iter()
+        .position(|a| a == "--source")
+        .and_then(|i| args.get(i + 1))
+        .cloned()
+        .unwrap_or_else(|| "seed-stream".into());
+    let source = match parse_source_arg(&source_spec) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[cog-health-monitor] {}", e);
+            std::process::exit(2);
+        }
+    };
+    // Window for non-stream sources (UART read interval, UDP listen interval).
+    // Default 1000ms gives a 100-sample window at the ESP32-csi-node default rate.
+    let window_ms: u64 = args.iter()
+        .position(|a| a == "--window-ms")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(1000);
 
-    eprintln!("[cog-health-monitor] starting (interval={}s)", interval);
+    eprintln!("[cog-health-monitor] starting (interval={}s source={} window_ms={})",
+              interval, source_spec, window_ms);
 
     let sample_rate = 10.0;
     let mut breathing_filter = BandpassFilter::new(0.1, 0.5, sample_rate);
@@ -235,13 +441,11 @@ fn main() {
 
     loop {
         let start = Instant::now();
-        match fetch_sensors() {
-            Ok(sensors) => {
-                let samples = sensors.get("samples").and_then(|c| c.as_array());
-                if let Some(chs) = samples {
-                    let amps: Vec<f64> = chs.iter().take(256)
-                        .filter_map(|ch| ch.get("value").and_then(|v| v.as_f64()))
-                        .collect();
+        match fetch_batch(&source, window_ms, 256) {
+            Ok(batch) => {
+                let amps = batch.amplitudes;
+                let _source_tag = batch.source_tag; // available for future report enrichment
+                {
                     if amps.is_empty() {
                         eprintln!("[cog-health-monitor] no sensor readings");
                     } else {
