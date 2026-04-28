@@ -1,7 +1,7 @@
 [cog]
 id = "ruview-densepose"
 name = "RuView WiFi DensePose"
-version = "1.1.0"
+version = "1.2.0"
 category = "research"
 description = "ESP32 CSI to 17-keypoint skeleton proxy via Hampel outlier rejection and phase sanitization"
 binary = "cog-ruview-densepose-arm"

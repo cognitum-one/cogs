@@ -1,6 +1,6 @@
 [package]
 name = "cog-health-monitor"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "Combined vital signs dashboard — vitals, presence, apnea in one process. Self-contained sensor sources (seed-stream / esp32-uart / esp32-udp)."
 

@@ -7,7 +7,9 @@
 //!   cog-health-monitor [--once] [--interval 10] [--source SOURCE]
 //!
 //! Sources (--source):
-//!   seed-stream            (default — read 127.0.0.1:80/api/v1/sensor/stream)
+//!   auto                   (default — ~800ms probe on UDP :5006 (ADR-069);
+//!                          if no packets, fall back to seed-stream)
+//!   seed-stream            agent's /api/v1/sensor/stream over loopback
 //!   esp32-uart=<path>      ESP32 serial port; <path> = "COM8" / "/dev/ttyACM0"
 //!                          Build with --features esp32-uart.
 //!   esp32-udp=<host:port>  Bind UDP, parse ADR-069 packets (0xC5110003).
@@ -176,7 +178,14 @@ struct HealthReport {
 /// Where the cog reads samples from. Selected at startup via `--source`;
 /// the same DSP pipeline consumes samples regardless of source.
 enum Source {
-    /// Default — read agent's `/api/v1/sensor/stream` over loopback HTTP.
+    /// Default — try UDP :5006 first (ADR-069 standard), fall back to
+    /// seed-stream if nothing arrives within a short probe window. Lets
+    /// a cog dropped on a fleet seed Just Work when an ESP32 on the same
+    /// WiFi is unicasting CSI packets, without requiring per-deploy
+    /// flag tweaks. Built-in even when neither feature flag is enabled
+    /// (the UDP path is gated behind cfg, but auto falls back gracefully).
+    Auto,
+    /// Read agent's `/api/v1/sensor/stream` over loopback HTTP.
     SeedStream,
     /// Direct ESP32 serial port (115200 8N1). Requires `--features esp32-uart`.
     /// Param: device path (`COM8` on Windows, `/dev/ttyACM0` on Linux).
@@ -198,6 +207,9 @@ struct SensorBatch {
 }
 
 fn parse_source_arg(spec: &str) -> Result<Source, String> {
+    if spec == "auto" || spec.is_empty() {
+        return Ok(Source::Auto);
+    }
     if spec == "seed-stream" {
         return Ok(Source::SeedStream);
     }
@@ -214,15 +226,38 @@ fn parse_source_arg(spec: &str) -> Result<Source, String> {
         return Ok(Source::Esp32Udp(addr.to_string()));
     }
     Err(format!(
-        "unknown source '{}'; expected one of: seed-stream | esp32-uart=PATH | esp32-udp=HOST:PORT",
+        "unknown source '{}'; expected one of: auto | seed-stream | esp32-uart=PATH | esp32-udp=HOST:PORT",
         spec
     ))
 }
+
+/// Default UDP bind for `auto` mode — ADR-069 standard port.
+const AUTO_UDP_BIND: &str = "0.0.0.0:5006";
+/// Probe window for `auto`: time spent waiting for UDP before falling
+/// back to seed-stream. 2 s comfortably catches 1 Hz senders (the
+/// scripts/esp32-uart-to-udp-bridge.py default cadence) while still
+/// fitting inside a typical --interval 10 cycle.
+const AUTO_UDP_PROBE_MS: u64 = 2000;
 
 /// Fetch one sample batch from the configured source. Returns at most
 /// `max_samples` amplitude readings — typically the most recent window.
 fn fetch_batch(source: &Source, window_ms: u64, max_samples: usize) -> Result<SensorBatch, String> {
     match source {
+        Source::Auto => {
+            // ADR-091 default: prefer real ESP32 CSI over the agent's
+            // (often-synthetic) sensor stream. Try a quick UDP probe;
+            // if no packets arrive, fall back to seed-stream so cogs on
+            // synthetic-only seeds still produce output instead of
+            // hanging on an empty UDP socket.
+            match fetch_from_esp32_udp(AUTO_UDP_BIND, AUTO_UDP_PROBE_MS, max_samples) {
+                Ok(mut b) => { b.source_tag = "auto:esp32-udp"; Ok(b) }
+                Err(_) => {
+                    let mut b = fetch_from_seed_stream(max_samples)?;
+                    b.source_tag = "auto:seed-stream";
+                    Ok(b)
+                }
+            }
+        }
         Source::SeedStream => fetch_from_seed_stream(max_samples),
         Source::Esp32Uart(path) => fetch_from_esp32_uart(path, window_ms, max_samples),
         Source::Esp32Udp(addr) => fetch_from_esp32_udp(addr, window_ms, max_samples),
@@ -408,12 +443,17 @@ fn main() {
         .and_then(|i| args.get(i + 1))
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(10);
-    // --source SPEC; default = seed-stream (backward compat with v1.0.0)
+    // --source SPEC; default = auto (ADR-091: prefer ESP32 UDP, fall
+    // back to seed-stream if no UDP packets arrive within the probe
+    // window). Existing v1.0.0 callers using only `--once`/`--interval`
+    // (no `--source`) get the smarter behavior automatically; the
+    // `seed-stream` source is still selectable by name for full
+    // backward compat.
     let source_spec = args.iter()
         .position(|a| a == "--source")
         .and_then(|i| args.get(i + 1))
         .cloned()
-        .unwrap_or_else(|| "seed-stream".into());
+        .unwrap_or_else(|| "auto".into());
     let source = match parse_source_arg(&source_spec) {
         Ok(s) => s,
         Err(e) => {

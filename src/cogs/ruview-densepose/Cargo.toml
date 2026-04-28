@@ -1,6 +1,6 @@
 [package]
 name = "cog-ruview-densepose"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "RuView integration — ESP32 CSI to 17-keypoint skeleton proxy via Hampel + phase sanitization. Self-contained sensor sources (seed-stream / esp32-uart / esp32-udp)."
 

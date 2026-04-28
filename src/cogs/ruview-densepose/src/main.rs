@@ -14,7 +14,7 @@
 //!   cog-ruview-densepose [--once] [--interval 1] [--source SOURCE]
 //!
 //! Sources (--source, ADR-091):
-//!   auto                    (default — try UDP :5005 first, fall back to seed-stream)
+//!   auto                    (default — try UDP :5006 first (ADR-069), fall back to seed-stream)
 //!   seed-stream             agent's /api/v1/sensor/stream over loopback
 //!   esp32-uart=<path>       ESP32 serial port; build with --features esp32-uart
 //!   esp32-udp=<host:port>   bind UDP, parse ADR-069 0xC5110003 packets;
@@ -27,7 +27,9 @@ use std::io::{Read, Write};
 use std::net::{TcpStream, UdpSocket};
 use std::time::{Duration, Instant};
 
-const UDP_PORT: u16 = 5005;
+// ADR-069 standard port. Earlier v1.0.0 used 5005 (legacy CSI broadcast);
+// switched to 5006 to align with seed_csi_bridge.py and ESP32 NVS defaults.
+const UDP_PORT: u16 = 5006;
 const HAMPEL_WINDOW: usize = 7;
 const HAMPEL_THRESHOLD: f64 = 3.0;
 const NUM_KEYPOINTS: usize = 17;
@@ -224,7 +226,7 @@ struct DensePoseReport {
 // ── Sensor sources (ADR-091) ─────────────────────────────────────────
 
 enum Source {
-    /// Default — try UDP :5005 first, fall back to seed-stream (v1.0.0 behavior).
+    /// Default — try UDP :5006 first (ADR-069), fall back to seed-stream (v1.0.0 behavior).
     Auto,
     /// Agent's /api/v1/sensor/stream only.
     SeedStream,
@@ -328,16 +330,21 @@ fn fetch_from_esp32_udp(_a: &str, _w: u64, _m: usize) -> Result<Vec<f64>, String
 fn run_once(state: &mut DensePoseState, source: &Source, window_ms: u64) -> Result<DensePoseReport, String> {
     let (mut features, src_tag) = match source {
         Source::Auto => {
-            // v1.0.0 behavior preserved: try UDP :5005 first, fall back to seed-stream.
-            let udp = try_udp_csi();
-            if !udp.is_empty() {
-                (udp, "udp_csi")
-            } else {
-                let sensors = fetch_sensors()?;
-                let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
-                let vals: Vec<f64> = samples.iter()
-                    .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
-                (vals, "sensor_api")
+            // ADR-091 v1.2.0: probe UDP :5006 (ADR-069 MAGIC_FEATURES)
+            // for 2s; fall back to seed-stream if no packets arrive. 2s
+            // catches both 1 Hz host-side bridges and 50 Hz direct ESP32
+            // senders. Legacy try_udp_csi (200ms, non-ADR-069 packet
+            // shape) is kept in the file for compatibility with older
+            // brokers but no longer used by the auto path.
+            match fetch_from_esp32_udp("0.0.0.0:5006", 2000, 256) {
+                Ok(v) => (v, "auto:esp32-udp"),
+                Err(_) => {
+                    let sensors = fetch_sensors()?;
+                    let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
+                    let vals: Vec<f64> = samples.iter()
+                        .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
+                    (vals, "auto:seed-stream")
+                }
             }
         }
         Source::SeedStream => {
