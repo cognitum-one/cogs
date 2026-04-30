@@ -1,0 +1,39 @@
+[cog]
+id = "ppe-compliance"
+name = "PPE Compliance"
+version = "1.0.0"
+category = "industrial"
+description = "Cog-composition layer: alerts when ruview-densepose detects presence in a restricted zone without an accompanying PPE-camera-cog confirmation vector."
+binary = "cog-ppe-compliance-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 5
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.zone]
+type = "string"
+label = "Restricted zone label"
+default = "restricted"
+cli_arg = "--zone"
+
+[config.confirmation_window]
+type = "integer"
+label = "Confirmation window"
+description = "Seconds within which PPE confirmation must be observed"
+default = 60
+min = 5
+max = 600
+unit = "seconds"
+cli_arg = "--confirmation-window"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

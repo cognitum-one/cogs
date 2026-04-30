@@ -1,0 +1,21 @@
+[package]
+name = "cog-baby-cry"
+version = "1.0.0"
+edition = "2021"
+description = "Baby cry detection — sustained mid-band energy detector for nursery monitoring"
+
+[[bin]]
+name = "cog-baby-cry"
+path = "src/main.rs"
+
+[dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

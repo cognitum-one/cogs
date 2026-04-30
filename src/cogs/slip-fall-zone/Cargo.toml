@@ -1,0 +1,21 @@
+[package]
+name = "cog-slip-fall-zone"
+version = "1.0.0"
+edition = "2021"
+description = "Slip / wet-floor zone — pre-fall risk detector via motion-variance drop + splash audio + optional cautious-gait CSI"
+
+[[bin]]
+name = "cog-slip-fall-zone"
+path = "src/main.rs"
+
+[dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

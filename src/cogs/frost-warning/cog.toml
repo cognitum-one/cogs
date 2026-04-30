@@ -1,0 +1,53 @@
+[cog]
+id = "frost-warning"
+name = "Frost Warning"
+version = "1.0.0"
+category = "building"
+description = "Predicts frost 6 hours ahead via temperature trend + dewpoint-depression gate. Field/orchard agriculture."
+binary = "cog-frost-warning-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 10
+min = 1
+max = 600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.frost_threshold]
+type = "float"
+label = "Frost threshold (Celsius)"
+default = 2.0
+min = -10.0
+max = 5.0
+step = 0.5
+unit = "C"
+cli_arg = "--frost-threshold"
+
+[config.projection_hours]
+type = "integer"
+label = "Projection horizon (hours)"
+default = 6
+min = 1
+max = 24
+unit = "hours"
+cli_arg = "--projection-hours"
+
+[config.dewpoint_min_depression]
+type = "float"
+label = "Dewpoint depression min (Celsius)"
+description = "Minimum (temp - dewpoint) below which frost-likely fires"
+default = 3.0
+min = 0.0
+max = 10.0
+step = 0.5
+unit = "C"
+cli_arg = "--dewpoint-min-depression"
+
+[console]
+allowed_commands = ["--once", "--once --interval 10", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

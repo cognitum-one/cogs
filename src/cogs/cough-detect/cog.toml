@@ -1,0 +1,52 @@
+[cog]
+id = "cough-detect"
+name = "Cough Detection"
+version = "1.0.0"
+category = "health"
+description = "Acoustic transient + spectral cough detector with 30s cluster aggregation. Early-warning signal for respiratory illness."
+binary = "cog-cough-detect-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 1
+min = 1
+max = 10
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.transient_z]
+type = "float"
+label = "Transient z-score"
+description = "Z-score spike threshold to flag a candidate cough"
+default = 3.0
+min = 1.5
+max = 6.0
+step = 0.25
+cli_arg = "--transient-z"
+
+[config.cluster_window]
+type = "integer"
+label = "Cluster window"
+description = "Seconds to count clustered events"
+default = 30
+min = 10
+max = 300
+unit = "seconds"
+cli_arg = "--cluster-window"
+
+[config.alert_count]
+type = "integer"
+label = "Cluster alert count"
+description = "Events within window to fire cluster alert"
+default = 3
+min = 2
+max = 20
+cli_arg = "--alert-count"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

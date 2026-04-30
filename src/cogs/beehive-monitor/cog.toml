@@ -1,0 +1,41 @@
+[cog]
+id = "beehive-monitor"
+name = "Beehive Monitor"
+version = "1.0.0"
+category = "building"
+description = "Acoustic hive state classifier. Detects healthy / chaotic / queenless / swarming / robbing via hum-band energy + chaos + piping autocorr."
+binary = "cog-beehive-monitor-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 10
+min = 5
+max = 600
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.chaos_z]
+type = "float"
+label = "Chaos z-score"
+default = 1.5
+min = 0.5
+max = 4.0
+step = 0.25
+cli_arg = "--chaos-z"
+
+[config.robbing_z]
+type = "float"
+label = "Robbing z-score"
+default = 3.0
+min = 1.5
+max = 6.0
+step = 0.25
+cli_arg = "--robbing-z"
+
+[console]
+allowed_commands = ["--once", "--once --interval 10", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

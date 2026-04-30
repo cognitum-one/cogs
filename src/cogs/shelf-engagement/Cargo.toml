@@ -1,6 +1,6 @@
 [package]
 name = "cog-shelf-engagement"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Detect brief interactions near zones — short dwell (5-30s) = engagement"
 
@@ -9,6 +9,7 @@ name = "cog-shelf-engagement"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

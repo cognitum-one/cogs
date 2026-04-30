@@ -1,6 +1,6 @@
 [package]
 name = "cog-swarm-backup-restore"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Replicate local vector store to peer seed, track lag, restore on failure"
 
@@ -9,6 +9,7 @@ name = "cog-swarm-backup-restore"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

@@ -1,0 +1,18 @@
+[package]
+name = "cog-sensor-sources"
+version = "0.1.0"
+edition = "2021"
+description = "Shared self-contained sensor sources for cogs (ADR-091)"
+license = "MIT"
+
+[lib]
+name = "cog_sensor_sources"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
