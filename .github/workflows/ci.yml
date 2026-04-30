@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  changed-cogs:
+    name: Detect changed cogs
+    runs-on: ubuntu-latest
+    outputs:
+      cogs: ${{ steps.detect.outputs.cogs }}
+      shared: ${{ steps.detect.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect which cogs changed
+        id: detect
+        shell: bash
+        run: |
+          set -eo pipefail
+          # Compare against PR base or last commit on push.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          fi
+          CHANGED_FILES=$(git diff --name-only "$BASE" HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES" | sed 's/^/  /'
+
+          # Cogs that changed
+          COGS=$(echo "$CHANGED_FILES" | awk -F/ '/^src\/cogs\// { print $3 }' | sort -u | tr '\n' ' ')
+
+          # Shared crates that changed → forces all-cogs check
+          SHARED=$(echo "$CHANGED_FILES" | grep -E '^(crates/cog-sensor-sources|Cargo\.toml|Cargo\.lock)' | head -c 1)
+
+          if [ -n "$SHARED" ]; then
+            COGS=$(ls -d src/cogs/*/ | xargs -n1 basename | tr '\n' ' ')
+            echo "Shared crate or root Cargo changed → checking ALL cogs"
+          fi
+
+          # JSON-array for matrix
+          if [ -z "$COGS" ]; then
+            COGS_JSON='[]'
+          else
+            COGS_JSON=$(echo "$COGS" | tr ' ' '\n' | grep -v '^$' | jq -Rs 'split("\n") | map(select(length > 0))' -c)
+          fi
+
+          echo "cogs=$COGS_JSON" >> "$GITHUB_OUTPUT"
+          echo "shared=${SHARED:+yes}" >> "$GITHUB_OUTPUT"
+          echo "Will check: $COGS_JSON"
+
+  check:
+    name: cargo check ${{ matrix.cog }}
+    needs: changed-cogs
+    if: needs.changed-cogs.outputs.cogs != '[]' && needs.changed-cogs.outputs.cogs != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        cog: ${{ fromJSON(needs.changed-cogs.outputs.cogs) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/cogs/${{ matrix.cog }}/target
+          key: cogs-check-${{ matrix.cog }}-${{ hashFiles('src/cogs/${{ matrix.cog }}/Cargo.toml', 'crates/cog-sensor-sources/Cargo.toml') }}
+          restore-keys: |
+            cogs-check-${{ matrix.cog }}-
+
+      - name: cargo check
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: cargo check --release --all-targets
+
+      - name: cargo test
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: cargo test --release --all-targets
+
+  shared-crates:
+    name: cargo check shared crates
+    needs: changed-cogs
+    if: needs.changed-cogs.outputs.shared == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo check (cog-sensor-sources)
+        working-directory: crates/cog-sensor-sources
+        run: cargo check --release --all-targets
+      - name: cargo test (cog-sensor-sources)
+        working-directory: crates/cog-sensor-sources
+        run: cargo test --release --all-targets
+
+  manifest-validate:
+    name: Validate cog.toml + Cargo.toml consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every cog has cog.toml + Cargo.toml + src/main.rs
+        shell: bash
+        run: |
+          set -eo pipefail
+          fail=0
+          for d in src/cogs/*/; do
+            cog=$(basename "$d")
+            for required in cog.toml Cargo.toml src/main.rs; do
+              if [ ! -f "$d/$required" ]; then
+                echo "::error file=$d::missing $required"
+                fail=$((fail+1))
+              fi
+            done
+            # Check id in cog.toml matches dir name
+            if [ -f "$d/cog.toml" ]; then
+              id=$(grep '^id = ' "$d/cog.toml" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+              if [ -n "$id" ] && [ "$id" != "$cog" ]; then
+                echo "::error file=$d/cog.toml::id ($id) does not match directory ($cog)"
+                fail=$((fail+1))
+              fi
+            fi
+            # Check binary name in Cargo.toml matches cog-<dir>
+            if [ -f "$d/Cargo.toml" ]; then
+              expected="cog-$cog"
+              actual=$(grep -A2 '^\[\[bin\]\]' "$d/Cargo.toml" | grep '^name = ' | head -1 | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$actual" != "$expected" ]; then
+                echo "::error file=$d/Cargo.toml::bin name ($actual) does not match expected ($expected)"
+                fail=$((fail+1))
+              fi
+            fi
+          done
+          if [ $fail -gt 0 ]; then
+            echo "::error::$fail manifest issues found"
+            exit 1
+          fi
+          echo "::notice::all $(ls -d src/cogs/*/ | wc -l) cogs have valid manifests"
+
+  adr-required:
+    name: Require ADR for new cog
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check new cog has docs/adrs/ADR-*.md
+        shell: bash
+        run: |
+          set -eo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          NEW_COGS=$(git diff --name-only --diff-filter=A "$BASE" HEAD \
+            | awk -F/ '/^src\/cogs\/[^/]+\/cog\.toml$/ { print $3 }' | sort -u)
+          if [ -z "$NEW_COGS" ]; then
+            echo "::notice::no new cogs in this PR"
+            exit 0
+          fi
+          fail=0
+          for cog in $NEW_COGS; do
+            # Look for any ADR mentioning the cog id
+            if ! ls docs/adrs/ADR-*${cog}*.md 2>/dev/null | head -1 | grep -q .; then
+              echo "::error::new cog '$cog' is missing an ADR in docs/adrs/"
+              fail=$((fail+1))
+            fi
+          done
+          if [ $fail -gt 0 ]; then exit 1; fi
+          echo "::notice::all new cogs have ADRs"
