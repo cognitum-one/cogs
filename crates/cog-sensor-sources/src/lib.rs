@@ -82,13 +82,20 @@ pub fn fetch_from_udp_window(bind: &str, window_ms: u64) -> Result<Vec<f64>, Str
 }
 
 /// Original behavior: HTTP GET against the agent's loopback sensor stream.
+///
+/// Honors the `COG_SENSOR_URL` env var for off-device validation. Defaults
+/// to `127.0.0.1:80` (loopback) when unset, matching original behavior.
+/// Format: `host:port` (no scheme, no path — path is always
+/// `/api/v1/sensor/stream`).
 pub fn fetch_from_seed_stream() -> Result<serde_json::Value, String> {
-    let mut conn = TcpStream::connect("127.0.0.1:80").map_err(|e| format!("connect: {e}"))?;
+    let target = std::env::var("COG_SENSOR_URL").unwrap_or_else(|_| "127.0.0.1:80".to_string());
+    let host = target.split(':').next().unwrap_or("127.0.0.1").to_string();
+    let mut conn = TcpStream::connect(&target).map_err(|e| format!("connect {target}: {e}"))?;
     conn.set_read_timeout(Some(Duration::from_secs(5))).ok();
     conn.set_write_timeout(Some(Duration::from_secs(5))).ok();
     write!(
         conn,
-        "GET /api/v1/sensor/stream HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        "GET /api/v1/sensor/stream HTTP/1.0\r\nHost: {host}\r\nConnection: close\r\n\r\n"
     )
     .map_err(|e| format!("write: {e}"))?;
     let mut buf = Vec::with_capacity(8192);

@@ -1,0 +1,21 @@
+[package]
+name = "cog-cough-detect"
+version = "1.0.0"
+edition = "2021"
+description = "Cough detection — transient + spectral + cluster acoustic detector"
+
+[[bin]]
+name = "cog-cough-detect"
+path = "src/main.rs"
+
+[dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

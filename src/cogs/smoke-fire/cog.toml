@@ -1,0 +1,57 @@
+[cog]
+id = "smoke-fire"
+name = "Smoke / Fire Detection"
+version = "1.0.0"
+category = "building"
+description = "Multi-signal smoke and fire detector. Fuses acoustic crackle, thermal drift proxy, and optional ruview CSI plume signature. Not a UL-listed replacement for code-required smoke alarms."
+binary = "cog-smoke-fire-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 1
+min = 1
+max = 10
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.crackle_z]
+type = "float"
+label = "Crackle z-score"
+default = 2.5
+min = 1.0
+max = 5.0
+step = 0.25
+cli_arg = "--crackle-z"
+
+[config.thermal_drift_z]
+type = "float"
+label = "Thermal drift z-score"
+default = 1.5
+min = 0.5
+max = 4.0
+step = 0.25
+cli_arg = "--thermal-drift-z"
+
+[config.cooldown]
+type = "integer"
+label = "Cooldown after fire"
+default = 60
+min = 30
+max = 600
+unit = "seconds"
+cli_arg = "--cooldown"
+
+[config.ruview_mode]
+type = "boolean"
+label = "RuView mode"
+description = "Add CSI plume signature as a third evidence stream"
+default = false
+cli_arg = "--ruview-mode"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--once --ruview-mode", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

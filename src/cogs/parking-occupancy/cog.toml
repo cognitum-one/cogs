@@ -1,0 +1,42 @@
+[cog]
+id = "parking-occupancy"
+name = "Parking Occupancy"
+version = "1.0.0"
+category = "retail"
+description = "Per-zone parking occupancy via ESP32 CSI subcarrier-amplitude shift. Tracks utilization and churn-per-hour. Requires ruview."
+binary = "cog-parking-occupancy-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 5
+min = 2
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.zones]
+type = "integer"
+label = "Number of zones"
+description = "Subcarrier groups; each is one parking-zone proxy"
+default = 4
+min = 1
+max = 8
+cli_arg = "--zones"
+
+[config.threshold]
+type = "float"
+label = "Occupancy threshold"
+description = "Subcarrier-energy ratio above baseline-mean to count as occupied"
+default = 0.4
+min = 0.1
+max = 1.0
+step = 0.05
+cli_arg = "--threshold"
+
+[console]
+allowed_commands = ["--once", "--once --interval 5", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536
