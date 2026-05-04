@@ -12,7 +12,7 @@ node_modules/
 # IDE
 .idea/
 .vscode/
-
+dist/
 # Claude tooling
 .agentic-qe/
 .claude-flow/

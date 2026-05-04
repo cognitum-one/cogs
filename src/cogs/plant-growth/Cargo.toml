@@ -1,6 +1,6 @@
 [package]
 name = "cog-plant-growth"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Plant growth tracker — daily growth rate, day/night cycles, rolling 24h stats"
 
@@ -9,6 +9,7 @@ name = "cog-plant-growth"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

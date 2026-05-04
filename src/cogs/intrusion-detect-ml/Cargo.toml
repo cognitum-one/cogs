@@ -1,6 +1,6 @@
 [package]
 name = "cog-intrusion-detect-ml"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "ML-based intrusion detection — online learning with nearest-neighbor classification"
 
@@ -9,6 +9,7 @@ name = "cog-intrusion-detect-ml"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

@@ -1,0 +1,52 @@
+[cog]
+id = "baby-cry"
+name = "Baby Cry Detection"
+version = "1.0.0"
+category = "health"
+description = "Sustained mid-band energy detector for nursery / infant monitoring. Audio-only, no camera."
+binary = "cog-baby-cry-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 1
+min = 1
+max = 5
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.cry_z]
+type = "float"
+label = "Cry z-score"
+description = "Mid-band z-score threshold above baseline to count as elevated"
+default = 2.5
+min = 1.0
+max = 5.0
+step = 0.25
+cli_arg = "--cry-z"
+
+[config.cry_min_secs]
+type = "integer"
+label = "Minimum sustained seconds"
+description = "Continuous elevated frames required to fire"
+default = 2
+min = 1
+max = 30
+unit = "seconds"
+cli_arg = "--cry-min-secs"
+
+[config.cooldown]
+type = "integer"
+label = "Cooldown after fire"
+default = 15
+min = 5
+max = 300
+unit = "seconds"
+cli_arg = "--cooldown"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

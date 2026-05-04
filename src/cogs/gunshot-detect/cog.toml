@@ -1,0 +1,58 @@
+[cog]
+id = "gunshot-detect"
+name = "Gunshot Detection"
+version = "1.0.0"
+category = "security"
+description = "Saturating peak + exponential decay acoustic detector with optional ruview CSI motion-drop reinforcement."
+binary = "cog-gunshot-detect-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 1
+min = 1
+max = 5
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.peak_threshold]
+type = "float"
+label = "Peak threshold"
+description = "Normalized amplitude above which saturation gate fires"
+default = 0.95
+min = 0.5
+max = 1.0
+step = 0.05
+cli_arg = "--peak-threshold"
+
+[config.decay_frames]
+type = "integer"
+label = "Decay frames"
+description = "Frames in which exponential decay must match"
+default = 4
+min = 2
+max = 20
+cli_arg = "--decay-frames"
+
+[config.cooldown]
+type = "integer"
+label = "Cooldown after fire"
+default = 30
+min = 5
+max = 600
+unit = "seconds"
+cli_arg = "--cooldown"
+
+[config.ruview_mode]
+type = "boolean"
+label = "RuView mode"
+description = "Reinforce detection with CSI motion-drop evidence in 5s post-peak window"
+default = false
+cli_arg = "--ruview-mode"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--once --ruview-mode", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

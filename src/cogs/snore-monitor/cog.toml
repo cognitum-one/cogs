@@ -1,0 +1,52 @@
+[cog]
+id = "snore-monitor"
+name = "Snore Monitor"
+version = "1.0.0"
+category = "health"
+description = "Periodic low-band energy tracker for sleep-quality / apnea-risk trending. Companion to sleep-apnea cog."
+binary = "cog-snore-monitor-arm"
+
+[config]
+
+[config.interval]
+type = "integer"
+label = "Sampling interval"
+default = 1
+min = 1
+max = 5
+unit = "seconds"
+cli_arg = "--interval"
+
+[config.burst_z]
+type = "float"
+label = "Burst z-score"
+default = 2.0
+min = 1.0
+max = 4.0
+step = 0.25
+cli_arg = "--burst-z"
+
+[config.minimum_rate_hz]
+type = "float"
+label = "Min snore rate"
+description = "Lower bound of expected snore repetition rate (Hz)"
+default = 1.5
+min = 0.5
+max = 3.0
+step = 0.1
+cli_arg = "--minimum-rate-hz"
+
+[config.maximum_rate_hz]
+type = "float"
+label = "Max snore rate"
+description = "Upper bound of expected snore repetition rate (Hz)"
+default = 4.0
+min = 2.0
+max = 8.0
+step = 0.1
+cli_arg = "--maximum-rate-hz"
+
+[console]
+allowed_commands = ["--once", "--once --interval 1", "--help"]
+max_runtime_secs = 15
+output_limit_bytes = 65536

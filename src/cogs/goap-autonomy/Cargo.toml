@@ -1,6 +1,6 @@
 [package]
 name = "cog-goap-autonomy"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
 description = "Goal-Oriented Action Planning — autonomous action sequence planning"
 
@@ -9,6 +9,7 @@ name = "cog-goap-autonomy"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 

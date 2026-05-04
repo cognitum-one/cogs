@@ -1,16 +1,27 @@
 [package]
 name = "cog-health-monitor"
-version = "1.0.0"
+version = "1.2.0"
 edition = "2021"
-description = "Combined vital signs dashboard — vitals, presence, apnea in one process"
+description = "Combined vital signs dashboard — vitals, presence, apnea in one process. Self-contained sensor sources (seed-stream / esp32-uart / esp32-udp)."
 
 [[bin]]
 name = "cog-health-monitor"
 path = "src/main.rs"
 
+[features]
+default = []
+# Enable direct ESP32 serial-port reader (--source esp32-uart=PATH).
+# Pulls in `serialport` (libudev on Linux, IOKit on macOS, setupapi on Windows).
+esp32-uart = ["dep:serialport"]
+# Enable direct ESP32 UDP listener (--source esp32-udp=BIND_HOST:PORT).
+# No extra deps — uses std::net::UdpSocket.
+esp32-udp = []
+
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serialport = { version = "4", optional = true, default-features = false }
 
 [profile.release]
 opt-level = "s"
