@@ -17,3 +17,4 @@ dist/
 .agentic-qe/
 .claude-flow/
 *.db
+target/
