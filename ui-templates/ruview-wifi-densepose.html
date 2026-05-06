@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RuView WiFi DensePose · Cognitum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Cognitum Store design tokens */
+    :root {
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      --bg: #0a0e1a; --bg2: #111627; --card: #171d30; --card-h: #1e2540; --border: #252d45;
+      --t1: #e0e4f0; --t2: #8890a8; --t3: #505872;
+      --cyan: #4ecdc4; --cyan-d: rgba(78,205,196,0.15);
+      --green: #6bcb77; --green-d: rgba(107,203,119,0.15);
+      --amber: #d4a574; --amber-d: rgba(212,165,116,0.15);
+      --red: #e06060; --red-d: rgba(224,96,96,0.15);
+      --purple: #a78bfa; --purple-d: rgba(167,139,250,0.15);
+      --pink: #f472b6; --pink-d: rgba(244,114,182,0.15);
+      --blue: #60a5fa; --blue-d: rgba(96,165,250,0.15);
+      --orange: #fb923c; --orange-d: rgba(251,146,60,0.15);
+      --r: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--t1);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .mono { font-family: var(--mono); }
+
+    /* Aura background (from example_ui.html) */
+    .aura-background-component {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -10;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    /* Top bar */
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(17,22,39,0.85);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: 56px;
+      backdrop-filter: blur(16px);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--cyan-d);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .brand-text { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; color: var(--t2); }
+    .brand-text b { color: var(--cyan); font-weight: 600; }
+    .top-right { display: flex; align-items: center; gap: 12px; }
+    .nav-link {
+      font-size: 12px; color: var(--t2);
+      padding: 6px 12px; border-radius: 6px;
+      transition: 0.2s; text-decoration: none;
+    }
+    .nav-link:hover { color: var(--cyan); background: var(--cyan-d); }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--green-d); color: var(--green);
+      border: 1px solid rgba(107,203,119,0.25);
+    }
+    .pill .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Main wrapper */
+    .main { max-width: 1320px; margin: 0 auto; padding: 28px 32px 80px; }
+
+    /* Hero header (uses ring/dashed-border styling from example_ui2.html) */
+    .hero-shell {
+      position: relative; overflow: hidden;
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 0;
+      background: rgba(10,14,26,0.6);
+      padding: 28px 28px 0;
+      margin-bottom: 28px;
+    }
+    .hero-shell::before {
+      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.7;
+      background:
+        radial-gradient(1200px 400px at 50% -10%, rgba(78,205,196,0.22), transparent),
+        radial-gradient(1200px 600px at 50% 120%, rgba(96,165,250,0.18), transparent);
+      mask-image: radial-gradient(65% 65% at 50% 50%, black, transparent);
+    }
+    .hero-shell::after {
+      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.18;
+      background:
+        linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(80% 80% at 50% 50%, black, transparent);
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-meta {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--cyan);
+      margin-bottom: 18px;
+    }
+    .hero-meta .num { font-size: 22px; font-weight: 300; color: rgba(78,205,196,0.85); font-variant-numeric: tabular-nums; }
+    .hero-meta .sep { color: rgba(78,205,196,0.4); }
+    .hero-meta .lbl { letter-spacing: 0.18em; text-transform: uppercase; color: rgba(78,205,196,0.9); }
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 300; letter-spacing: -0.02em;
+      color: #fff; margin-bottom: 12px;
+    }
+    .hero h1 .accent { color: var(--cyan); }
+    .hero p.lead {
+      max-width: 640px; color: var(--t2); font-size: 15px; margin-bottom: 22px;
+    }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+    .tag {
+      font-size: 11px; padding: 4px 10px; border-radius: 4px;
+      background: var(--bg2); border: 1px solid var(--border); color: var(--t2);
+      font-family: var(--mono);
+    }
+    .tag.cyan { background: var(--cyan-d); color: var(--cyan); border-color: rgba(78,205,196,0.25); }
+    .tag.purple { background: var(--purple-d); color: var(--purple); border-color: rgba(167,139,250,0.25); }
+    .tag.amber { background: var(--amber-d); color: var(--amber); border-color: rgba(212,165,116,0.25); }
+    .tag.red { background: var(--red-d); color: var(--red); border-color: rgba(224,96,96,0.25); }
+
+    /* Through-wall canvas panel */
+    .scene-panel {
+      position: relative;
+      margin: 0 -28px;
+      background: linear-gradient(180deg, rgba(10,14,26,0.2), rgba(10,14,26,0.7));
+      border-top: 1px solid var(--border);
+    }
+    .scene-wrap {
+      position: relative;
+      height: 460px;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) { .scene-wrap { height: 360px; } }
+    #wallView {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+    .scene-overlay {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 16px 22px;
+    }
+    .scene-overlay .top-row, .scene-overlay .bot-row {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    }
+    .ov-card {
+      pointer-events: auto;
+      background: rgba(17,22,39,0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      backdrop-filter: blur(8px);
+      font-size: 11px;
+      min-width: 0;
+    }
+    .ov-card .l { color: var(--t3); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+    .ov-card .v { color: #fff; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .ov-card .v .unit { color: var(--t3); font-size: 11px; margin-left: 3px; font-weight: 400; }
+
+    .legend {
+      position: absolute; left: 22px; bottom: 18px;
+      display: flex; flex-direction: column; gap: 4px;
+      background: rgba(17,22,39,0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      backdrop-filter: blur(8px);
+    }
+    .legend .row { display: flex; align-items: center; gap: 8px; }
+    .legend .sw { width: 12px; height: 2px; }
+    .legend .sw.solid { height: 12px; border-radius: 50%; }
+
+    /* Bento grid dashboard (adapted from example_ui2.html) */
+    .bento {
+      background: rgba(0,0,0,0.4);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      position: relative;
+    }
+    .bento::before {
+      content:''; position: absolute; top: -40px; right: -40px;
+      width: 224px; height: 224px;
+      background: rgba(78,205,196,0.10);
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+    .bento-topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 20px;
+      position: relative;
+    }
+    .bento-topbar .crumbs { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--t2); }
+    .bento-topbar .crumbs a { color: #fff; }
+    .bento-topbar .crumbs .sep { opacity: 0.6; }
+    .bento-topbar .crumbs .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--cyan-d); color: var(--cyan);
+      border: 1px solid rgba(78,205,196,0.25);
+      font-size: 11px;
+    }
+    .bento-topbar .crumbs .badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse 1.6s infinite;
+    }
+    .bento-topbar .actions { display: flex; align-items: center; gap: 12px; }
+    .input-shell {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 0 10px; height: 32px;
+    }
+    .input-shell input {
+      background: transparent; border: 0; outline: none;
+      color: var(--t1); font-size: 13px; width: 200px;
+    }
+    .input-shell input::placeholder { color: var(--t3); }
+    .btn-mini {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 12px; cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-mini:hover { background: rgba(255,255,255,0.1); }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr 280px;
+      min-height: 540px;
+    }
+    @media (max-width: 1024px) {
+      .bento-grid { grid-template-columns: 1fr; }
+      .bento-grid > .side { display: none; }
+    }
+    .bento-grid > .side {
+      background: rgba(0,0,0,0.2);
+      padding: 16px;
+    }
+    .bento-grid > .side.left { border-right: 1px solid rgba(255,255,255,0.1); }
+    .bento-grid > .side.right { border-left: 1px solid rgba(255,255,255,0.1); }
+
+    .nav-section { margin-bottom: 18px; }
+    .nav-section .h {
+      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--t3); padding: 0 8px; margin-bottom: 6px;
+    }
+    .nav-section ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+    .nav-section a {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 6px;
+      font-size: 13px; color: var(--t2); text-decoration: none;
+      transition: 0.15s;
+    }
+    .nav-section a:hover { background: rgba(255,255,255,0.05); color: var(--t1); }
+    .nav-section a.active {
+      color: #fff; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav-section a .ico { width: 14px; height: 14px; opacity: 0.7; }
+
+    .bento-main { display: flex; flex-direction: column; min-width: 0; }
+    .bento-tabs {
+      display: flex; align-items: center; gap: 22px;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+    .bento-tabs button {
+      background: transparent; border: 0; cursor: pointer;
+      font-size: 13px; color: var(--t3);
+      padding: 4px 0;
+      transition: color 0.15s;
+      position: relative;
+      white-space: nowrap;
+    }
+    .bento-tabs button:hover { color: var(--t1); }
+    .bento-tabs button.active { color: #fff; }
+    .bento-tabs button.active::after {
+      content: ''; position: absolute;
+      left: 0; right: 0; bottom: -13px;
+      height: 2px; background: var(--cyan);
+    }
+
+    .bento-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .bento-header .row1 { display: flex; align-items: center; justify-content: space-between; }
+    .bento-header h3 {
+      font-size: 22px; font-weight: 300; letter-spacing: -0.01em; color: #fff;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .bento-header h3 .badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 6px;
+      background: var(--cyan-d); color: var(--cyan);
+      border: 1px solid rgba(78,205,196,0.25);
+    }
+    .bento-header .upd { font-size: 12px; color: var(--t3); }
+    .bento-header .sub { margin-top: 6px; font-size: 13px; color: var(--t2); }
+    .bento-header .sub a { color: var(--cyan); text-decoration: none; }
+
+    .feed { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .feed-card {
+      border-radius: 12px; padding: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .feed-card.accent { background: rgba(0,0,0,0.4); border-color: rgba(78,205,196,0.25); }
+    .fc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .fc-title { font-size: 13px; color: #fff; }
+    .fc-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .fc-badge { font-size: 10px; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; white-space: nowrap; }
+    .fc-badge.ok { background: var(--cyan-d); color: var(--cyan); border: 1px solid rgba(78,205,196,0.25); }
+    .fc-badge.warn { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(212,165,116,0.3); }
+    .fc-badge.crit { background: var(--red-d); color: var(--red); border: 1px solid rgba(224,96,96,0.3); }
+    .fc-code {
+      margin-top: 12px; padding: 10px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      font-family: var(--mono); font-size: 11px;
+      color: var(--t2);
+      overflow-x: auto; white-space: nowrap;
+    }
+    .fc-code .arrow { color: var(--t3); }
+    .fc-code .v { color: var(--cyan); }
+    .fc-code .v.warn { color: var(--amber); }
+
+    .fc-progress {
+      margin-top: 12px; display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: var(--t2);
+    }
+    .fc-bar {
+      flex: 1; height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .fc-bar .fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--cyan), #6ee7e0);
+      transition: width 0.4s ease;
+    }
+    .fc-actions { margin-top: 10px; display: flex; gap: 8px; }
+    .fc-btn {
+      font-size: 11px; padding: 4px 10px; border-radius: 6px;
+      background: rgba(255,255,255,0.05); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+    }
+    .fc-btn.cyan {
+      background: var(--cyan-d); color: var(--cyan); border-color: rgba(78,205,196,0.3);
+    }
+
+    /* Right sidebar */
+    .stat-card {
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .stat-card .h {
+      font-size: 11px; color: var(--t2); margin-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-tile {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .stat-tile .l { font-size: 11px; color: var(--t3); margin-bottom: 4px; }
+    .stat-tile .v { font-size: 18px; font-weight: 300; color: #fff; font-variant-numeric: tabular-nums; }
+    .stat-tile .v .unit { font-size: 11px; color: var(--t3); margin-left: 2px; }
+
+    .tog-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+    .tog-row .lbl { font-size: 13px; color: var(--t2); }
+    .tog {
+      position: relative; width: 40px; height: 22px;
+      border-radius: 999px;
+      background: var(--cyan-d);
+      border: 1px solid rgba(78,205,196,0.3);
+      cursor: pointer;
+    }
+    .tog .knob {
+      position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--cyan);
+      transition: transform 0.18s;
+      transform: translateX(18px);
+    }
+    .tog.off { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+    .tog.off .knob { background: var(--t3); transform: translateX(0); }
+
+    /* Footer note */
+    .foot {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--t3);
+    }
+    .foot .mono { color: var(--t2); }
+
+    /* ----- Modal dialogs (Docs / Source / Settings) ------------------- */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      display: none;
+      animation: fadeIn 0.18s ease;
+    }
+    .modal-backdrop.open { display: block; }
+    .modal {
+      position: fixed; z-index: 210;
+      top: 50%; left: 50%;
+      width: min(720px, calc(100vw - 32px));
+      max-height: 84vh;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+      transform: translate(-50%, -50%);
+    }
+    .modal.open {
+      display: flex;
+      animation: modalIn 0.18s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+      to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+    }
+    .modal-head h2 {
+      font-size: 14px; font-weight: 500; color: #fff;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .modal-head h2 .mono { color: var(--cyan); font-size: 13px; }
+    .modal-close {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--t2);
+      cursor: pointer;
+      font-size: 16px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .modal-body {
+      padding: 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-foot {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+      background: rgba(0,0,0,0.2);
+    }
+    .doc-section { margin-bottom: 18px; }
+    .doc-section:last-child { margin-bottom: 0; }
+    .doc-section h3 {
+      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: 10px;
+    }
+    .doc-section p { font-size: 13px; color: var(--t2); }
+
+    .event-list { list-style: none; display: grid; gap: 6px; }
+    .event-list li {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      gap: 12px;
+    }
+    .event-list .name { color: var(--cyan); }
+    .event-list .schema { color: var(--t3); font-size: 11px; text-align: right; }
+
+    .code-block {
+      background: rgba(0,0,0,0.55);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--t1);
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code-block .c { color: var(--t3); }
+    .code-block .k { color: var(--cyan); }
+    .code-block .s { color: var(--green); }
+
+    .tree { font-family: var(--mono); font-size: 12px; }
+    .tree-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .tree-row:hover { background: rgba(255,255,255,0.04); }
+    .tree-row .l { color: var(--t1); display: flex; align-items: center; gap: 6px; }
+    .tree-row .l .indent { color: var(--t3); white-space: pre; }
+    .tree-row .meta { color: var(--t3); font-size: 11px; }
+    .tree-row .ico { color: var(--cyan); width: 12px; text-align: center; }
+    .tree-row .ico.dir { color: var(--amber); }
+
+    .repo-meta {
+      font-family: var(--mono); font-size: 12px; color: var(--t2);
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+    }
+    .repo-meta b { color: var(--t1); font-weight: 500; }
+
+    .set-row {
+      display: grid; grid-template-columns: 1fr auto; gap: 14px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .set-row:last-child { border-bottom: 0; }
+    .set-row .lbl { font-size: 13px; color: var(--t1); }
+    .set-row .lbl .desc { font-size: 11px; color: var(--t3); margin-top: 2px; display: block; }
+    .set-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--t1);
+      font-size: 13px;
+      font-family: var(--font);
+      outline: none;
+      min-width: 160px;
+    }
+    .set-input:focus { border-color: var(--cyan); }
+    .set-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--t1);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .set-select:focus { border-color: var(--cyan); }
+
+    /* Toast confirmation when "Save changes" fires */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--card);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Aura background (component from example_ui.html) -->
+  <div class="aura-background-component">
+    <div data-us-project="FixNvEwvWwbu3QX9qC3F" style="position:absolute;width:100%;height:100%;left:0;top:0;z-index:-10"></div>
+    <script type="text/javascript">
+      !function(){if(!window.UnicornStudio){window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js";i.onload=function(){window.UnicornStudio.isInitialized||(UnicornStudio.init(),window.UnicornStudio.isInitialized=!0)};(document.head||document.body).appendChild(i)}}();
+    </script>
+  </div>
+
+  <!-- Top bar -->
+  <header class="top-bar">
+    <a href="#" class="brand">
+      <span class="brand-icon">📡</span>
+      <span class="brand-text"><b>cognitum</b> · cog store</span>
+    </a>
+    <nav class="top-right">
+      <span class="pill"><span class="dot"></span>2 sensors streaming</span>
+      <a href="#" class="nav-link">Docs</a>
+      <a href="#" class="nav-link">Source</a>
+      <a href="#" class="nav-link">Settings</a>
+    </nav>
+  </header>
+
+  <main class="main">
+
+    <!-- Hero with through-wall scene -->
+    <section class="hero-shell">
+      <div class="hero-content hero">
+        <div class="hero-meta">
+          <span class="num">02</span>
+          <span class="sep">/</span>
+          <span class="lbl">Sensing · Research · v2.0.0</span>
+        </div>
+        <h1>See through walls with <span class="accent">WiFi</span>.</h1>
+        <p class="lead">
+          Full-body 17-keypoint pose estimation through walls using WiFi CSI. Vital signs,
+          activity recognition, and multi-person tracking — no cameras, no wearables,
+          complete privacy preservation.
+        </p>
+        <div class="tag-row">
+          <span class="tag cyan">📡 ESP32-S3 ×2</span>
+          <span class="tag">CSI dense</span>
+          <span class="tag">17 keypoints</span>
+          <span class="tag purple">Research</span>
+          <span class="tag amber">Hard install</span>
+          <span class="tag">48&nbsp;KB</span>
+          <span class="tag mono">cognitum-one/cogs/src/cogs/ruview-densepose</span>
+        </div>
+      </div>
+
+      <!-- Motion graphic: through-wall room view -->
+      <div class="scene-panel">
+        <div class="scene-wrap">
+          <canvas id="wallView"></canvas>
+          <div class="scene-overlay">
+            <div class="top-row">
+              <div class="ov-card">
+                <div class="l">Persons</div>
+                <div class="v" id="ov-persons">3</div>
+              </div>
+              <div class="ov-card" style="text-align:right">
+                <div class="l">CSI Throughput</div>
+                <div class="v"><span id="ov-fps">87</span><span class="unit">Hz</span></div>
+              </div>
+            </div>
+            <div class="bot-row">
+              <div></div>
+              <div class="ov-card" style="text-align:right">
+                <div class="l">Pose Confidence</div>
+                <div class="v"><span id="ov-conf">0.92</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="row"><span class="sw" style="background: linear-gradient(90deg, rgba(78,205,196,0.6), rgba(78,205,196,0))"></span><span style="color:var(--t2)">WiFi CSI propagation</span></div>
+            <div class="row"><span class="sw solid" style="background: var(--cyan); box-shadow: 0 0 6px var(--cyan)"></span><span style="color:var(--t2)">17-keypoint pose</span></div>
+            <div class="row"><span class="sw solid" style="background: var(--pink); box-shadow: 0 0 6px var(--pink)"></span><span style="color:var(--t2)">Vital signs (HR / Resp)</span></div>
+            <div class="row"><span class="sw" style="background: rgba(136,144,168,0.5); height:10px; width: 14px"></span><span style="color:var(--t2)">Wall (RF-attenuating)</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento grid dashboard (structure from example_ui2.html) -->
+    <div class="bento">
+      <div class="bento-topbar">
+        <div class="crumbs">
+          <a href="#">RuView</a>
+          <span class="sep">/</span>
+          <span style="color:#fff" id="crumb-current">Live View</span>
+          <span class="badge" id="crumb-stat"><span class="dot"></span>3 persons tracked</span>
+        </div>
+        <div class="actions">
+          <div class="input-shell">
+            <span style="color:var(--t3)">⌕</span>
+            <input type="text" placeholder="Filter events…">
+          </div>
+          <button class="btn-mini">⤓ Export CSI</button>
+        </div>
+      </div>
+
+      <div class="bento-grid">
+        <!-- Left navigation -->
+        <aside class="side left">
+          <button style="width:100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--t1); font-size:13px; cursor:pointer; margin-bottom:18px;">+ New Capture</button>
+
+          <div class="nav-section">
+            <div class="h">Streams</div>
+            <ul>
+              <li><a href="#" data-view="dashboard">Dashboard</a></li>
+              <li><a href="#" class="active" data-view="live">Live View</a></li>
+              <li><a href="#" data-view="recordings">Recordings</a></li>
+            </ul>
+          </div>
+
+          <div class="nav-section">
+            <div class="h">Events</div>
+            <ul>
+              <li><a href="#" data-view="pose_keypoints">pose_keypoints</a></li>
+              <li><a href="#" data-view="vital_signs">vital_signs</a></li>
+              <li><a href="#" data-view="activity">activity</a></li>
+              <li><a href="#" data-view="person_count">person_count</a></li>
+              <li><a href="#" data-view="fall_detected" style="color:var(--red)">fall_detected</a></li>
+            </ul>
+          </div>
+
+          <div class="nav-section">
+            <div class="h">Hardware</div>
+            <ul>
+              <li><a href="#" data-view="esp1">ESP32-S3 #1</a></li>
+              <li><a href="#" data-view="esp2">ESP32-S3 #2</a></li>
+              <li><a href="#" data-view="calibration">Calibration</a></li>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- Center main -->
+        <main class="bento-main">
+          <div class="bento-tabs">
+            <button class="active" data-view="overview">Overview</button>
+            <button data-view="realtime">Real-time</button>
+            <button data-view="historical">Historical</button>
+            <button data-view="alerts">Alerts</button>
+            <button data-view="models">Models</button>
+          </div>
+
+          <div class="bento-header">
+            <div class="row1">
+              <h3>
+                <span id="hdr-title">Through-Wall Detection</span>
+                <span class="badge" id="hdr-badge">Streaming</span>
+              </h3>
+              <div class="upd">Updated <span id="upd">2s</span> ago</div>
+            </div>
+            <div class="sub" id="hdr-sub">
+              All sensors operational · 87&nbsp;Hz CSI · <a href="#">view pipeline</a>
+            </div>
+          </div>
+
+          <div class="feed" id="feed">
+            <!-- Filled at runtime -->
+          </div>
+        </main>
+
+        <!-- Right sidebar -->
+        <aside class="side right">
+          <div class="stat-card">
+            <div class="h">Live Telemetry</div>
+            <div class="stats-grid">
+              <div class="stat-tile">
+                <div class="l">Persons</div>
+                <div class="v" id="st-persons">3</div>
+              </div>
+              <div class="stat-tile">
+                <div class="l">Frame Rate</div>
+                <div class="v" id="st-fps">87<span class="unit">Hz</span></div>
+              </div>
+              <div class="stat-tile">
+                <div class="l">Avg Heart Rate</div>
+                <div class="v" id="st-hr">74<span class="unit">bpm</span></div>
+              </div>
+              <div class="stat-tile">
+                <div class="l">Avg Respiration</div>
+                <div class="v" id="st-resp">15<span class="unit">/min</span></div>
+              </div>
+              <div class="stat-tile">
+                <div class="l">Keypoints</div>
+                <div class="v">17×3</div>
+              </div>
+              <div class="stat-tile">
+                <div class="l">Latency</div>
+                <div class="v" id="st-lat">38<span class="unit">ms</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="h">System</div>
+            <p style="font-size:13px; color:var(--t2); margin-bottom: 10px;">
+              2 ESP32-S3 sensors emit & receive CSI across 4 walls. No cameras, no audio, no
+              biometric IDs — output is pose tensors only.
+            </p>
+            <div style="font-size:11px; color:var(--t3); margin-bottom:6px;">Privacy guarantees</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              <span class="tag cyan" style="font-size:10px; padding: 2px 6px;">no camera</span>
+              <span class="tag cyan" style="font-size:10px; padding: 2px 6px;">no audio</span>
+              <span class="tag cyan" style="font-size:10px; padding: 2px 6px;">no PII</span>
+              <span class="tag cyan" style="font-size:10px; padding: 2px 6px;">on-device</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="h">Detector Settings</div>
+            <div class="tog-row">
+              <span class="lbl">Multi-person tracking</span>
+              <button class="tog" onclick="this.classList.toggle('off'); this.querySelector('.knob').style.transform = this.classList.contains('off') ? 'translateX(0)' : 'translateX(18px)'"><span class="knob"></span></button>
+            </div>
+            <div class="tog-row">
+              <span class="lbl">Fall detection alert</span>
+              <button class="tog" onclick="this.classList.toggle('off'); this.querySelector('.knob').style.transform = this.classList.contains('off') ? 'translateX(0)' : 'translateX(18px)'"><span class="knob"></span></button>
+            </div>
+            <div class="tog-row">
+              <span class="lbl">Vital signs stream</span>
+              <button class="tog" onclick="this.classList.toggle('off'); this.querySelector('.knob').style.transform = this.classList.contains('off') ? 'translateX(0)' : 'translateX(18px)'"><span class="knob"></span></button>
+            </div>
+            <div class="tog-row">
+              <span class="lbl">Anonymous mode</span>
+              <button class="tog off" onclick="this.classList.toggle('off'); this.querySelector('.knob').style.transform = this.classList.contains('off') ? 'translateX(0)' : 'translateX(18px)'"><span class="knob" style="transform:translateX(0)"></span></button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span class="mono">cognitum-one/cogs/src/cogs/ruview-densepose</span> · v2.0.0 · 48 KB · MIT
+    </div>
+  </main>
+
+  <!-- ============================================================
+       Modals — opened from the top-right nav (Docs / Source / Settings)
+       ============================================================ -->
+  <div class="modal-backdrop" aria-hidden="true"></div>
+
+  <div class="modal" data-modal="docs" role="dialog" aria-labelledby="docs-title">
+    <div class="modal-head">
+      <h2 id="docs-title">📡 RuView WiFi DensePose <span class="mono">· docs</span></h2>
+      <button class="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="doc-section">
+        <h3>Overview</h3>
+        <p>Full-body 17-keypoint pose estimation through walls using WiFi CSI. Vital signs, activity recognition, and multi-person tracking. No cameras, no wearables, complete privacy preservation.</p>
+      </div>
+
+      <div class="doc-section">
+        <h3>Events emitted</h3>
+        <ul class="event-list">
+          <li><span class="name">pose_keypoints</span><span class="schema">{ person_id, kp[17][3] }</span></li>
+          <li><span class="name">vital_signs</span><span class="schema">{ person_id, hr_bpm, resp_per_min, hrv_ms }</span></li>
+          <li><span class="name">activity</span><span class="schema">{ person_id, label, confidence }</span></li>
+          <li><span class="name">person_count</span><span class="schema">{ total, per_room: {A,B,C} }</span></li>
+          <li><span class="name">fall_detected</span><span class="schema">{ person_id, vertical_velocity, ts }</span></li>
+        </ul>
+      </div>
+
+      <div class="doc-section">
+        <h3>Hardware</h3>
+        <p>2× ESP32-S3 sensors recommended (TX + RX). CSI dense input. Place sensors on opposite walls of the monitored space, 3–6&nbsp;m apart. PCB or dipole antennas both supported.</p>
+      </div>
+
+      <div class="doc-section">
+        <h3>Install</h3>
+        <div class="code-block"><span class="c"># on the cognitum host</span>
+<span class="k">cog</span> install ruview-densepose
+<span class="k">cog</span> calibrate ruview-densepose   <span class="c"># vacate the room first</span>
+<span class="k">cog</span> start ruview-densepose</div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Subscribe (Python)</h3>
+        <div class="code-block"><span class="k">from</span> cogs <span class="k">import</span> subscribe
+
+<span class="k">async for</span> evt <span class="k">in</span> subscribe(<span class="s">"ruview-densepose.pose_keypoints"</span>):
+    <span class="k">print</span>(evt.person_id, evt.kp[<span class="s">"nose"</span>])</div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Privacy guarantees</h3>
+        <p>No cameras, no audio, no biometric identifiers. Person IDs are session-scoped and never leave the device unless an alert webhook fires. Anonymous mode strips IDs entirely.</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="fc-btn" data-modal-close>CLOSE</button>
+    </div>
+  </div>
+
+  <div class="modal" data-modal="source" role="dialog" aria-labelledby="src-title">
+    <div class="modal-head">
+      <h2 id="src-title">🗂 <span class="mono">cognitum-one/cogs/src/cogs/ruview-densepose</span></h2>
+      <button class="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="doc-section">
+        <h3>Repository</h3>
+        <div class="repo-meta">
+          <span>branch <b>main</b></span>
+          <span>commits <b>23</b></span>
+          <span>compiled <b>48 KB</b></span>
+          <span>license <b>MIT</b></span>
+          <span>tag <b>v2.0.0</b></span>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>File tree</h3>
+        <div class="tree">
+          <div class="tree-row"><span class="l"><span class="ico">·</span>cog.toml</span><span class="meta">412 B</span></div>
+          <div class="tree-row"><span class="l"><span class="ico">·</span>main.py</span><span class="meta">2.3 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="ico">·</span>events.py</span><span class="meta">1.8 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="ico">·</span>vitals.py</span><span class="meta">3.1 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="ico dir">▾</span>csi/</span><span class="meta">3 files</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>capture.py</span><span class="meta">2.1 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>preprocess.py</span><span class="meta">3.4 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>__init__.py</span><span class="meta">120 B</span></div>
+          <div class="tree-row"><span class="l"><span class="ico dir">▾</span>models/</span><span class="meta">2 files</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>densepose_v2.tflite</span><span class="meta">48 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>tracker.py</span><span class="meta">5.6 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="ico dir">▾</span>tests/</span><span class="meta">3 files</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>test_pose.py</span><span class="meta">1.4 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico">·</span>test_vitals.py</span><span class="meta">980 B</span></div>
+          <div class="tree-row"><span class="l"><span class="indent">  </span><span class="ico dir">▾</span>fixtures/</span><span class="meta">2 .npz</span></div>
+          <div class="tree-row"><span class="l"><span class="ico">·</span>README.md</span><span class="meta">4.2 KB</span></div>
+          <div class="tree-row"><span class="l"><span class="ico">·</span>LICENSE</span><span class="meta">1.1 KB</span></div>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Latest commits</h3>
+        <ul class="event-list">
+          <li><span class="name">a8f2e91</span><span class="schema">bump model to v2.0.0 · 3h ago</span></li>
+          <li><span class="name">7c43d10</span><span class="schema">tracker: lower drop-out threshold · 1d ago</span></li>
+          <li><span class="name">2b1f0ac</span><span class="schema">vitals: chest-region weight tuning · 4d ago</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="fc-btn" data-modal-close>CLOSE</button>
+      <button class="fc-btn cyan" data-modal-close>OPEN ON GITHUB ↗</button>
+    </div>
+  </div>
+
+  <div class="modal" data-modal="settings" role="dialog" aria-labelledby="set-title">
+    <div class="modal-head">
+      <h2 id="set-title">⚙ Settings</h2>
+      <button class="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="doc-section">
+        <h3>General</h3>
+        <div class="set-row">
+          <span class="lbl">Theme<span class="desc">interface color scheme</span></span>
+          <select class="set-select">
+            <option>Cognitum dark</option>
+            <option>System</option>
+          </select>
+        </div>
+        <div class="set-row">
+          <span class="lbl">Telemetry refresh<span class="desc">how often the dashboard polls</span></span>
+          <select class="set-select">
+            <option>1 s</option>
+            <option selected>1.5 s</option>
+            <option>5 s</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Sensors</h3>
+        <div class="set-row">
+          <span class="lbl">CSI sample rate<span class="desc">capture frequency in Hz</span></span>
+          <select class="set-select">
+            <option>50 Hz</option>
+            <option selected>87 Hz</option>
+            <option>100 Hz</option>
+          </select>
+        </div>
+        <div class="set-row">
+          <span class="lbl">WiFi channel<span class="desc">802.11 channel for CSI probes</span></span>
+          <input class="set-input" type="number" value="6" min="1" max="14">
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Privacy</h3>
+        <div class="set-row">
+          <span class="lbl">Anonymous mode<span class="desc">strip person IDs from event payloads</span></span>
+          <button class="tog off" type="button"><span class="knob" style="transform:translateX(0)"></span></button>
+        </div>
+        <div class="set-row">
+          <span class="lbl">Recording retention<span class="desc">days to keep captures</span></span>
+          <input class="set-input" type="number" value="30" min="0" max="365">
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Alerts</h3>
+        <div class="set-row">
+          <span class="lbl">Webhook URL<span class="desc">POST destination for fall_detected</span></span>
+          <input class="set-input" type="url" value="https://hooks.example/ruview" style="min-width:240px">
+        </div>
+        <div class="set-row">
+          <span class="lbl">Slack channel</span>
+          <input class="set-input" type="text" value="#alerts">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="fc-btn" data-modal-close>CANCEL</button>
+      <button class="fc-btn cyan" data-modal-save>SAVE CHANGES</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Settings saved</div>
+
+  <!-- Through-wall scene + live event simulation -->
+  <script>
+    // ============================================================
+    // Through-wall canvas: top-down view of a 2-room space with
+    // 3 humans rendered as 17-keypoint skeletons, WiFi sensors
+    // emitting CSI waves that pass through walls, and pulsing
+    // vital-sign indicators. Privacy preserved: anonymous skeletons
+    // only, no facial features beyond keypoint dots.
+    // ============================================================
+    (function () {
+      const cvs = document.getElementById('wallView');
+      const ctx = cvs.getContext('2d');
+      let W = 0, H = 0, dpr = window.devicePixelRatio || 1;
+
+      function resize() {
+        const r = cvs.getBoundingClientRect();
+        cvs.width = r.width * dpr;
+        cvs.height = r.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        W = r.width; H = r.height;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // 17 keypoints (COCO order)
+      const KP = ['nose','leye','reye','lear','rear','lsh','rsh','lel','rel','lwr','rwr','lhi','rhi','lkn','rkn','lan','ran'];
+      // Skeleton edges (limbs)
+      const EDGES = [
+        ['nose','leye'],['nose','reye'],['leye','lear'],['reye','rear'],
+        ['lsh','rsh'],
+        ['lsh','lel'],['lel','lwr'],
+        ['rsh','rel'],['rel','rwr'],
+        ['lsh','lhi'],['rsh','rhi'],
+        ['lhi','rhi'],
+        ['lhi','lkn'],['lkn','lan'],
+        ['rhi','rkn'],['rkn','ran'],
+      ];
+
+      // Person posed in side/front view, animated with subtle motion
+      class Person {
+        constructor({x, y, scale, mode, hr, resp, label}) {
+          this.x = x; this.y = y; this.scale = scale;
+          this.mode = mode;          // 'walk' | 'sit' | 'wave' | 'fall'
+          this.hr = hr; this.resp = resp;
+          this.label = label;
+          this.t = Math.random() * 4;
+          this.kp = {};
+          this.bob = 0;
+        }
+        update(dt) {
+          this.t += dt;
+          const s = this.scale, cx = this.x, cy = this.y;
+          // breathing micro-motion
+          const breath = Math.sin(this.t * (this.resp / 60) * Math.PI * 2) * 1.2;
+          if (this.mode === 'walk') {
+            const ph = this.t * 3.2;
+            const sw = Math.sin(ph) * 14 * s;
+            const armSw = Math.sin(ph) * 16 * s;
+            this.bob = Math.abs(Math.sin(ph)) * 3 * s;
+            const oy = -this.bob;
+            this.kp.nose = [cx, cy - 88*s + oy + breath];
+            this.kp.leye = [cx-4*s, cy - 93*s + oy];
+            this.kp.reye = [cx+4*s, cy - 93*s + oy];
+            this.kp.lear = [cx-7*s, cy - 90*s + oy];
+            this.kp.rear = [cx+7*s, cy - 90*s + oy];
+            this.kp.lsh  = [cx-15*s, cy - 68*s + oy + breath*0.5];
+            this.kp.rsh  = [cx+15*s, cy - 68*s + oy + breath*0.5];
+            this.kp.lel  = [cx-19*s + armSw*0.4, cy - 42*s + oy];
+            this.kp.rel  = [cx+19*s - armSw*0.4, cy - 42*s + oy];
+            this.kp.lwr  = [cx-22*s + armSw, cy - 18*s + oy];
+            this.kp.rwr  = [cx+22*s - armSw, cy - 18*s + oy];
+            this.kp.lhi  = [cx-10*s, cy - 18*s + oy];
+            this.kp.rhi  = [cx+10*s, cy - 18*s + oy];
+            this.kp.lkn  = [cx-10*s - sw*0.4, cy + 22*s];
+            this.kp.rkn  = [cx+10*s + sw*0.4, cy + 22*s];
+            this.kp.lan  = [cx-12*s - sw, cy + 60*s];
+            this.kp.ran  = [cx+12*s + sw, cy + 60*s];
+          } else if (this.mode === 'sit') {
+            const ph = this.t * 1.5;
+            const sway = Math.sin(ph) * 1.5 * s;
+            this.kp.nose = [cx + sway, cy - 50*s + breath];
+            this.kp.leye = [cx-4*s + sway, cy - 55*s];
+            this.kp.reye = [cx+4*s + sway, cy - 55*s];
+            this.kp.lear = [cx-7*s + sway, cy - 52*s];
+            this.kp.rear = [cx+7*s + sway, cy - 52*s];
+            this.kp.lsh  = [cx-15*s + sway*0.6, cy - 30*s + breath*0.5];
+            this.kp.rsh  = [cx+15*s + sway*0.6, cy - 30*s + breath*0.5];
+            // arms forward (resting)
+            this.kp.lel  = [cx-16*s, cy - 8*s];
+            this.kp.rel  = [cx+16*s, cy - 8*s];
+            this.kp.lwr  = [cx-12*s, cy + 10*s];
+            this.kp.rwr  = [cx+12*s, cy + 10*s];
+            this.kp.lhi  = [cx-10*s, cy + 12*s];
+            this.kp.rhi  = [cx+10*s, cy + 12*s];
+            // knees bent forward
+            this.kp.lkn  = [cx-12*s, cy + 38*s];
+            this.kp.rkn  = [cx+12*s, cy + 38*s];
+            this.kp.lan  = [cx-22*s, cy + 58*s];
+            this.kp.ran  = [cx+22*s, cy + 58*s];
+          } else if (this.mode === 'wave') {
+            const ph = this.t * 4;
+            const wav = Math.sin(ph) * 12 * s;
+            this.kp.nose = [cx, cy - 88*s + breath];
+            this.kp.leye = [cx-4*s, cy - 93*s];
+            this.kp.reye = [cx+4*s, cy - 93*s];
+            this.kp.lear = [cx-7*s, cy - 90*s];
+            this.kp.rear = [cx+7*s, cy - 90*s];
+            this.kp.lsh  = [cx-15*s, cy - 68*s + breath*0.5];
+            this.kp.rsh  = [cx+15*s, cy - 68*s + breath*0.5];
+            this.kp.lel  = [cx-20*s, cy - 42*s];
+            this.kp.lwr  = [cx-22*s, cy - 18*s];
+            // waving arm raised
+            this.kp.rel  = [cx+22*s, cy - 78*s];
+            this.kp.rwr  = [cx+30*s + wav, cy - 100*s];
+            this.kp.lhi  = [cx-10*s, cy - 18*s];
+            this.kp.rhi  = [cx+10*s, cy - 18*s];
+            this.kp.lkn  = [cx-11*s, cy + 22*s];
+            this.kp.rkn  = [cx+11*s, cy + 22*s];
+            this.kp.lan  = [cx-12*s, cy + 60*s];
+            this.kp.ran  = [cx+12*s, cy + 60*s];
+          }
+        }
+        draw(ctx) {
+          const s = this.scale;
+          // draw label above head
+          ctx.fillStyle = 'rgba(78,205,196,0.85)';
+          ctx.font = '500 10px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+          ctx.textAlign = 'center';
+          const head = this.kp.nose;
+          ctx.fillText(this.label, head[0], head[1] - 18);
+
+          // draw skeleton edges with cyan glow
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = 'rgba(78,205,196,0.6)';
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = 'rgba(78,205,196,0.85)';
+          EDGES.forEach(([a, b]) => {
+            const pa = this.kp[a], pb = this.kp[b];
+            if (!pa || !pb) return;
+            ctx.beginPath();
+            ctx.moveTo(pa[0], pa[1]);
+            ctx.lineTo(pb[0], pb[1]);
+            ctx.stroke();
+          });
+          ctx.shadowBlur = 0;
+
+          // draw 17 keypoint dots
+          KP.forEach(name => {
+            const p = this.kp[name];
+            if (!p) return;
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.beginPath();
+            ctx.arc(p[0], p[1], 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(78,205,196,0.5)';
+            ctx.beginPath();
+            ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // vital sign pulse — small pink dot pulsing at heart rate, near torso
+          const sh = this.kp.lsh, sh2 = this.kp.rsh;
+          const hx = (sh[0] + sh2[0]) / 2;
+          const hy = (sh[1] + sh2[1]) / 2 + 18 * s;
+          const hp = (Math.sin(this.t * (this.hr / 60) * Math.PI * 2) + 1) / 2;
+          ctx.fillStyle = `rgba(244,114,182,${0.35 + 0.55 * hp})`;
+          ctx.shadowColor = 'rgba(244,114,182,0.6)';
+          ctx.shadowBlur = 10 * hp + 4;
+          ctx.beginPath();
+          ctx.arc(hx, hy, 3 + 3 * hp, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // HR readout above
+          ctx.fillStyle = 'rgba(244,114,182,0.95)';
+          ctx.font = '500 9px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+          ctx.textAlign = 'left';
+          ctx.fillText(`♥ ${Math.round(this.hr)} bpm`, hx + 10*s, hy + 3);
+        }
+      }
+
+      // WiFi sensor — origin point that emits expanding rings (CSI propagation)
+      class Sensor {
+        constructor(x, y, label) {
+          this.x = x; this.y = y; this.label = label;
+          this.rings = [];
+          this.next = 0;
+        }
+        update(dt) {
+          this.next -= dt;
+          if (this.next <= 0) {
+            this.rings.push({ r: 6, a: 1 });
+            this.next = 0.7 + Math.random() * 0.4;
+          }
+          this.rings.forEach(ring => {
+            ring.r += dt * 110;
+            ring.a -= dt * 0.45;
+          });
+          this.rings = this.rings.filter(r => r.a > 0);
+        }
+        draw(ctx) {
+          // sensor body (ESP32 representation)
+          ctx.fillStyle = '#171d30';
+          ctx.strokeStyle = 'rgba(78,205,196,0.6)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.rect(this.x - 8, this.y - 8, 16, 16);
+          ctx.fill();
+          ctx.stroke();
+          // antenna dot
+          ctx.fillStyle = '#4ecdc4';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          // label
+          ctx.fillStyle = 'rgba(78,205,196,0.85)';
+          ctx.font = '500 9px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+          ctx.textAlign = 'center';
+          ctx.fillText(this.label, this.x, this.y + 22);
+
+          // rings
+          this.rings.forEach(ring => {
+            ctx.strokeStyle = `rgba(78,205,196,${ring.a * 0.4})`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, ring.r, 0, Math.PI * 2);
+            ctx.stroke();
+          });
+        }
+      }
+
+      // Walls — vertical/horizontal segments rendered as semi-transparent
+      // bricks so the user can clearly see the skeletons "behind" them.
+      let walls = [];
+      let people = [];
+      let sensors = [];
+
+      function buildScene() {
+        const padX = 60, padY = 50;
+        // 3 vertical walls dividing the canvas into rooms
+        const w1 = padX + (W - 2 * padX) * 0.34;
+        const w2 = padX + (W - 2 * padX) * 0.67;
+        const top = padY, bot = H - padY;
+        walls = [
+          { x1: padX, y1: top, x2: W - padX, y2: top },     // top
+          { x1: padX, y1: bot, x2: W - padX, y2: bot },     // bottom
+          { x1: padX, y1: top, x2: padX, y2: bot },         // left
+          { x1: W - padX, y1: top, x2: W - padX, y2: bot }, // right
+          { x1: w1, y1: top, x2: w1, y2: bot - 60 },        // interior wall 1 (with doorway)
+          { x1: w2, y1: top + 60, x2: w2, y2: bot },        // interior wall 2 (with doorway)
+        ];
+
+        // 3 humans, one per room
+        const baseY = (top + bot) / 2 + 30;
+        const scale = Math.min(1.0, Math.max(0.55, (H - padY * 2) / 280));
+        people = [
+          new Person({ x: (padX + w1) / 2,  y: baseY, scale, mode: 'walk', hr: 78, resp: 16, label: 'person · walking' }),
+          new Person({ x: (w1 + w2) / 2,    y: baseY, scale, mode: 'sit',  hr: 68, resp: 14, label: 'person · sitting' }),
+          new Person({ x: (w2 + W - padX) / 2, y: baseY, scale, mode: 'wave', hr: 82, resp: 17, label: 'person · waving' }),
+        ];
+
+        sensors = [
+          new Sensor(padX + 6, padY + 6, 'esp32-s3 · tx'),
+          new Sensor(W - padX - 6, H - padY - 6, 'esp32-s3 · rx'),
+        ];
+      }
+      buildScene();
+      window.addEventListener('resize', () => { resize(); buildScene(); });
+
+      function drawBackground() {
+        // floor base
+        ctx.fillStyle = 'rgba(10,14,26,0.0)';
+        ctx.fillRect(0, 0, W, H);
+        // subtle floor grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        const step = 28;
+        for (let x = 0; x < W; x += step) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        }
+        for (let y = 0; y < H; y += step) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+      }
+
+      function drawWalls() {
+        walls.forEach(w => {
+          // wall body — semi-transparent slab to communicate "see through"
+          ctx.strokeStyle = 'rgba(136,144,168,0.45)';
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'butt';
+          ctx.beginPath();
+          ctx.moveTo(w.x1, w.y1);
+          ctx.lineTo(w.x2, w.y2);
+          ctx.stroke();
+          // dashed accent on top so the "wall" reads visually
+          ctx.strokeStyle = 'rgba(80,88,114,0.7)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(w.x1, w.y1);
+          ctx.lineTo(w.x2, w.y2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        });
+      }
+
+      let last = performance.now();
+      function frame(t) {
+        const dt = Math.min(0.05, (t - last) / 1000);
+        last = t;
+
+        ctx.clearRect(0, 0, W, H);
+        drawBackground();
+
+        // sensors update + draw rings BEHIND walls + people
+        sensors.forEach(s => s.update(dt));
+        sensors.forEach(s => s.draw(ctx));
+
+        drawWalls();
+
+        people.forEach(p => p.update(dt));
+        people.forEach(p => p.draw(ctx));
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      // expose for telemetry
+      window.__ruview = { people, sensors };
+    })();
+
+    // ============================================================
+    // View dispatcher — left-nav links swap the center panel
+    // (header + breadcrumb + feed) without disturbing the canvas
+    // hero or right-side telemetry.
+    // ============================================================
+    (function () {
+      const feed = document.getElementById('feed');
+      const hdrTitle = document.getElementById('hdr-title');
+      const hdrBadge = document.getElementById('hdr-badge');
+      const hdrSub = document.getElementById('hdr-sub');
+      const crumbCurrent = document.getElementById('crumb-current');
+      const crumbStat = document.getElementById('crumb-stat');
+
+      // --- View definitions -------------------------------------------------
+      // Each view returns its current set of cards. The shape mirrors the
+      // original render contract: { accent, title, sub, badge, badgeClass,
+      // code, progress, progressLabel, actions }.
+      let progress = 67, progDir = 1;
+
+      const views = {
+        // ----- Tab views (top of the bento panel) ------------------------
+        overview: {
+          title: 'System Overview',
+          crumb: 'Live View · Overview',
+          badge: 'Healthy',
+          stat: '3 persons tracked',
+          sub: 'Aggregate snapshot across all sensors and event streams',
+          cards: () => [
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'All Streams Active',
+              sub: 'pose_keypoints · vital_signs · activity · person_count · fall_detected',
+              code: () => `<span class="arrow">→</span> active:<span class="v">5</span> <span class="arrow">→</span> rate:<span class="v">87Hz</span> <span class="arrow">→</span> p50_lat:<span class="v">${34 + Math.round(Math.random()*6)}ms</span>`
+            },
+            {
+              accent: true, badge: 'TODAY', badgeClass: 'ok',
+              title: 'Activity Summary',
+              sub: '37 transitions · 6 count changes · 0 falls',
+              code: () => `<span class="arrow">→</span> walking:<span class="v">22m</span> <span class="arrow">→</span> sitting:<span class="v">1h 14m</span> <span class="arrow">→</span> standing:<span class="v">38m</span> <span class="arrow">→</span> idle:<span class="v">6m</span>`
+            },
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'Storage & Network',
+              sub: '184 MB stored · 3 captures · webhook reachable · OTA channel up',
+              actions: ['EXPORT TODAY', 'OPEN SETTINGS']
+            },
+          ],
+        },
+
+        realtime: {
+          title: 'Real-time Stream',
+          crumb: 'Real-time',
+          badge: 'Live',
+          stat: '87 Hz · 38 ms p50',
+          sub: 'Frame-by-frame CSI → pose → vitals pipeline output',
+          cards: () => [
+            {
+              badge: 'TICK', badgeClass: 'ok',
+              title: 'Pipeline Frames',
+              sub: 'continuous · zero backpressure · 17×3 keypoints per frame',
+              code: () => `<span class="arrow">→</span> frame:<span class="v">${1428340 + Math.floor(Math.random()*60)}</span> <span class="arrow">→</span> Δt:<span class="v">${10 + Math.round(Math.random()*3)}ms</span> <span class="arrow">→</span> persons:<span class="v">3</span>`
+            },
+            {
+              accent: true, badge: 'STREAMING', badgeClass: 'ok',
+              title: 'Buffer · 1s sliding window',
+              sub: '87 frames in window · ready for downstream consumers',
+              progress: 84, progressLabel: 'window fill'
+            },
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'Subscribers',
+              sub: '2 local websocket clients · 1 webhook · 0 dropped',
+              code: () => `<span class="arrow">→</span> ws_clients:<span class="v">2</span> <span class="arrow">→</span> webhook:<span class="v">200 OK</span> <span class="arrow">→</span> backlog:<span class="v">0</span>`
+            },
+          ],
+        },
+
+        historical: {
+          title: 'Historical Data',
+          crumb: 'Historical',
+          badge: 'Last 24h',
+          stat: '14 sessions',
+          sub: 'Aggregate metrics and session history over the past 24 hours',
+          cards: () => [
+            {
+              badge: '24H', badgeClass: 'ok',
+              title: '24-Hour Aggregate',
+              sub: '7,512,440 frames · 14 sessions · uptime 99.7%',
+              code: () => `<span class="arrow">→</span> frames:<span class="v">7.51M</span> <span class="arrow">→</span> sessions:<span class="v">14</span> <span class="arrow">→</span> uptime:<span class="v">23h 41m</span>`
+            },
+            {
+              accent: true, badge: 'BUCKETS', badgeClass: 'ok',
+              title: 'Hourly Persons-Present',
+              sub: 'last 12 hours · max 4 · current 3',
+              code: () => `<span class="arrow">→</span> 02h:<span class="v">0</span> 06h:<span class="v">0</span> 09h:<span class="v">2</span> 11h:<span class="v">3</span> 12h:<span class="v">3</span> 14h:<span class="v">3</span>`
+            },
+            {
+              badge: 'STORED', badgeClass: 'ok',
+              title: '14 saved sessions · 1.2 GB',
+              sub: 'auto-rotation at 2 GB · oldest: 2026-04-30',
+              actions: ['BROWSE ARCHIVE', 'EXPORT CSV', 'PURGE OLD']
+            },
+          ],
+        },
+
+        alerts: {
+          title: 'Alert Center',
+          crumb: 'Alerts',
+          badge: '0 active',
+          stat: '1 today · 4 this week',
+          sub: 'Triggered alerts and notification routing configuration',
+          cards: () => [
+            {
+              badge: 'CLEAR', badgeClass: 'ok',
+              title: 'No active alerts',
+              sub: 'Detector armed · sensitivity: high · all checks green',
+              actions: ['TEST WEBHOOK', 'SILENCE 1H']
+            },
+            {
+              accent: true, badge: 'PAST · 23:41', badgeClass: 'crit',
+              title: 'Fall detected · Person #3',
+              sub: 'Yesterday · vertical velocity 1.8 m/s · webhook fired OK · ack 04:12',
+              actions: ['OPEN RECORDING', 'EXPORT REPORT']
+            },
+            {
+              badge: 'ROUTING', badgeClass: 'ok',
+              title: 'Notification destinations',
+              sub: 'webhook · Slack #alerts · email on-call rotation',
+              code: () => `<span class="arrow">→</span> webhook:<span class="v">enabled</span> <span class="arrow">→</span> slack:<span class="v">#alerts</span> <span class="arrow">→</span> email:<span class="v">oncall@</span>`
+            },
+          ],
+        },
+
+        models: {
+          title: 'Models',
+          crumb: 'Models',
+          badge: 'v2.0.0 loaded',
+          stat: '48 KB · on-device',
+          sub: 'Loaded inference model and available alternatives',
+          cards: () => [
+            {
+              badge: 'LOADED', badgeClass: 'ok',
+              title: 'ruview-densepose v2.0.0',
+              sub: '17-keypoint COCO topology · 48 KB · int8 quantized · runs on ESP32-S3',
+              code: () => `<span class="arrow">→</span> arch:<span class="v">tcn-csi</span> <span class="arrow">→</span> params:<span class="v">182k</span> <span class="arrow">→</span> quant:<span class="v">int8</span> <span class="arrow">→</span> hash:<span class="v">a8f2…91</span>`
+            },
+            {
+              accent: true, badge: 'PERF', badgeClass: 'ok',
+              title: 'Inference performance',
+              sub: 'measured over the last 5 minutes',
+              code: () => `<span class="arrow">→</span> throughput:<span class="v">${85 + Math.round(Math.random()*4)}Hz</span> <span class="arrow">→</span> p50:<span class="v">${36 + Math.round(Math.random()*4)}ms</span> <span class="arrow">→</span> p95:<span class="v">${44 + Math.round(Math.random()*5)}ms</span>`
+            },
+            {
+              badge: 'AVAILABLE', badgeClass: 'ok',
+              title: 'Alternative models',
+              sub: 'lite · vital-only · pose-only · multi-room (beta)',
+              actions: ['SWITCH MODEL', 'CHECK FOR UPDATES']
+            },
+          ],
+        },
+
+        // ----- Left-nav views --------------------------------------------
+        dashboard: {
+          title: 'System Dashboard',
+          crumb: 'Dashboard',
+          badge: 'Healthy',
+          stat: '3 persons tracked',
+          sub: 'Aggregate view across all sensors and event streams · <a href="#">configure</a>',
+          cards: () => [
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'Sensor Mesh Online',
+              sub: '2 ESP32-S3 units · 0 dropped · 87 Hz CSI capture',
+              code: () => `<span class="arrow">→</span> esp32-s3#1:<span class="v">streaming</span> <span class="arrow">→</span> esp32-s3#2:<span class="v">streaming</span> <span class="arrow">→</span> mesh_lat:<span class="v">${34 + Math.round(Math.random()*6)}ms</span>`
+            },
+            {
+              accent: true, badge: 'TODAY', badgeClass: 'ok',
+              title: 'Event Counters',
+              sub: 'pose_keypoints · vital_signs · activity · person_count · fall_detected',
+              code: () => `<span class="arrow">→</span> pose:<span class="v">14,238</span> <span class="arrow">→</span> vitals:<span class="v">2,418</span> <span class="arrow">→</span> activity:<span class="v">37</span> <span class="arrow">→</span> count_change:<span class="v">6</span> <span class="arrow">→</span> fall:<span class="v">0</span>`
+            },
+            {
+              badge: 'OPTIMAL', badgeClass: 'ok',
+              title: 'CSI Channel Quality',
+              sub: 'Subcarriers usable · packet loss · phase variance',
+              code: () => `<span class="arrow">→</span> subcarriers:<span class="v">52/52</span> <span class="arrow">→</span> loss:<span class="v">0.04%</span> <span class="arrow">→</span> phase_var:<span class="v">0.018</span>`
+            },
+          ],
+        },
+
+        live: {
+          title: 'Through-Wall Detection',
+          crumb: 'Live View',
+          badge: 'Streaming',
+          stat: '3 persons tracked',
+          sub: 'All sensors operational · 87&nbsp;Hz CSI · <a href="#">view pipeline</a>',
+          cards: () => [
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: '17-Keypoint Pose Locked',
+              sub: '3 persons · avg confidence 0.92 · 87 Hz CSI',
+              code: () => `<span class="arrow">→</span> nose:<span class="v">[0.82,0.31]</span> <span class="arrow">→</span> lwrist:<span class="v">[0.41,0.66]</span> <span class="arrow">→</span> rankle:<span class="v">[0.71,0.94]</span> <span class="arrow">→</span> conf:<span class="v">${(0.88 + Math.random() * 0.08).toFixed(2)}</span>`
+            },
+            {
+              accent: true, badge: 'STREAMING', badgeClass: 'ok',
+              title: 'Vital Signs · Person #2',
+              sub: 'Sitting · HR 68 bpm · Resp 14/min · estimated through wall',
+              progress, progressLabel: 'CSI window'
+            },
+            {
+              badge: 'WARNING', badgeClass: 'warn',
+              title: 'Activity Change Detected',
+              sub: 'Person #3 transitioned: standing → arm raised · 12s ago',
+              actions: ['VIEW SEQUENCE', 'LABEL EVENT']
+            },
+          ],
+        },
+
+        recordings: {
+          title: 'Saved Recordings',
+          crumb: 'Recordings',
+          badge: '3 stored',
+          stat: '184 MB on device',
+          sub: 'Stored CSI captures with extracted pose and vitals',
+          cards: () => [
+            {
+              badge: '12m 04s', badgeClass: 'ok',
+              title: 'capture-2026-05-06-1432.csi',
+              sub: '3 persons · 87 Hz · 64 MB · activity: walking, sitting, waving',
+              actions: ['REPLAY', 'EXPORT', 'DELETE']
+            },
+            {
+              badge: '5m 18s', badgeClass: 'ok',
+              title: 'capture-2026-05-06-1118.csi',
+              sub: '1 person · 87 Hz · 24 MB · activity: stationary',
+              actions: ['REPLAY', 'EXPORT', 'DELETE']
+            },
+            {
+              accent: true, badge: 'FALL FLAG', badgeClass: 'crit',
+              title: 'capture-2026-05-05-2103.csi',
+              sub: '4 persons · 45m 02s · 96 MB · 1 fall_detected event @ 23:41',
+              actions: ['REPLAY', 'OPEN ALERT', 'EXPORT']
+            },
+          ],
+        },
+
+        pose_keypoints: {
+          title: 'pose_keypoints stream',
+          crumb: 'Events · pose_keypoints',
+          badge: 'Streaming',
+          stat: '17 × 3 persons',
+          sub: 'Live 17-keypoint COCO topology · normalized [x, y, conf]',
+          cards: () => [
+            {
+              badge: 'P1', badgeClass: 'ok',
+              title: 'Person #1 · walking',
+              sub: 'avg conf 0.93 · all 17 keypoints visible',
+              code: () => `<span class="arrow">→</span> nose:<span class="v">[0.21,0.32,0.94]</span> <span class="arrow">→</span> lwr:<span class="v">[${(0.13+Math.random()*0.04).toFixed(2)},0.51,0.88]</span> <span class="arrow">→</span> ran:<span class="v">[0.27,0.91,0.96]</span>`
+            },
+            {
+              accent: true, badge: 'P2', badgeClass: 'ok',
+              title: 'Person #2 · sitting',
+              sub: 'avg conf 0.91 · knees occluded by interior wall, recovered',
+              code: () => `<span class="arrow">→</span> nose:<span class="v">[0.51,0.42,0.92]</span> <span class="arrow">→</span> lkn:<span class="v">[${(0.49+Math.random()*0.03).toFixed(2)},0.74,0.82]</span> <span class="arrow">→</span> rkn:<span class="v">[0.54,0.74,0.83]</span>`
+            },
+            {
+              badge: 'P3', badgeClass: 'ok',
+              title: 'Person #3 · waving',
+              sub: 'avg conf 0.90 · raised right wrist tracked above shoulder',
+              code: () => `<span class="arrow">→</span> rsh:<span class="v">[0.81,0.36]</span> <span class="arrow">→</span> rel:<span class="v">[0.86,0.18]</span> <span class="arrow">→</span> rwr:<span class="v">[${(0.89+Math.random()*0.04).toFixed(2)},0.04]</span>`
+            },
+          ],
+        },
+
+        vital_signs: {
+          title: 'vital_signs stream',
+          crumb: 'Events · vital_signs',
+          badge: 'Streaming',
+          stat: '3 sources',
+          sub: 'HR / Resp estimated from chest-region CSI phase variance',
+          cards: () => [
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'Person #1 · walking',
+              sub: 'HR ' + (76 + Math.round(Math.random()*4)) + ' bpm · Resp 16/min · σ low',
+              code: () => `<span class="arrow">→</span> hr:<span class="v">${76+Math.round(Math.random()*4)}</span> <span class="arrow">→</span> resp:<span class="v">16</span> <span class="arrow">→</span> hrv:<span class="v">42ms</span>`
+            },
+            {
+              accent: true, badge: 'OK', badgeClass: 'ok',
+              title: 'Person #2 · sitting',
+              sub: 'HR ' + (66 + Math.round(Math.random()*4)) + ' bpm · Resp 14/min · highest fidelity',
+              code: () => `<span class="arrow">→</span> hr:<span class="v">${66+Math.round(Math.random()*4)}</span> <span class="arrow">→</span> resp:<span class="v">14</span> <span class="arrow">→</span> hrv:<span class="v">58ms</span>`
+            },
+            {
+              badge: 'OK', badgeClass: 'ok',
+              title: 'Person #3 · waving',
+              sub: 'HR ' + (80 + Math.round(Math.random()*4)) + ' bpm · Resp 17/min · arm motion compensated',
+              code: () => `<span class="arrow">→</span> hr:<span class="v">${80+Math.round(Math.random()*4)}</span> <span class="arrow">→</span> resp:<span class="v">17</span> <span class="arrow">→</span> hrv:<span class="v">37ms</span>`
+            },
+          ],
+        },
+
+        activity: {
+          title: 'activity stream',
+          crumb: 'Events · activity',
+          badge: '3 active',
+          stat: '37 transitions today',
+          sub: 'Recognized activity classes per tracked person',
+          cards: () => [
+            {
+              badge: 'WALKING', badgeClass: 'ok',
+              title: 'Person #1',
+              sub: 'started 00:42 ago · gait cadence 1.8 Hz · stride 0.62 m',
+              actions: ['VIEW TIMELINE']
+            },
+            {
+              accent: true, badge: 'SITTING', badgeClass: 'ok',
+              title: 'Person #2',
+              sub: 'stable for 04:22 · upright posture · breathing regular',
+              actions: ['VIEW TIMELINE']
+            },
+            {
+              badge: 'GESTURE', badgeClass: 'warn',
+              title: 'Person #3 · arm-raise',
+              sub: 'transitioned standing → arm-raised · 12s ago · classifier conf 0.87',
+              actions: ['VIEW SEQUENCE', 'LABEL EVENT']
+            },
+          ],
+        },
+
+        person_count: {
+          title: 'person_count stream',
+          crumb: 'Events · person_count',
+          badge: 'Steady',
+          stat: 'count = 3',
+          sub: 'Multi-person tracker output · count + per-room breakdown',
+          cards: () => [
+            {
+              badge: 'CURRENT', badgeClass: 'ok',
+              title: 'Total: 3 persons',
+              sub: 'Room A: 1 · Room B: 1 · Room C: 1',
+              code: () => `<span class="arrow">→</span> total:<span class="v">3</span> <span class="arrow">→</span> rooms:<span class="v">{A:1,B:1,C:1}</span> <span class="arrow">→</span> uptime:<span class="v">12m 04s</span>`
+            },
+            {
+              accent: true, badge: 'EVENT', badgeClass: 'ok',
+              title: 'Count change: 2 → 3',
+              sub: 'Person entered Room C through doorway · 14:31:08',
+              actions: ['VIEW CLIP']
+            },
+            {
+              badge: 'EVENT', badgeClass: 'ok',
+              title: 'Count change: 1 → 2',
+              sub: 'Person entered Room B · 14:18:42',
+              actions: ['VIEW CLIP']
+            },
+          ],
+        },
+
+        fall_detected: {
+          title: 'fall_detected stream',
+          crumb: 'Events · fall_detected',
+          badge: 'No active alerts',
+          stat: '0 today · 1 this week',
+          sub: 'Threshold-gated trigger · escalates via configured webhook',
+          cards: () => [
+            {
+              badge: 'CLEAR', badgeClass: 'ok',
+              title: 'No falls in current session',
+              sub: 'Detector armed · sensitivity: high · response window: 1.5s',
+              actions: ['ARM', 'TEST WEBHOOK']
+            },
+            {
+              accent: true, badge: 'PAST · 2026-05-05', badgeClass: 'crit',
+              title: 'Fall detected · Person #3 · 23:41:12',
+              sub: 'Vertical velocity 1.8 m/s · post-event motion stopped 4.2s · webhook fired OK',
+              actions: ['OPEN RECORDING', 'EXPORT REPORT']
+            },
+            {
+              badge: 'CONFIG', badgeClass: 'ok',
+              title: 'Detector configuration',
+              sub: 'min_velocity: 1.2 m/s · post_event_quiet: 3.0s · cooldown: 30s',
+              code: () => `<span class="arrow">→</span> sensitivity:<span class="v">high</span> <span class="arrow">→</span> webhook:<span class="v">enabled</span> <span class="arrow">→</span> last_test:<span class="v">2h ago</span>`
+            },
+          ],
+        },
+
+        esp1: {
+          title: 'ESP32-S3 #1 · TX',
+          crumb: 'Hardware · ESP32-S3 #1',
+          badge: 'Online',
+          stat: 'role: TX',
+          sub: 'Transmitting CSI probe packets · firmware v2.0.0',
+          cards: () => [
+            {
+              badge: 'STREAMING', badgeClass: 'ok',
+              title: 'Link Status',
+              sub: 'channel 6 (2.437 GHz) · 20 MHz · MCS 4 · RSSI -42 dBm',
+              code: () => `<span class="arrow">→</span> tx_pps:<span class="v">${100 + Math.round(Math.random()*4)}</span> <span class="arrow">→</span> dropped:<span class="v">0</span> <span class="arrow">→</span> rssi:<span class="v">-42dBm</span>`
+            },
+            {
+              accent: true, badge: 'GOOD', badgeClass: 'ok',
+              title: 'CSI Subcarriers',
+              sub: '52 of 52 subcarriers usable · phase locked',
+              progress: 96, progressLabel: 'channel quality'
+            },
+            {
+              badge: 'INFO', badgeClass: 'ok',
+              title: 'Device',
+              sub: 'MAC 7C:DF:A1:3B:0E:42 · firmware ruview-densepose v2.0.0 · uptime 4h 12m',
+              actions: ['REBOOT', 'OTA UPDATE']
+            },
+          ],
+        },
+
+        esp2: {
+          title: 'ESP32-S3 #2 · RX',
+          crumb: 'Hardware · ESP32-S3 #2',
+          badge: 'Online',
+          stat: 'role: RX',
+          sub: 'Receiving CSI from #1 · extracting amplitude/phase per subcarrier',
+          cards: () => [
+            {
+              badge: 'STREAMING', badgeClass: 'ok',
+              title: 'Link Status',
+              sub: 'channel 6 (2.437 GHz) · sync OK · RSSI -48 dBm',
+              code: () => `<span class="arrow">→</span> rx_pps:<span class="v">${98 + Math.round(Math.random()*4)}</span> <span class="arrow">→</span> dropped:<span class="v">2</span> <span class="arrow">→</span> rssi:<span class="v">-48dBm</span>`
+            },
+            {
+              accent: true, badge: 'GOOD', badgeClass: 'ok',
+              title: 'CSI Subcarriers',
+              sub: '50 of 52 subcarriers usable · 2 flagged for high noise',
+              progress: 88, progressLabel: 'channel quality'
+            },
+            {
+              badge: 'INFO', badgeClass: 'ok',
+              title: 'Device',
+              sub: 'MAC 7C:DF:A1:3B:11:9A · firmware ruview-densepose v2.0.0 · uptime 4h 12m',
+              actions: ['REBOOT', 'OTA UPDATE']
+            },
+          ],
+        },
+
+        calibration: {
+          title: 'Calibration',
+          crumb: 'Hardware · Calibration',
+          badge: 'Up to date',
+          stat: 'last run 3h ago',
+          sub: 'Calibrate the empty-room CSI baseline before deploying',
+          cards: () => [
+            {
+              badge: 'BASELINE', badgeClass: 'ok',
+              title: 'Empty-Room Baseline',
+              sub: 'Captured 2026-05-06 11:42 · 60s sample · σ within tolerance',
+              actions: ['RECAPTURE', 'EXPORT']
+            },
+            {
+              accent: true, badge: 'GEOMETRY', badgeClass: 'ok',
+              title: 'Sensor Geometry',
+              sub: 'TX/RX separation 4.20 m · floor plan loaded · 3 rooms registered',
+              code: () => `<span class="arrow">→</span> tx_pos:<span class="v">[0.0, 0.0]</span> <span class="arrow">→</span> rx_pos:<span class="v">[4.2, 3.1]</span> <span class="arrow">→</span> walls:<span class="v">3</span>`
+            },
+            {
+              badge: 'ACTION', badgeClass: 'warn',
+              title: 'Run full recalibration',
+              sub: 'Recommended weekly · vacate the room before pressing',
+              actions: ['START 60s SCAN', 'SCHEDULE']
+            },
+          ],
+        },
+      };
+
+      let currentView = 'live';
+
+      // --- Renderer ---------------------------------------------------------
+      function render() {
+        const cards = views[currentView].cards();
+        feed.innerHTML = cards.map(c => {
+          let inner = `
+            <div class="fc-head">
+              <div>
+                <div class="fc-title">${c.title}</div>
+                <div class="fc-sub">${c.sub}</div>
+              </div>
+              <span class="fc-badge ${c.badgeClass}">${c.badge}</span>
+            </div>
+          `;
+          if (c.code) inner += `<div class="fc-code">${c.code()}</div>`;
+          if (c.progress !== undefined) {
+            inner += `
+              <div class="fc-progress">
+                <span>${c.progressLabel}</span>
+                <div class="fc-bar"><div class="fill" style="width:${c.progress}%"></div></div>
+                <span>${c.progress}%</span>
+                <button class="fc-btn cyan">PAUSE</button>
+              </div>
+            `;
+          }
+          if (c.actions) {
+            inner += `<div class="fc-actions">${c.actions.map(a => `<button class="fc-btn">${a}</button>`).join('')}</div>`;
+          }
+          return `<div class="feed-card${c.accent ? ' accent' : ''}">${inner}</div>`;
+        }).join('');
+      }
+
+      function switchView(key) {
+        if (!views[key]) return;
+        currentView = key;
+        const v = views[key];
+        hdrTitle.textContent = v.title;
+        hdrBadge.textContent = v.badge;
+        hdrSub.innerHTML = v.sub;
+        crumbCurrent.textContent = v.crumb;
+        crumbStat.innerHTML = `<span class="dot"></span>${v.stat}`;
+        // Scope active-state toggling to the group containing this view's
+        // trigger — tabs and left-nav each keep their own independent
+        // highlight so the user can see "where they are" in both axes.
+        const trigger = document.querySelector(`[data-view="${key}"]`);
+        const inTabs = trigger && trigger.closest('.bento-tabs');
+        const groupSel = inTabs ? '.bento-tabs [data-view]' : '.side.left [data-view]';
+        document.querySelectorAll(groupSel).forEach(a => {
+          a.classList.toggle('active', a.dataset.view === key);
+        });
+        render();
+      }
+
+      // wire nav clicks
+      document.querySelectorAll('[data-view]').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          switchView(a.dataset.view);
+        });
+      });
+
+      render();
+
+      // --- Telemetry + progress animation ----------------------------------
+      const ovFps = document.getElementById('ov-fps');
+      const ovConf = document.getElementById('ov-conf');
+      const ovPersons = document.getElementById('ov-persons');
+      const stFps = document.getElementById('st-fps');
+      const stHr = document.getElementById('st-hr');
+      const stResp = document.getElementById('st-resp');
+      const stLat = document.getElementById('st-lat');
+      const upd = document.getElementById('upd');
+      let secs = 2;
+
+      setInterval(() => {
+        // bounce the live-view progress bar
+        progress += progDir * 4;
+        if (progress >= 95) progDir = -1;
+        if (progress <= 12) progDir = 1;
+        render();
+
+        // jitter telemetry
+        const fps = 84 + Math.round(Math.random() * 6);
+        const conf = (0.88 + Math.random() * 0.08).toFixed(2);
+        const hr = 70 + Math.round(Math.random() * 8);
+        const resp = 14 + Math.round(Math.random() * 3);
+        const lat = 34 + Math.round(Math.random() * 8);
+        ovFps.textContent = fps; ovConf.textContent = conf; ovPersons.textContent = '3';
+        stFps.innerHTML = fps + '<span class="unit">Hz</span>';
+        stHr.innerHTML = hr + '<span class="unit">bpm</span>';
+        stResp.innerHTML = resp + '<span class="unit">/min</span>';
+        stLat.innerHTML = lat + '<span class="unit">ms</span>';
+        secs = 2; upd.textContent = secs + 's';
+      }, 1500);
+
+      setInterval(() => { secs++; upd.textContent = secs + 's'; }, 1000);
+    })();
+  </script>
+
+  <!-- ============================================================
+       Top-right modal wiring (Docs / Source / Settings)
+       ============================================================ -->
+  <script>
+    (function () {
+      const backdrop = document.querySelector('.modal-backdrop');
+      const modals = document.querySelectorAll('.modal');
+      const toast = document.getElementById('toast');
+
+      function open(name) {
+        modals.forEach(m => m.classList.remove('open'));
+        const m = document.querySelector(`.modal[data-modal="${name}"]`);
+        if (!m) return;
+        backdrop.classList.add('open');
+        m.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeAll() {
+        modals.forEach(m => m.classList.remove('open'));
+        backdrop.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+
+      // Wire the three top-right links by their text
+      document.querySelectorAll('.top-right a.nav-link').forEach(a => {
+        const name = a.textContent.trim().toLowerCase();
+        if (['docs', 'source', 'settings'].includes(name)) {
+          a.addEventListener('click', e => { e.preventDefault(); open(name); });
+        }
+      });
+
+      // Close affordances: × button, backdrop click, ESC, footer CLOSE/CANCEL
+      document.querySelectorAll('.modal-close, [data-modal-close]').forEach(b => {
+        b.addEventListener('click', closeAll);
+      });
+      backdrop.addEventListener('click', closeAll);
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeAll();
+      });
+
+      // SAVE CHANGES → toast + close
+      document.querySelectorAll('[data-modal-save]').forEach(b => {
+        b.addEventListener('click', () => {
+          closeAll();
+          showToast('✓ Settings saved');
+        });
+      });
+
+      // Wire the privacy toggle inside the Settings modal
+      document.querySelectorAll('.modal .tog').forEach(t => {
+        t.addEventListener('click', () => {
+          t.classList.toggle('off');
+          const knob = t.querySelector('.knob');
+          knob.style.transform = t.classList.contains('off')
+            ? 'translateX(0)' : 'translateX(18px)';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
