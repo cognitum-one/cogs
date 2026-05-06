@@ -13,3 +13,9 @@ node_modules/
 .idea/
 .vscode/
 dist/
+
+# Claude
+.claude/
+.claude-flow/
+.mcp.json
+CLAUDE.md
