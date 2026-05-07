@@ -3,8 +3,15 @@
 
 # Rust
 /target/
+**/target/
+src/cogs/*/Cargo.lock
 **/*.rs.bk
 *.pdb
+
+# AQE / agentic test runner artifacts (per memory: never `git add dir/` with
+# AQE hooks running — they drop .rvf files silently)
+.agentic-qe/
+**/.agentic-qe/
 
 # Node
 node_modules/

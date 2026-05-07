@@ -35,8 +35,10 @@ jobs:
           # Cogs that changed
           COGS=$(echo "$CHANGED_FILES" | awk -F/ '/^src\/cogs\// { print $3 }' | sort -u | tr '\n' ' ')
 
-          # Shared crates that changed → forces all-cogs check
-          SHARED=$(echo "$CHANGED_FILES" | grep -E '^(crates/cog-sensor-sources|Cargo\.toml|Cargo\.lock)' | head -c 1)
+          # Shared crates that changed → forces all-cogs check.
+          # `|| true` because `set -eo pipefail` + grep-no-match would abort the
+          # step on any PR that doesn't touch the shared crates (the common case).
+          SHARED=$(echo "$CHANGED_FILES" | grep -E '^(crates/cog-sensor-sources|Cargo\.toml|Cargo\.lock)' | head -c 1 || true)
 
           if [ -n "$SHARED" ]; then
             COGS=$(ls -d src/cogs/*/ | xargs -n1 basename | tr '\n' ' ')
