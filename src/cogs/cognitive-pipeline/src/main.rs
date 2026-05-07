@@ -1,28 +1,57 @@
-//! cog-cognitive-pipeline — scaffold (ADR-095)
+//! cog-cognitive-pipeline (ADR-094 + ADR-095)
 //!
-//! This is the SCAFFOLD entry point. It proves the cog framework end-to-end
-//! before PR #133's sparse-LLM modules are moved in:
-//!   1. Reads `COGNITUM_COG_TOKEN` from the environment (set by the agent at /start).
-//!   2. Binds an Axum HTTP server to `127.0.0.1:<bind_port>` (loopback only,
-//!      per ADR-095 §1 — the agent's proxy is the only legitimate caller).
-//!   3. Exposes `/info` (open) and `/generate` (paired, requires bearer token).
-//!   4. Logs startup + each request to stdout — the agent captures into
-//!      /var/lib/cognitum/apps/cognitive-pipeline/output.log.
+//! Pi Zero 2 W sparse-LLM inference cog. Hosts the FastGRNN anomaly gate +
+//! SmolLM2 / Qwen2.5 sparse-attention runner originally lifted from
+//! cognitum-one/seed#133, repackaged as a sandboxed cog per ADR-095.
 //!
-//! The next milestone moves PR #133's sparse_*.rs + sparse_pipeline.rs in here
-//! and wires them to /generate, /pipeline/events, etc.
+//! Boot:
+//!   1. Read `COGNITUM_COG_TOKEN` from the env (set by the agent at /start);
+//!      if absent, log a warning and accept any Authorization header
+//!      (standalone-dev mode).
+//!   2. Bind axum to `127.0.0.1:<port>` (loopback only — the agent's proxy
+//!      is the only legitimate caller per ADR-095 §1).
+//!   3. Load any cognitive events persisted from a previous run.
+//!   4. Forward all incoming requests to `sparse_llm_api::dispatch_sparse_llm`,
+//!      which routes between sparse-LLM endpoints, OpenAI-compat endpoints,
+//!      and the cognitive pipeline endpoints.
 
 use axum::{
+    body::{Body, Bytes},
     extract::State,
-    http::{HeaderMap, StatusCode},
-    routing::{get, post},
-    Json, Router,
+    http::{HeaderMap, Method, StatusCode, Uri},
+    response::{IntoResponse, Response as AxumResponse},
+    routing::any,
+    Router,
 };
 use clap::Parser;
-use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
+
+mod http_compat;
+
+// Re-export the compat layer so the lifted modules find their original
+// `crate::http` and `crate::api` paths unchanged.
+mod http {
+    pub use crate::http_compat::{Request, Response};
+}
+mod api {
+    pub use crate::http_compat::DeviceState;
+}
+
+// Lifted from cognitum-one/seed#133 (sparse_*.rs + sparse_pipeline.rs).
+// These modules are byte-identical to the agent versions except for the
+// stripped `#![cfg(feature = "sparse-llm")]` inner attribute.
+mod sparse_fastgrnn;
+mod sparse_llm;
+mod sparse_llm_api;
+mod sparse_llm_kv_quant;
+mod sparse_llm_loader;
+mod sparse_llm_projector;
+mod sparse_llm_runner;
+mod sparse_llm_tokenizer;
+mod sparse_llm_weights;
+mod sparse_pipeline;
 
 const COG_ID: &str = "cognitive-pipeline";
 const COG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -70,147 +99,91 @@ struct AppState {
     expected_token: Option<String>,
 }
 
-/// Validate `Authorization: Bearer <token>` for `paired` endpoints.
-/// Open endpoints (e.g. /info, /models) skip this check.
-fn require_token(state: &AppState, headers: &HeaderMap) -> Result<(), StatusCode> {
+/// Validate `Authorization: Bearer <token>` in constant time.
+/// Returns `true` for paired requests; `false` for missing/wrong tokens.
+/// In standalone-dev mode (no token configured), returns `true` unconditionally.
+fn check_authorization(state: &AppState, headers: &HeaderMap) -> bool {
     let Some(expected) = state.expected_token.as_ref() else {
-        // Standalone-dev mode (no token configured) — accept everything; warned at boot.
-        return Ok(());
+        return true;
     };
     let Some(auth) = headers.get(axum::http::header::AUTHORIZATION) else {
-        return Err(StatusCode::UNAUTHORIZED);
+        return false;
     };
-    let Ok(s) = auth.to_str() else {
-        return Err(StatusCode::UNAUTHORIZED);
-    };
-    let Some(provided) = s.strip_prefix("Bearer ") else {
-        return Err(StatusCode::UNAUTHORIZED);
-    };
+    let Ok(s) = auth.to_str() else { return false };
+    let Some(provided) = s.strip_prefix("Bearer ") else { return false };
     use subtle::ConstantTimeEq;
-    if provided.as_bytes().ct_eq(expected.as_bytes()).into() {
-        Ok(())
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
+    provided.as_bytes().ct_eq(expected.as_bytes()).into()
+}
+
+/// Map a cog-relative path (what the agent's proxy delivers after stripping
+/// `/api/v1/cogs/cognitive-pipeline`) to the agent-internal path that
+/// `dispatch_sparse_llm` expects. OpenAI-style `/v1/*` and `/health` pass
+/// through unchanged.
+fn rewrite_path(p: &str) -> String {
+    if p.starts_with("/v1/") || p == "/health" {
+        return p.to_string();
     }
+    if p == "/info"
+        || p == "/models"
+        || p == "/generate"
+        || p == "/tokenize"
+        || p == "/pipeline"
+        || p.starts_with("/pipeline/")
+        || p.starts_with("/model/")
+    {
+        return format!("/api/v1/llm/sparse{}", p);
+    }
+    // Anything else falls through unchanged — dispatch_sparse_llm will return
+    // None and the caller turns it into a 404.
+    p.to_string()
 }
 
-#[derive(Serialize)]
-struct InfoResponse {
-    cog_id: &'static str,
-    version: &'static str,
-    status: &'static str,
-    model: String,
-    deadline_secs: u64,
-    gate_threshold: f32,
-    ring_cap: usize,
-    uptime_secs: u64,
-    weight_mode: &'static str, // "stub" until PR #133 modules land
-    note: &'static str,
-}
-
-async fn handle_info(State(state): State<AppState>) -> Json<InfoResponse> {
-    Json(InfoResponse {
-        cog_id: COG_ID,
-        version: COG_VERSION,
-        status: "scaffold",
-        model: state.args.model.clone(),
-        deadline_secs: state.args.deadline_secs,
-        gate_threshold: state.args.gate_threshold,
-        ring_cap: state.args.ring_cap,
-        uptime_secs: state.started_at.elapsed().as_secs(),
-        weight_mode: "stub",
-        note: "ADR-095 scaffold — sparse-LLM modules from PR #133 not yet moved in",
-    })
-}
-
-#[derive(Serialize)]
-struct ModelsResponse {
-    base_dir: &'static str,
-    models: Vec<ModelEntry>,
-}
-
-#[derive(Serialize)]
-struct ModelEntry {
-    id: &'static str,
-    ready: bool,
-    note: &'static str,
-}
-
-async fn handle_models() -> Json<ModelsResponse> {
-    Json(ModelsResponse {
-        base_dir: "/var/lib/cognitum/apps/cognitive-pipeline",
-        models: vec![
-            ModelEntry {
-                id: "smollm2-135m",
-                ready: false,
-                note: "asset download wired in ADR-095 install flow (not yet implemented)",
-            },
-            ModelEntry {
-                id: "qwen2.5-0.5b-q4",
-                ready: false,
-                note: "asset download wired in ADR-095 install flow (not yet implemented)",
-            },
-        ],
-    })
-}
-
-#[derive(Deserialize)]
-struct GenerateRequest {
-    #[serde(default)]
-    prompt: String,
-    #[serde(default = "default_max_tokens")]
-    max_tokens: u32,
-}
-fn default_max_tokens() -> u32 { 1 }
-
-#[derive(Serialize)]
-struct GenerateResponse {
-    model: String,
-    text: String,
-    token_ids: Vec<u32>,
-    tokens_generated: u32,
-    weight_mode: &'static str,
-    time_ms: u128,
-    note: &'static str,
-}
-
-async fn handle_generate(
+/// Single axum handler — translates an axum request into the compat Request,
+/// calls `sparse_llm_api::dispatch_sparse_llm`, translates the compat Response
+/// back to axum.
+async fn handle_any(
     State(state): State<AppState>,
+    method: Method,
+    uri: Uri,
     headers: HeaderMap,
-    Json(_req): Json<GenerateRequest>,
-) -> Result<Json<GenerateResponse>, StatusCode> {
-    require_token(&state, &headers)?;
-    let t0 = Instant::now();
-    // Stub response — same shape as PR #133's /generate to keep clients stable
-    // when the real inference moves in.
-    Ok(Json(GenerateResponse {
-        model: state.args.model.clone(),
-        text: String::new(),
-        token_ids: vec![392], // placeholder so smoke tests can assert shape
-        tokens_generated: 1,
-        weight_mode: "stub",
-        time_ms: t0.elapsed().as_millis(),
-        note: "scaffold — sparse-LLM inference not yet wired",
-    }))
-}
+    body: Bytes,
+) -> AxumResponse {
+    let cog_path = uri.path().to_string();
+    let inner_path = rewrite_path(&cog_path);
 
-#[derive(Serialize)]
-struct EventsResponse {
-    events: Vec<()>,                // CognitiveEvent type lands when PR #133 modules move in
-    next_since: u64,
-    note: &'static str,
-}
+    let mut compat_headers = std::collections::HashMap::new();
+    for (k, v) in headers.iter() {
+        if let Ok(vstr) = v.to_str() {
+            compat_headers.insert(k.as_str().to_lowercase(), vstr.to_string());
+        }
+    }
 
-async fn handle_events(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-) -> Result<Json<EventsResponse>, StatusCode> {
-    require_token(&state, &headers)?;
-    Ok(Json(EventsResponse {
-        events: Vec::new(),
-        next_since: 0,
-        note: "scaffold — cognitive event ring not yet wired",
-    }))
+    let req = http_compat::Request {
+        method: method.as_str().to_uppercase(),
+        path: inner_path.clone(),
+        headers: compat_headers,
+        body: body.to_vec(),
+        peer_addr: Some("127.0.0.1:0".to_string()),
+        client_cn: None,
+    };
+
+    let authorized = check_authorization(&state, &headers);
+    let device_state = http_compat::DeviceState;
+
+    let resp = match sparse_llm_api::dispatch_sparse_llm(&req, &inner_path, &device_state, authorized) {
+        Some(r) => r,
+        None => http_compat::Response::not_found(),
+    };
+
+    let mut builder = axum::http::Response::builder()
+        .status(StatusCode::from_u16(resp.status).unwrap_or(StatusCode::OK))
+        .header(axum::http::header::CONTENT_TYPE, resp.content_type);
+    for (k, v) in &resp.extra_headers {
+        builder = builder.header(k.as_str(), v.as_str());
+    }
+    builder.body(Body::from(resp.body)).unwrap_or_else(|_| {
+        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    })
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -223,13 +196,13 @@ async fn main() {
 
     if args.info {
         println!(
-            "{{\"cog_id\":\"{}\",\"version\":\"{}\",\"status\":\"scaffold\"}}",
-            COG_ID, COG_VERSION
+            "{{\"cog_id\":\"{}\",\"version\":\"{}\",\"model\":\"{}\"}}",
+            COG_ID, COG_VERSION, args.model
         );
         return;
     }
     if args.once {
-        log::info!("--once flag set: scaffold has nothing to do; exiting clean");
+        log::info!("--once: scaffold path; full pipeline tick lands when the agent supplies sensor data");
         return;
     }
 
@@ -241,20 +214,24 @@ async fn main() {
              In production the agent always sets this at /start."
         );
     } else {
-        log::info!("per-cog bearer token loaded ({} bytes)", expected_token.as_ref().unwrap().len());
+        log::info!(
+            "per-cog bearer token loaded ({} bytes)",
+            expected_token.as_ref().unwrap().len()
+        );
     }
+
+    // Load any cognitive events persisted from a previous run.
+    sparse_pipeline::load_events_from_disk();
 
     let state = AppState {
         started_at: Instant::now(),
         args: Arc::new(args),
         expected_token,
     };
+    let _ = state.started_at; // started_at retained for future /info enrichment
 
     let app = Router::new()
-        .route("/info", get(handle_info))
-        .route("/models", get(handle_models))
-        .route("/generate", post(handle_generate))
-        .route("/pipeline/events", get(handle_events))
+        .fallback(any(handle_any))
         .with_state(state.clone());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], state.args.port));
@@ -271,7 +248,6 @@ async fn main() {
         }
     };
 
-    // Run until SIGTERM/SIGINT (agent /stop sends SIGTERM via kill_app_processes).
     if let Err(e) = axum::serve(listener, app)
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;

@@ -31,11 +31,15 @@ hex = "0.4"
 log = "0.4"
 env_logger = { version = "0.11", default-features = false, features = ["humantime"] }
 
-# When PR #133 modules move in, these get added (placeholder list, gated behind --features sparse-llm so the stub builds clean):
-# ruvector-sparse-attention = { git = "https://github.com/ruvnet/ruvector" }
-# ruvllm = { git = "https://github.com/ruvnet/ruvllm" }
-# memmap2 = "0.9"
-# byteorder = "1.5"
+# Sparse attention kernel — Pi Zero 2 W profile (window=64, tile=16, FP16 KV).
+# Same dep spec as cognitum-one/seed#133 so the moved sparse_llm.rs +
+# sparse_llm_runner.rs compile byte-identical here.
+ruvllm_sparse_attention = { git = "https://github.com/ruvnet/RuVector", default-features = false, features = ["fp16"] }
+
+# Used by the moved sparse_llm_loader.rs / sparse_llm_weights.rs (mmap of
+# .gguf files; little-endian f32/i8 reads).
+memmap2 = "0.9"
+byteorder = "1.5"
 
 [profile.release]
 opt-level = "s"      # optimize for size — Pi Zero binary budget

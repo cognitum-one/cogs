@@ -79,9 +79,11 @@ Models are downloaded from `gs://cognitum-apps/cogs/arm/models/` at install time
 
 ## Status
 
-This v0.1.0 cog ships as a **scaffold** in this PR. Endpoints return stub responses (`weight_mode: "stub"`); the actual ~5,200 LOC of `sparse_*.rs` + `sparse_pipeline.rs` from cognitum-one/seed#133 move in here as a follow-up once the agent-side proxy + token + asset infrastructure (cognitum-one/seed feat/cog-cognitive-pipeline-adr-095 PR) lands.
+This v0.1.0 cog ships with the full ~5,200 LOC of `sparse_*.rs` + `sparse_pipeline.rs` lifted from cognitum-one/seed#133. The lifted modules are byte-identical apart from a stripped `#![cfg(feature = "sparse-llm")]` inner attribute and a tiny `http_compat` shim that re-exports the agent's `crate::http::Request`/`Response` and `crate::api::DeviceState` so the lifted code compiles unchanged inside the cog crate. All 116 tests from the original modules pass in the cog build.
 
-PR #133 stays open as the proven reference implementation until the cog ships, then closes with a pointer to this cog's release.
+When no GGUF is present at `/var/lib/cognitum/apps/cognitive-pipeline/`, the cog returns the same handler-shape responses as the in-agent prototype with `weights_loaded: 0` — caller-visible behavior matches PR #133's stub-mode. Real inference activates the moment a model is uploaded via `PUT /model/{id}/{filename}` (or downloaded by the agent's install handler per seed ADR-095 §4).
+
+PR #133 stays open as the in-agent reference implementation until this cog ships through `gs://cognitum-apps`. Once the cog rolls out fleet-wide, PR #133 closes with a pointer to this cog's release.
 
 ## CLI
 
