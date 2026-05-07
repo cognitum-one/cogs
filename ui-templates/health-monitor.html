@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Monitor — Cognitum Cog Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07090c;
+      --panel: #0c1014;
+      --panel-2: #0f1419;
+      --border: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.10);
+      --cyan: #22d3ee;
+      --green: #22c55e;
+      --green-soft: rgba(34,197,94,0.12);
+      --cyan-soft: rgba(34,211,238,0.12);
+    }
+    html { background: var(--bg); }
+    body { font-family: 'Inter', system-ui, sans-serif; color: #cbd5e1; background: transparent; }
+    #vanta-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 1rem; }
+    .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 1rem; }
+    .pill { display: inline-flex; align-items: center; gap: .375rem; padding: .25rem .625rem; border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: .02em; }
+    .pill-cyan { background: var(--cyan-soft); color: var(--cyan); border: 1px solid rgba(34,211,238,.18); }
+    .pill-green { background: var(--green-soft); color: var(--green); border: 1px solid rgba(34,197,94,.18); }
+    .pill-mute { background: rgba(255,255,255,.04); color: #94a3b8; border: 1px solid var(--border); }
+    .pill-amber { background: rgba(245,158,11,.10); color: #fbbf24; border: 1px solid rgba(245,158,11,.18); }
+    .pill-red { background: rgba(239,68,68,.10); color: #f87171; border: 1px solid rgba(239,68,68,.18); }
+    .glow-green { box-shadow: 0 0 40px -10px rgba(34,197,94,.35); }
+    .glow-cyan { box-shadow: 0 0 40px -10px rgba(34,211,238,.30); }
+    .ring-pulse { animation: ringPulse 2s ease-out infinite; }
+    @keyframes ringPulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
+      70% { box-shadow: 0 0 0 14px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+    .dot-live { width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.18); }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .stat-spark { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+    .heart-beat { animation: heartBeat 1s ease-in-out infinite; transform-origin: center; }
+    @keyframes heartBeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.18); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.12); }
+      70% { transform: scale(1); }
+    }
+    .breath-ring {
+      animation: breathing 4s ease-in-out infinite;
+    }
+    @keyframes breathing {
+      0%, 100% { transform: scale(0.92); opacity: .55; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+    .scanline {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(34,211,238,.06) 50%, transparent 100%);
+      animation: scan 6s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scan {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+    .tab-active { color: #fff; border-bottom: 1px solid var(--cyan); }
+    .row-hover:hover { background: rgba(255,255,255,.025); }
+    .focus-ring:focus { outline: 2px solid rgba(34,211,238,.5); outline-offset: 2px; }
+    .corner-tag {
+      position: absolute; top: 0; right: 0;
+      width: 0; height: 0;
+      border-top: 28px solid rgba(34,197,94,.18);
+      border-left: 28px solid transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Site-wide motion background -->
+  <div id="vanta-bg"></div>
+
+  <!-- Top nav: matches cognitum.one/store chrome -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-[#07090c]/80 border-b border-white/5">
+    <div class="max-w-[1400px] mx-auto px-6 h-14 flex items-center gap-6">
+      <a href="#" class="flex items-center gap-2.5 group">
+        <div class="w-7 h-7 rounded-md bg-gradient-to-br from-cyan-400/20 to-cyan-500/5 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold">
+          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" />
+          </svg>
+        </div>
+        <span class="text-white font-semibold tracking-tight">Cognitum</span>
+        <span class="text-slate-500 text-xs font-mono ml-1">/ cog-store</span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-1 ml-4">
+        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">Guide</button>
+        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">Status</button>
+        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">ESP32 Setup</button>
+        <button class="px-3 py-1.5 text-sm text-white bg-white/5 border border-white/10 rounded-md">Cog Store</button>
+      </nav>
+
+      <div class="ml-auto flex items-center gap-3">
+        <span class="pill pill-mute"><i data-lucide="package" class="w-3 h-3"></i>Available <span class="text-white">42</span></span>
+        <span class="pill pill-green"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Installed <span class="text-white">7</span></span>
+        <button class="w-9 h-9 rounded-md bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-300 transition-colors">
+          <i data-lucide="search" class="w-4 h-4"></i>
+        </button>
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500/30 to-emerald-500/30 border border-white/10 flex items-center justify-center text-xs font-semibold text-white">NR</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Breadcrumb -->
+  <div class="max-w-[1400px] mx-auto px-6 pt-6">
+    <div class="flex items-center gap-2 text-xs text-slate-500 mono">
+      <a href="#" class="hover:text-slate-300">cog-store</a>
+      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+      <a href="#" class="hover:text-slate-300">health</a>
+      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+      <span class="text-slate-300">health-monitor</span>
+    </div>
+  </div>
+
+  <!-- Header / Title block -->
+  <section class="max-w-[1400px] mx-auto px-6 pt-5 pb-6">
+    <div class="flex flex-col lg:flex-row lg:items-end gap-6 justify-between">
+      <div class="flex items-start gap-5">
+        <div class="relative">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-700/5 border border-emerald-500/25 flex items-center justify-center text-3xl glow-green ring-pulse">
+            💚
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-3xl md:text-4xl font-semibold text-white tracking-tight">Health Monitor</h1>
+            <span class="text-amber-400" title="Featured">⭐</span>
+            <span class="pill pill-green"><span class="dot-live"></span>Featured</span>
+          </div>
+          <p class="text-slate-400 text-base max-w-2xl leading-relaxed">
+            Contactless vital signs: breathing, heart rate, sleep apnea, fall detection.
+          </p>
+          <div class="flex flex-wrap items-center gap-2 mt-4">
+            <span class="pill pill-cyan"><i data-lucide="heart-pulse" class="w-3 h-3"></i>Health</span>
+            <span class="pill pill-mute mono">v2.2.0</span>
+            <span class="pill pill-mute"><i data-lucide="hard-drive" class="w-3 h-3"></i>32 KB</span>
+            <span class="pill pill-amber"><i data-lucide="gauge" class="w-3 h-3"></i>Medium</span>
+            <span class="pill pill-mute"><i data-lucide="cpu" class="w-3 h-3"></i>ESP32-S3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="px-4 py-2.5 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
+          <i data-lucide="info" class="w-4 h-4"></i> Details
+        </button>
+        <button class="px-5 py-2.5 text-sm font-semibold text-black bg-emerald-500 hover:bg-emerald-400 rounded-xl glow-green flex items-center gap-2 transition-colors">
+          <i data-lucide="download" class="w-4 h-4"></i> Install
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento dashboard -->
+  <main class="max-w-[1400px] mx-auto px-6 pb-12 grid grid-cols-12 gap-5">
+
+    <!-- 3 ROOM HEROS — each with its own vanta dynamic graphic + sensor list + ECG -->
+    <!-- Bedroom 1 -->
+    <section class="col-span-12 md:col-span-6 xl:col-span-4 panel relative overflow-hidden">
+      <div class="scanline"></div>
+      <div class="relative z-10 p-5 h-[520px] flex flex-col">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <span class="pill pill-cyan"><span class="dot-live"></span>Live · CSI vitals</span>
+            <h2 class="text-white text-2xl font-semibold tracking-tight mt-3">Bedroom 1</h2>
+            <p class="text-slate-400 text-xs mt-1.5">Alex · 5 sensors monitored</p>
+          </div>
+          <span class="text-[10px] mono text-emerald-400 flex items-center gap-1.5"><span class="dot-live"></span>SIGNAL LOCKED</span>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-[10px] mono mb-2">
+            <span class="text-slate-500 tracking-widest">SENSORS</span>
+            <span class="text-emerald-400">5/5 live · bpm/br</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br1-s01</span><span class="text-slate-500 text-[11px]">Headboard</span></div>
+              <span class="text-emerald-400 mono text-[11px]">68 / 14</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br1-s02</span><span class="text-slate-500 text-[11px]">Ceiling</span></div>
+              <span class="text-emerald-400 mono text-[11px]">67 / 14</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br1-s03</span><span class="text-slate-500 text-[11px]">Doorway</span></div>
+              <span class="text-emerald-400 mono text-[11px]">69 / 15</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br1-s04</span><span class="text-slate-500 text-[11px]">Closet</span></div>
+              <span class="text-emerald-400 mono text-[11px]">68 / 14</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br1-s05</span><span class="text-slate-500 text-[11px]">Window</span></div>
+              <span class="text-emerald-400 mono text-[11px]">69 / 14</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto grid grid-cols-12 gap-3 items-end">
+          <div class="col-span-5">
+            <div class="text-[10px] mono text-slate-500 tracking-widest">HEART RATE</div>
+            <div class="text-white text-2xl font-semibold tracking-tight"><span id="bpm-val-1">68</span><span class="text-sm text-slate-500 ml-1 font-normal">bpm</span></div>
+          </div>
+          <div class="col-span-7 panel-2 p-2">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] mono text-slate-500 tracking-widest">ECG · 24Hz</span>
+              <span class="text-[9px] mono text-emerald-400">RR <span id="rr-val-1">880</span> ms</span>
+            </div>
+            <canvas id="ecg-canvas-1" height="50" class="w-full h-[50px] block"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bedroom 2 -->
+    <section class="col-span-12 md:col-span-6 xl:col-span-4 panel relative overflow-hidden">
+      <div class="scanline"></div>
+      <div class="relative z-10 p-5 h-[520px] flex flex-col">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <span class="pill pill-cyan"><span class="dot-live"></span>Live · CSI vitals</span>
+            <h2 class="text-white text-2xl font-semibold tracking-tight mt-3">Bedroom 2</h2>
+            <p class="text-slate-400 text-xs mt-1.5">Sam · 4 sensors monitored</p>
+          </div>
+          <span class="text-[10px] mono text-emerald-400 flex items-center gap-1.5"><span class="dot-live"></span>SIGNAL LOCKED</span>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-[10px] mono mb-2">
+            <span class="text-slate-500 tracking-widest">SENSORS</span>
+            <span class="text-emerald-400">4/4 live · bpm/br</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br2-s01</span><span class="text-slate-500 text-[11px]">Headboard</span></div>
+              <span class="text-emerald-400 mono text-[11px]">74 / 16</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br2-s02</span><span class="text-slate-500 text-[11px]">Ceiling</span></div>
+              <span class="text-emerald-400 mono text-[11px]">72 / 16</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br2-s03</span><span class="text-slate-500 text-[11px]">Doorway</span></div>
+              <span class="text-emerald-400 mono text-[11px]">73 / 17</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br2-s04</span><span class="text-slate-500 text-[11px]">Window</span></div>
+              <span class="text-emerald-400 mono text-[11px]">72 / 16</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto grid grid-cols-12 gap-3 items-end">
+          <div class="col-span-5">
+            <div class="text-[10px] mono text-slate-500 tracking-widest">HEART RATE</div>
+            <div class="text-white text-2xl font-semibold tracking-tight"><span id="bpm-val-2">72</span><span class="text-sm text-slate-500 ml-1 font-normal">bpm</span></div>
+          </div>
+          <div class="col-span-7 panel-2 p-2">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] mono text-slate-500 tracking-widest">ECG · 24Hz</span>
+              <span class="text-[9px] mono text-emerald-400">RR <span id="rr-val-2">832</span> ms</span>
+            </div>
+            <canvas id="ecg-canvas-2" height="50" class="w-full h-[50px] block"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Nursery -->
+    <section class="col-span-12 md:col-span-6 xl:col-span-4 panel relative overflow-hidden">
+      <div class="scanline"></div>
+      <div class="relative z-10 p-5 h-[520px] flex flex-col">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <span class="pill pill-cyan"><span class="dot-live"></span>Live · CSI vitals</span>
+            <h2 class="text-white text-2xl font-semibold tracking-tight mt-3">Nursery</h2>
+            <p class="text-slate-400 text-xs mt-1.5">Riley · 5 sensors monitored</p>
+          </div>
+          <span class="text-[10px] mono text-emerald-400 flex items-center gap-1.5"><span class="dot-live"></span>SIGNAL LOCKED</span>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-[10px] mono mb-2">
+            <span class="text-slate-500 tracking-widest">SENSORS</span>
+            <span class="text-emerald-400">5/5 live · bpm/br</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br3-s01</span><span class="text-slate-500 text-[11px]">Crib</span></div>
+              <span class="text-emerald-400 mono text-[11px]">118 / 32</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br3-s02</span><span class="text-slate-500 text-[11px]">Ceiling</span></div>
+              <span class="text-emerald-400 mono text-[11px]">116 / 31</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br3-s03</span><span class="text-slate-500 text-[11px]">Wall mount</span></div>
+              <span class="text-emerald-400 mono text-[11px]">117 / 32</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br3-s04</span><span class="text-slate-500 text-[11px]">Window</span></div>
+              <span class="text-emerald-400 mono text-[11px]">117 / 32</span>
+            </div>
+            <div class="flex items-center justify-between p-2 panel-2 text-xs">
+              <div class="flex items-center gap-2"><span class="dot-live"></span><span class="text-white mono">br3-s05</span><span class="text-slate-500 text-[11px]">Floor</span></div>
+              <span class="text-emerald-400 mono text-[11px]">118 / 31</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto grid grid-cols-12 gap-3 items-end">
+          <div class="col-span-5">
+            <div class="text-[10px] mono text-slate-500 tracking-widest">HEART RATE</div>
+            <div class="text-white text-2xl font-semibold tracking-tight"><span id="bpm-val-3">117</span><span class="text-sm text-slate-500 ml-1 font-normal">bpm</span></div>
+          </div>
+          <div class="col-span-7 panel-2 p-2">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] mono text-slate-500 tracking-widest">ECG · 24Hz</span>
+              <span class="text-[9px] mono text-emerald-400">RR <span id="rr-val-3">512</span> ms</span>
+            </div>
+            <canvas id="ecg-canvas-3" height="50" class="w-full h-[50px] block"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vitals row: breathing | sleep | fall (across all rooms) -->
+    <div class="col-span-12 md:col-span-6 lg:col-span-6 panel p-5 relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-cyan-500/10 blur-3xl"></div>
+      <div class="flex items-center justify-between">
+        <span class="pill pill-cyan"><i data-lucide="wind" class="w-3 h-3"></i>BREATHING</span>
+        <span class="text-[10px] mono text-slate-500">aggregate · last 60s</span>
+      </div>
+      <div class="mt-4 flex items-center gap-4">
+        <div class="relative">
+          <div class="w-14 h-14 rounded-full bg-cyan-500/15 border border-cyan-400/30 breath-ring"></div>
+          <div class="absolute inset-0 w-14 h-14 rounded-full bg-cyan-400/10"></div>
+        </div>
+        <div>
+          <div class="text-white text-3xl font-semibold tracking-tight"><span id="breath-val">16</span><span class="text-sm text-slate-500 ml-1 font-normal">/min</span></div>
+          <div class="text-slate-500 text-xs mt-0.5">Normal · within range</div>
+        </div>
+      </div>
+      <svg viewBox="0 0 200 40" class="w-full h-10 mt-3 text-cyan-400/80 stat-spark" preserveAspectRatio="none">
+        <path id="breath-spark" d="M0,20 Q10,5 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20" />
+      </svg>
+    </div>
+
+    <div class="col-span-6 md:col-span-3 lg:col-span-3 panel p-5">
+      <span class="pill pill-mute"><i data-lucide="moon" class="w-3 h-3"></i>SLEEP</span>
+      <div class="mt-4">
+        <div class="text-white text-2xl font-semibold tracking-tight">Deep</div>
+        <div class="text-slate-500 text-xs mt-0.5">Stage · 23m</div>
+      </div>
+      <div class="mt-3 flex gap-1">
+        <div class="h-1.5 flex-1 bg-emerald-500/60 rounded-sm"></div>
+        <div class="h-1.5 flex-1 bg-emerald-500/40 rounded-sm"></div>
+        <div class="h-1.5 flex-1 bg-emerald-500/80 rounded-sm"></div>
+        <div class="h-1.5 flex-1 bg-emerald-500/100 rounded-sm"></div>
+        <div class="h-1.5 flex-1 bg-white/5 rounded-sm"></div>
+      </div>
+      <div class="text-[10px] mono text-slate-500 mt-2">QUALITY · 86%</div>
+    </div>
+
+    <div class="col-span-6 md:col-span-3 lg:col-span-3 panel p-5 relative">
+      <span class="pill pill-green"><i data-lucide="shield-check" class="w-3 h-3"></i>FALL</span>
+      <div class="mt-4">
+        <div class="text-white text-2xl font-semibold tracking-tight">Clear</div>
+        <div class="text-slate-500 text-xs mt-0.5">No events · 14d</div>
+      </div>
+      <div class="mt-3 flex items-center gap-1.5 text-[10px] mono text-emerald-400">
+        <span class="dot-live"></span> MONITORING
+      </div>
+    </div>
+
+    <!-- About / Description -->
+    <section class="col-span-12 lg:col-span-8 panel p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="pill pill-mute mono">README</span>
+          <h3 class="text-white text-lg font-semibold tracking-tight">Description</h3>
+        </div>
+        <a href="#" class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
+          View source <i data-lucide="external-link" class="w-3 h-3"></i>
+        </a>
+      </div>
+      <p class="text-slate-300 leading-relaxed text-sm">
+        Comprehensive contactless health monitoring suite. Tracks breathing rate, heart rate,
+        detects sleep apnea events, and provides fall detection with automatic alerting.
+      </p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+        <div class="panel-2 p-4">
+          <div class="text-[10px] mono text-slate-500 tracking-widest">VERSION</div>
+          <div class="text-white text-base font-semibold mt-1.5 mono">v2.2.0</div>
+        </div>
+        <div class="panel-2 p-4">
+          <div class="text-[10px] mono text-slate-500 tracking-widest">SIZE</div>
+          <div class="text-white text-base font-semibold mt-1.5 mono">32 KB</div>
+        </div>
+        <div class="panel-2 p-4">
+          <div class="text-[10px] mono text-slate-500 tracking-widest">DIFFICULTY</div>
+          <div class="text-amber-400 text-base font-semibold mt-1.5 flex items-center gap-1.5"><i data-lucide="gauge" class="w-3.5 h-3.5"></i> Medium</div>
+        </div>
+        <div class="panel-2 p-4">
+          <div class="text-[10px] mono text-slate-500 tracking-widest">CATEGORY</div>
+          <div class="text-cyan-400 text-base font-semibold mt-1.5 flex items-center gap-1.5"><i data-lucide="heart" class="w-3.5 h-3.5"></i> Health</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hardware / Source -->
+    <section class="col-span-12 lg:col-span-4 panel p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="pill pill-cyan mono">DEPLOY</span>
+        <h3 class="text-white text-lg font-semibold tracking-tight">Hardware</h3>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 panel-2">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-[10px] mono text-slate-500 tracking-widest">PLATFORM</div>
+              <div class="text-white text-sm font-medium">ESP32-S3</div>
+            </div>
+          </div>
+          <span class="pill pill-green"><i data-lucide="check" class="w-3 h-3"></i>Compatible</span>
+        </div>
+
+        <div class="flex items-center justify-between p-3 panel-2">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <i data-lucide="radio" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-[10px] mono text-slate-500 tracking-widest">INPUT</div>
+              <div class="text-white text-sm font-medium">CSI vitals</div>
+            </div>
+          </div>
+          <span class="pill pill-mute mono">802.11n</span>
+        </div>
+
+        <a href="#" class="block p-3 panel-2 row-hover transition-colors">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 h-8 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-slate-300">
+                <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[10px] mono text-slate-500 tracking-widest">SOURCE</div>
+                <div class="text-white text-xs font-medium mono truncate">cognitum-one/cogs/src/cogs/health-monitor</div>
+              </div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Events -->
+    <section class="col-span-12 lg:col-span-5 panel p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="pill pill-cyan mono">EVENTS</span>
+          <h3 class="text-white text-lg font-semibold tracking-tight">Emitted topics</h3>
+        </div>
+        <span class="text-xs text-slate-500 mono">5 channels</span>
+      </div>
+
+      <ul class="divide-y divide-white/5 -mx-2">
+        <li class="flex items-center justify-between px-2 py-3 row-hover rounded-md transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <i data-lucide="wind" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-white text-sm font-medium mono">breathing_rate</div>
+              <div class="text-slate-500 text-xs">breaths · per minute</div>
+            </div>
+          </div>
+          <span class="pill pill-green">live</span>
+        </li>
+        <li class="flex items-center justify-between px-2 py-3 row-hover rounded-md transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <i data-lucide="heart-pulse" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-white text-sm font-medium mono">heart_rate</div>
+              <div class="text-slate-500 text-xs">beats · per minute</div>
+            </div>
+          </div>
+          <span class="pill pill-green">live</span>
+        </li>
+        <li class="flex items-center justify-between px-2 py-3 row-hover rounded-md transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-white text-sm font-medium mono">apnea_event</div>
+              <div class="text-slate-500 text-xs">duration · severity</div>
+            </div>
+          </div>
+          <span class="pill pill-mute">idle</span>
+        </li>
+        <li class="flex items-center justify-between px-2 py-3 row-hover rounded-md transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+              <i data-lucide="user-x" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-white text-sm font-medium mono">fall_detected</div>
+              <div class="text-slate-500 text-xs">location · confidence</div>
+            </div>
+          </div>
+          <span class="pill pill-mute">armed</span>
+        </li>
+        <li class="flex items-center justify-between px-2 py-3 row-hover rounded-md transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-white text-sm font-medium mono">vital_alert</div>
+              <div class="text-slate-500 text-xs">composite · routing</div>
+            </div>
+          </div>
+          <span class="pill pill-mute">armed</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Recent activity feed -->
+    <section class="col-span-12 lg:col-span-7 panel p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="pill pill-mute mono">FEED</span>
+          <h3 class="text-white text-lg font-semibold tracking-tight">Recent activity</h3>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <button class="px-2 py-1 text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md mono">all</button>
+          <button class="px-2 py-1 text-slate-500 hover:text-white rounded-md mono">vitals</button>
+          <button class="px-2 py-1 text-slate-500 hover:text-white rounded-md mono">alerts</button>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex items-start gap-3 p-3 panel-2 border-l-2 border-l-emerald-500">
+          <div class="w-8 h-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="heart-pulse" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-white text-sm font-medium">Heart rate baseline updated</p>
+              <span class="text-[10px] mono text-slate-500">just now</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-0.5">Bedroom · Sensor 01 · resting 68 bpm</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 panel-2 border-l-2 border-l-amber-500">
+          <div class="w-8 h-8 rounded-md bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-white text-sm font-medium">apnea_event · 12s</p>
+              <span class="text-[10px] mono text-slate-500">02:14 AM</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-0.5">Mild · resumed normal breathing autonomously</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 panel-2 border-l-2 border-l-cyan-500">
+          <div class="w-8 h-8 rounded-md bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="wind" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-white text-sm font-medium">Breathing rate stabilized</p>
+              <span class="text-[10px] mono text-slate-500">01:48 AM</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-0.5">14–16 /min · entered REM sleep stage</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 panel-2 border-l-2 border-l-white/10">
+          <div class="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="shield-check" class="w-4 h-4 text-slate-300"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-white text-sm font-medium">Fall detection armed</p>
+              <span class="text-[10px] mono text-slate-500">yesterday</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-0.5">14-day clean window · auto-alerting enabled</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install / Configure footer panel -->
+    <section class="col-span-12 panel relative overflow-hidden grid-bg">
+      <div class="absolute -bottom-20 -right-10 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+      <div class="relative p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+            <i data-lucide="download" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-white text-xl font-semibold tracking-tight">Ready to install on your ESP32-S3</h3>
+            <p class="text-slate-400 text-sm mt-1">Flashes in ~12s over USB-C · 32 KB firmware delta · no hardware changes required.</p>
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+              <span class="pill pill-mute mono">cogs/src/cogs/health-monitor</span>
+              <span class="pill pill-mute mono">v2.2.0</span>
+              <span class="pill pill-green"><i data-lucide="lock" class="w-3 h-3"></i>signed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 md:flex-shrink-0">
+          <button class="px-4 py-3 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
+            <i data-lucide="settings" class="w-4 h-4"></i> Configure
+          </button>
+          <button class="px-4 py-3 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4"></i> Details
+          </button>
+          <button class="px-6 py-3 text-sm font-semibold text-black bg-emerald-500 hover:bg-emerald-400 rounded-xl glow-green flex items-center gap-2 transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i> Install Cog
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-[1400px] mx-auto px-6 pb-10 flex items-center justify-between text-xs text-slate-600">
+    <span class="mono">cognitum.one · cog-store</span>
+    <span class="mono">build 2026.05.06 · ESP32-S3 · CSI vitals pipeline</span>
+  </footer>
+
+  <script>
+    // Init icons
+    lucide.createIcons();
+
+    // ----- Vanta dynamic background — single site-wide instance (green-tuned for health) -----
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.VANTA && window.VANTA.NET) {
+        VANTA.NET({
+          el: '#vanta-bg',
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200,
+          minWidth: 200,
+          scale: 1.0,
+          scaleMobile: 1.0,
+          color: 0x22c55e,
+          backgroundColor: 0x07090c,
+          points: 11,
+          maxDistance: 22,
+          spacing: 18,
+          showDots: true
+        });
+      }
+    });
+
+    // ----- Per-room ECG + BPM (one independent waveform per room) -----
+    function pqrst(phase) {
+      if (phase < 0.10) return  0.05 * Math.sin((phase / 0.10) * Math.PI);
+      if (phase < 0.18) return -0.10 * Math.sin(((phase - 0.10) / 0.08) * Math.PI);
+      if (phase < 0.22) return  1.00 * Math.sin(((phase - 0.18) / 0.04) * Math.PI);
+      if (phase < 0.28) return -0.30 * Math.sin(((phase - 0.22) / 0.06) * Math.PI);
+      if (phase < 0.50) return  0.18 * Math.sin(((phase - 0.30) / 0.20) * Math.PI);
+      return 0;
+    }
+
+    const ROOM_CFG = [
+      { idx: 1, bpm: 68,  min: 64,  max: 74  },
+      { idx: 2, bpm: 72,  min: 68,  max: 78  },
+      { idx: 3, bpm: 117, min: 110, max: 124 }
+    ];
+
+    ROOM_CFG.forEach(room => {
+      const ecg = document.getElementById('ecg-canvas-' + room.idx);
+      const ctx = ecg.getContext('2d');
+      let dpr = window.devicePixelRatio || 1;
+      function sizeCanvas() {
+        const r = ecg.getBoundingClientRect();
+        ecg.width = r.width * dpr;
+        ecg.height = r.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      sizeCanvas();
+      window.addEventListener('resize', () => { dpr = window.devicePixelRatio || 1; sizeCanvas(); });
+
+      const N = 240;
+      const buf = new Array(N).fill(0);
+      let t = 0, beatPhase = 0;
+      let bpm = room.bpm;
+      const rrSamples = () => Math.round(60 / bpm * 60);
+      let beatLen = rrSamples();
+
+      function step() {
+        beatPhase += 1 / beatLen;
+        if (beatPhase >= 1) {
+          beatPhase = 0;
+          beatLen = rrSamples() + (Math.random() * 6 - 3);
+        }
+        const v = pqrst(beatPhase) + (Math.random() * 0.04 - 0.02);
+        buf.push(v); buf.shift();
+
+        const w = ecg.width / dpr;
+        const h = ecg.height / dpr;
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(34,197,94,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += 16) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        for (let y = 0; y < h; y += 16) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 1.6;
+        ctx.shadowColor = 'rgba(34,197,94,0.6)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        const mid = h * 0.55;
+        for (let i = 0; i < N; i++) {
+          const x = (i / (N - 1)) * w;
+          const y = mid - buf[i] * (h * 0.45);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        const cursorX = ((t % N) / (N - 1)) * w;
+        ctx.fillStyle = 'rgba(34,197,94,0.9)';
+        ctx.beginPath();
+        ctx.arc(cursorX, mid - buf[N - 1] * (h * 0.45), 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        t++;
+        requestAnimationFrame(step);
+      }
+      step();
+
+      const bpmEl = document.getElementById('bpm-val-' + room.idx);
+      const rrEl  = document.getElementById('rr-val-' + room.idx);
+      setInterval(() => {
+        bpm = Math.max(room.min, Math.min(room.max, bpm + (Math.random() * 2 - 1)));
+        bpmEl.textContent = Math.round(bpm);
+        rrEl.textContent = Math.round(60000 / bpm);
+      }, 1200);
+    });
+
+    // gently fluctuate aggregate breathing
+    const breathEl = document.getElementById('breath-val');
+    let breath = 16;
+    setInterval(() => {
+      breath = Math.max(13, Math.min(19, breath + (Math.random() * 1.4 - 0.7)));
+      breathEl.textContent = Math.round(breath);
+    }, 2500);
+
+    // animated breathing sparkline path
+    const breathSpark = document.getElementById('breath-spark');
+    let sphase = 0;
+    function animateBreath() {
+      sphase += 0.025;
+      let d = 'M0,20';
+      for (let x = 0; x <= 200; x += 10) {
+        const y = 20 - Math.sin((x / 200) * Math.PI * 4 + sphase) * 9;
+        d += ` L${x},${y.toFixed(2)}`;
+      }
+      breathSpark.setAttribute('d', d);
+      requestAnimationFrame(animateBreath);
+    }
+    animateBreath();
+  </script>
+</body>
+</html>
