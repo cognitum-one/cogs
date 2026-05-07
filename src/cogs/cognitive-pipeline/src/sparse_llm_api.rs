@@ -37,7 +37,19 @@ const MAX_TOKENS_LIMIT: usize = 200;
 const MAX_SEQ_LIMIT: usize = 512;
 const MIN_SEQ_LIMIT: usize = 64;
 const MAX_PROMPT_CHARS: usize = 1000;
-const MODEL_BASE_DIR: &str = "/var/lib/cognitum/models";
+/// Resolves the cog's data directory from the `COGNITUM_COG_DATA_DIR` env var
+/// (set by the agent at /start), defaulting to the canonical sandbox path
+/// per ADR-095 §4. Models live at `<dir>/<model_id>/model.gguf` +
+/// `<dir>/<model_id>/tokenizer.json`. The agent's asset-download writes there too.
+fn model_base_dir() -> &'static str {
+    use std::sync::OnceLock;
+    static MBD: OnceLock<String> = OnceLock::new();
+    MBD.get_or_init(|| {
+        std::env::var("COGNITUM_COG_DATA_DIR")
+            .unwrap_or_else(|_| "/var/lib/cognitum/apps/cognitive-pipeline".to_string())
+    })
+    .as_str()
+}
 /// 320 MB — matches PiZeroProfile::MAX_MODEL_BYTES
 const MAX_UPLOAD_BYTES: usize = 320 * 1024 * 1024;
 /// Allowed upload filenames.
@@ -624,8 +636,8 @@ pub fn handle_sparse_generate(
     //      Pi Zero 2 W is single-core: only one inference runs at a time.
     //      Use try_lock so concurrent requests fail-fast with 503 instead of
     //      queuing behind a multi-second inference and causing timeouts.
-    let model_path = PathBuf::from(format!("{}/{}/model.gguf", MODEL_BASE_DIR, req.model));
-    let tokenizer_path = PathBuf::from(format!("{}/{}/tokenizer.json", MODEL_BASE_DIR, req.model));
+    let model_path = PathBuf::from(format!("{}/{}/model.gguf", model_base_dir(), req.model));
+    let tokenizer_path = PathBuf::from(format!("{}/{}/tokenizer.json", model_base_dir(), req.model));
 
     let mut cache_guard = match SPARSE_CACHE.try_lock() {
         Ok(g) => g,
@@ -956,8 +968,8 @@ pub fn handle_sparse_generate_sse<W: std::io::Write>(
     };
 
     // Acquire the cache (non-streaming model loading is the same path).
-    let model_path = PathBuf::from(format!("{}/{}/model.gguf", MODEL_BASE_DIR, req.model));
-    let tokenizer_path = PathBuf::from(format!("{}/{}/tokenizer.json", MODEL_BASE_DIR, req.model));
+    let model_path = PathBuf::from(format!("{}/{}/model.gguf", model_base_dir(), req.model));
+    let tokenizer_path = PathBuf::from(format!("{}/{}/tokenizer.json", model_base_dir(), req.model));
 
     let mut cache_guard = match SPARSE_CACHE.try_lock() {
         Ok(g) => g,
@@ -1323,17 +1335,17 @@ pub fn handle_sparse_info() -> (u16, String) {
 
 // ── Model file management ─────────────────────────────────────────
 
-/// List installed models by scanning MODEL_BASE_DIR.
+/// List installed models by scanning model_base_dir().
 ///
 /// GET /api/v1/llm/sparse/models
 pub fn handle_sparse_models() -> (u16, String) {
     let mut result = serde_json::json!({
         "models": serde_json::Value::Array(vec![]),
-        "base_dir": MODEL_BASE_DIR,
+        "base_dir": model_base_dir(),
     });
     let models = result["models"].as_array_mut().unwrap();
     for &model_id in KNOWN_MODELS {
-        let model_dir = format!("{}/{}", MODEL_BASE_DIR, model_id);
+        let model_dir = format!("{}/{}", model_base_dir(), model_id);
         let gguf_path = format!("{}/model.gguf", model_dir);
         let tok_path  = format!("{}/tokenizer.json", model_dir);
         let has_gguf  = std::path::Path::new(&gguf_path).exists();
@@ -1399,7 +1411,7 @@ pub fn handle_model_upload(path: &str, body: &[u8]) -> (u16, String) {
     }
 
     // Create model directory and write file.
-    let model_dir = format!("{}/{}", MODEL_BASE_DIR, model_id);
+    let model_dir = format!("{}/{}", model_base_dir(), model_id);
     if let Err(e) = std::fs::create_dir_all(&model_dir) {
         let err = serde_json::json!({
             "error": format!("failed to create model dir: {}", e),
@@ -2056,8 +2068,8 @@ mod tests {
 fn ensure_cache_warm(guard: &mut Option<SparseCache>) {
     if guard.is_some() { return; }
     let model_id   = "smollm2-135m";
-    let model_path = PathBuf::from(format!("{}/{}/model.gguf",     MODEL_BASE_DIR, model_id));
-    let tok_path   = PathBuf::from(format!("{}/{}/tokenizer.json", MODEL_BASE_DIR, model_id));
+    let model_path = PathBuf::from(format!("{}/{}/model.gguf",     model_base_dir(), model_id));
+    let tok_path   = PathBuf::from(format!("{}/{}/tokenizer.json", model_base_dir(), model_id));
     if !model_path.exists() { return; }
 
     let tokenizer = if tok_path.exists() {

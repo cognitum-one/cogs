@@ -55,6 +55,20 @@ Each maps 1:1 to one HTTP endpoint above.
 
 Models are downloaded from `gs://cognitum-apps/cogs/arm/models/` at install time (declared in `cog.toml [[assets]]`), sha256-verified, placed in `/var/lib/cognitum/apps/cognitive-pipeline/`. See seed ADR-095 §4.
 
+### Data directory contract
+
+The cog reads two paths from a single env var, `COGNITUM_COG_DATA_DIR`, defaulting to `/var/lib/cognitum/apps/cognitive-pipeline/` (the canonical sandbox path per seed ADR-095 §4):
+
+| File | Resolved path | Source |
+|---|---|---|
+| GGUF model | `<COG_DATA_DIR>/<model-id>/model.gguf` | Agent install handler downloads from `gcs_path` to `cog.toml [[assets]].filename` (which includes the `<model-id>/` prefix) |
+| Tokenizer | `<COG_DATA_DIR>/<model-id>/tokenizer.json` | Optional sibling — most GGUFs embed the tokenizer; the file is consulted only when present |
+| Cognitive event JSONL | `<COG_DATA_DIR>/cognitive-events.jsonl` | Cog persists ring buffer here; survives restarts |
+
+The agent should set `COGNITUM_COG_DATA_DIR` at `/start` time (alongside `COGNITUM_COG_TOKEN`). When unset, the cog falls back to the default — that path matches what the agent already creates for cog data, so the cog runs correctly even before the agent injection lands.
+
+This contract specifically prevents the lifted code's original behaviour (writing to `/var/lib/cognitum/cognitive-events.jsonl` outside any sandbox) which would have conflicted with the agent and made the cog non-relocatable.
+
 ### Hardware gate
 
 `cog.toml [cog].hardware_requirements = ["pi-zero-2w", "v0-appliance"]` with `hardware_override_allowed = true`. Wizard surfaces a yellow "not officially supported" badge on other devices; operator can `force_hardware: true` to install anyway. See seed ADR-095 §6.

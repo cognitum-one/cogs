@@ -92,12 +92,16 @@ tools = [
 permissions = ["mesh.read"]   # cognitive-event delta-sync needs to enumerate peers; no outbound send
 
 # ADR-095 §4: sidecar GGUF model files. Agent fetches from gs://cognitum-apps/cogs/arm/<gcs_path>
-# during install, sha256-verifies, places under /var/lib/cognitum/apps/cognitive-pipeline/<filename>.
+# during install, sha256-verifies, places under <COG_DATA_DIR>/<filename>.
 # `required_when` is evaluated against the user's config.json — only the model they selected
 # is downloaded; switching models later re-runs the install flow for the new asset.
+#
+# `filename` includes a `<model-id>/` prefix because the cog code looks up models at
+# `<COG_DATA_DIR>/<model-id>/{model.gguf,tokenizer.json}` (constructed in
+# sparse_llm_api.rs::handle_sparse_generate). Agent must `mkdir -p` the parent before save.
 [[assets]]
 id = "smollm2-135m"
-filename = "smollm2-135m-q4_k_m.gguf"
+filename = "smollm2-135m/model.gguf"
 size_bytes = 142_000_000
 sha256 = "TODO-set-on-publish"
 gcs_path = "models/smollm2-135m-q4_k_m.gguf"
@@ -105,7 +109,7 @@ required_when = "config.model_id == 'smollm2-135m'"
 
 [[assets]]
 id = "qwen2.5-0.5b-q4"
-filename = "qwen2.5-0.5b-q4_k_m.gguf"
+filename = "qwen2.5-0.5b-q4/model.gguf"
 size_bytes = 507_000_000
 sha256 = "TODO-set-on-publish"
 gcs_path = "models/qwen2.5-0.5b-q4_k_m.gguf"

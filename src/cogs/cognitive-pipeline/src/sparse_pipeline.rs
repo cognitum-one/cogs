@@ -37,7 +37,20 @@ static INFERENCE_BUSY: AtomicBool = AtomicBool::new(false);
 
 /// JSONL file that persists SENSOR_EVENTS across restarts.
 /// Written append-only; compacted to the last EVENT_RING_CAP lines on startup load.
-const EVENT_STORE_PATH: &str = "/var/lib/cognitum/cognitive-events.jsonl";
+///
+/// Resolves under `COGNITUM_COG_DATA_DIR` (set by the agent at /start), defaulting
+/// to the canonical sandbox path per ADR-095 §4. Cog data lives under
+/// `<dir>/cognitive-events.jsonl` — never the agent-global `/var/lib/cognitum/`.
+fn event_store_path() -> &'static str {
+    use std::sync::OnceLock;
+    static ESP: OnceLock<String> = OnceLock::new();
+    ESP.get_or_init(|| {
+        let base = std::env::var("COGNITUM_COG_DATA_DIR")
+            .unwrap_or_else(|_| "/var/lib/cognitum/apps/cognitive-pipeline".to_string());
+        format!("{}/cognitive-events.jsonl", base)
+    })
+    .as_str()
+}
 
 // ── Pipeline state struct ───────────────────────────────────────────────────
 
@@ -455,7 +468,7 @@ pub fn handle_pipeline_weights_download(authorized: bool) -> (usize, String) {
 /// Load the last EVENT_RING_CAP events from the JSONL store into SENSOR_EVENTS.
 /// Called once at startup; silently ignores a missing or corrupt store file.
 pub fn load_events_from_disk() {
-    let path = std::path::Path::new(EVENT_STORE_PATH);
+    let path = std::path::Path::new(event_store_path());
     let file = match std::fs::File::open(path) {
         Ok(f) => f,
         Err(_) => return, // no store file yet — normal on first boot
@@ -471,7 +484,7 @@ pub fn load_events_from_disk() {
     let count = loaded.len();
     let mut guard = SENSOR_EVENTS.lock().unwrap_or_else(|e| e.into_inner());
     *guard = loaded;
-    eprintln!("[cognitive] loaded {} events from {}", count, EVENT_STORE_PATH);
+    eprintln!("[cognitive] loaded {} events from {}", count, event_store_path());
 }
 
 /// Append a single event to the JSONL store (best-effort; failures are logged).
@@ -480,7 +493,7 @@ fn persist_event(event: &CognitiveEvent) {
         Ok(l) => l,
         Err(_) => return,
     };
-    match std::fs::OpenOptions::new().append(true).create(true).open(EVENT_STORE_PATH) {
+    match std::fs::OpenOptions::new().append(true).create(true).open(event_store_path()) {
         Ok(mut f) => { let _ = writeln!(f, "{}", line); }
         Err(e) => eprintln!("[cognitive] event persist failed: {}", e),
     }
@@ -495,7 +508,7 @@ fn compact_event_store() {
         .collect();
     drop(guard);
     let content = lines.join("\n") + if lines.is_empty() { "" } else { "\n" };
-    let _ = std::fs::write(EVENT_STORE_PATH, content);
+    let _ = std::fs::write(event_store_path(), content);
 }
 
 // ── Delta-sync helpers ───────────────────────────────────────────────────────
