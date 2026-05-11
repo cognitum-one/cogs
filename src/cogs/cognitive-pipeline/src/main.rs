@@ -17,12 +17,14 @@
 
 use axum::{
     body::{Body, Bytes},
-    extract::{DefaultBodyLimit, State},
+    extract::{DefaultBodyLimit, Path as AxumPath, State},
     http::{HeaderMap, Method, StatusCode, Uri},
     response::{IntoResponse, Response as AxumResponse},
-    routing::any,
+    routing::{any, put},
     Router,
 };
+use futures_util::StreamExt;
+use tokio::io::AsyncWriteExt;
 use clap::Parser;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -145,6 +147,188 @@ fn rewrite_path(p: &str) -> String {
     p.to_string()
 }
 
+/// Stream the request body to disk without buffering it in memory. Replaces
+/// the lifted `PUT /api/v1/llm/sparse/model/<id>/<file>` path for uploads —
+/// that handler uses axum's `Bytes` extractor (full-body buffer), which OOMs
+/// on a 512 MB Pi Zero for the 85-310 MB GGUFs declared in cog.toml `[[assets]]`.
+///
+/// `id` and `filename` map to `<COGNITUM_COG_DATA_DIR>/<id>/<filename>`,
+/// matching what the lifted `dispatch_sparse_llm` resolves at GET /models time.
+async fn handle_model_upload_streaming(
+    State(state): State<AppState>,
+    AxumPath((id, filename)): AxumPath<(String, String)>,
+    headers: HeaderMap,
+    body: Body,
+) -> AxumResponse {
+    use std::io::ErrorKind;
+
+    // Same auth contract as `dispatch_sparse_llm`'s PUT handler — admin op,
+    // requires the cog-token in standalone-prod, accepts anything in dev.
+    if !check_authorization(&state, &headers) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(serde_json::json!({
+                "error": "authorization required",
+                "code":  "UNAUTHORIZED"
+            })),
+        )
+            .into_response();
+    }
+
+    // Path-traversal guard. axum already URL-decodes the segments, so we just
+    // reject anything that could escape the cog data dir.
+    if id.is_empty()
+        || filename.is_empty()
+        || id.contains('/') || id.contains('\\') || id.contains("..")
+        || filename.contains('/') || filename.contains('\\') || filename.contains("..")
+    {
+        return (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({
+                "error": "invalid model id or filename (no '/', '\\\\', or '..' allowed)"
+            })),
+        )
+            .into_response();
+    }
+
+    // Resolve `<base>/<id>/<filename>` and ensure parent exists. The base is
+    // `COGNITUM_COG_DATA_DIR` per fd44917; default `/var/lib/cognitum/apps/cognitive-pipeline`.
+    let base_dir = std::path::Path::new(sparse_llm_api::model_base_dir());
+    let dir = base_dir.join(&id);
+    if let Err(e) = tokio::fs::create_dir_all(&dir).await {
+        log::error!("model upload: create_dir_all({:?}) failed: {}", dir, e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({
+                "error": format!("failed to create model dir: {e}")
+            })),
+        )
+            .into_response();
+    }
+    let dest = dir.join(&filename);
+    let tmp = dir.join(format!(".{filename}.partial"));
+
+    // Stream chunks → tmp file → atomic rename. Never holds more than one
+    // chunk in memory at a time (axum's hyper body chunk size is ~16 KB).
+    let mut file = match tokio::fs::File::create(&tmp).await {
+        Ok(f) => f,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({
+                    "error": format!("create tmp file failed: {e}")
+                })),
+            )
+                .into_response();
+        }
+    };
+    let mut stream = body.into_data_stream();
+    let mut total: usize = 0;
+    while let Some(chunk_res) = stream.next().await {
+        match chunk_res {
+            Ok(chunk) => {
+                if let Err(e) = file.write_all(&chunk).await {
+                    let _ = tokio::fs::remove_file(&tmp).await;
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        axum::Json(serde_json::json!({
+                            "error": format!("write chunk failed: {e}")
+                        })),
+                    )
+                        .into_response();
+                }
+                total += chunk.len();
+            }
+            Err(e) => {
+                let _ = tokio::fs::remove_file(&tmp).await;
+                // Distinguish client disconnect from real I/O failure
+                let msg = format!("body read failed: {e}");
+                let status = if msg.contains("closed") || msg.contains("reset")
+                    || e.to_string().to_lowercase().contains("eof")
+                {
+                    StatusCode::BAD_REQUEST
+                } else {
+                    StatusCode::INTERNAL_SERVER_ERROR
+                };
+                return (
+                    status,
+                    axum::Json(serde_json::json!({
+                        "error": msg
+                    })),
+                )
+                    .into_response();
+            }
+        }
+    }
+    if let Err(e) = file.flush().await {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({
+                "error": format!("flush failed: {e}")
+            })),
+        )
+            .into_response();
+    }
+    drop(file);
+
+    // Atomic swap into final filename. If a previous upload existed, this
+    // replaces it; the cog's GET /models picks up the new bytes on next call.
+    if let Err(e) = tokio::fs::rename(&tmp, &dest).await {
+        // Some filesystems (rare) reject cross-device rename. Fall back to copy+remove.
+        if e.kind() == ErrorKind::CrossesDevices {
+            match tokio::fs::copy(&tmp, &dest).await {
+                Ok(_) => {
+                    let _ = tokio::fs::remove_file(&tmp).await;
+                }
+                Err(e2) => {
+                    let _ = tokio::fs::remove_file(&tmp).await;
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        axum::Json(serde_json::json!({
+                            "error": format!("rename + copy fallback failed: {e2}")
+                        })),
+                    )
+                        .into_response();
+                }
+            }
+        } else {
+            let _ = tokio::fs::remove_file(&tmp).await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({
+                    "error": format!("rename failed: {e}")
+                })),
+            )
+                .into_response();
+        }
+    }
+
+    // Best-effort cache invalidation so the next /generate sees the new
+    // weights. The lifted PUT handler reported `cache_evicted: true` here;
+    // sparse_llm_api keeps a global cached engine keyed by model id.
+    let cache_evicted = sparse_llm_api::invalidate_model_cache(&id);
+
+    log::info!(
+        "model upload: id={} filename={} bytes={} (streamed, no buffer) cache_evicted={}",
+        id, filename, total, cache_evicted
+    );
+
+    (
+        StatusCode::OK,
+        axum::Json(serde_json::json!({
+            "status":         "ok",
+            "model_id":       id,
+            "filename":       filename,
+            "bytes_written":  total,
+            "path":           dest.to_string_lossy(),
+            "cache_evicted":  cache_evicted,
+            "transport":      "streamed",
+        })),
+    )
+        .into_response()
+}
+
 /// Single axum handler — translates an axum request into the compat Request,
 /// calls `sparse_llm_api::dispatch_sparse_llm`, translates the compat Response
 /// back to axum.
@@ -265,7 +449,11 @@ async fn main() {
     // agent's paired-only auth gate + USB trust is the access control;
     // the cog binds 127.0.0.1 only so the agent is the only caller.
     const MAX_REQUEST_BODY_BYTES: usize = 320 * 1024 * 1024;
+    // Route ordering matters: the streaming PUT must match BEFORE the
+    // catch-all fallback so model uploads bypass `handle_any` (Bytes
+    // extractor, full-body buffer = OOM on Pi Zero for 85-310 MB GGUFs).
     let app = Router::new()
+        .route("/model/:id/:filename", put(handle_model_upload_streaming))
         .fallback(any(handle_any))
         .layer(DefaultBodyLimit::max(MAX_REQUEST_BODY_BYTES))
         .with_state(state.clone());

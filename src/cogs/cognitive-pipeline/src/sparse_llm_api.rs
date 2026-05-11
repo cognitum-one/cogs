@@ -47,7 +47,7 @@ const MAX_PROMPT_CHARS: usize = 1000;
 /// (set by the agent at /start), defaulting to the canonical sandbox path
 /// per ADR-095 §4. Models live at `<dir>/<model_id>/model.gguf` +
 /// `<dir>/<model_id>/tokenizer.json`. The agent's asset-download writes there too.
-fn model_base_dir() -> &'static str {
+pub fn model_base_dir() -> &'static str {
     use std::sync::OnceLock;
     static MBD: OnceLock<String> = OnceLock::new();
     MBD.get_or_init(|| {
@@ -55,6 +55,23 @@ fn model_base_dir() -> &'static str {
             .unwrap_or_else(|_| "/var/lib/cognitum/apps/cognitive-pipeline".to_string())
     })
     .as_str()
+}
+
+/// Drop any cached weights pinned to `<model_base_dir>/<model_id>/`. Called by
+/// the streaming PUT handler in `main.rs` after a successful upload so the
+/// next `/generate` reloads from the new GGUF instead of serving stale weights.
+/// Returns `true` if a cache entry was actually evicted, `false` if nothing
+/// matched or if `SPARSE_CACHE` was contended (a running request will reload
+/// on its own when it next acquires the lock).
+pub fn invalidate_model_cache(model_id: &str) -> bool {
+    let model_dir = format!("{}/{}", model_base_dir(), model_id);
+    if let Ok(mut guard) = SPARSE_CACHE.try_lock() {
+        if guard.as_ref().map(|c| c.model_path.starts_with(&model_dir)).unwrap_or(false) {
+            *guard = None;
+            return true;
+        }
+    }
+    false
 }
 /// 320 MB — matches PiZeroProfile::MAX_MODEL_BYTES
 const MAX_UPLOAD_BYTES: usize = 320 * 1024 * 1024;
