@@ -2,7 +2,7 @@
 id = "cognitive-pipeline"
 name = "Cognitive Pipeline (FastGRNN + SmolLM2)"
 version = "0.1.0"
-category = "ml"
+category = "ai"
 description = "FastGRNN anomaly gate + SmolLM2 sparse-LLM inference for on-device Pi Zero 2W cognitive events"
 binary = "cog-cognitive-pipeline-arm"
 
