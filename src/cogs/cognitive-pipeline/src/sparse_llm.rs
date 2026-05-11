@@ -1,8 +1,10 @@
 // Lifted from cognitum-one/seed#133 — byte-identical except for the
 // stripped #![cfg(feature = "sparse-llm")] line. Many items here are not yet
 // exercised by the cog's current endpoint surface; they become live when
-// streaming SSE, multi-layer loading, and mesh delta-sync land as next-layer
-// commits per ADR-095. Suppress the corresponding lints until then.
+// streaming SSE response bodies and mesh delta-sync land as next-layer
+// commits per ADR-095. Multi-layer loading is already exercised end-to-end
+// — verified `weight_mode: "gguf-tied[30L+norm]"` (all 30 SmolLM2 layers)
+// on seed 1c2650b4. Suppress the remaining lints until those final layers land.
 #![allow(dead_code, unused_variables, unused_assignments, unused_imports)]
 //! Pi Zero sparse attention inference (Phase 2B-zero, feature = "sparse-llm").
 //!

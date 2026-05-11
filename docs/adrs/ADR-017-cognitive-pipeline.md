@@ -112,25 +112,47 @@ cog-cognitive-pipeline [--once|--info]
 
 `--once` and `--info` are listed in `cog.toml [console] allowed_commands` so the seed UI's per-cog Console can call them safely.
 
-## Output (stub today, real after sparse-LLM merge)
+## Output
 
-`/info`:
+The sparse-LLM modules are merged into this cog (see Status above); these
+examples show real on-device responses, not pre-merge stubs.
+
+`--info` (CLI, for the cog's per-seed Console UI):
 
 ```json
 {
   "cog_id": "cognitive-pipeline",
   "version": "0.1.0",
-  "status": "scaffold",
-  "model": "smollm2-135m",
-  "deadline_secs": 90,
-  "gate_threshold": 1.0,
-  "ring_cap": 100,
-  "uptime_secs": 18,
-  "weight_mode": "stub"
+  "model": "smollm2-135m"
 }
 ```
 
-`/pipeline/events?since=0&limit=3` (when sparse-LLM modules land):
+`GET /info` (HTTP, full endpoint catalog — real-shape, ~1 KB; abbreviated here):
+
+```json
+{
+  "models": ["smollm2-135m", "qwen2.5-0.5b-q4"],
+  "endpoints": {
+    "generate":  "POST /api/v1/llm/sparse/generate",
+    "oai_chat":  "POST /v1/chat/completions",
+    "upload":    "PUT  /api/v1/llm/sparse/model/{id}/{filename}",
+    "...":       "see /info on a running cog for the full list"
+  },
+  "layers_loaded": 0,
+  "weights_cached": false,
+  "max_seq": 512,
+  "max_tokens": 200,
+  "concurrency": "serialized",
+  "busy_code": "503",
+  "sampling": { "temperature": {"default":1.0,"range":[0.0,5.0]}, "...": "..." }
+}
+```
+
+After a model upload, `layers_loaded` becomes 30, `weights_cached` becomes true,
+and `weight_mode` in the `/generate` response reads `"gguf-tied[30L+norm]"`
+(measured on Pi Zero 2 W at 0.11 tok/s with SmolLM2-135M-Instruct Q4_K_M).
+
+`GET /pipeline/events?since=0&limit=3`:
 
 ```json
 {

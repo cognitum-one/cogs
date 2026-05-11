@@ -404,7 +404,7 @@ async fn main() {
         return;
     }
     if args.once {
-        log::info!("--once: scaffold path; full pipeline tick lands when the agent supplies sensor data");
+        log::info!("--once: dry-run path; full pipeline tick fires when the agent's sensor-feed wiring lands (ADR-095 next-layer)");
         return;
     }
 
