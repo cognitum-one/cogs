@@ -1,3 +1,9 @@
+// Lifted from cognitum-one/seed#133 — byte-identical except for the
+// stripped #![cfg(feature = "sparse-llm")] line. Many items here are not yet
+// exercised by the cog's current endpoint surface; they become live when
+// streaming SSE, multi-layer loading, and mesh delta-sync land as next-layer
+// commits per ADR-095. Suppress the corresponding lints until then.
+#![allow(dead_code, unused_variables, unused_assignments, unused_imports)]
 //! Q/K/V projection and FFN layer weights for sparse-LLM forward pass.
 //!
 //! Two representations are provided:

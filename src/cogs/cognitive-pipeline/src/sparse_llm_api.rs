@@ -1,3 +1,9 @@
+// Lifted from cognitum-one/seed#133 — byte-identical except for the
+// stripped #![cfg(feature = "sparse-llm")] line. Many items here are not yet
+// exercised by the cog's current endpoint surface; they become live when
+// streaming SSE, multi-layer loading, and mesh delta-sync land as next-layer
+// commits per ADR-095. Suppress the corresponding lints until then.
+#![allow(dead_code, unused_variables, unused_assignments, unused_imports)]
 //! HTTP API endpoints for on-device sparse-LLM inference (ADR-094, issue #131 item 6).
 //!
 //! Endpoints:
