@@ -77,7 +77,20 @@ impl PiZeroProfile {
     pub const SORT_CANDIDATES: bool = true;
     /// Rayon disabled — spawn overhead exceeds benefit at seq < 512.
     pub const USE_RAYON: bool = false;
-    /// Max model size in bytes (320 MB; leaves 192 MB for OS + agent).
+    /// Max model size in bytes — **device-class default for Pi Zero 2 W**
+    /// (320 MB; leaves 192 MB for OS + agent on a 512 MB device).
+    ///
+    /// Other device classes get larger caps via
+    /// `max_model_bytes_for_current_device()`:
+    /// * `pi-zero-2w` (Cortex-A53, ≤600 MB RAM): 320 MB (this constant)
+    /// * `v0-appliance` (Pi 5, 8 GB RAM): 4 GB
+    /// * unknown / dev VMs: 1 GB conservative default
+    ///
+    /// The original 320 MB cap was named "Pi Zero profile" but applied
+    /// universally — installing a 469 MB Qwen2.5-0.5B Q4_K_M failed
+    /// on v0-appliance even though it had 8 GB of RAM. The device-class
+    /// helper below restores the intent: gate by what the device can
+    /// actually run, not by the lifted profile's hardcoded constant.
     pub const MAX_MODEL_BYTES: u64 = 320 * 1024 * 1024;
     /// Max KV cache budget in bytes.
     pub const MAX_KV_BUDGET_BYTES: u64 = 64 * 1024 * 1024;
@@ -217,12 +230,15 @@ impl PiZeroInferenceEngine {
         })
     }
 
-    /// Validate a model file fits within the Pi Zero RAM budget.
+    /// Validate a model file fits within the current device's RAM budget.
+    /// Uses `max_model_bytes_for_current_device()` so Pi Zero stays at
+    /// 320 MB while v0-appliance can run multi-GB models.
     pub fn validate_model_size(&self, size_bytes: u64) -> Result<(), SeedLlmError> {
-        if size_bytes > PiZeroProfile::MAX_MODEL_BYTES {
+        let cap = max_model_bytes_for_current_device();
+        if size_bytes > cap {
             return Err(SeedLlmError::ModelTooLarge {
                 size_bytes,
-                max_bytes: PiZeroProfile::MAX_MODEL_BYTES,
+                max_bytes: cap,
             });
         }
         Ok(())
@@ -293,6 +309,91 @@ fn detect_pi_zero_impl() -> Result<bool, std::io::Error> {
     Ok(false)
 }
 
+/// Device classes the cog knows about. Aligned with ADR-095 §6's
+/// `hardware_requirements` strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeviceClass {
+    /// Pi Zero 2 W (Cortex-A53, 512 MB RAM). Tight memory budget.
+    PiZero2W,
+    /// v0-appliance (Pi 5, 8 GB RAM). Comfortable budget.
+    V0Appliance,
+    /// Anything else — dev VMs, Pi 4 boards, unknown ARM. Conservative.
+    Other,
+}
+
+impl DeviceClass {
+    /// Per-class hard cap on model file size. Used by
+    /// `validate_model_size` to refuse loading a model the device can't
+    /// fit. ADR-095 §6 + ADR-094 envelope.
+    ///
+    /// Pi Zero 2 W: 320 MB (model file + KV + activations ≈ 400 MB,
+    /// leaves 100 MB for OS + agent + buffers).
+    /// v0-appliance: 4 GB (Pi 5 has 8 GB; cap leaves >half for system).
+    /// Other: 1 GB conservative — assumes dev VM with ≥2 GB RAM.
+    pub fn max_model_bytes(self) -> u64 {
+        match self {
+            DeviceClass::PiZero2W => 320 * 1024 * 1024,
+            DeviceClass::V0Appliance => 4 * 1024 * 1024 * 1024,
+            DeviceClass::Other => 1024 * 1024 * 1024,
+        }
+    }
+}
+
+/// Detect the device class from `/proc/cpuinfo` + `/proc/firmware/devicetree`.
+/// Returns `Other` for non-Linux or unparseable systems — that's a safe
+/// default because `Other`'s cap is intermediate.
+pub fn detect_device_class() -> DeviceClass {
+    detect_device_class_impl().unwrap_or(DeviceClass::Other)
+}
+
+fn detect_device_class_impl() -> Result<DeviceClass, std::io::Error> {
+    // ADR-095 §6 detection priority: /sys/firmware/devicetree/base/model is
+    // canonical on Raspbian. Pi 5 models advertise "Raspberry Pi 5"; Pi Zero
+    // 2 W advertises "Raspberry Pi Zero 2 W".
+    if let Ok(model) = std::fs::read_to_string("/sys/firmware/devicetree/base/model") {
+        if model.contains("Pi Zero 2") {
+            return Ok(DeviceClass::PiZero2W);
+        }
+        if model.contains("Pi 5") {
+            return Ok(DeviceClass::V0Appliance);
+        }
+    }
+    // Fallback: /proc/cpuinfo + /proc/meminfo. Pi Zero 2 W has Cortex-A53
+    // + < 600 MB total RAM; Pi 5 has Cortex-A76 + >= 4 GB.
+    let cpuinfo = std::fs::read_to_string("/proc/cpuinfo")?;
+    if cpuinfo.contains("Pi Zero 2") {
+        return Ok(DeviceClass::PiZero2W);
+    }
+    if cpuinfo.contains("Cortex-A76") {
+        return Ok(DeviceClass::V0Appliance);
+    }
+    if cpuinfo.contains("Cortex-A53") {
+        let meminfo = std::fs::read_to_string("/proc/meminfo")?;
+        for line in meminfo.lines() {
+            if let Some(rest) = line.strip_prefix("MemTotal:") {
+                let kb: u64 = rest
+                    .split_whitespace()
+                    .next()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(u64::MAX);
+                if kb < 600_000 {
+                    return Ok(DeviceClass::PiZero2W);
+                }
+            }
+        }
+    }
+    Ok(DeviceClass::Other)
+}
+
+/// Current device's hard cap on model file size, used by
+/// `PiZeroInferenceEngine::validate_model_size`. Computed once per process
+/// at first call.
+pub fn max_model_bytes_for_current_device() -> u64 {
+    use std::sync::OnceLock;
+    static CAP: OnceLock<u64> = OnceLock::new();
+    *CAP.get_or_init(|| detect_device_class().max_model_bytes())
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -356,9 +457,45 @@ mod tests {
 
     #[test]
     fn test_model_too_large_error() {
+        // Cap is device-aware now (`max_model_bytes_for_current_device`).
+        // On the dev machine this resolves to `DeviceClass::Other` (1 GB);
+        // on Pi Zero 2 W it's 320 MB; on v0-appliance it's 4 GB. Pick
+        // values that are above the largest realistic cap and below the
+        // smallest so the assertion holds across all classes.
         let engine = make_engine(64);
-        let result = engine.validate_model_size(1024 * 1024 * 1024);
-        assert!(matches!(result, Err(SeedLlmError::ModelTooLarge { .. })));
-        assert!(engine.validate_model_size(100 * 1024 * 1024).is_ok());
+        let too_big = 5u64 * 1024 * 1024 * 1024; // 5 GB — over every class
+        let fits    = 50u64 * 1024 * 1024;       // 50 MB — under every class
+        assert!(matches!(engine.validate_model_size(too_big), Err(SeedLlmError::ModelTooLarge { .. })));
+        assert!(engine.validate_model_size(fits).is_ok());
+    }
+
+    #[test]
+    fn test_device_class_caps_are_ordered_correctly() {
+        // Pi Zero ≤ Other ≤ v0-appliance — the install-time gate in the
+        // agent relies on this ordering (smaller device → tighter cap).
+        let pz = DeviceClass::PiZero2W.max_model_bytes();
+        let oth = DeviceClass::Other.max_model_bytes();
+        let v0 = DeviceClass::V0Appliance.max_model_bytes();
+        assert!(pz < oth, "Pi Zero cap ({pz}) must be smaller than Other ({oth})");
+        assert!(oth < v0, "Other cap ({oth}) must be smaller than v0-appliance ({v0})");
+    }
+
+    #[test]
+    fn test_device_class_caps_match_documented_envelope() {
+        // Documented values in ADR-094 / ADR-095 — guard against drift.
+        assert_eq!(DeviceClass::PiZero2W.max_model_bytes(), 320 * 1024 * 1024);
+        assert_eq!(DeviceClass::V0Appliance.max_model_bytes(), 4u64 * 1024 * 1024 * 1024);
+        assert_eq!(DeviceClass::Other.max_model_bytes(), 1024 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_qwen_q4_k_m_fits_v0_appliance_but_not_pi_zero() {
+        // The whole reason device-aware caps exist. Qwen2.5-0.5B-Instruct
+        // Q4_K_M is 469 MB — fits v0-appliance, must NOT fit Pi Zero.
+        let qwen_bytes: u64 = 469 * 1024 * 1024;
+        assert!(qwen_bytes > DeviceClass::PiZero2W.max_model_bytes(),
+            "qwen must be rejected on Pi Zero");
+        assert!(qwen_bytes < DeviceClass::V0Appliance.max_model_bytes(),
+            "qwen must fit on v0-appliance");
     }
 }

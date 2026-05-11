@@ -99,20 +99,46 @@ permissions = ["mesh.read"]   # cognitive-event delta-sync needs to enumerate pe
 # `filename` includes a `<model-id>/` prefix because the cog code looks up models at
 # `<COG_DATA_DIR>/<model-id>/{model.gguf,tokenizer.json}` (constructed in
 # sparse_llm_api.rs::handle_sparse_generate). Agent must `mkdir -p` the parent before save.
+#
+# 2026-05-11 publish state: all four assets uploaded to GCS with real SHAs
+# (smollm2 verified end-to-end on seed 1c2650b4; qwen verified via install-
+# time fit check returning 409 on Pi Zero, fits on v0-appliance per sparse_llm.rs
+# `DeviceClass::max_model_bytes`).
 [[assets]]
 id = "smollm2-135m"
 filename = "smollm2-135m/model.gguf"
-size_bytes = 142_000_000
-sha256 = "TODO-set-on-publish"
+size_bytes = 105_454_144
+sha256 = "8030f04528538d47bda434f6f0bdf3952c40a58123e4d5e755332f23731a8684"
 gcs_path = "models/smollm2-135m-q4_k_m.gguf"
 required_when = "config.model_id == 'smollm2-135m'"
 
 [[assets]]
+id = "smollm2-135m-tokenizer"
+filename = "smollm2-135m/tokenizer.json"
+size_bytes = 2_104_556
+sha256 = "9ca9acddb6525a194ec8ac7a87f24fbba7232a9a15ffa1af0c1224fcd888e47c"
+gcs_path = "models/smollm2-135m-tokenizer.json"
+required_when = "config.model_id == 'smollm2-135m'"
+
+# Qwen2.5-0.5B-Instruct Q4_K_M is too big for Pi Zero (469 MB > 320 MB cap)
+# but fits comfortably on v0-appliance (Pi 5, 8 GB). The agent's install
+# handler runs a per-device size pre-check (`max_model_bytes_for_current_device`)
+# and returns 409 Conflict on Pi Zero with a precise error before any
+# download starts.
+[[assets]]
 id = "qwen2.5-0.5b-q4"
 filename = "qwen2.5-0.5b-q4/model.gguf"
-size_bytes = 507_000_000
-sha256 = "TODO-set-on-publish"
+size_bytes = 491_400_032
+sha256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
 gcs_path = "models/qwen2.5-0.5b-q4_k_m.gguf"
+required_when = "config.model_id == 'qwen2.5-0.5b-q4'"
+
+[[assets]]
+id = "qwen2.5-0.5b-q4-tokenizer"
+filename = "qwen2.5-0.5b-q4/tokenizer.json"
+size_bytes = 7_031_645
+sha256 = "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539"
+gcs_path = "models/qwen2.5-0.5b-tokenizer.json"
 required_when = "config.model_id == 'qwen2.5-0.5b-q4'"
 
 [console]
