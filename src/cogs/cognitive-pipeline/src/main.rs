@@ -17,7 +17,7 @@
 
 use axum::{
     body::{Body, Bytes},
-    extract::State,
+    extract::{DefaultBodyLimit, State},
     http::{HeaderMap, Method, StatusCode, Uri},
     response::{IntoResponse, Response as AxumResponse},
     routing::any,
@@ -259,8 +259,15 @@ async fn main() {
     };
     let _ = state.started_at; // started_at retained for future /info enrichment
 
+    // ADR-094 §5: PUT /model/<id>/<file> uploads need ~85-310 MB. axum's
+    // default body limit is 2 MB which rejects GGUF uploads before they
+    // reach `handle_any`. Match the agent's 320 MB cap (http.rs) — the
+    // agent's paired-only auth gate + USB trust is the access control;
+    // the cog binds 127.0.0.1 only so the agent is the only caller.
+    const MAX_REQUEST_BODY_BYTES: usize = 320 * 1024 * 1024;
     let app = Router::new()
         .fallback(any(handle_any))
+        .layer(DefaultBodyLimit::max(MAX_REQUEST_BODY_BYTES))
         .with_state(state.clone());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], state.args.port));
