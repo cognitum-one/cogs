@@ -14,9 +14,16 @@ path = "src/main.rs"
 axum = { version = "0.7", default-features = false, features = ["http1", "json", "tokio"] }
 # `fs` for tokio::fs (streaming PUT writes to disk chunk-by-chunk on Pi Zero
 # — the lifted Bytes-extractor path buffers full body and OOMs on >50 MB).
-tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net", "fs", "io-util"] }
+# `sync` for tokio::sync::mpsc (SSE streaming response bridge).
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net", "fs", "io-util", "sync"] }
 # Body::into_data_stream() returns a Stream we need to consume — futures gives us StreamExt::next().
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
+# UnboundedReceiverStream wraps a tokio mpsc receiver as a Stream — axum's
+# Body::from_stream needs Stream<Item = Result<Bytes, _>> for SSE streaming
+# responses.
+tokio-stream = { version = "0.1", default-features = false }
+# Bytes for SSE chunk emission.
+bytes = "1"
 tower = { version = "0.5", default-features = false }
 hyper = { version = "1.5", default-features = false, features = ["server", "http1"] }
 

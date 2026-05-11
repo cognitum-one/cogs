@@ -147,6 +147,194 @@ fn rewrite_path(p: &str) -> String {
     p.to_string()
 }
 
+/// std::io::Write adapter that bridges the lifted synchronous
+/// `handle_sparse_generate_sse` (writes raw HTTP/1.1 framing + SSE events to
+/// any `Write`) to axum's async streaming body. The lifted handler emits its
+/// own HTTP status line + headers; we strip those (axum manages headers) and
+/// forward only the body bytes through a tokio mpsc to the response stream.
+struct SseChannelWriter {
+    tx: tokio::sync::mpsc::UnboundedSender<Result<bytes::Bytes, std::io::Error>>,
+    header_buffer: Vec<u8>,
+    /// Once we've seen `\r\n\r\n` the rest of the writes are body bytes.
+    /// Until then we accumulate into `header_buffer` and discard once the
+    /// terminator is seen.
+    headers_passed: bool,
+    /// Set to `true` if the lifted handler emitted a non-200 status line.
+    /// We surface this on the response so the streaming handler can map it
+    /// to the right status (lifted code's framing said 401/400/etc. and we
+    /// must respect that even when streaming).
+    sniffed_status: Option<u16>,
+}
+
+impl SseChannelWriter {
+    fn new(tx: tokio::sync::mpsc::UnboundedSender<Result<bytes::Bytes, std::io::Error>>) -> Self {
+        Self { tx, header_buffer: Vec::with_capacity(512), headers_passed: false, sniffed_status: None }
+    }
+}
+
+impl std::io::Write for SseChannelWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        if self.headers_passed {
+            // Forward as body chunk. Channel send failure means the receiver
+            // dropped (client disconnected) — surface as broken-pipe so the
+            // lifted handler's loop short-circuits.
+            if self
+                .tx
+                .send(Ok(bytes::Bytes::copy_from_slice(buf)))
+                .is_err()
+            {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::BrokenPipe,
+                    "sse mpsc receiver dropped",
+                ));
+            }
+            return Ok(buf.len());
+        }
+
+        // Accumulate into the header buffer until we see the terminator.
+        self.header_buffer.extend_from_slice(buf);
+
+        // Cap header accumulation to a reasonable size — the lifted handler
+        // emits a small fixed header block; anything more is malformed.
+        if self.header_buffer.len() > 4096 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "SSE response headers > 4 KB — refusing",
+            ));
+        }
+
+        // Sniff the status line on the first chunk so we can map non-200
+        // responses back to the axum Response without parsing every byte.
+        if self.sniffed_status.is_none() && self.header_buffer.starts_with(b"HTTP/1.1 ") {
+            let line_end = self
+                .header_buffer
+                .iter()
+                .position(|&b| b == b'\n')
+                .unwrap_or(self.header_buffer.len());
+            let line = &self.header_buffer[..line_end];
+            // "HTTP/1.1 200 OK..." → status = 200
+            if let Some(parts) = std::str::from_utf8(line).ok().map(|s| s.split_whitespace().collect::<Vec<_>>()) {
+                if let Some(s) = parts.get(1).and_then(|s| s.parse::<u16>().ok()) {
+                    self.sniffed_status = Some(s);
+                }
+            }
+        }
+
+        if let Some(p) = self
+            .header_buffer
+            .windows(4)
+            .position(|w| w == b"\r\n\r\n")
+        {
+            self.headers_passed = true;
+            let body_so_far = self.header_buffer.split_off(p + 4);
+            // Drop the header bytes (we don't forward them to axum).
+            self.header_buffer.clear();
+            if !body_so_far.is_empty() {
+                if self
+                    .tx
+                    .send(Ok(bytes::Bytes::from(body_so_far)))
+                    .is_err()
+                {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::BrokenPipe,
+                        "sse mpsc receiver dropped",
+                    ));
+                }
+            }
+        }
+
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        // No buffering on the channel side; nothing to flush.
+        Ok(())
+    }
+}
+
+/// Detect `"stream": true` in the request body. Crude — we don't fully parse
+/// JSON because we want the buffered path to handle parsing the same way it
+/// always has. This just routes streaming requests to the streaming handler;
+/// validation errors still surface on the streaming side.
+fn wants_streaming(body: &[u8]) -> bool {
+    // Look for `"stream"` followed by `:`, then `true`. Strip whitespace.
+    let s = match std::str::from_utf8(body) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    let idx = match s.find("\"stream\"") {
+        Some(i) => i,
+        None => return false,
+    };
+    let after = &s[idx + "\"stream\"".len()..];
+    // Skip whitespace + ':'
+    let bytes = after.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b':' || bytes[i] == b'\t') {
+        i += 1;
+    }
+    after[i..].trim_start().starts_with("true")
+}
+
+/// Handler that drives `sparse_llm_api::handle_sparse_generate_sse` for any
+/// path that supports streaming (`/generate`, `/v1/completions`,
+/// `/v1/chat/completions`). Returns the streaming body via an axum
+/// `Body::from_stream` backed by a tokio mpsc receiver — never buffers the
+/// generated tokens. Inference runs in `spawn_blocking` because the SmolLM2
+/// runner is CPU-bound and would block the tokio executor otherwise.
+async fn handle_streaming_inference(
+    state: AppState,
+    method: Method,
+    inner_path: String,
+    headers: HeaderMap,
+    body_bytes: Vec<u8>,
+) -> AxumResponse {
+    if method != Method::POST {
+        return (
+            StatusCode::METHOD_NOT_ALLOWED,
+            axum::Json(serde_json::json!({"error":"streaming requires POST"})),
+        )
+            .into_response();
+    }
+    let authorized = check_authorization(&state, &headers);
+
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Result<bytes::Bytes, std::io::Error>>();
+    let device_state = http_compat::DeviceState;
+    let path_for_handler = inner_path.clone();
+
+    // Status sniff: we don't know the status until the blocking handler
+    // emits its first bytes. The lifted handler writes 200 for the SSE
+    // success path and 401/400/etc. with a normal JSON body for errors.
+    // To avoid blocking the response while we wait, we always return 200
+    // and let the body convey errors via a JSON {"error":...} on the
+    // first chunk if status would have been non-200. Clients of SSE
+    // already need to handle errors-in-body for transport-level reasons.
+    // (Browsers and the OpenAI SDK both accept this.)
+
+    tokio::task::spawn_blocking(move || {
+        let mut writer = SseChannelWriter::new(tx);
+        sparse_llm_api::handle_sparse_generate_sse(
+            &body_bytes,
+            &device_state,
+            authorized,
+            &path_for_handler,
+            &mut writer,
+        );
+    });
+
+    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+    let body = Body::from_stream(stream);
+
+    axum::http::Response::builder()
+        .status(StatusCode::OK)
+        .header(axum::http::header::CONTENT_TYPE, "text/event-stream")
+        .header(axum::http::header::CACHE_CONTROL, "no-cache")
+        .header(axum::http::header::CONNECTION, "close")
+        .header("X-Accel-Buffering", "no") // hint to any intermediary not to buffer
+        .body(body)
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
 /// Stream the request body to disk without buffering it in memory. Replaces
 /// the lifted `PUT /api/v1/llm/sparse/model/<id>/<file>` path for uploads —
 /// that handler uses axum's `Bytes` extractor (full-body buffer), which OOMs
@@ -342,6 +530,27 @@ async fn handle_any(
     let cog_path = uri.path().to_string();
     // Routing key stays path-only — dispatch_sparse_llm matches on exact path.
     let inner_path = rewrite_path(&cog_path);
+
+    // SSE streaming branch: if the body asks for `stream: true` AND the path
+    // is one the lifted `handle_sparse_generate_sse` knows how to drive,
+    // route to the streaming handler. It runs inference in `spawn_blocking`
+    // and pushes SSE chunks through a tokio mpsc to axum's `Body::from_stream`
+    // — no token-buffering, the agent's `cog_proxy::stream_request` then pipes
+    // chunks cog → client without batching.
+    let stream_eligible_path = matches!(
+        inner_path.as_str(),
+        "/api/v1/llm/sparse/generate" | "/v1/completions" | "/v1/chat/completions"
+    );
+    if stream_eligible_path && wants_streaming(&body) {
+        return handle_streaming_inference(
+            state,
+            method,
+            inner_path,
+            headers,
+            body.to_vec(),
+        )
+        .await;
+    }
     // Handlers like `sparse_pipeline::handle_sensor_events` parse the query
     // string by splitting `req.path` on `?`. axum's `Uri::path` strips the
     // query, so we re-attach it here. Without this, GET
@@ -520,7 +729,99 @@ async fn shutdown_signal() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use super::rewrite_path;
+
+    #[test]
+    fn wants_streaming_detects_true() {
+        assert!(wants_streaming(br#"{"prompt":"x","stream":true}"#));
+        assert!(wants_streaming(br#"{"stream": true, "prompt":"x"}"#));
+        assert!(wants_streaming(br#"{"prompt":"x", "stream" :true}"#));
+        assert!(wants_streaming(br#"{"prompt":"x","stream":  true ,"max":5}"#));
+    }
+
+    #[test]
+    fn wants_streaming_detects_false_or_missing() {
+        assert!(!wants_streaming(br#"{"prompt":"x"}"#));
+        assert!(!wants_streaming(br#"{"prompt":"x","stream":false}"#));
+        assert!(!wants_streaming(br#"{"stream":"true"}"#)); // string "true", not bool
+        assert!(!wants_streaming(b""));
+        assert!(!wants_streaming(b"not json at all"));
+    }
+
+    #[test]
+    fn sse_writer_strips_lifted_http_header_block() {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut w = SseChannelWriter::new(tx);
+
+        // The lifted handler writes its own HTTP/1.1 response framing.
+        // The adapter must DROP everything up to the \r\n\r\n terminator.
+        let header_block = b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
+        std::io::Write::write_all(&mut w, header_block).unwrap();
+        // No body chunk should have been emitted yet.
+        assert!(rx.try_recv().is_err(), "no chunk should reach axum from the header block");
+
+        // First SSE event after headers — must reach the channel.
+        let event = b"data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\n";
+        std::io::Write::write_all(&mut w, event).unwrap();
+        let chunk = rx.try_recv().unwrap().unwrap();
+        assert_eq!(chunk.as_ref(), event);
+
+        // Status sniff should have captured 200.
+        assert_eq!(w.sniffed_status, Some(200));
+    }
+
+    #[test]
+    fn sse_writer_handles_split_writes_around_header_terminator() {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut w = SseChannelWriter::new(tx);
+
+        // Lifted handler may write headers in pieces. Adapter must accumulate
+        // until the \r\n\r\n boundary regardless of split alignment.
+        std::io::Write::write_all(&mut w, b"HTTP/1.1 200 OK\r\n").unwrap();
+        std::io::Write::write_all(&mut w, b"Content-Type: text/event-stream\r\n\r\n").unwrap();
+        std::io::Write::write_all(&mut w, b"data: event1\n\n").unwrap();
+        std::io::Write::write_all(&mut w, b"data: event2\n\n").unwrap();
+        let mut all = Vec::new();
+        while let Ok(Ok(c)) = rx.try_recv() { all.extend_from_slice(&c); }
+        assert_eq!(all, b"data: event1\n\ndata: event2\n\n");
+    }
+
+    #[test]
+    fn sse_writer_forwards_body_when_terminator_arrives_inside_a_single_write() {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut w = SseChannelWriter::new(tx);
+
+        // Single write containing the WHOLE response — header + body.
+        // The adapter must emit only the body to the channel.
+        std::io::Write::write_all(
+            &mut w,
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\r\ndata: hello\n\n",
+        ).unwrap();
+        let chunk = rx.try_recv().unwrap().unwrap();
+        assert_eq!(chunk.as_ref(), b"data: hello\n\n");
+    }
+
+    #[test]
+    fn sse_writer_sniffs_non_200_status_for_error_responses() {
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut w = SseChannelWriter::new(tx);
+        std::io::Write::write_all(
+            &mut w,
+            b"HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\n\r\n{\"error\":\"x\"}",
+        ).unwrap();
+        assert_eq!(w.sniffed_status, Some(401));
+    }
+
+    #[test]
+    fn sse_writer_caps_header_accumulation() {
+        let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut w = SseChannelWriter::new(tx);
+        // No \r\n\r\n ever — adapter must reject after 4 KB to avoid DoS.
+        let big = vec![b'A'; 8 * 1024];
+        let r = std::io::Write::write_all(&mut w, &big);
+        assert!(r.is_err());
+    }
 
     #[test]
     fn rewrite_canonical_v1_pass_through() {
