@@ -32,9 +32,11 @@ log = "0.4"
 env_logger = { version = "0.11", default-features = false, features = ["humantime"] }
 
 # Sparse attention kernel — Pi Zero 2 W profile (window=64, tile=16, FP16 KV).
-# Same dep spec as cognitum-one/seed#133 so the moved sparse_llm.rs +
-# sparse_llm_runner.rs compile byte-identical here.
-ruvllm_sparse_attention = { git = "https://github.com/ruvnet/RuVector", default-features = false, features = ["fp16"] }
+# Pinned to the RuVector commit cognitum-one/seed#133's on-device validation
+# certified against (v0.1.1 at the time, picked up from both seed's and the
+# cog's Cargo.lock). Reproducibility hazard otherwise: rebuilding months from
+# now off the default branch tip could pick up incompatible kernel changes.
+ruvllm_sparse_attention = { git = "https://github.com/ruvnet/RuVector", rev = "e3834760148f99373eab2bc008da280d57d80333", default-features = false, features = ["fp16"] }
 
 # Used by the moved sparse_llm_loader.rs / sparse_llm_weights.rs (mmap of
 # .gguf files; little-endian f32/i8 reads).

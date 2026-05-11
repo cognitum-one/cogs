@@ -177,3 +177,44 @@ jobs:
           done
           if [ $fail -gt 0 ]; then exit 1; fi
           echo "::notice::all new cogs have ADRs"
+
+  asset-sha256-validate:
+    name: Asset sha256 must not be TODO (publish gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject TODO sha256 in [[assets]] without a bring-up marker
+        shell: bash
+        run: |
+          set -eo pipefail
+          # ADR-095 §4: asset sha256 in cog.toml is what the agent's install
+          # handler verifies after the GCS download. Shipping a TODO sha256
+          # past publish-time means a corrupted or swapped asset would not be
+          # caught. This gate fails if any cog.toml contains `sha256 = "TODO-`
+          # UNLESS the cog directory carries an empty `.allow-unpublished-assets`
+          # marker — used during a cog's bring-up window before the GCS
+          # upload + sha publication has happened. Remove the marker AND fill
+          # in the real sha256 in the same PR that publishes the assets.
+          violations=0
+          for d in src/cogs/*/; do
+            cog=$(basename "$d")
+            if [ ! -f "$d/cog.toml" ]; then
+              continue
+            fi
+            if [ -f "$d/.allow-unpublished-assets" ]; then
+              if grep -E 'sha256 = "TODO-' "$d/cog.toml" >/dev/null 2>&1; then
+                echo "::notice file=$d/cog.toml::cog '$cog' carries .allow-unpublished-assets (bring-up window). TODO sha256s grandfathered until that marker is removed."
+              fi
+              continue
+            fi
+            if grep -E 'sha256 = "TODO-' "$d/cog.toml" >/dev/null 2>&1; then
+              echo "::error file=$d/cog.toml::cog '$cog' has TODO sha256 in [[assets]] but no .allow-unpublished-assets marker. Fill in the real sha256 (and drop the marker, if any) before publishing."
+              violations=$((violations+1))
+            fi
+          done
+          if [ "$violations" -gt 0 ]; then
+            echo "::error::$violations cog(s) have TODO sha256 without a bring-up marker"
+            exit 1
+          fi
+          echo "::notice::all cogs with [[assets]] have real sha256 or a bring-up marker"

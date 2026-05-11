@@ -118,10 +118,17 @@ fn check_authorization(state: &AppState, headers: &HeaderMap) -> bool {
 /// Map a cog-relative path (what the agent's proxy delivers after stripping
 /// `/api/v1/cogs/cognitive-pipeline`) to the agent-internal path that
 /// `dispatch_sparse_llm` expects. OpenAI-style `/v1/*` and `/health` pass
-/// through unchanged.
+/// through unchanged. `/oai_chat` is a legacy alias for `/v1/chat/completions`
+/// kept for callers that pre-date the OpenAI-compat URL surface.
 fn rewrite_path(p: &str) -> String {
     if p.starts_with("/v1/") || p == "/health" {
         return p.to_string();
+    }
+    // Legacy alias declared in cog.toml [api].endpoints — predates the
+    // canonical /v1/chat/completions surface that dispatch_sparse_llm
+    // matches at sparse_llm_api.rs:405. Both names live in /info.
+    if p == "/oai_chat" {
+        return "/v1/chat/completions".to_string();
     }
     if p == "/info"
         || p == "/models"
@@ -149,7 +156,18 @@ async fn handle_any(
     body: Bytes,
 ) -> AxumResponse {
     let cog_path = uri.path().to_string();
+    // Routing key stays path-only — dispatch_sparse_llm matches on exact path.
     let inner_path = rewrite_path(&cog_path);
+    // Handlers like `sparse_pipeline::handle_sensor_events` parse the query
+    // string by splitting `req.path` on `?`. axum's `Uri::path` strips the
+    // query, so we re-attach it here. Without this, GET
+    // /pipeline/events?since=N&limit=M silently fell back to defaults.
+    let query = uri.query().unwrap_or("");
+    let req_path = if query.is_empty() {
+        inner_path.clone()
+    } else {
+        format!("{inner_path}?{query}")
+    };
 
     let mut compat_headers = std::collections::HashMap::new();
     for (k, v) in headers.iter() {
@@ -160,7 +178,7 @@ async fn handle_any(
 
     let req = http_compat::Request {
         method: method.as_str().to_uppercase(),
-        path: inner_path.clone(),
+        path: req_path,
         headers: compat_headers,
         body: body.to_vec(),
         peer_addr: Some("127.0.0.1:0".to_string()),
@@ -220,6 +238,17 @@ async fn main() {
         );
     }
 
+    // ADR-095 §1: log the MCP tool catalog declared in cog.toml so it's
+    // discoverable via /api/v1/apps/cognitive-pipeline/logs until the agent's
+    // /mcp install-side registration lands (deferred next-layer per ADR-095).
+    // Catalog kept in sync with cog.toml [mcp].tools by hand — there's no
+    // runtime parser here, the cog process never reads its own manifest.
+    log::info!("[mcp] declared tool catalog (registration handled by agent at install-time):");
+    log::info!("[mcp]   seed.cog.cognitive-pipeline.info     -> /info");
+    log::info!("[mcp]   seed.cog.cognitive-pipeline.models   -> /models");
+    log::info!("[mcp]   seed.cog.cognitive-pipeline.generate -> /generate");
+    log::info!("[mcp]   seed.cog.cognitive-pipeline.events   -> /pipeline/events");
+
     // Load any cognitive events persisted from a previous run.
     sparse_pipeline::load_events_from_disk();
 
@@ -249,13 +278,88 @@ async fn main() {
     };
 
     if let Err(e) = axum::serve(listener, app)
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-            log::info!("SIGINT/SIGTERM received — graceful shutdown");
-        })
+        .with_graceful_shutdown(shutdown_signal())
         .await
     {
         log::error!("server error: {e}");
         std::process::exit(1);
+    }
+}
+
+/// Wait for SIGINT (ctrl-c) or SIGTERM (`systemctl stop`). `tokio::signal::ctrl_c`
+/// only fires on SIGINT — without an explicit SIGTERM branch the agent's
+/// `systemctl stop cog-cognitive-pipeline` would kill us before the
+/// `with_graceful_shutdown` arm runs, dropping any unflushed cognitive events
+/// from `sparse_pipeline` and corrupting the on-disk JSONL ring buffer.
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        let mut term = match signal(SignalKind::terminate()) {
+            Ok(s) => s,
+            Err(e) => {
+                log::warn!(
+                    "could not install SIGTERM handler ({e}); falling back to SIGINT-only — \
+                     systemctl stop may drop unflushed cognitive events"
+                );
+                let _ = tokio::signal::ctrl_c().await;
+                log::info!("SIGINT received — graceful shutdown");
+                return;
+            }
+        };
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                log::info!("SIGINT received — graceful shutdown");
+            }
+            _ = term.recv() => {
+                log::info!("SIGTERM received — graceful shutdown (systemctl stop)");
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
+        log::info!("ctrl-c received — graceful shutdown");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rewrite_path;
+
+    #[test]
+    fn rewrite_canonical_v1_pass_through() {
+        assert_eq!(rewrite_path("/v1/chat/completions"), "/v1/chat/completions");
+        assert_eq!(rewrite_path("/v1/completions"), "/v1/completions");
+        assert_eq!(rewrite_path("/health"), "/health");
+    }
+
+    #[test]
+    fn rewrite_oai_chat_legacy_alias() {
+        // cog.toml [api].endpoints lists `/oai_chat`; dispatch_sparse_llm
+        // matches `/v1/chat/completions` (sparse_llm_api.rs:405). The alias
+        // bridges the two without changing the manifest surface.
+        assert_eq!(rewrite_path("/oai_chat"), "/v1/chat/completions");
+    }
+
+    #[test]
+    fn rewrite_namespaced_endpoints() {
+        assert_eq!(rewrite_path("/info"), "/api/v1/llm/sparse/info");
+        assert_eq!(rewrite_path("/models"), "/api/v1/llm/sparse/models");
+        assert_eq!(rewrite_path("/generate"), "/api/v1/llm/sparse/generate");
+        assert_eq!(rewrite_path("/pipeline"), "/api/v1/llm/sparse/pipeline");
+        assert_eq!(
+            rewrite_path("/pipeline/events"),
+            "/api/v1/llm/sparse/pipeline/events"
+        );
+        assert_eq!(rewrite_path("/model/foo/bar"), "/api/v1/llm/sparse/model/foo/bar");
+    }
+
+    #[test]
+    fn rewrite_unknown_falls_through_unchanged() {
+        // Unknown paths fall through to dispatch_sparse_llm which returns
+        // None — the caller turns that into a 404.
+        assert_eq!(rewrite_path("/nonexistent"), "/nonexistent");
+        assert_eq!(rewrite_path("/"), "/");
     }
 }
