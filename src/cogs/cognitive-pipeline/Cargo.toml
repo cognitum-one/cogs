@@ -1,6 +1,6 @@
 [package]
 name = "cog-cognitive-pipeline"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Cognitive pipeline cog — FastGRNN anomaly gate + SmolLM2 sparse-LLM inference (ADR-094, ADR-095)"
 license = "MIT"
