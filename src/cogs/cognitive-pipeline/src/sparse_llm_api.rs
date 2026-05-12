@@ -1230,7 +1230,16 @@ pub fn handle_sparse_generate_sse<W: std::io::Write>(
             "usage": usage_obj,
         }),
     };
-    let _ = write!(writer, "data: {}\n\n", summary);
+    // Materialize the final event as a single buffer before writing — `write!`
+    // macros use the `fmt::Write` machinery, which on `std::io::Write` wrappers
+    // (e.g. the agent's `SseChannelWriter` in cognitum/cognitum-one/seed#136)
+    // emits one Write call per format fragment. Each Write call becomes a
+    // separate axum body chunk, and clients that don't speak chunked transfer
+    // encoding render the per-byte chunk-length lines as garbage between the
+    // JSON characters. Token events already use `write_all(format!(...))` —
+    // align the final event with that pattern.
+    let final_event = format!("data: {}\n\n", summary);
+    let _ = writer.write_all(final_event.as_bytes());
     let _ = writer.write_all(b"data: [DONE]\n\n");
     let _ = writer.flush();
 }
@@ -1273,12 +1282,39 @@ fn handle_sparse_tokenize(body: &[u8]) -> (u16, String) {
 
     // Acquire the cache to get the tokenizer (use blocking lock — tokenize is
     // read-only and ~microseconds, never contends with a slow generate call).
+    //
+    // cognitum-one/seed#131: pre-`/generate` calls to `/tokenize` used to
+    // silently fall back to the byte-level stub even when `tokenizer.json`
+    // existed on disk, because the cache is only populated by `/generate`.
+    // Load the tokenizer file directly when the cache is cold AND the file
+    // is present for the requested model — encode/decode then sees the real
+    // BPE just like `/generate` already does (lines 683 / 1006).
+    let loaded;
     let (token_ids, tokens) = {
         let cache_guard = SPARSE_CACHE.lock().unwrap_or_else(|e| e.into_inner());
         let stub;
         let tok: &crate::sparse_llm_tokenizer::BpeTokenizer = match cache_guard.as_ref() {
-            Some(c) => &c.tokenizer,
-            None => { stub = crate::sparse_llm_tokenizer::BpeTokenizer::byte_fallback_stub(); &stub }
+            Some(c) if c.model_path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .is_some_and(|_| c.model_path.parent()
+                    .and_then(|p| p.file_name())
+                    .and_then(|s| s.to_str())
+                    .map(|m| m == req.model)
+                    .unwrap_or(false)) => &c.tokenizer,
+            _ => {
+                let tokenizer_path = std::path::PathBuf::from(
+                    format!("{}/{}/tokenizer.json", model_base_dir(), req.model)
+                );
+                if tokenizer_path.exists() {
+                    loaded = crate::sparse_llm_tokenizer::BpeTokenizer::from_file(&tokenizer_path)
+                        .unwrap_or_else(|_| crate::sparse_llm_tokenizer::BpeTokenizer::byte_fallback_stub());
+                    &loaded
+                } else {
+                    stub = crate::sparse_llm_tokenizer::BpeTokenizer::byte_fallback_stub();
+                    &stub
+                }
+            }
         };
         let ids = tok.encode(&req.text);
         let toks: Vec<String> = ids.iter().map(|&id| tok.decode(&[id])).collect();
