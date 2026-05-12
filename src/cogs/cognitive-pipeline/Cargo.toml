@@ -1,0 +1,62 @@
+[package]
+name = "cog-cognitive-pipeline"
+version = "0.1.1"
+edition = "2021"
+description = "Cognitive pipeline cog — FastGRNN anomaly gate + SmolLM2 sparse-LLM inference (ADR-094, ADR-095)"
+license = "MIT"
+
+[[bin]]
+name = "cog-cognitive-pipeline"
+path = "src/main.rs"
+
+[dependencies]
+# HTTP server (loopback only, agent-proxied per ADR-095)
+axum = { version = "0.7", default-features = false, features = ["http1", "json", "tokio"] }
+# `fs` for tokio::fs (streaming PUT writes to disk chunk-by-chunk on Pi Zero
+# — the lifted Bytes-extractor path buffers full body and OOMs on >50 MB).
+# `sync` for tokio::sync::mpsc (SSE streaming response bridge).
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net", "fs", "io-util", "sync"] }
+# Body::into_data_stream() returns a Stream we need to consume — futures gives us StreamExt::next().
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+# UnboundedReceiverStream wraps a tokio mpsc receiver as a Stream — axum's
+# Body::from_stream needs Stream<Item = Result<Bytes, _>> for SSE streaming
+# responses.
+tokio-stream = { version = "0.1", default-features = false }
+# Bytes for SSE chunk emission.
+bytes = "1"
+tower = { version = "0.5", default-features = false }
+hyper = { version = "1.5", default-features = false, features = ["server", "http1"] }
+
+# Serialization / argv
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+
+# Auth — verify the per-cog bearer token the agent injects
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2.5"
+hex = "0.4"
+
+# Logging — small footprint on Pi Zero
+log = "0.4"
+env_logger = { version = "0.11", default-features = false, features = ["humantime"] }
+
+# Sparse attention kernel — Pi Zero 2 W profile (window=64, tile=16, FP16 KV).
+# Pinned to the RuVector commit cognitum-one/seed#133's on-device validation
+# certified against (v0.1.1 at the time, picked up from both seed's and the
+# cog's Cargo.lock). Reproducibility hazard otherwise: rebuilding months from
+# now off the default branch tip could pick up incompatible kernel changes.
+ruvllm_sparse_attention = { git = "https://github.com/ruvnet/RuVector", rev = "e3834760148f99373eab2bc008da280d57d80333", default-features = false, features = ["fp16"] }
+
+# Used by the moved sparse_llm_loader.rs / sparse_llm_weights.rs (mmap of
+# .gguf files; little-endian f32/i8 reads).
+memmap2 = "0.9"
+byteorder = "1.5"
+
+[profile.release]
+opt-level = "s"      # optimize for size — Pi Zero binary budget
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
