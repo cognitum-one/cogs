@@ -1,0 +1,48 @@
+[cog]
+id = "tailscale"
+name = "Tailscale Mesh VPN"
+version = "0.1.0"
+category = "network"
+description = "Reach the seed from anywhere via a private Tailscale network (WireGuard). Userspace mode — no root, no kernel routing."
+binary = "cog-tailscale-arm"
+hardware_requirement = "pi-zero-2w"
+
+[config]
+
+[config.auth_key]
+type = "string"
+label = "Auth key"
+description = "One-time Tailscale auth key. Generate at https://login.tailscale.com/admin/settings/keys."
+default = ""
+cli_arg = "--auth-key"
+secret = true
+
+[config.hostname]
+type = "string"
+label = "Tailnet hostname"
+description = "Name in the tailnet. Defaults to the seed's hostname (e.g. cognitum-fb4b)."
+default = ""
+cli_arg = "--hostname"
+
+[config.serve_agent]
+type = "boolean"
+label = "Expose Seed dashboard"
+description = "Use `tailscale serve` to expose https://localhost:8443 (the agent) to your tailnet."
+default = true
+cli_arg = "--serve-agent"
+
+[config.advertise_tags]
+type = "string"
+label = "Tailnet tags"
+description = "Comma-separated Tailscale ACL tags (e.g. tag:seed,tag:prod)."
+default = "tag:seed"
+cli_arg = "--advertise-tags"
+
+[api]
+bind_port = 8044
+bind_loopback_only = true
+
+[console]
+allowed_commands = ["--status", "--logout", "--up", "--help"]
+max_runtime_secs = 30
+output_limit_bytes = 65536
