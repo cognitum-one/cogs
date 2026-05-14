@@ -28,7 +28,7 @@ const TAILSCALE_VERSION: &str = "1.78.1"; // bump when re-uploading binaries to 
 const BIND_PORT: u16 = 8044;
 const SOCKET_WAIT_TIMEOUT_SECS: u64 = 30;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 struct CogConfig {
     #[serde(default)]
     auth_key: String,
@@ -415,14 +415,25 @@ fn main() {
         let _ = daemon.kill();
         std::process::exit(5);
     }
-    if let Err(e) = run_up(&cfg) {
-        eprintln!("[tailscale] {e}");
-        // Don't kill the daemon — leave it running so /api/v1/cogs/tailscale/up
-        // can retry after a reauth.
-    }
-    if cfg.serve_agent {
-        let _ = run_serve_agent();
-    }
+
+    // run_up() invokes `tailscale up`, which blocks waiting for browser auth
+    // when no auth_key is set in the cog config. The agent gives the cog 5s
+    // to bind its API port — if we ran run_up() synchronously here, the agent
+    // would SIGTERM the cog before http_api() ever got to bind port 8044.
+    //
+    // Move run_up() into a background thread so http_api() below binds 8044
+    // immediately. The agent's port-check passes, operators can hit
+    // /api/v1/cogs/tailscale/up later (with auth_key set) to retry.
+    let cfg_for_up = cfg.clone();
+    thread::spawn(move || {
+        if let Err(e) = run_up(&cfg_for_up) {
+            eprintln!("[tailscale] run_up (background): {e}");
+            // Leave the daemon running so the operator can re-auth via API.
+        }
+        if cfg_for_up.serve_agent {
+            let _ = run_serve_agent();
+        }
+    });
 
     let shutdown = Arc::new(AtomicBool::new(false));
     {
