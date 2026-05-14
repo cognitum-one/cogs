@@ -6,7 +6,7 @@ description = "Cognitum cog: Tailscale mesh VPN in userspace mode"
 license = "Apache-2.0"
 
 [[bin]]
-name = "cog-tailscale-arm"
+name = "cog-tailscale"
 path = "src/main.rs"
 
 [dependencies]
