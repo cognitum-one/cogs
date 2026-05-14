@@ -110,17 +110,38 @@ fn parse_args() -> (&'static str, Option<CogConfig>) {
 // ────────────────────────────────────────────────────────────────────────────
 
 fn ensure_binaries() -> Result<(), String> {
-    if tailscaled_path().exists() && tailscale_path().exists() {
-        return Ok(());
+    let tsd = tailscaled_path();
+    let ts = tailscale_path();
+    if !tsd.exists() || !ts.exists() {
+        // Both binaries ship pre-fetched in gs://cognitum-apps/cogs/arm/tailscale/.
+        // The agent's /apps/install (ADR-095 §4) handles asset download with sha256
+        // verification BEFORE our --once runs; if we got here without the binaries
+        // present, something went wrong with the install. Fail loudly.
+        return Err(format!(
+            "tailscale binaries missing under {:?} — `apps/install` should have downloaded them as assets",
+            app_dir()
+        ));
     }
-    // Both binaries ship pre-fetched in gs://cognitum-apps/cogs/arm/tailscale/.
-    // The agent's /apps/install (ADR-095 §4) handles asset download with sha256
-    // verification BEFORE our --once runs; if we got here without the binaries
-    // present, something went wrong with the install. Fail loudly.
-    Err(format!(
-        "tailscale binaries missing under {:?} — `apps/install` should have downloaded them as assets",
-        app_dir()
-    ))
+    // Belt + suspenders: the agent's asset-install path on v0.22.5 doesn't
+    // honor the manifest's `executable: true` flag — files arrive mode 0644
+    // and exec fails with EACCES (os error 13). Ensure +x on both binaries
+    // before tailscaled spawn. Cheap idempotent op; no harm if already +x.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for p in [&tsd, &ts] {
+            if let Ok(meta) = fs::metadata(p) {
+                let mut mode = meta.permissions().mode();
+                if mode & 0o111 != 0o111 {
+                    mode |= 0o755;
+                    if let Err(e) = fs::set_permissions(p, fs::Permissions::from_mode(mode)) {
+                        return Err(format!("chmod +x {:?}: {e}", p));
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 // ────────────────────────────────────────────────────────────────────────────
