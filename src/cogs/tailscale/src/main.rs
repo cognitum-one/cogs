@@ -48,10 +48,23 @@ fn default_tags() -> String {
 }
 
 fn app_dir() -> PathBuf {
-    // Set by the agent when it spawns the cog; falls back to CWD for dev.
-    env::var("COG_APP_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+    // Preference order:
+    //   1. $COG_APP_DIR — set by the agent when it spawns the cog (future-proof,
+    //      lets the agent decouple the install dir from the binary location).
+    //   2. parent of the cog's own executable — works on v0.22.5 agents which
+    //      spawn cogs with `cwd=/` and don't set COG_APP_DIR. The cog binary
+    //      itself lives in /var/lib/cognitum/apps/tailscale/cog-tailscale-arm
+    //      alongside the downloaded tailscaled + tailscale assets.
+    //   3. CWD — final dev/test fallback (e.g. `cargo run` from the cog src dir).
+    if let Ok(d) = env::var("COG_APP_DIR") {
+        return PathBuf::from(d);
+    }
+    if let Ok(exe) = env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            return parent.to_path_buf();
+        }
+    }
+    env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
 fn state_dir() -> PathBuf {
