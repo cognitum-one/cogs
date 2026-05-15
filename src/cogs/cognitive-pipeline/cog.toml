@@ -1,0 +1,147 @@
+[cog]
+id = "cognitive-pipeline"
+name = "Cognitive Pipeline (FastGRNN + SmolLM2)"
+version = "0.1.1"
+category = "ai"
+description = "FastGRNN anomaly gate + SmolLM2 sparse-LLM inference for on-device Pi Zero 2W cognitive events"
+binary = "cog-cognitive-pipeline-arm"
+
+# ADR-095: list, not single string. ADR-094 hardware envelope says Pi Zero 2W
+# is the canonical target; v0-appliance (Pi 5) can also run this comfortably.
+hardware_requirements = ["pi-zero-2w", "v0-appliance"]
+hardware_override_allowed = true   # alpha + dev seeds opt-in via `force_hardware: true`
+
+# ADR-095 §5: per-cog memory budget — counts against the seed's RAM envelope
+# instead of just the 3-active-cogs cap. Sparse-LLM peak is ~180 MB on Pi Zero,
+# rounding up for FastGRNN + cognitive ring overhead.
+[resources]
+ram_mb = 200
+cpu_pct = 80
+
+[config.model_id]
+type = "string"
+label = "GGUF model"
+description = "Which model to load. smollm2-135m fits Pi Zero comfortably; qwen2.5-0.5b-q4 is tight."
+default = "smollm2-135m"
+allowed = ["smollm2-135m", "qwen2.5-0.5b-q4"]
+cli_arg = "--model"
+
+[config.bind_port]
+type = "integer"
+label = "HTTP bind port (loopback only — agent proxies)"
+description = "Cog binds 127.0.0.1:<this>; agent forwards /api/v1/cogs/cognitive-pipeline/* to here."
+default = 8033
+min = 8001
+max = 9999
+cli_arg = "--port"
+
+[config.deadline_secs]
+type = "integer"
+label = "Decode wall-clock deadline"
+description = "Max seconds the cog will spend on a single /generate call before returning truncated."
+default = 90
+min = 5
+max = 600
+unit = "seconds"
+cli_arg = "--deadline-secs"
+
+[config.gate_threshold]
+type = "float"
+label = "FastGRNN anomaly threshold"
+description = "Anomaly score above which the gate triggers SmolLM2 inference. Lower = more events, higher = fewer."
+default = 1.0
+min = 0.1
+max = 10.0
+step = 0.1
+cli_arg = "--gate-threshold"
+
+[config.event_ring_cap]
+type = "integer"
+label = "Cognitive event ring buffer size"
+description = "How many cognitive events to keep in memory. Older events are evicted; ring persisted to JSONL."
+default = 100
+min = 10
+max = 10000
+cli_arg = "--ring-cap"
+
+# ADR-095 §1: declared HTTP API surface — agent proxies /api/v1/cogs/<id>/<endpoint>
+# to http://127.0.0.1:<bind_port>/<endpoint> with the per-cog bearer token.
+[api]
+bind_loopback_only = true
+endpoints = [
+  { path = "/info",            methods = ["GET"],    auth = "open" },
+  { path = "/models",          methods = ["GET"],    auth = "open" },
+  { path = "/generate",        methods = ["POST"],   auth = "paired" },
+  { path = "/oai_chat",        methods = ["POST"],   auth = "paired" },
+  { path = "/pipeline/events", methods = ["GET"],    auth = "paired" },
+  { path = "/pipeline/events", methods = ["DELETE"], auth = "paired" },
+]
+
+# ADR-095 §1 + ADR-092: registers MCP tools at the seed's /mcp endpoint, so
+# Claude users get this cog's capabilities in their tool palette without
+# wrapping the HTTP API by hand.
+[mcp]
+tools = [
+  { name = "seed.cog.cognitive-pipeline.info",     endpoint = "/info",            description = "Cognitive pipeline status + model + memory" },
+  { name = "seed.cog.cognitive-pipeline.models",   endpoint = "/models",          description = "List available GGUF models" },
+  { name = "seed.cog.cognitive-pipeline.generate", endpoint = "/generate",        description = "Run text generation against the loaded model" },
+  { name = "seed.cog.cognitive-pipeline.events",   endpoint = "/pipeline/events", description = "Read cognitive events ring (delta-sync supported via ?since=)" },
+]
+
+[mesh]
+permissions = ["mesh.read"]   # cognitive-event delta-sync needs to enumerate peers; no outbound send
+
+# ADR-095 §4: sidecar GGUF model files. Agent fetches from gs://cognitum-apps/cogs/arm/<gcs_path>
+# during install, sha256-verifies, places under <COG_DATA_DIR>/<filename>.
+# `required_when` is evaluated against the user's config.json — only the model they selected
+# is downloaded; switching models later re-runs the install flow for the new asset.
+#
+# `filename` includes a `<model-id>/` prefix because the cog code looks up models at
+# `<COG_DATA_DIR>/<model-id>/{model.gguf,tokenizer.json}` (constructed in
+# sparse_llm_api.rs::handle_sparse_generate). Agent must `mkdir -p` the parent before save.
+#
+# 2026-05-11 publish state: all four assets uploaded to GCS with real SHAs
+# (smollm2 verified end-to-end on seed 1c2650b4; qwen verified via install-
+# time fit check returning 409 on Pi Zero, fits on v0-appliance per sparse_llm.rs
+# `DeviceClass::max_model_bytes`).
+[[assets]]
+id = "smollm2-135m"
+filename = "smollm2-135m/model.gguf"
+size_bytes = 105_454_144
+sha256 = "8030f04528538d47bda434f6f0bdf3952c40a58123e4d5e755332f23731a8684"
+gcs_path = "models/smollm2-135m-q4_k_m.gguf"
+required_when = "config.model_id == 'smollm2-135m'"
+
+[[assets]]
+id = "smollm2-135m-tokenizer"
+filename = "smollm2-135m/tokenizer.json"
+size_bytes = 2_104_556
+sha256 = "9ca9acddb6525a194ec8ac7a87f24fbba7232a9a15ffa1af0c1224fcd888e47c"
+gcs_path = "models/smollm2-135m-tokenizer.json"
+required_when = "config.model_id == 'smollm2-135m'"
+
+# Qwen2.5-0.5B-Instruct Q4_K_M is too big for Pi Zero (469 MB > 320 MB cap)
+# but fits comfortably on v0-appliance (Pi 5, 8 GB). The agent's install
+# handler runs a per-device size pre-check (`max_model_bytes_for_current_device`)
+# and returns 409 Conflict on Pi Zero with a precise error before any
+# download starts.
+[[assets]]
+id = "qwen2.5-0.5b-q4"
+filename = "qwen2.5-0.5b-q4/model.gguf"
+size_bytes = 491_400_032
+sha256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
+gcs_path = "models/qwen2.5-0.5b-q4_k_m.gguf"
+required_when = "config.model_id == 'qwen2.5-0.5b-q4'"
+
+[[assets]]
+id = "qwen2.5-0.5b-q4-tokenizer"
+filename = "qwen2.5-0.5b-q4/tokenizer.json"
+size_bytes = 7_031_645
+sha256 = "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539"
+gcs_path = "models/qwen2.5-0.5b-tokenizer.json"
+required_when = "config.model_id == 'qwen2.5-0.5b-q4'"
+
+[console]
+allowed_commands = ["--help", "--once", "--info"]
+max_runtime_secs = 30
+output_limit_bytes = 65536

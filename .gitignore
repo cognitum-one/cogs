@@ -3,8 +3,15 @@
 
 # Rust
 /target/
+**/target/
+src/cogs/*/Cargo.lock
 **/*.rs.bk
 *.pdb
+
+# AQE / agentic test runner artifacts (per memory: never `git add dir/` with
+# AQE hooks running — they drop .rvf files silently)
+.agentic-qe/
+**/.agentic-qe/
 
 # Node
 node_modules/
@@ -13,8 +20,11 @@ node_modules/
 .idea/
 .vscode/
 dist/
+
 # Claude tooling
-.agentic-qe/
 .claude-flow/
+.mcp.json
 *.db
-target/
+
+# Build artifacts
+cog-*-arm
