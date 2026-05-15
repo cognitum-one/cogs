@@ -21,9 +21,10 @@ node_modules/
 .vscode/
 dist/
 
-# Claude
-.claude/
+# Claude tooling
 .claude-flow/
 .mcp.json
-CLAUDE.md
+*.db
+
+# Build artifacts
 cog-*-arm
