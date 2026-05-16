@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cardiac Arrhythmia — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===========================================================
+     Palette aligned with the V0 Appliance dashboard
+     Neutral dark base (no blue tint) + Cognitum teal accent
+     =========================================================== */
+  :root {
+    --background:        0 0% 3.9%;
+    --foreground:        0 0% 98%;
+    --card:              0 0% 5%;
+    --card-2:            0 0% 7%;
+    --popover:           0 0% 3.9%;
+    --border:            0 0% 14.9%;
+    --border-strong:     0 0% 22%;
+    --muted:             0 0% 11%;
+    --muted-foreground:  0 0% 63.9%;
+    --primary:           172 66% 50%;   /* cognitum teal */
+    --primary-foreground:0 0% 3.9%;
+    --accent:            0 72% 51%;     /* alert red */
+    --warning:           38 92% 50%;
+    --success:           142 71% 45%;
+    --radius:            8px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html, body { margin: 0; padding: 0; }
+  section, .anchor { scroll-margin-top: 80px; }
+  body {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  a { color: hsl(var(--primary)); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font-family: inherit; }
+
+  /* ============ appbar ============ */
+  .appbar {
+    position: sticky; top: 0; z-index: 50;
+    background: hsla(240, 10%, 3.9%, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .appbar-row {
+    max-width: 1400px; margin: 0 auto;
+    padding: 0.85rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1.5rem; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 0.65rem; }
+  .brand-mark {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    background: hsl(var(--primary));
+    border-radius: 6px;
+    color: hsl(var(--primary-foreground));
+  }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-text { font-size: 0.95rem; font-weight: 500; letter-spacing: -0.01em; }
+  .brand-text b { font-weight: 700; }
+  .brand-text .slash { color: hsl(var(--muted-foreground)); margin: 0 0.35rem; font-weight: 300; }
+  .brand-ver {
+    margin-left: 0.5rem; font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--muted));
+    padding: 0.1rem 0.45rem; border-radius: 4px;
+  }
+  .nav { display: flex; gap: 0.15rem; flex-wrap: wrap; }
+  .nav a {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.85rem; font-weight: 500;
+    padding: 0.45rem 0.8rem; border-radius: 6px;
+    transition: all 0.12s ease;
+    text-decoration: none;
+  }
+  .nav a:hover { color: hsl(var(--foreground)); background: hsl(var(--muted)); }
+  .nav a.active { color: hsl(var(--foreground)); background: hsl(var(--muted)); }
+
+  /* ============ layout ============ */
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .section { margin-bottom: 1.75rem; scroll-margin-top: 80px; }
+  .section h2 {
+    font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: hsl(var(--muted-foreground));
+    margin: 0 0 0.85rem 0;
+  }
+
+  /* ============ hero ============ */
+  .hero {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1.5rem; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(800px 250px at 0% 0%, hsla(172, 66%, 50%, 0.06), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-left { flex: 1; min-width: 280px; position: relative; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: hsl(var(--primary)); font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%;
+    background: hsl(var(--primary)); box-shadow: 0 0 8px hsl(var(--primary)); }
+  .hero h1 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.55rem; font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    margin: 0; color: hsl(var(--muted-foreground));
+    font-size: 0.875rem; max-width: 62ch;
+  }
+  .hero-meta {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.85rem;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.7rem; font-weight: 500;
+    padding: 0.25rem 0.55rem; border-radius: 5px;
+    background: hsl(var(--muted)); color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  .chip .l { color: hsl(var(--muted-foreground)); font-size: 0.66rem;
+    text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .hero-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 0.6rem; position: relative;
+  }
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600;
+    padding: 0.35rem 0.7rem; border-radius: 999px;
+    background: hsla(142, 71%, 45%, 0.12);
+    color: hsl(var(--success));
+    border: 1px solid hsla(142, 71%, 45%, 0.3);
+  }
+  .live-pill .pulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: hsl(var(--success));
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 hsla(142, 71%, 45%, 0.6); }
+    50%      { box-shadow: 0 0 0 6px hsla(142, 71%, 45%, 0); }
+  }
+
+  /* ============ KPI strip ============ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+  .kpi {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: flex; gap: 0.85rem; align-items: flex-start;
+    transition: border-color 0.15s ease;
+  }
+  .kpi:hover { border-color: hsl(var(--border-strong)); }
+  .kpi-ic {
+    width: 32px; height: 32px;
+    display: grid; place-items: center; flex-shrink: 0;
+    border-radius: 6px;
+    background: hsla(172, 66%, 50%, 0.1);
+    color: hsl(var(--primary));
+  }
+  .kpi-ic.accent { background: hsla(0, 84%, 60%, 0.1); color: hsl(var(--accent)); }
+  .kpi-ic.warn { background: hsla(38, 92%, 55%, 0.12); color: hsl(var(--warning)); }
+  .kpi-ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .kpi-info { min-width: 0; flex: 1; }
+  .kpi-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: hsl(var(--muted-foreground)); font-weight: 500;
+  }
+  .kpi-val {
+    font-size: 1.5rem; font-weight: 600;
+    letter-spacing: -0.02em; margin-top: 0.1rem;
+    line-height: 1.1;
+  }
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: hsl(var(--muted-foreground)); margin-top: 0.15rem;
+  }
+  .kpi-trend {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    font-size: 0.7rem; font-weight: 500; margin-top: 0.2rem;
+  }
+  .kpi-trend.up { color: hsl(var(--success)); }
+  .kpi-trend.down { color: hsl(var(--accent)); }
+
+  /* ============ cards ============ */
+  .card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem;
+  }
+  .card-h {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; margin-bottom: 0.85rem;
+  }
+  .card-title {
+    font-size: 0.95rem; font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .card-sub {
+    font-size: 0.74rem; color: hsl(var(--muted-foreground));
+    margin-top: 0.15rem;
+  }
+
+  /* ============ buttons / segmented control ============ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-family: inherit; font-size: 0.78rem; font-weight: 500;
+    padding: 0.45rem 0.85rem; border-radius: 6px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--muted)); color: hsl(var(--foreground));
+    cursor: pointer; text-decoration: none;
+    transition: all 0.12s ease;
+  }
+  .btn:hover { border-color: hsl(var(--border-strong)); text-decoration: none; }
+  .btn.sm { padding: 0.32rem 0.7rem; font-size: 0.74rem; }
+  .btn.outline { background: transparent; }
+  .btn.primary {
+    background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary)); font-weight: 600;
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+
+  .segctl {
+    display: inline-flex;
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 7px;
+    padding: 2px;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+  .segctl button {
+    appearance: none; border: 0; background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.74rem; font-weight: 500;
+    padding: 0.3rem 0.65rem; border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    transition: all 0.12s ease;
+  }
+  .segctl button:hover { color: hsl(var(--foreground)); }
+  .segctl button.on {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 0 hsla(0,0%,100%,0.04);
+  }
+  .segctl button .dot { width: 6px; height: 6px; border-radius: 50%;
+    background: hsl(var(--success)); display: inline-block; }
+
+  /* ============ two-col layout ============ */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ============ trace card ============ */
+  .trace-card { padding: 1.1rem 1.2rem 1.3rem; }
+  .trace-card .card-h { flex-wrap: wrap; }
+  .trace-stats {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+    align-items: center;
+  }
+  .trace-bpm {
+    display: flex; align-items: baseline; gap: 0.4rem;
+  }
+  .trace-bpm-val {
+    font-size: 2.5rem; font-weight: 600; line-height: 1;
+    letter-spacing: -0.03em;
+    color: hsl(var(--primary));
+    font-variant-numeric: tabular-nums;
+  }
+  .trace-bpm-unit {
+    font-size: 0.8rem; color: hsl(var(--muted-foreground));
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .stat-mini {
+    display: flex; flex-direction: column; gap: 0.1rem; justify-content: center;
+  }
+  .stat-mini .l {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: hsl(var(--muted-foreground)); font-weight: 500;
+  }
+  .stat-mini .v {
+    font-size: 0.95rem; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* full-size trace */
+  .trace-canvas-wrap {
+    position: relative;
+    background: hsl(var(--card-2));
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .trace-canvas-wrap canvas { display: block; width: 100%; height: 200px; }
+  .trace-overlay {
+    position: absolute; top: 0.6rem; right: 0.8rem;
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: hsl(var(--muted-foreground));
+  }
+  .trace-legend {
+    display: flex; gap: 1rem; margin-top: 0.65rem; flex-wrap: wrap;
+    font-size: 0.72rem; color: hsl(var(--muted-foreground));
+  }
+  .trace-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .trace-legend i {
+    display: inline-block; width: 10px; height: 2px; border-radius: 1px;
+  }
+
+  /* ============ clinic overview tiles (aggregate, no waveforms) ============ */
+  .clinics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+  }
+  .clinic-tile {
+    background: hsl(var(--card-2));
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    padding: 0.9rem 1rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+    transition: border-color 0.15s ease;
+  }
+  .clinic-tile:hover { border-color: hsl(var(--border-strong)); }
+  .clinic-tile.alert { border-color: hsla(0, 72%, 51%, 0.4); }
+  .clinic-tile-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .clinic-tile-name {
+    font-size: 0.92rem; font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+  .clinic-tile-size {
+    font-size: 0.7rem;
+    color: hsl(var(--muted-foreground));
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .clinic-hr {
+    display: flex; align-items: baseline; gap: 0.35rem;
+  }
+  .clinic-hr-val {
+    font-size: 2rem; font-weight: 600; line-height: 1;
+    letter-spacing: -0.03em;
+    color: hsl(var(--primary));
+    font-variant-numeric: tabular-nums;
+  }
+  .clinic-hr-unit {
+    font-size: 0.66rem; color: hsl(var(--muted-foreground));
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .clinic-dot-strip {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .clinic-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+  }
+  .clinic-dot.normal      { background: hsl(var(--primary)); }
+  .clinic-dot.tachycardia { background: hsl(var(--warning)); }
+  .clinic-dot.bradycardia { background: hsl(var(--warning)); }
+  .clinic-dot.irregular   { background: hsl(var(--accent)); }
+  .clinic-rhythm-bar {
+    display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+    background: hsl(var(--card));
+  }
+  .clinic-rhythm-bar span { display: block; height: 100%; }
+  .clinic-rhythm-bar .normal      { background: hsl(var(--primary)); }
+  .clinic-rhythm-bar .tachycardia { background: hsl(var(--warning)); }
+  .clinic-rhythm-bar .bradycardia { background: hsl(var(--warning)); opacity: 0.75; }
+  .clinic-rhythm-bar .irregular   { background: hsl(var(--accent)); }
+  .clinic-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+  }
+  .clinic-meta .l {
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.62rem;
+  }
+  .clinic-meta .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--foreground));
+  }
+  .clinic-meta .v.alert { color: hsl(var(--accent)); }
+
+  /* ============ side stats ============ */
+  .stack { display: flex; flex-direction: column; gap: 1rem; }
+  .stat-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.55rem 0;
+    border-bottom: 1px dashed hsl(var(--border));
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .l { color: hsl(var(--muted-foreground)); font-size: 0.8rem; }
+  .stat-row .v { font-size: 0.85rem; font-weight: 500;
+    font-variant-numeric: tabular-nums; }
+
+  .gauge-row { display: flex; flex-direction: column; gap: 0.5rem; }
+  .gauge-h { display: flex; justify-content: space-between; font-size: 0.78rem; }
+  .gauge-h .l { color: hsl(var(--muted-foreground)); }
+  .gauge-h .v { font-variant-numeric: tabular-nums; font-weight: 500; }
+  .gauge {
+    height: 5px; background: hsl(var(--muted)); border-radius: 3px; overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%; border-radius: 3px;
+    background: hsl(var(--primary));
+    transition: width 0.5s ease;
+  }
+  .gauge-fill.warn { background: hsl(var(--warning)); }
+  .gauge-fill.danger { background: hsl(var(--accent)); }
+  .gauge-fill.ok { background: hsl(var(--success)); }
+
+  /* ============ events table ============ */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 0.82rem;
+  }
+  thead th {
+    text-align: left; font-weight: 600;
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: hsl(var(--muted-foreground));
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  tbody td {
+    padding: 0.65rem;
+    border-bottom: 1px solid hsl(var(--border));
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: hsla(240, 4%, 12%, 0.5); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem; font-weight: 500;
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    text-transform: lowercase;
+  }
+  .badge.danger { background: hsla(0, 84%, 60%, 0.12);
+    color: hsl(var(--accent)); border-color: hsla(0, 84%, 60%, 0.3); }
+  .badge.warn   { background: hsla(38, 92%, 55%, 0.12);
+    color: hsl(var(--warning)); border-color: hsla(38, 92%, 55%, 0.3); }
+  .badge.ok     { background: hsla(142, 71%, 45%, 0.12);
+    color: hsl(var(--success)); border-color: hsla(142, 71%, 45%, 0.3); }
+  .badge.info   { background: hsla(172, 66%, 50%, 0.12);
+    color: hsl(var(--primary)); border-color: hsla(172, 66%, 50%, 0.3); }
+  .badge.role-master { background: hsla(172, 66%, 50%, 0.12);
+    color: hsl(var(--primary)); border-color: hsla(172, 66%, 50%, 0.3); }
+  .badge.role-worker { background: hsl(var(--muted));
+    color: hsl(var(--muted-foreground)); }
+
+  .dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: hsl(var(--muted-foreground)); margin-right: 0.1rem;
+  }
+  .dot.up { background: hsl(var(--success)); box-shadow: 0 0 6px hsla(142,71%,45%,0.6); }
+  .dot.down { background: hsl(var(--accent)); }
+  .dot.idle { background: hsl(var(--warning)); }
+
+  /* ============ patients section ============ */
+  .patient-section-h {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+  }
+  .patient-section-h h2 { margin: 0; }
+  .patient-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.6rem;
+  }
+  .patient-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.75rem 0.85rem 0.7rem;
+    display: flex; flex-direction: column; gap: 0.45rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    cursor: pointer;
+  }
+  .patient-card:hover { border-color: hsl(var(--border-strong)); }
+  .patient-card.on { border-color: hsl(var(--primary));
+    background: hsl(var(--card-2)); }
+  .patient-card.hidden { display: none; }
+  .patient-card-h {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.4rem;
+  }
+  .patient-card-id {
+    font-size: 0.72rem; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    color: hsl(var(--muted-foreground));
+  }
+  .patient-card-subject {
+    font-size: 0.88rem; font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+  .patient-card-loc {
+    font-size: 0.7rem; color: hsl(var(--muted-foreground));
+  }
+  .patient-card-stats {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.4rem;
+  }
+  .patient-card-bpm {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem; font-weight: 500;
+    color: hsl(var(--primary));
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .patient-card-bpm .u {
+    font-size: 0.62rem; color: hsl(var(--muted-foreground));
+    margin-left: 0.2rem; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .mini-spark {
+    display: block; width: 100%; height: 38px;
+    background: hsl(var(--card-2));
+    border-radius: 4px;
+  }
+  .patient-card-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.66rem; color: hsl(var(--muted-foreground));
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ============ toast ============ */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem; right: 1.5rem;
+    background: hsl(var(--card-2));
+    border: 1px solid hsl(var(--border-strong));
+    border-left: 3px solid hsl(var(--success));
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: hsl(var(--foreground));
+    box-shadow: 0 10px 30px hsla(0, 0%, 0%, 0.5);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 420px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-icon {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: hsl(var(--success)); margin-right: 0.55rem;
+    box-shadow: 0 0 8px hsla(142, 71%, 45%, 0.6);
+    vertical-align: middle;
+  }
+
+  /* ============ footer ============ */
+  .appfoot {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid hsl(var(--border));
+    font-size: 0.74rem;
+    color: hsl(var(--muted-foreground));
+  }
+  .appfoot a { color: hsl(var(--muted-foreground)); }
+  .appfoot a:hover { color: hsl(var(--foreground)); }
+
+  /* ============ range sliders ============ */
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    background: transparent;
+    width: 100%;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: hsl(var(--muted));
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px; border-radius: 2px;
+    background: hsl(var(--muted));
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: hsl(var(--primary));
+    margin-top: -5px;
+    border: 2px solid hsl(var(--background));
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: hsl(var(--primary));
+    border: 2px solid hsl(var(--background));
+    cursor: pointer;
+  }
+
+  /* ============ misc ============ */
+  .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h3l2-5 4 10 2-5h7"/>
+        </svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Cardiac Arrhythmia
+        <span class="brand-ver mono">v1.1.0</span>
+      </span>
+    </div>
+    <nav class="nav" id="main-nav">
+      <a href="#live"      data-section="live">Clinics</a>
+      <a href="#events"    data-section="events">Events</a>
+      <a href="#patients"  data-section="patients">Patients</a>
+      <a href="#detection" data-section="detection">Detection</a>
+      <a href="#analytics" data-section="analytics">Analytics</a>
+      <a href="#settings"  data-section="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Hero / project header -->
+  <div class="section" id="live">
+    <div class="hero">
+      <div class="hero-left">
+        <div class="hero-eyebrow"><span class="dot"></span>Cog active</div>
+        <h1>Cardiac Arrhythmia Monitor</h1>
+        <p>Detects irregular heartbeat, tachycardia, and bradycardia through
+          micro-motion analysis of chest-wall movement captured via WiFi CSI.
+          Real-time inference runs locally on ESP32-S3 seeds.</p>
+        <div class="hero-meta">
+          <span class="chip"><span class="l">category</span>Health</span>
+          <span class="chip"><span class="l">size</span>28 KB</span>
+          <span class="chip"><span class="l">difficulty</span>Hard</span>
+          <span class="chip"><span class="l">hardware</span>ESP32-S3</span>
+          <span class="chip"><span class="l">input</span>CSI micro-motion</span>
+          <span class="chip"><span class="l">source</span>cogs/cardiac-arrhythmia</span>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="live-pill"><span class="pulse"></span>Live · streaming</div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-pause">Pause stream</button>
+          <button class="btn sm primary">Install on fleet &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic">
+          <svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 4 10 2-5h7"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">Mean heart rate</div>
+          <div class="kpi-val mono" id="kpi-hr">—</div>
+          <div class="kpi-sub">bpm · fleet avg</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">Arrhythmia events</div>
+          <div class="kpi-val" id="kpi-arr">7</div>
+          <div class="kpi-trend down">+2 vs yesterday</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">Tachycardia</div>
+          <div class="kpi-val" id="kpi-tac">3</div>
+          <div class="kpi-sub">episodes · 24h</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic">
+          <svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7 7 7-7"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">Bradycardia</div>
+          <div class="kpi-val" id="kpi-bra">1</div>
+          <div class="kpi-sub">episodes · 24h</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">ESP32-S3 seeds</div>
+          <div class="kpi-val" id="kpi-dev">— / —</div>
+          <div class="kpi-sub">online</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-label">Signal quality</div>
+          <div class="kpi-val" id="kpi-sig">94%</div>
+          <div class="kpi-trend up">CSI SNR nominal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live monitoring -->
+  <div class="section">
+    <div class="grid-2">
+
+      <div class="card trace-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Clinic overview</div>
+            <div class="card-sub" id="trace-sub">fleet-wide aggregate · streaming at 100 Hz</div>
+          </div>
+          <div class="live-pill"><span class="pulse"></span>live</div>
+        </div>
+
+        <div id="clinics-grid" class="clinics-grid"></div>
+      </div>
+
+      <div class="stack">
+        <div class="card anchor" id="detection">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Detection thresholds</div>
+              <div class="card-sub">model: micro-motion-v3 · 8-bit quant</div>
+            </div>
+          </div>
+          <div class="stack" style="gap:0.85rem">
+            <div class="gauge-row">
+              <div class="gauge-h"><span class="l">Tachycardia &gt;</span><span class="v mono">100 bpm</span></div>
+              <div class="gauge"><div class="gauge-fill warn" style="width:72%"></div></div>
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><span class="l">Bradycardia &lt;</span><span class="v mono">50 bpm</span></div>
+              <div class="gauge"><div class="gauge-fill" style="width:44%"></div></div>
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><span class="l">Irregularity (RR var)</span><span class="v mono">≥ 12%</span></div>
+              <div class="gauge"><div class="gauge-fill ok" style="width:18%"></div></div>
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><span class="l">Min signal SNR</span><span class="v mono">−6 dB</span></div>
+              <div class="gauge"><div class="gauge-fill ok" style="width:78%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Cog telemetry</div>
+          <div class="stat-row">
+            <span class="l">Inference latency</span>
+            <span class="v mono" id="lat">14 ms</span>
+          </div>
+          <div class="stat-row">
+            <span class="l">CSI sample rate</span>
+            <span class="v mono">100 Hz</span>
+          </div>
+          <div class="stat-row">
+            <span class="l">Model footprint</span>
+            <span class="v mono">28 KB</span>
+          </div>
+          <div class="stat-row">
+            <span class="l">CPU (avg)</span>
+            <span class="v mono" id="cpu">17%</span>
+          </div>
+          <div class="stat-row">
+            <span class="l">Uptime</span>
+            <span class="v mono">3d 14h 22m</span>
+          </div>
+          <div class="stat-row">
+            <span class="l">Last sync</span>
+            <span class="v mono">12s ago</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Recent events -->
+  <div class="section" id="events">
+    <h2>Recent events</h2>
+    <div class="card" style="padding:0.4rem 0.5rem">
+      <div style="overflow-x:auto">
+        <table id="evt-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Event</th>
+              <th>Seed</th>
+              <th>Subject</th>
+              <th>Heart rate</th>
+              <th>Confidence</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="evt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patients -->
+  <div class="section" id="patients">
+    <div class="card trace-card" style="margin-bottom:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Patient detail</div>
+          <div class="card-sub" id="patient-detail-sub">select a patient · full CSI waveform</div>
+        </div>
+        <div class="segctl" id="patient-range">
+          <button class="on" data-range="live">live</button>
+          <button data-range="1m">1m</button>
+          <button data-range="5m">5m</button>
+        </div>
+      </div>
+      <div class="trace-stats">
+        <div class="trace-bpm">
+          <span class="trace-bpm-val mono" id="solo-bpm">—</span>
+          <span class="trace-bpm-unit">bpm</span>
+        </div>
+        <div class="stat-mini">
+          <span class="l">HRV (RMSSD)</span>
+          <span class="v mono" id="solo-hrv">—</span>
+        </div>
+        <div class="stat-mini">
+          <span class="l">PR interval</span>
+          <span class="v mono" id="solo-pr">—</span>
+        </div>
+        <div class="stat-mini">
+          <span class="l">Rhythm class</span>
+          <span class="v" id="solo-rhythm"><span class="badge ok">—</span></span>
+        </div>
+        <div class="stat-mini">
+          <span class="l">Subject</span>
+          <span class="v" id="solo-subject">—</span>
+        </div>
+        <div class="stat-mini">
+          <span class="l">Clinic · room</span>
+          <span class="v" id="solo-loc">—</span>
+        </div>
+      </div>
+      <div class="trace-canvas-wrap">
+        <canvas id="solo-canvas" width="900" height="200"></canvas>
+        <div class="trace-overlay mono" id="solo-overlay">CSI · amplitude δ</div>
+      </div>
+      <div class="trace-legend">
+        <span><i style="background:hsl(var(--primary))"></i>chest-wall micro-motion</span>
+        <span><i style="background:hsl(var(--accent))"></i>detected R-peak</span>
+        <span><i style="background:hsl(var(--muted-foreground));opacity:.5"></i>baseline</span>
+      </div>
+    </div>
+
+    <div class="patient-section-h">
+      <h2 style="margin:0">Patients <span class="mono" style="font-size:0.78rem;color:hsl(var(--muted-foreground));font-weight:400" id="patient-count">—</span></h2>
+      <div class="segctl" id="patient-filter">
+        <button class="on" data-clinic="all"><span class="dot"></span>All clinics</button>
+        <!-- per-clinic buttons added by JS -->
+      </div>
+    </div>
+    <div class="patient-grid" id="patients-grid"></div>
+  </div>
+
+  <!-- Analytics -->
+  <div class="section" id="analytics">
+    <h2>Analytics</h2>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Clinic mean HR · live</div>
+            <div class="card-sub" id="clinic-trend-sub">rolling per-clinic average · 1 Hz</div>
+          </div>
+          <div class="segctl" id="clinic-trend-range">
+            <button class="on" data-range="60">60s</button>
+            <button data-range="300">5m</button>
+            <button data-range="900">15m</button>
+          </div>
+        </div>
+        <canvas id="clinic-trend" style="display:block;width:100%;height:220px;background:hsl(var(--card-2));border:1px solid hsl(var(--border));border-radius:6px"></canvas>
+        <div class="trace-legend" id="clinic-trend-legend" style="margin-top:0.65rem"></div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Events by type</div>
+          <div class="stat-row"><span class="l"><span class="badge warn">tachycardia</span></span><span class="v mono" id="ag-tac">3</span></div>
+          <div class="stat-row"><span class="l"><span class="badge warn">bradycardia</span></span><span class="v mono" id="ag-bra">1</span></div>
+          <div class="stat-row"><span class="l"><span class="badge danger">arrhythmia_detected</span></span><span class="v mono" id="ag-arr">3</span></div>
+          <div class="stat-row"><span class="l"><span class="badge info">heart_rate</span></span><span class="v mono" id="ag-hr">428</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Top seeds by events</div>
+          <div class="stat-row"><span class="l mono" style="color:hsl(var(--foreground))">seed-north-02</span><span class="v mono">5</span></div>
+          <div class="stat-row"><span class="l mono" style="color:hsl(var(--foreground))">seed-east-01</span><span class="v mono">3</span></div>
+          <div class="stat-row"><span class="l mono" style="color:hsl(var(--foreground))">seed-north-05</span><span class="v mono">3</span></div>
+          <div class="stat-row"><span class="l mono" style="color:hsl(var(--foreground))">seed-south-02</span><span class="v mono">2</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section" id="settings">
+    <h2>Settings</h2>
+    <div class="grid-2">
+      <div class="stack">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Detection thresholds</div>
+              <div class="card-sub">applied fleet-wide to all ESP32-S3 seeds</div>
+            </div>
+            <button class="btn sm primary" id="btn-save-thresholds">Save</button>
+          </div>
+          <div class="stack" style="gap:0.85rem">
+            <div class="gauge-row">
+              <div class="gauge-h"><label class="l" for="set-tac">Tachycardia threshold</label><span class="v mono" id="set-tac-v">100 bpm</span></div>
+              <input id="set-tac" type="range" min="80" max="160" value="100" style="width:100%">
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><label class="l" for="set-bra">Bradycardia threshold</label><span class="v mono" id="set-bra-v">50 bpm</span></div>
+              <input id="set-bra" type="range" min="30" max="70" value="50" style="width:100%">
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><label class="l" for="set-irr">Irregularity (RR variance)</label><span class="v mono" id="set-irr-v">12%</span></div>
+              <input id="set-irr" type="range" min="5" max="30" value="12" style="width:100%">
+            </div>
+            <div class="gauge-row">
+              <div class="gauge-h"><label class="l" for="set-snr">Minimum CSI SNR</label><span class="v mono" id="set-snr-v">−6 dB</span></div>
+              <input id="set-snr" type="range" min="-20" max="0" value="-6" style="width:100%">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Notifications</div>
+          <div class="stat-row"><span class="l">Webhook URL</span><span class="v mono" style="font-size:0.75rem">https://hooks.cogs.local/cardiac</span></div>
+          <div class="stat-row"><span class="l">Slack channel</span><span class="v mono">#cardiac-alerts</span></div>
+          <div class="stat-row"><span class="l">Throttle</span><span class="v mono">1 alert / 30s / seed</span></div>
+          <div class="stat-row"><span class="l">Severity floor</span><span class="v"><span class="badge warn">warning</span></span></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Model</div>
+          <div class="stat-row"><span class="l">Version</span><span class="v mono">micro-motion-v3</span></div>
+          <div class="stat-row"><span class="l">Quantization</span><span class="v mono">int8</span></div>
+          <div class="stat-row"><span class="l">Footprint</span><span class="v mono">28 KB</span></div>
+          <div class="stat-row"><span class="l">Auto-update</span><span class="v"><span class="badge ok">enabled</span></span></div>
+          <div class="stat-row"><span class="l">Last deploy</span><span class="v mono">2d 4h ago</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div>
+      <span class="mono">cog: cardiac-arrhythmia</span>
+      &middot; <span class="mono">v1.1.0</span>
+      &middot; <span class="mono">28 KB</span>
+      &middot; <a href="#">source</a>
+      &middot; <a href="#">docs</a>
+    </div>
+    <div style="margin-top:0.4rem">
+      Powered by <a href="#">Cognitum</a> ·
+      WiFi CSI micro-motion inference on ESP32-S3
+    </div>
+  </footer>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $  = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const fmt = (n, d) => Number(n).toFixed(d == null ? 0 : d);
+
+  // ============================================================
+  // Clinics + patients — patients belong to a clinic; clinic size
+  // is implied by the number of patients in that clinic
+  // ============================================================
+  const CLINICS = [
+    { id: 'north', name: 'Clinic North' },
+    { id: 'south', name: 'Clinic South' },
+    { id: 'west',  name: 'Clinic West'  },
+    { id: 'east',  name: 'Clinic East'  },
+  ];
+
+  const SEEDS = [
+    // Clinic North — large (8 patients)
+    { id: 'seed-north-01', clinicId: 'north', room: 'N-101', subject: 'Patient #042', rssi: -42, fw: '1.4.2',
+      scenarios: [ [72,8000], [76,7000], [80,7000], [74,8000] ] },
+    { id: 'seed-north-02', clinicId: 'north', room: 'N-102', subject: 'Patient #043', rssi: -45, fw: '1.4.2',
+      scenarios: [ [112,7000], [124,6000], [108,5000], [118,7000] ] },
+    { id: 'seed-north-03', clinicId: 'north', room: 'N-103', subject: 'Patient #051', rssi: -49, fw: '1.4.2',
+      scenarios: [ [68,9000], [72,7000], [70,8000], [74,7000] ] },
+    { id: 'seed-north-04', clinicId: 'north', room: 'N-104', subject: 'Patient #057', rssi: -52, fw: '1.4.2',
+      scenarios: [ [78,7000], [82,7000], [80,7000], [76,7000] ] },
+    { id: 'seed-north-05', clinicId: 'north', room: 'N-201', subject: 'Patient #061', rssi: -47, fw: '1.4.2',
+      scenarios: [ [88,7000], [82,7000], [94,7000], [86,7000] ], irregular: true },
+    { id: 'seed-north-06', clinicId: 'north', room: 'N-202', subject: 'Patient #064', rssi: -55, fw: '1.4.1',
+      scenarios: [ [70,8000], [74,7000], [72,8000], [76,7000] ] },
+    { id: 'seed-north-07', clinicId: 'north', room: 'N-203', subject: 'Patient #072', rssi: -51, fw: '1.4.2',
+      scenarios: [ [82,7000], [86,7000], [84,7000], [80,7000] ] },
+    { id: 'seed-north-08', clinicId: 'north', room: 'N-204', subject: 'Patient #078', rssi: -58, fw: '1.4.2',
+      scenarios: [ [46,9000], [52,7000], [44,8000], [50,7000] ] },
+
+    // Clinic South — medium (4 patients)
+    { id: 'seed-south-01', clinicId: 'south', room: 'S-12', subject: 'Patient #018', rssi: -44, fw: '1.4.2',
+      scenarios: [ [76,8000], [80,7000], [78,7000], [74,8000] ] },
+    { id: 'seed-south-02', clinicId: 'south', room: 'S-14', subject: 'Patient #029', rssi: -50, fw: '1.4.2',
+      scenarios: [ [118,9000], [124,5000], [96,6000], [110,7000] ] },
+    { id: 'seed-south-03', clinicId: 'south', room: 'S-15', subject: 'Patient #033', rssi: -48, fw: '1.4.2',
+      scenarios: [ [70,7000], [72,7000], [74,7000], [68,7000] ] },
+    { id: 'seed-south-04', clinicId: 'south', room: 'S-21', subject: 'Patient #038', rssi: -53, fw: '1.4.1',
+      scenarios: [ [86,7000], [90,6000], [82,7000], [88,7000] ] },
+
+    // Clinic West — mid-size (5 patients)
+    { id: 'seed-west-01',  clinicId: 'west',  room: 'W-7',  subject: 'Patient #091', rssi: -46, fw: '1.4.2',
+      scenarios: [ [74,8000], [78,7000], [76,7000], [72,8000] ] },
+    { id: 'seed-west-02',  clinicId: 'west',  room: 'W-8',  subject: 'Patient #095', rssi: -53, fw: '1.4.2',
+      scenarios: [ [104,7000], [114,6000], [98,6000], [108,6000] ] },
+    { id: 'seed-west-03',  clinicId: 'west',  room: 'W-9',  subject: 'Patient #103', rssi: -49, fw: '1.4.2',
+      scenarios: [ [80,7000], [84,7000], [78,7000], [82,7000] ] },
+    { id: 'seed-west-04',  clinicId: 'west',  room: 'W-10', subject: 'Patient #108', rssi: -57, fw: '1.4.1',
+      scenarios: [ [90,7000], [86,7000], [94,7000], [88,7000] ], irregular: true },
+    { id: 'seed-west-05',  clinicId: 'west',  room: 'W-11', subject: 'Patient #112', rssi: -60, fw: '1.4.2',
+      scenarios: [ [68,8000], [72,7000], [70,7000], [74,7000] ] },
+
+    // Clinic East — small (2 patients)
+    { id: 'seed-east-01',  clinicId: 'east',  room: 'E-α',  subject: 'Patient #008', rssi: -56, fw: '1.4.2',
+      scenarios: [ [46,9000], [52,7000], [44,8000], [50,7000] ] },
+    { id: 'seed-east-02',  clinicId: 'east',  room: 'E-β',  subject: 'Patient #014', rssi: -61, fw: '1.4.1',
+      scenarios: [ [72,8000], [76,7000], [80,7000], [74,8000] ] },
+  ];
+
+  const CLINIC_BY_ID = Object.fromEntries(CLINICS.map(c => [c.id, c]));
+  const PATIENTS_BY_CLINIC = CLINICS.reduce((acc, c) => {
+    acc[c.id] = SEEDS.filter(s => s.clinicId === c.id);
+    return acc;
+  }, {});
+
+  // ============================================================
+  // Per-seed waveform engine — independent rhythm + RR history
+  // ============================================================
+  function createStream(seedCfg) {
+    const SAMPLE_RATE = 80;
+    const WIN_SEC = 8;
+    const N = SAMPLE_RATE * WIN_SEC;
+    const buf = new Float32Array(N);
+    const peaks = new Uint8Array(N);
+    let t = 0, beatPhase = 0;
+    let bpm = seedCfg.scenarios[0][0];
+    let bpmTarget = bpm;
+    let scIdx = 0;
+    let scTimer = seedCfg.scenarios[0][1];
+    let lastBeatT = 0;
+    const rr = [];
+    let rhythm = 'normal';
+    let paused = false;
+    const irregular = !!seedCfg.irregular;
+
+    // 1 Hz HR history — 15 min ring buffer feeds 1m / 5m / 15m trend views
+    const HR_HISTORY_LEN = 900;
+    const hrHistory = new Float32Array(HR_HISTORY_LEN);
+    let hrIdx = 0, hrFilled = 0, hrAcc = 0;
+
+    function shapePulse(p) {
+      const a = Math.exp(-Math.pow((p - 0.10) / 0.04, 2)) * 1.0;
+      const b = Math.exp(-Math.pow((p - 0.18) / 0.05, 2)) * -0.35;
+      const c = Math.exp(-Math.pow((p - 0.32) / 0.07, 2)) *  0.45;
+      const baseline = Math.sin(p * Math.PI * 2) * 0.05;
+      return a + b + c + baseline;
+    }
+
+    function meanBpm() {
+      if (rr.length === 0) return bpm;
+      const m = rr.reduce((a,b)=>a+b,0) / rr.length;
+      return m > 0 ? 60000 / m : bpm;
+    }
+    function rmssd() {
+      if (rr.length < 3) return 0;
+      let s = 0, c = 0;
+      for (let i = 1; i < rr.length; i++) {
+        const d = rr[i] - rr[i-1]; s += d * d; c++;
+      }
+      return Math.sqrt(s / c);
+    }
+    function rrVar() {
+      if (rr.length < 3) return 0;
+      const m = rr.reduce((a,b)=>a+b,0) / rr.length;
+      let s = 0;
+      rr.forEach(r => s += Math.pow(r - m, 2));
+      const std = Math.sqrt(s / rr.length);
+      return m > 0 ? std / m : 0;
+    }
+    function classify() {
+      const m = meanBpm();
+      const v = rrVar();
+      if (m > 100) rhythm = 'tachycardia';
+      else if (m < 50) rhythm = 'bradycardia';
+      else if (v > 0.12) rhythm = 'irregular';
+      else rhythm = 'normal';
+      return rhythm;
+    }
+
+    function step(dt) {
+      if (paused) return;
+      scTimer -= dt * 1000;
+      if (scTimer <= 0) {
+        scIdx = (scIdx + 1) % seedCfg.scenarios.length;
+        bpmTarget = seedCfg.scenarios[scIdx][0];
+        scTimer = seedCfg.scenarios[scIdx][1];
+      }
+      bpm += (bpmTarget - bpm) * 0.04;
+      // inject RR jitter for irregular seeds
+      const period = 60 / bpm * (irregular ? (1 + (Math.random() - 0.5) * 0.25) : 1);
+      beatPhase += dt / period;
+      let didPeak = false;
+      if (beatPhase >= 1) {
+        beatPhase -= 1;
+        if (lastBeatT > 0) {
+          rr.push((t - lastBeatT) * 1000);
+          if (rr.length > 30) rr.shift();
+        }
+        lastBeatT = t;
+        didPeak = true;
+      }
+      const noise = (Math.random() - 0.5) * 0.08;
+      const drift = Math.sin(t * 0.4) * 0.06;
+      const resp = Math.sin(t * 0.9) * 0.18;
+      const v = shapePulse(beatPhase) * 0.7 + resp + drift + noise;
+      buf.copyWithin(0, 1);
+      peaks.copyWithin(0, 1);
+      buf[N-1] = v;
+      peaks[N-1] = didPeak ? 1 : 0;
+      t += dt;
+      classify();
+
+      // sample HR history at 1 Hz
+      hrAcc += dt;
+      while (hrAcc >= 1) {
+        hrAcc -= 1;
+        hrHistory[hrIdx] = meanBpm();
+        hrIdx = (hrIdx + 1) % HR_HISTORY_LEN;
+        if (hrFilled < HR_HISTORY_LEN) hrFilled++;
+      }
+    }
+
+    // return last N seconds of HR samples in chronological order
+    function hrTail(seconds) {
+      const n = Math.min(seconds, hrFilled);
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const idx = (hrIdx - n + i + HR_HISTORY_LEN) % HR_HISTORY_LEN;
+        out[i] = hrHistory[idx];
+      }
+      return out;
+    }
+
+    return {
+      id: seedCfg.id, cfg: seedCfg,
+      get buf() { return buf; },
+      get peaks() { return peaks; },
+      get bpm() { return bpm; },
+      get rhythm() { return rhythm; },
+      meanBpm, rmssd, rrVar, hrTail,
+      step,
+      setPaused(p) { paused = p; },
+      isPaused() { return paused; },
+    };
+  }
+
+  const STREAMS = SEEDS.map(createStream);
+  const STREAM_BY_ID = Object.fromEntries(STREAMS.map(s => [s.id, s]));
+
+  // ============================================================
+  // Canvas helpers
+  // ============================================================
+  const DPR = window.devicePixelRatio || 1;
+  function sizeCanvas(c) {
+    const r = c.getBoundingClientRect();
+    if (r.width === 0) return;
+    c.width = Math.round(r.width * DPR);
+    c.height = Math.round(r.height * DPR);
+  }
+
+  function drawTrace(c, stream, opts) {
+    opts = opts || {};
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // grid
+    if (opts.grid !== false) {
+      ctx.strokeStyle = 'hsla(240, 4%, 20%, 0.5)';
+      ctx.lineWidth = 1;
+      const gx = opts.tiny ? 6 : 10, gy = opts.tiny ? 2 : 4;
+      for (let i = 1; i < gx; i++) {
+        const x = (W * i) / gx;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let i = 1; i < gy; i++) {
+        const y = (H * i) / gy;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+    }
+
+    // colour selection by rhythm — amber for HR out of range,
+    // muted red (v0 --accent) reserved for actual rhythm irregularity.
+    let strokeColour = 'hsl(172, 66%, 55%)';
+    let glow = 'hsla(172, 66%, 50%, 0.55)';
+    const r = stream.rhythm;
+    if (r === 'irregular') {
+      strokeColour = 'hsl(0, 72%, 51%)';
+      glow = 'hsla(0, 72%, 51%, 0.45)';
+    } else if (r === 'tachycardia' || r === 'bradycardia') {
+      strokeColour = 'hsl(38, 92%, 55%)';
+      glow = 'hsla(38, 92%, 50%, 0.45)';
+    }
+
+    const buf = stream.buf;
+    const peaks = stream.peaks;
+    const N = buf.length;
+    const amp = opts.tiny ? 0.42 : 0.36;
+    ctx.lineWidth = (opts.tiny ? 1.4 : 1.8) * DPR;
+    ctx.strokeStyle = strokeColour;
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = (opts.tiny ? 5 : 8) * DPR;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = (i / (N - 1)) * W;
+      const y = H/2 - buf[i] * (H * amp);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // R-peak markers
+    if (!opts.tiny || opts.markers) {
+      ctx.fillStyle = strokeColour;
+      for (let i = 0; i < N; i++) {
+        if (peaks[i]) {
+          const x = (i / (N - 1)) * W;
+          const y = H/2 - buf[i] * (H * amp);
+          ctx.beginPath();
+          ctx.arc(x, y, (opts.tiny ? 2 : 3) * DPR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // Fleet aggregate view + segmented seed toggle
+  // ============================================================
+  const rhythmBadgeCls = {
+    'normal':       'ok',
+    'tachycardia':  'warn',
+    'bradycardia':  'warn',
+    'irregular':    'danger',
+  };
+
+  // ============================================================
+  // Clinic-level aggregate — rollups per clinic. No per-patient
+  // waveforms; that's the patient-level component's job.
+  // ============================================================
+  function aggregateClinic(clinicId) {
+    const streams = STREAMS.filter(s => s.cfg.clinicId === clinicId);
+    const n = streams.length;
+    const counts = { normal: 0, tachycardia: 0, bradycardia: 0, irregular: 0 };
+    let bpmSum = 0, hrvSum = 0;
+    streams.forEach(s => {
+      counts[s.rhythm] = (counts[s.rhythm] || 0) + 1;
+      bpmSum += s.meanBpm();
+      hrvSum += s.rmssd();
+    });
+    const alerts = counts.tachycardia + counts.bradycardia + counts.irregular;
+    return {
+      patients: n,
+      online: n,
+      meanBpm: n ? bpmSum / n : 0,
+      meanHrv: n ? hrvSum / n : 0,
+      counts, alerts, streams,
+    };
+  }
+
+  function buildClinicsGrid() {
+    const grid = $('#clinics-grid');
+    grid.innerHTML = CLINICS.map(c => {
+      const patients = PATIENTS_BY_CLINIC[c.id];
+      const dots = patients.map(p =>
+        `<span class="clinic-dot" data-seed="${p.id}" title="${p.subject}"></span>`
+      ).join('');
+      return `
+        <div class="clinic-tile" data-clinic="${c.id}">
+          <div class="clinic-tile-h">
+            <div class="clinic-tile-name">${c.name}</div>
+            <div class="clinic-tile-size">${patients.length} patients</div>
+          </div>
+          <div class="clinic-hr">
+            <span class="clinic-hr-val mono" data-role="hr">—</span>
+            <span class="clinic-hr-unit">bpm mean</span>
+          </div>
+          <div class="clinic-dot-strip" title="per-patient rhythm status">${dots}</div>
+          <div class="clinic-rhythm-bar" data-role="bar"></div>
+          <div class="clinic-meta">
+            <span class="l">online</span>      <span class="v" data-role="online">—</span>
+            <span class="l">avg HRV</span>     <span class="v" data-role="hrv">— ms</span>
+            <span class="l">active alerts</span><span class="v" data-role="alerts">—</span>
+            <span class="l">rooms</span>       <span class="v" data-role="rooms">—</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderClinicsGrid() {
+    CLINICS.forEach(c => {
+      const tile = $(`.clinic-tile[data-clinic="${c.id}"]`);
+      if (!tile) return;
+      const agg = aggregateClinic(c.id);
+
+      tile.classList.toggle('alert', agg.alerts > 0);
+      tile.querySelector('[data-role="hr"]').textContent = fmt(agg.meanBpm);
+
+      const total = agg.patients || 1;
+      const segs = ['normal','tachycardia','bradycardia','irregular']
+        .map(k => agg.counts[k] > 0
+          ? `<span class="${k}" style="width:${(agg.counts[k] / total * 100).toFixed(1)}%"></span>`
+          : '')
+        .join('');
+      tile.querySelector('[data-role="bar"]').innerHTML = segs;
+
+      agg.streams.forEach(s => {
+        const dot = tile.querySelector(`.clinic-dot[data-seed="${s.id}"]`);
+        if (dot) {
+          dot.classList.remove('normal','tachycardia','bradycardia','irregular');
+          dot.classList.add(s.rhythm);
+        }
+      });
+
+      tile.querySelector('[data-role="online"]').textContent = `${agg.online} / ${agg.patients}`;
+      tile.querySelector('[data-role="hrv"]').textContent    = fmt(agg.meanHrv) + ' ms';
+      const alertEl = tile.querySelector('[data-role="alerts"]');
+      alertEl.textContent = agg.alerts;
+      alertEl.classList.toggle('alert', agg.alerts > 0);
+      tile.querySelector('[data-role="rooms"]').textContent  = agg.patients;
+    });
+  }
+
+  // ============================================================
+  // Patient-level — compact cards + filter chips + detail panel
+  // ============================================================
+  let selectedPatient = SEEDS[0].id;
+  let currentClinicFilter = 'all';
+  let soloCanvas = $('#solo-canvas');
+
+  function buildPatientsGrid() {
+    const grid = $('#patients-grid');
+    grid.innerHTML = SEEDS.map(d => {
+      const c = CLINIC_BY_ID[d.clinicId];
+      return `
+        <div class="patient-card" data-seed="${d.id}" data-clinic="${d.clinicId}">
+          <div class="patient-card-h">
+            <span class="patient-card-id">${d.id}</span>
+            <span class="badge ok"><span class="dot up"></span>online</span>
+          </div>
+          <div>
+            <div class="patient-card-subject">${d.subject}</div>
+            <div class="patient-card-loc">${c.name} · Room ${d.room}</div>
+          </div>
+          <div class="patient-card-stats">
+            <span class="patient-card-bpm"><span class="bpm">—</span><span class="u">bpm</span></span>
+            <span class="rhythm-badge"><span class="badge ok">—</span></span>
+          </div>
+          <canvas class="mini-spark" data-seed="${d.id}"></canvas>
+          <div class="patient-card-foot">
+            <span>${d.rssi} dBm</span>
+            <span>fw v${d.fw}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    $$('.mini-spark').forEach(sizeCanvas);
+    $$('.patient-card').forEach(card => {
+      card.addEventListener('click', () => setSelectedPatient(card.dataset.seed));
+    });
+    applyClinicFilter();
+    applySelection();
+  }
+
+  function buildPatientFilter() {
+    const filter = $('#patient-filter');
+    CLINICS.forEach(c => {
+      const btn = document.createElement('button');
+      btn.dataset.clinic = c.id;
+      btn.innerHTML = `<span class="dot"></span>${c.name.replace('Clinic ', '')}`;
+      btn.addEventListener('click', () => setClinicFilter(c.id));
+      filter.appendChild(btn);
+    });
+    $$('#patient-filter button[data-clinic="all"]')[0]
+      .addEventListener('click', () => setClinicFilter('all'));
+  }
+
+  function setClinicFilter(id) {
+    currentClinicFilter = id;
+    $$('#patient-filter button').forEach(b =>
+      b.classList.toggle('on', b.dataset.clinic === id));
+    applyClinicFilter();
+  }
+
+  function applyClinicFilter() {
+    let visible = 0;
+    $$('.patient-card').forEach(card => {
+      const match = currentClinicFilter === 'all' ||
+                    card.dataset.clinic === currentClinicFilter;
+      card.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    $('#patient-count').textContent =
+      currentClinicFilter === 'all'
+        ? `· ${visible} across ${CLINICS.length} clinics`
+        : `· ${visible} in ${CLINIC_BY_ID[currentClinicFilter].name}`;
+  }
+
+  function applySelection() {
+    $$('.patient-card').forEach(c =>
+      c.classList.toggle('on', c.dataset.seed === selectedPatient));
+  }
+
+  function setSelectedPatient(id) {
+    selectedPatient = id;
+    applySelection();
+    refreshDetailHeader();
+    sizeCanvas(soloCanvas);
+  }
+
+  function refreshDetailHeader() {
+    const s = STREAM_BY_ID[selectedPatient];
+    const c = CLINIC_BY_ID[s.cfg.clinicId];
+    $('#patient-detail-sub').textContent =
+      `${s.cfg.subject} · ${c.name} · Room ${s.cfg.room} · 100 Hz · ch 6`;
+    $('#solo-subject').textContent = s.cfg.subject;
+    $('#solo-loc').textContent     = `${c.name} · Room ${s.cfg.room}`;
+    $('#solo-overlay').textContent = currentRange === 'live'
+      ? `CSI · ${s.id}`
+      : `HR trend · last ${currentRange} · ${s.id}`;
+  }
+
+  // Time-range toggle for the patient detail panel
+  let currentRange = 'live';
+  function setPatientRange(range) {
+    currentRange = range;
+    $$('#patient-range button').forEach(b =>
+      b.classList.toggle('on', b.dataset.range === range));
+    refreshDetailHeader();
+  }
+  $$('#patient-range button').forEach(btn => {
+    btn.addEventListener('click', () => setPatientRange(btn.dataset.range));
+  });
+
+  // HR-over-time line chart (used for 1m / 5m ranges)
+  function drawHrTrend(c, stream, windowSec) {
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const samples = stream.hrTail(windowSec);
+    const pad = { l: 36 * DPR, r: 12 * DPR, t: 14 * DPR, b: 20 * DPR };
+    const plotW = W - pad.l - pad.r;
+    const plotH = H - pad.t - pad.b;
+    const yMin = 30, yMax = 140;
+    const yFor = v => pad.t + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+
+    // y-axis grid + labels
+    ctx.strokeStyle = 'hsla(0, 0%, 20%, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.fillStyle  = 'hsl(0, 0%, 50%)';
+    ctx.font = `${10 * DPR}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [40, 60, 80, 100, 120].forEach(v => {
+      const y = yFor(v);
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillText(v, pad.l - 6 * DPR, y);
+    });
+
+    // threshold tinting
+    ctx.fillStyle = 'hsla(38, 92%, 50%, 0.06)';
+    ctx.fillRect(pad.l, yFor(yMax), plotW, yFor(100) - yFor(yMax));
+    ctx.fillRect(pad.l, yFor(50),   plotW, yFor(yMin) - yFor(50));
+
+    // x-axis ticks (in seconds back from now)
+    ctx.fillStyle  = 'hsl(0, 0%, 50%)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const ticks = windowSec <= 60 ? [0, 15, 30, 45, 60]
+                  : [0, 60, 120, 180, 240, 300];
+    ticks.forEach(secAgo => {
+      const x = pad.l + plotW * (1 - secAgo / windowSec);
+      const label = secAgo === 0 ? 'now' : `-${secAgo}s`;
+      ctx.fillText(label, x, H - pad.b + 4 * DPR);
+    });
+
+    if (samples.length < 2) {
+      ctx.fillStyle = 'hsl(0, 0%, 55%)';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `${12 * DPR}px 'Outfit', sans-serif`;
+      ctx.fillText('collecting samples…', pad.l + plotW / 2, pad.t + plotH / 2);
+      return;
+    }
+
+    // line
+    let strokeColour = 'hsl(172, 66%, 55%)';
+    if (stream.rhythm === 'irregular') strokeColour = 'hsl(0, 72%, 51%)';
+    else if (stream.rhythm === 'tachycardia' || stream.rhythm === 'bradycardia')
+      strokeColour = 'hsl(38, 92%, 55%)';
+
+    ctx.lineWidth = 2 * DPR;
+    ctx.strokeStyle = strokeColour;
+    ctx.beginPath();
+    const xStep = plotW / (windowSec - 1);
+    const startX = pad.l + plotW - (samples.length - 1) * xStep;
+    for (let i = 0; i < samples.length; i++) {
+      const x = startX + i * xStep;
+      const y = yFor(clamp(samples[i], yMin, yMax));
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // fill under
+    ctx.lineTo(startX + (samples.length - 1) * xStep, yFor(yMin));
+    ctx.lineTo(startX, yFor(yMin));
+    ctx.closePath();
+    ctx.fillStyle = strokeColour.replace('hsl', 'hsla').replace(')', ', 0.1)');
+    ctx.fill();
+  }
+
+  // ============================================================
+  // Animation loop — advance all streams, render the selected
+  // patient detail (full waveform or HR trend); per-card sparks +
+  // clinic tiles run on their own slower loops below.
+  // ============================================================
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    STREAMS.forEach(s => s.step(dt));
+
+    const s = STREAM_BY_ID[selectedPatient];
+    if (currentRange === 'live') {
+      drawTrace(soloCanvas, s, { tiny: false });
+    } else {
+      const win = currentRange === '1m' ? 60 : 300;
+      drawHrTrend(soloCanvas, s, win);
+    }
+    $('#solo-bpm').textContent = fmt(s.bpm);
+    $('#solo-hrv').textContent = fmt(s.rmssd()) + ' ms';
+    $('#solo-pr').textContent  = fmt(150 + Math.sin(now/2200) * 12) + ' ms';
+    const cls = rhythmBadgeCls[s.rhythm] || 'ok';
+    $('#solo-rhythm').innerHTML = `<span class="badge ${cls}">${s.rhythm}</span>`;
+
+    requestAnimationFrame(tick);
+  }
+
+  // ============================================================
+  // Aggregate KPI updates (fleet-wide)
+  // ============================================================
+  function refreshKpis() {
+    const mean = STREAMS.reduce((a, s) => a + s.meanBpm(), 0) / STREAMS.length;
+    $('#kpi-hr').textContent = fmt(mean);
+    const sig = 90 + Math.sin(performance.now() / 4000) * 6;
+    $('#kpi-sig').textContent = fmt(sig) + '%';
+    $('#lat').textContent = fmt(12 + Math.random() * 4) + ' ms';
+    $('#cpu').textContent = fmt(14 + Math.random() * 8) + '%';
+    $('#kpi-dev').textContent = `${STREAMS.length} / ${STREAMS.length}`;
+  }
+  setInterval(refreshKpis, 400);
+
+  // ============================================================
+  // Pause toggle (affects all streams)
+  // ============================================================
+  $('#btn-pause').addEventListener('click', (e) => {
+    const anyRunning = STREAMS.some(s => !s.isPaused());
+    STREAMS.forEach(s => s.setPaused(anyRunning));
+    e.currentTarget.textContent = anyRunning ? 'Resume stream' : 'Pause stream';
+  });
+
+  // ============================================================
+  // Events table
+  // ============================================================
+  const EVENTS = [
+    { t: '07:24:11', type: 'tachycardia',         seed: 'seed-north-02', subject: 'Patient #043', bpm: 124, conf: 0.94 },
+    { t: '06:58:02', type: 'arrhythmia_detected', seed: 'seed-north-05', subject: 'Patient #061', bpm: 88,  conf: 0.87 },
+    { t: '05:41:36', type: 'bradycardia',         seed: 'seed-east-01',  subject: 'Patient #008', bpm: 44,  conf: 0.91 },
+    { t: '04:12:50', type: 'tachycardia',         seed: 'seed-south-02', subject: 'Patient #029', bpm: 118, conf: 0.82 },
+    { t: '03:02:18', type: 'bradycardia',         seed: 'seed-north-08', subject: 'Patient #078', bpm: 48,  conf: 0.88 },
+    { t: '02:30:08', type: 'tachycardia',         seed: 'seed-north-02', subject: 'Patient #043', bpm: 118, conf: 0.82 },
+    { t: '01:14:22', type: 'arrhythmia_detected', seed: 'seed-east-01',  subject: 'Patient #008', bpm: 52,  conf: 0.78 },
+    { t: '00:05:44', type: 'heart_rate',          seed: 'seed-north-05', subject: 'Patient #061', bpm: 86,  conf: 0.99 },
+  ];
+  const evtBadge = {
+    tachycardia:         'warn',
+    bradycardia:         'warn',
+    arrhythmia_detected: 'danger',
+    heart_rate:          'info',
+  };
+  $('#evt-tbody').innerHTML = EVENTS.map(e => `
+    <tr>
+      <td class="mono" style="color:hsl(var(--muted-foreground))">${e.t}</td>
+      <td><span class="badge ${evtBadge[e.type] || ''}">${e.type}</span></td>
+      <td class="mono">${e.seed}</td>
+      <td>${e.subject}</td>
+      <td class="mono">${e.bpm} <span style="color:hsl(var(--muted-foreground));font-size:0.7rem">bpm</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div class="gauge" style="width:60px"><div class="gauge-fill" style="width:${(e.conf*100).toFixed(0)}%"></div></div>
+          <span class="mono" style="font-size:0.75rem">${(e.conf*100).toFixed(0)}%</span>
+        </div>
+      </td>
+      <td><a href="#" style="font-size:0.78rem">inspect &rarr;</a></td>
+    </tr>
+  `).join('');
+
+  // ============================================================
+  // Slower render loops — patient card sparks at 10 fps,
+  // clinic-tile aggregates at ~3 fps (rollups don't need 60).
+  // ============================================================
+  function renderPatients() {
+    $$('.patient-card').forEach(card => {
+      if (card.classList.contains('hidden')) return;
+      const s = STREAM_BY_ID[card.dataset.seed];
+      const c = card.querySelector('canvas.mini-spark');
+      drawTrace(c, s, { tiny: true, grid: false, markers: false });
+      card.querySelector('.bpm').textContent = fmt(s.bpm);
+      const cls = rhythmBadgeCls[s.rhythm] || 'ok';
+      card.querySelector('.rhythm-badge').innerHTML =
+        `<span class="badge ${cls}">${s.rhythm}</span>`;
+    });
+    setTimeout(renderPatients, 100);
+  }
+
+  function renderClinicsLoop() {
+    renderClinicsGrid();
+    setTimeout(renderClinicsLoop, 300);
+  }
+
+  // ============================================================
+  // Boot
+  // ============================================================
+  buildClinicsGrid();
+  buildPatientFilter();
+  buildPatientsGrid();
+  sizeCanvas(soloCanvas);
+  setSelectedPatient(selectedPatient);
+
+  window.addEventListener('resize', () => {
+    sizeCanvas(soloCanvas);
+    $$('.mini-spark').forEach(sizeCanvas);
+  });
+
+  requestAnimationFrame(tick);
+  renderPatients();
+  renderClinicsLoop();
+
+  // ============================================================
+  // Active-section highlighting on the top nav
+  // ============================================================
+  const navLinks = $$('#main-nav a');
+  const sectionIds = navLinks.map(a => a.dataset.section);
+  const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+  function setActiveNav(id) {
+    navLinks.forEach(a => a.classList.toggle('active', a.dataset.section === id));
+  }
+  // initial state: Live
+  setActiveNav(location.hash.replace('#', '') || 'live');
+
+  const io = new IntersectionObserver(entries => {
+    // pick the entry closest to the top that is intersecting
+    const visible = entries
+      .filter(e => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if (visible.length) setActiveNav(visible[0].target.id);
+  }, { rootMargin: '-80px 0px -55% 0px', threshold: 0 });
+  sectionEls.forEach(el => io.observe(el));
+
+  // ============================================================
+  // Settings sliders — live label updates
+  // ============================================================
+  function bindSlider(rangeId, valId, fmtFn) {
+    const r = document.getElementById(rangeId);
+    const v = document.getElementById(valId);
+    if (!r || !v) return;
+    const update = () => { v.textContent = fmtFn(r.value); };
+    r.addEventListener('input', update);
+    update();
+  }
+  bindSlider('set-tac', 'set-tac-v', x => x + ' bpm');
+  bindSlider('set-bra', 'set-bra-v', x => x + ' bpm');
+  bindSlider('set-irr', 'set-irr-v', x => x + '%');
+  bindSlider('set-snr', 'set-snr-v', x => (x >= 0 ? '+' : '−') + Math.abs(x) + ' dB');
+
+  // ============================================================
+  // Analytics — live clinic mean HR over time (multi-line chart)
+  // ============================================================
+  const CLINIC_LINE_COLOURS = {
+    north: 'hsl(172, 66%, 55%)',  // teal
+    south: 'hsl(195, 60%, 60%)',  // cyan
+    west:  'hsl(260, 55%, 65%)',  // lavender
+    east:  'hsl(38, 75%, 60%)',   // muted amber
+  };
+
+  let clinicTrendRange = 60;
+  function setClinicTrendRange(seconds) {
+    clinicTrendRange = seconds;
+    $$('#clinic-trend-range button').forEach(b =>
+      b.classList.toggle('on', Number(b.dataset.range) === seconds));
+    $('#clinic-trend-sub').textContent =
+      `rolling per-clinic average · 1 Hz · last ${seconds >= 60 ? (seconds/60)+' min' : seconds+'s'}`;
+  }
+  $$('#clinic-trend-range button').forEach(btn => {
+    btn.addEventListener('click', () => setClinicTrendRange(Number(btn.dataset.range)));
+  });
+
+  function buildClinicTrendLegend() {
+    $('#clinic-trend-legend').innerHTML = CLINICS.map(c => `
+      <span><i style="background:${CLINIC_LINE_COLOURS[c.id]}"></i>${c.name}</span>
+    `).join('') + `
+      <span><i style="background:hsla(38, 92%, 50%, 0.4)"></i>brady &lt; 50</span>
+      <span><i style="background:hsla(0, 72%, 51%, 0.4)"></i>tachy &gt; 100</span>
+    `;
+  }
+  buildClinicTrendLegend();
+
+  function drawClinicTrend() {
+    const c = document.getElementById('clinic-trend');
+    if (!c) return;
+    sizeCanvas(c);
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const winSec = clinicTrendRange;
+    const pad = { l: 36 * DPR, r: 12 * DPR, t: 14 * DPR, b: 22 * DPR };
+    const plotW = W - pad.l - pad.r;
+    const plotH = H - pad.t - pad.b;
+    const yMin = 30, yMax = 140;
+    const yFor = v => pad.t + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+
+    // threshold zones
+    ctx.fillStyle = 'hsla(38, 92%, 50%, 0.05)';
+    ctx.fillRect(pad.l, yFor(50), plotW, yFor(yMin) - yFor(50));
+    ctx.fillStyle = 'hsla(0, 72%, 51%, 0.05)';
+    ctx.fillRect(pad.l, yFor(yMax), plotW, yFor(100) - yFor(yMax));
+
+    // y grid + labels
+    ctx.strokeStyle = 'hsla(0, 0%, 20%, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'hsl(0, 0%, 50%)';
+    ctx.font = `${10 * DPR}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [40, 60, 80, 100, 120].forEach(v => {
+      const y = yFor(v);
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillText(v, pad.l - 6 * DPR, y);
+    });
+
+    // x-axis labels
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const xTicks = winSec <= 60 ? [0, 15, 30, 45, 60]
+                  : winSec <= 300 ? [0, 60, 120, 180, 240, 300]
+                                  : [0, 180, 360, 540, 720, 900];
+    xTicks.forEach(secAgo => {
+      const x = pad.l + plotW * (1 - secAgo / winSec);
+      const label = secAgo === 0 ? 'now'
+                    : secAgo < 60 ? `-${secAgo}s`
+                                  : `-${Math.round(secAgo/60)}m`;
+      ctx.fillText(label, x, H - pad.b + 4 * DPR);
+    });
+
+    // one line per clinic (mean of patient HR samples)
+    CLINICS.forEach(clinic => {
+      const streams = PATIENTS_BY_CLINIC[clinic.id]
+        .map(p => STREAM_BY_ID[p.id]);
+      const tails = streams.map(s => s.hrTail(winSec));
+      const len = Math.min(...tails.map(t => t.length));
+      if (len < 2) return;
+      const mean = new Float32Array(len);
+      for (let i = 0; i < len; i++) {
+        let sum = 0, count = 0;
+        for (let j = 0; j < tails.length; j++) {
+          const tail = tails[j];
+          const v = tail[tail.length - len + i];
+          if (v > 0) { sum += v; count++; }
+        }
+        mean[i] = count ? sum / count : 0;
+      }
+
+      const xStep = plotW / (winSec - 1);
+      const startX = pad.l + plotW - (len - 1) * xStep;
+      ctx.strokeStyle = CLINIC_LINE_COLOURS[clinic.id];
+      ctx.lineWidth = 1.8 * DPR;
+      ctx.shadowColor = CLINIC_LINE_COLOURS[clinic.id];
+      ctx.shadowBlur = 4 * DPR;
+      ctx.beginPath();
+      for (let i = 0; i < len; i++) {
+        const x = startX + i * xStep;
+        const y = yFor(clamp(mean[i], yMin, yMax));
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // dot at the right edge (current value)
+      const lastY = yFor(clamp(mean[len-1], yMin, yMax));
+      const lastX = startX + (len-1) * xStep;
+      ctx.fillStyle = CLINIC_LINE_COLOURS[clinic.id];
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3 * DPR, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  drawClinicTrend();
+  setInterval(drawClinicTrend, 1000);
+  window.addEventListener('resize', drawClinicTrend);
+
+  // ============================================================
+  // Toast notification + Save handler
+  // ============================================================
+  function showToast(msg) {
+    const t = $('#toast');
+    if (!t) return;
+    t.innerHTML = `<span class="toast-icon"></span>${msg}`;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const saveBtn = $('#btn-save-thresholds');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      const tac = $('#set-tac').value;
+      const bra = $('#set-bra').value;
+      const irr = $('#set-irr').value;
+      const snr = $('#set-snr').value;
+      const orig = saveBtn.textContent;
+      saveBtn.textContent = 'Saved ✓';
+      saveBtn.disabled = true;
+      showToast(`Thresholds saved · tachy ${tac} · brady ${bra} · RR var ${irr}% · SNR ${snr} dB`);
+      setTimeout(() => {
+        saveBtn.textContent = orig;
+        saveBtn.disabled = false;
+      }, 1600);
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>

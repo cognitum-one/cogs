@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Customer Flow — Foot Traffic Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --accent:142 70% 50%;
+  --warn:35 90% 60%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.12) 0%,transparent 70%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));
+  color:hsl(var(--foreground));
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+html{scroll-behavior:smooth}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:inherit;text-decoration:none}
+
+/* ── Header ────────────────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.topbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;flex-shrink:0}
+.brand-mark{
+  width:38px;height:38px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  border:1px solid hsl(var(--primary) / 0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;
+  animation:breathe 4s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 0 hsl(var(--primary) / 0)}
+  50%{box-shadow:0 0 24px -4px hsl(var(--primary) / 0.45)}
+}
+.brand-text{color:hsl(var(--muted-foreground));line-height:1.2}
+.brand-text b{color:hsl(var(--foreground));font-weight:600;display:block;font-size:0.9375rem}
+.brand-text small{
+  display:block;font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);margin-top:0.1rem;
+}
+.brand-text small .ver{color:hsl(var(--primary))}
+
+/* ── Nav — desktop horizontal pills, mobile hamburger ─────────── */
+.nav-toggle{
+  display:none;background:transparent;border:1px solid hsl(var(--border));
+  border-radius:0.4rem;width:40px;height:40px;cursor:pointer;
+  color:hsl(var(--foreground));
+  align-items:center;justify-content:center;
+}
+.nav-toggle svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.nav-toggle:hover{border-color:hsl(var(--primary) / 0.5)}
+.nav{
+  display:flex;align-items:center;gap:0.2rem;
+  background:hsl(var(--secondary) / 0.5);
+  border:1px solid hsl(var(--border) / 0.5);
+  padding:0.25rem;border-radius:0.5rem;
+}
+.nav a{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.45rem 0.85rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;cursor:pointer;white-space:nowrap;
+  transition:color 0.2s,background 0.2s,box-shadow 0.2s;
+}
+.nav a svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:0.7;transition:opacity 0.2s}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav a.active{
+  color:hsl(var(--primary));
+  background:hsl(var(--primary) / 0.12);
+  box-shadow:inset 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+.nav a.active svg{opacity:1}
+
+@media (max-width:900px){
+  .nav-toggle{display:inline-flex}
+  .nav{
+    display:none;
+    position:absolute;top:calc(100% + 0.5rem);right:1rem;
+    flex-direction:column;align-items:stretch;
+    background:hsl(var(--card));
+    border:1px solid hsl(var(--border));
+    border-radius:0.5rem;padding:0.4rem;
+    box-shadow:var(--shadow-card);
+    min-width:200px;z-index:60;
+  }
+  .nav.open{display:flex}
+  .nav a{padding:0.6rem 0.8rem}
+}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.75rem;scroll-margin-top:5.5rem}
+.page-head{margin-bottom:1.75rem}
+.page-head h1{font-size:1.75rem;font-weight:600;margin-bottom:0.4rem;letter-spacing:-0.02em}
+.page-head .lede{
+  font-size:0.875rem;color:hsl(var(--muted-foreground));
+  max-width:48rem;line-height:1.6;
+}
+.head-meta{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start}
+.tag-row{display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap}
+.chip{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.28rem 0.65rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;letter-spacing:0.02em;
+  border:1px solid hsl(var(--border));background:hsl(var(--secondary));
+  color:hsl(var(--foreground));
+}
+.chip.live{
+  border-color:hsl(142 70% 50% / 0.4);
+  background:hsl(142 70% 50% / 0.1);
+  color:hsl(142 70% 65%);
+}
+.chip.live .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:hsl(142 70% 55%);
+  animation:pulse 2s infinite;
+}
+.chip.retail{
+  border-color:hsl(var(--primary) / 0.3);
+  background:hsl(var(--primary) / 0.08);
+  color:hsl(var(--primary));
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 hsl(142 70% 55% / 0.6)}
+  70%{box-shadow:0 0 0 6px hsl(142 70% 55% / 0)}
+  100%{box-shadow:0 0 0 0 hsl(142 70% 55% / 0)}
+}
+
+.range-bar{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:1rem}
+.range-bar .label{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;
+  color:hsl(var(--muted-foreground));font-weight:600;margin-right:0.25rem;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* ── KPI grid ──────────────────────────────────────────────────── */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.125rem 1.25rem;
+  display:flex;flex-direction:column;gap:0.5rem;
+  position:relative;overflow:hidden;
+}
+.kpi::after{
+  content:'';position:absolute;inset:0;
+  background:var(--gradient-glow);opacity:0;
+  transition:opacity 0.3s;pointer-events:none;
+}
+.kpi:hover::after{opacity:1}
+.kpi.flash::before{
+  content:'';position:absolute;inset:0;
+  background:hsl(var(--primary) / 0.12);
+  animation:flashout 0.6s ease-out forwards;pointer-events:none;
+}
+@keyframes flashout{from{opacity:1}to{opacity:0}}
+.kpi-row{display:flex;justify-content:space-between;align-items:center}
+.kpi-ic{
+  width:36px;height:36px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.muted{background:hsl(var(--muted-foreground) / 0.12)}
+.kpi-ic.muted svg{stroke:hsl(var(--muted-foreground))}
+.kpi-label{
+  font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.08em;font-weight:600;
+}
+.kpi-val{
+  font-size:1.875rem;font-weight:600;color:hsl(var(--foreground));
+  line-height:1.1;letter-spacing:-0.02em;
+  font-variant-numeric:tabular-nums;
+}
+.kpi-val .unit{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-left:0.4rem;font-weight:500}
+.kpi-delta{font-size:0.75rem;font-family:var(--font-mono);display:flex;align-items:center;gap:0.3rem}
+.kpi-delta.up{color:hsl(142 70% 65%)}
+.kpi-delta.down{color:hsl(0 70% 70%)}
+.kpi-delta.neutral{color:hsl(var(--muted-foreground))}
+
+/* ── Two-column grids ──────────────────────────────────────────── */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(400px,1fr))}
+.grid-wide-side{display:grid;gap:0.875rem;grid-template-columns:2fr 1fr}
+@media (max-width:1080px){.grid-wide-side{grid-template-columns:1fr}}
+
+/* ── Live time-series ─────────────────────────────────────────── */
+.chart-wrap{position:relative}
+.chart-scan{
+  position:absolute;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,transparent,hsl(var(--primary) / 0.6),transparent);
+  pointer-events:none;z-index:3;opacity:0.7;
+  box-shadow:0 0 10px hsl(var(--primary) / 0.6);
+}
+.uplot-host{width:100%;min-height:320px}
+.u-legend{font-size:0.75rem!important;color:hsl(var(--muted-foreground))!important;margin-top:0.5rem!important}
+.u-legend .u-marker{border-radius:2px!important;margin-right:0.4rem!important}
+.u-legend .u-label{color:hsl(var(--muted-foreground))!important}
+.u-legend .u-value{color:hsl(var(--foreground))!important;font-weight:500;font-variant-numeric:tabular-nums}
+.u-axis text{fill:hsl(var(--muted-foreground))!important}
+
+.live-strip{
+  display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;
+  margin-bottom:0.875rem;font-family:var(--font-mono);font-size:0.7rem;
+  color:hsl(var(--muted-foreground));
+}
+.live-strip .tick{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.2rem 0.5rem;border-radius:0.3rem;
+  background:hsl(var(--background) / 0.5);
+  border:1px solid hsl(var(--border) / 0.5);
+}
+.tick.entry{color:hsl(185 80% 65%);border-color:hsl(185 80% 55% / 0.3);background:hsl(185 80% 50% / 0.08)}
+.tick.exit{color:hsl(35 90% 70%);border-color:hsl(35 90% 60% / 0.3);background:hsl(35 90% 60% / 0.08)}
+.tick.fresh{animation:flashin 0.5s ease-out}
+@keyframes flashin{
+  from{transform:scale(1.15);box-shadow:0 0 0 0 hsl(var(--primary) / 0.6)}
+  to  {transform:scale(1);    box-shadow:0 0 0 0 hsl(var(--primary) / 0)}
+}
+
+/* ── 24-hour radial polar chart ───────────────────────────────── */
+.radial-wrap{
+  display:flex;align-items:center;justify-content:center;
+  padding:0.5rem 0 0.25rem;position:relative;
+}
+.radial{width:100%;max-width:560px;aspect-ratio:1;display:block}
+.radial .wedge{
+  fill:hsl(185 80% 50% / 0.55);
+  stroke:hsl(185 80% 60%);stroke-width:0.5;
+  transition:d 0.6s cubic-bezier(.4,.0,.2,1),fill 0.4s,opacity 0.4s;
+}
+.radial .wedge.exit{
+  fill:hsl(35 90% 60% / 0.55);
+  stroke:hsl(35 90% 65%);
+}
+.radial .wedge.now{
+  fill:hsl(142 70% 55% / 0.85);
+  stroke:hsl(142 70% 65%);
+  filter:drop-shadow(0 0 8px hsl(142 70% 50% / 0.7));
+  animation:wedgepulse 1.6s ease-in-out infinite;
+}
+@keyframes wedgepulse{
+  0%,100%{filter:drop-shadow(0 0 6px hsl(142 70% 50% / 0.5))}
+  50%    {filter:drop-shadow(0 0 14px hsl(142 70% 50% / 0.9))}
+}
+.radial .hour-label{
+  fill:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);font-size:9px;
+  text-anchor:middle;dominant-baseline:middle;
+}
+.radial .hour-label.peak{fill:hsl(var(--accent));font-weight:600}
+.radial .hour-label.now{fill:hsl(var(--accent));font-weight:700}
+.radial .ring{fill:none;stroke:hsl(var(--border));stroke-width:0.6;stroke-dasharray:2,2;opacity:0.5}
+.radial .axis-line{stroke:hsl(var(--border) / 0.4);stroke-width:0.5}
+.radial-center{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  text-align:center;font-family:var(--font-mono);pointer-events:none;
+  max-width:34%;
+}
+.radial-center .big{
+  font-size:2rem;font-weight:600;color:hsl(var(--foreground));
+  line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;
+}
+.radial-center .lbl{
+  font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.1em;margin-top:0.45rem;
+}
+.radial-center .sub{font-size:0.6875rem;color:hsl(var(--accent));margin-top:0.25rem}
+
+.radial-legend{
+  display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;
+  margin-top:0.5rem;font-size:0.75rem;color:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);
+}
+.radial-legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:0.4rem;vertical-align:middle}
+.radial-legend .sw.entry{background:hsl(185 80% 55% / 0.7);border:1px solid hsl(185 80% 60%)}
+.radial-legend .sw.exit{background:hsl(35 90% 60% / 0.7);border:1px solid hsl(35 90% 65%)}
+.radial-legend .sw.now{background:hsl(142 70% 55%);border:1px solid hsl(142 70% 65%)}
+
+/* ── Heatmap ───────────────────────────────────────────────────── */
+.heatmap{display:grid;gap:4px;font-family:var(--font-mono);grid-template-columns:54px repeat(24, 1fr);align-items:center}
+.hm-hour-label{color:hsl(var(--muted-foreground));font-size:0.625rem;text-align:center;padding:0.25rem 0;font-weight:500}
+.hm-day-label{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right;padding-right:0.55rem;font-weight:600}
+.hm-day-label.today{color:hsl(var(--accent));font-weight:700}
+.hm-cell{
+  height:32px;border-radius:4px;
+  background:hsl(var(--muted) / 0.35);
+  transition:transform 0.12s,box-shadow 0.12s;
+  position:relative;
+}
+.hm-cell.now{
+  outline:1.5px solid hsl(var(--accent));
+  z-index:2;
+  animation:cellpulse 2s ease-in-out infinite;
+}
+@keyframes cellpulse{
+  0%,100%{box-shadow:0 0 0 0 hsl(var(--accent) / 0.6)}
+  50%    {box-shadow:0 0 0 6px hsl(var(--accent) / 0)}
+}
+.hm-cell:hover{transform:scale(1.18);z-index:3;box-shadow:0 0 0 1px hsl(var(--primary)),0 4px 12px hsl(220 25% 2% / 0.6)}
+.heatmap-scale{display:flex;align-items:center;gap:0.5rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:1rem;font-family:var(--font-mono)}
+.scale-bar{
+  flex:0 0 200px;height:10px;border-radius:5px;
+  background:linear-gradient(90deg,
+    hsl(220 15% 18%) 0%,
+    hsl(185 80% 50% / 0.5) 35%,
+    hsl(185 80% 55% / 0.85) 65%,
+    hsl(142 70% 55% / 0.95) 100%);
+  border:1px solid hsl(var(--border));
+}
+
+/* ── Sensors ──────────────────────────────────────────────────── */
+.sensor-grid{display:grid;gap:0.6rem;grid-template-columns:1fr 1fr}
+@media (max-width:520px){.sensor-grid{grid-template-columns:1fr}}
+.sensor{
+  border:1px solid hsl(var(--border) / 0.6);
+  border-radius:0.5rem;padding:0.85rem 0.95rem;
+  background:hsl(var(--background) / 0.4);position:relative;
+}
+.sensor-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;gap:0.4rem}
+.sensor-name{font-size:0.8125rem;font-weight:600;font-family:var(--font-mono)}
+.sensor-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.sensor-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+.sensor .sparkline{
+  position:absolute;right:0.6rem;top:0.5rem;
+  height:14px;width:60px;opacity:0.5;
+}
+
+/* ── Dots / badges ────────────────────────────────────────────── */
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.badge{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.2rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;font-family:var(--font-display);
+}
+.badge.ok{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.1);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3)}
+.badge.err{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+
+/* ── Events ───────────────────────────────────────────────────── */
+.events{display:flex;flex-direction:column;gap:0.3rem;max-height:360px;overflow-y:auto;padding-right:0.25rem}
+.event{
+  display:grid;grid-template-columns:72px 130px 1fr;
+  gap:0.6rem;align-items:center;
+  padding:0.55rem 0.7rem;
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.4rem;
+  background:hsl(var(--background) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;
+}
+.event.fresh{animation:eventin 0.4s ease-out;border-color:hsl(var(--primary) / 0.4);background:hsl(var(--primary) / 0.06)}
+@keyframes eventin{
+  from{transform:translateX(-12px);opacity:0;background:hsl(var(--primary) / 0.16)}
+  to  {transform:translateX(0);opacity:1}
+}
+.event .ts{color:hsl(var(--muted-foreground));font-size:0.6875rem}
+.event .kind{font-size:0.6875rem;font-weight:600;padding:0.18rem 0.5rem;border-radius:0.25rem;text-align:center;letter-spacing:0.02em}
+.event .kind.entry{background:hsl(185 80% 50% / 0.15);color:hsl(185 80% 65%)}
+.event .kind.exit{background:hsl(35 90% 60% / 0.15);color:hsl(35 90% 70%)}
+.event .kind.net{background:hsl(142 70% 50% / 0.15);color:hsl(142 70% 65%)}
+.event .kind.peak{background:hsl(280 70% 65% / 0.15);color:hsl(280 70% 75%)}
+.event .payload{color:hsl(var(--foreground))}
+.event .payload em{color:hsl(var(--muted-foreground));font-style:normal}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.42rem 0.85rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn.sm{padding:0.32rem 0.7rem;font-size:0.75rem}
+.btn.on{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.4)}
+
+/* ── Conversion ───────────────────────────────────────────────── */
+.conv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-top:0.25rem}
+@media (max-width:520px){.conv-row{grid-template-columns:1fr}}
+.conv{background:hsl(var(--background) / 0.4);border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;padding:0.875rem 1rem}
+.conv-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.08em}
+.conv-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.25rem;letter-spacing:-0.01em;font-variant-numeric:tabular-nums}
+.conv-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.foot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+.foot .mono{font-size:0.6875rem}
+.foot .sep{margin:0 0.5rem;color:hsl(var(--border))}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <div class="brand-mark">🚶</div>
+      <div class="brand-text">
+        <b>Customer Flow</b>
+        <small>retail · bidirectional · <span class="ver">v1.5.0</span></small>
+      </div>
+    </div>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="nav" id="nav">
+      <a href="#overview"   data-target="overview"   class="active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Overview
+      </a>
+      <a href="#traffic"    data-target="traffic">
+        <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        Traffic
+      </a>
+      <a href="#patterns"   data-target="patterns">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg>
+        Patterns
+      </a>
+      <a href="#conversion" data-target="conversion">
+        <svg viewBox="0 0 24 24"><path d="M3 12c4 0 4-6 8-6s4 12 8 12"/></svg>
+        Conversion
+      </a>
+      <a href="#events"     data-target="events">
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Events
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="head-meta">
+      <div>
+        <h1>Foot traffic — entries, exits, occupancy</h1>
+        <p class="lede">
+          Bidirectional people counting at gated entry/exit points. Live time-series
+          captures occupancy, peak-window detection, and conversion against transaction
+          signals. Inputs blend CSI presence with PIR motion to debounce loitering.
+        </p>
+      </div>
+      <div class="tag-row">
+        <span class="chip retail">Retail</span>
+        <span class="chip">ESP32-S3</span>
+        <span class="chip">CSI · PIR</span>
+        <span class="chip live"><span class="dot"></span> Live · <span id="last-update">—</span></span>
+      </div>
+    </div>
+    <div class="range-bar">
+      <span class="label">Window</span>
+      <button class="btn sm" data-range="1h">1h</button>
+      <button class="btn sm" data-range="6h">6h</button>
+      <button class="btn sm on" data-range="24h">24h</button>
+      <button class="btn sm" data-range="7d">7d</button>
+    </div>
+  </div>
+
+  <!-- Overview KPIs -->
+  <section id="overview" class="section">
+    <div class="kpi-grid">
+      <div class="kpi" id="kpi-occupancy-card">
+        <div class="kpi-row">
+          <span class="kpi-label">Current occupancy</span>
+          <div class="kpi-ic accent">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="7" r="3"/><path d="M14 15h4a4 4 0 0 1 4 4v2"/></svg>
+          </div>
+        </div>
+        <div class="kpi-val" id="kpi-occupancy" data-val="0">0</div>
+        <div class="kpi-delta neutral mono">people on premises</div>
+      </div>
+
+      <div class="kpi" id="kpi-entries-card">
+        <div class="kpi-row">
+          <span class="kpi-label">Entries</span>
+          <div class="kpi-ic">
+            <svg viewBox="0 0 24 24"><path d="M14 5l7 7-7 7"/><path d="M3 12h18"/></svg>
+          </div>
+        </div>
+        <div class="kpi-val" id="kpi-entries" data-val="0">0</div>
+        <div class="kpi-delta" id="kpi-entries-delta">—</div>
+      </div>
+
+      <div class="kpi" id="kpi-exits-card">
+        <div class="kpi-row">
+          <span class="kpi-label">Exits</span>
+          <div class="kpi-ic warn">
+            <svg viewBox="0 0 24 24"><path d="M10 5l-7 7 7 7"/><path d="M3 12h18"/></svg>
+          </div>
+        </div>
+        <div class="kpi-val" id="kpi-exits" data-val="0">0</div>
+        <div class="kpi-delta neutral mono">net direction tracked</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-row">
+          <span class="kpi-label">Peak window</span>
+          <div class="kpi-ic muted">
+            <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+          </div>
+        </div>
+        <div class="kpi-val" id="kpi-peak">—</div>
+        <div class="kpi-delta neutral mono">highest entry hour</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live traffic chart -->
+  <section id="traffic" class="section">
+    <div class="grid-wide-side">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Live traffic stream</div>
+            <div class="card-sub">Continuously streaming · entries (cyan), exits (amber), net occupancy (green)</div>
+          </div>
+        </div>
+        <div class="live-strip" id="live-strip"></div>
+        <div class="chart-wrap">
+          <div id="chart" class="uplot-host"></div>
+          <div class="chart-scan" id="chart-scan" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Sensor mesh</div>
+            <div class="card-sub">ESP32-S3 · CSI presence + PIR motion</div>
+          </div>
+        </div>
+        <div id="sensors" class="sensor-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 24-hour radial + heatmap -->
+  <section id="patterns" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">24-hour cycle</div>
+            <div class="card-sub">Entries (cyan) and exits (amber) by hour · current hour glows green</div>
+          </div>
+        </div>
+        <div class="radial-wrap">
+          <svg id="radial" class="radial" viewBox="-20 -20 440 440"></svg>
+          <div class="radial-center">
+            <div class="big" id="radial-now">—</div>
+            <div class="lbl" id="radial-lbl">live · last hour</div>
+            <div class="sub" id="radial-peak">—</div>
+          </div>
+        </div>
+        <div class="radial-legend">
+          <span><span class="sw entry"></span>entries</span>
+          <span><span class="sw exit"></span>exits</span>
+          <span><span class="sw now"></span>now</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Weekly pattern</div>
+            <div class="card-sub">Day × hour entry density · today &amp; current hour highlighted</div>
+          </div>
+        </div>
+        <div id="heatmap" class="heatmap"></div>
+        <div class="heatmap-scale">
+          <span>quiet</span>
+          <div class="scale-bar"></div>
+          <span>peak</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conversion -->
+  <section id="conversion" class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Conversion signals</div>
+          <div class="card-sub" id="conv-sub">Entries × dwell-filter ratio · 24h window</div>
+        </div>
+      </div>
+      <div class="conv-row">
+        <div class="conv">
+          <div class="conv-label">Unique visitors</div>
+          <div class="conv-val" id="conv-visitors" data-val="0">0</div>
+          <div class="conv-sub">after dwell + revisit dedupe</div>
+        </div>
+        <div class="conv">
+          <div class="conv-label">Transactions</div>
+          <div class="conv-val" id="conv-trans" data-val="0">0</div>
+          <div class="conv-sub">POS-correlated</div>
+        </div>
+        <div class="conv">
+          <div class="conv-label">Conversion rate</div>
+          <div class="conv-val" id="conv-rate">0.0%</div>
+          <div class="conv-sub">transactions ÷ visitors</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Event stream -->
+  <section id="events" class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event stream</div>
+          <div class="card-sub">Emitted: <code class="mono">entry_count</code> · <code class="mono">exit_count</code> · <code class="mono">net_occupancy</code> · <code class="mono">peak_detected</code></div>
+        </div>
+      </div>
+      <div id="events-list" class="events"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>
+      <span class="mono">cog: customer-flow</span>
+      <span class="sep">·</span>
+      <span class="mono">v1.5.0</span>
+      <span class="sep">·</span>
+      <span class="mono">16 KB</span>
+      <span class="sep">·</span>
+      <span class="mono">difficulty: easy</span>
+    </div>
+    <div style="margin-top:0.4rem">
+      Source: <span class="mono">cognitum-one/cogs/src/cogs/customer-flow</span>
+    </div>
+  </footer>
+</main>
+
+<script>
+// ── Customer Flow — live front-end ─────────────────────────────────
+// Real time ticks at TICK_MS, but the simulated clock advances faster
+// so the chart visibly streams: new buckets march in from the right
+// and old ones fall off the left every few real seconds.
+const TICK_MS = 400;                  // real-time tick cadence
+const SIM_STEP_MS = 12 * 1000;        // each tick advances the sim clock 12 sec (30× real time)
+let simClock = Date.now();             // simulated "now" in ms (starts at real now)
+function simNow(){ return new Date(simClock); }
+function simSec(){ return Math.floor(simClock / 1000); }
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const fmt = n => Number(n).toLocaleString();
+const pad2 = n => n < 10 ? '0' + n : String(n);
+const hourLabel = h => pad2(h) + ':00';
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const STATE = {
+  range: '24h',
+  bucketMin: 15,
+  series: [],          // [{ts, entries, exits, net}]
+  hourly: [],          // [{hour, entries, exits}] last 24h
+  heatmap: [],         // [day][hour] = entries/hour
+  occupancy: 0,
+  totals: { entries: 0, exits: 0 },
+  peak: null,
+  conversion: null,
+  sensors: [],
+  events: [],
+  plot: null,
+  ticker: [],          // for the live strip
+};
+
+// Per-second KPI batch — keeps the big numbers ticking at a calm 1 Hz
+// even though the underlying data stream ticks faster.
+const KPI_TICK_MS = 1000;
+let kpiAccum = { inc: 0, outc: 0, dirty: false };
+// Heavy EMA on "people on premises" — real foot traffic does NOT swing
+// by 10 every second. With alpha=0.12 and a 1Hz batch, the displayed
+// value eases toward the actual rolling count on a ~8-second time
+// constant, so it reads like a steady gauge instead of a counter.
+const OCC_EMA_ALPHA = 0.12;
+let occDisplay = null;
+
+// ── Traffic curve ────────────────────────────────────────────────
+// Busy mid-size retail (NOT a Costco): ~850/day weekday, ~1200 Saturday.
+// Peak ~90 entries/hr → with 40-min dwell, ~60 people on premises at peak.
+// Two peaks: lunch (~12:00) and after-work (~17:00).
+function trafficCurve(hour, dayIdx, jitter){
+  const base = [1,0,0,0,1,2,5,12,22,38,55,72,86,72,60,68,78,90,78,55,32,18,7,2][hour];
+  const dayWeight = [0.85,0.90,0.95,1.00,1.15,1.45,1.05][dayIdx];
+  return Math.max(0, Math.round(base * dayWeight + jitter));
+}
+function ratePerSec(d){
+  const h = d.getHours();
+  const dayIdx = (d.getDay() + 6) % 7;
+  return trafficCurve(h, dayIdx, 0) / 3600;
+}
+// Exits lag entries by the average dwell time so daily exits ≈ daily
+// entries and occupancy returns to ~0 overnight instead of drifting up.
+const DWELL_MIN = 40;
+function exitRatePerSec(d){
+  return ratePerSec(new Date(d.getTime() - DWELL_MIN * 60 * 1000));
+}
+// Live occupancy ≈ entries in the last DWELL_MIN minutes. Everyone who
+// entered within the dwell window is still in the store. Matches the
+// usual retail formula: occupancy ≈ arrival_rate × dwell.
+// O(n) sliding window.
+function recomputeNet(){
+  const lookback = DWELL_MIN * 60;
+  let e = 0, left = 0;
+  for (let i = 0; i < STATE.series.length; i++) {
+    const cutoff = STATE.series[i].ts - lookback;
+    e += STATE.series[i].entries;
+    while (left <= i && STATE.series[left].ts < cutoff) {
+      e -= STATE.series[left].entries;
+      left++;
+    }
+    STATE.series[i].net = e;
+  }
+}
+
+// Initial bootstrap: synthesize history so the chart isn't empty
+function bootstrapSeries(rangeHours){
+  // Bucket sizes tuned to the 30× sim speedup so the chart still streams:
+  //   1h → 30s  buckets → ~1 real sec per bucket
+  //   6h → 3min         → ~6 real sec
+  //   24h → 6min        → ~12 real sec
+  //   7d → 30min        → ~60 real sec
+  if (rangeHours <= 1)       STATE.bucketMin = 0.5;
+  else if (rangeHours <= 6)  STATE.bucketMin = 3;
+  else if (rangeHours <= 24) STATE.bucketMin = 6;
+  else                       STATE.bucketMin = 30;
+  const bucketMs = STATE.bucketMin * 60 * 1000;
+  const points = Math.round((rangeHours * 60) / STATE.bucketMin);
+  const now = simNow();
+  const series = [];
+  for (let i = points - 1; i >= 0; i--) {
+    const t = new Date(now.getTime() - i * bucketMs);
+    const h = t.getHours();
+    const d = (t.getDay() + 6) % 7;
+    const jitter = (Math.sin((t.getMinutes() + i * 3.1) / 6) + Math.cos(i / 5)) * 4;
+    const scale = STATE.bucketMin / 60;
+    const entries = Math.max(0, Math.round(trafficCurve(h, d, jitter) * scale * (0.92 + Math.random() * 0.16)));
+    // Exits driven by the curve evaluated 30 sim-min earlier (dwell lag).
+    const lagT = new Date(t.getTime() - DWELL_MIN * 60 * 1000);
+    const lagH = lagT.getHours();
+    const lagD = (lagT.getDay() + 6) % 7;
+    const exits = Math.max(0, Math.round(trafficCurve(lagH, lagD, jitter - 1) * scale * (0.92 + Math.random() * 0.16)));
+    series.push({ ts: Math.floor(t.getTime() / 1000), entries, exits });
+  }
+  STATE.series = series;
+  recomputeNet();
+
+  // weekly heatmap pattern (rate per hour)
+  STATE.heatmap = Array.from({ length: 7 }, (_, d) =>
+    Array.from({ length: 24 }, (_, h) => trafficCurve(h, d, 0))
+  );
+
+  recomputeAggregates();
+}
+
+// Each tick: advance the sim clock by SIM_STEP_MS, simulate arrivals
+// over that simulated interval, append to the latest bucket or roll a
+// new one. The window is kept anchored at sim-now so the chart slides.
+function tickLive(){
+  simClock += SIM_STEP_MS;
+  const now = simNow();
+  const rate    = ratePerSec(now);            // entries/sec at this sim hour
+  const exRate  = exitRatePerSec(now);        // exits track entries with dwell lag
+  const dtSec = SIM_STEP_MS / 1000;
+  const expIn  = rate   * dtSec * (0.92 + Math.random() * 0.20);
+  const expOut = exRate * dtSec * (0.92 + Math.random() * 0.20);
+  const inc  = Math.random() < (expIn  % 1) ? Math.ceil(expIn)  : Math.floor(expIn);
+  const outc = Math.random() < (expOut % 1) ? Math.ceil(expOut) : Math.floor(expOut);
+
+  const bucketMs = STATE.bucketMin * 60 * 1000;
+  const last = STATE.series[STATE.series.length - 1];
+  const bucketEnd = (Math.floor(simClock / bucketMs) + 1) * bucketMs / 1000;
+  const bucketStart = bucketEnd - bucketMs / 1000;
+
+  if (last && last.ts >= bucketStart) {
+    last.entries += inc;
+    last.exits   += outc;
+  } else {
+    STATE.series.push({ ts: bucketStart, entries: inc, exits: outc, net: 0 });
+    const cutoff = simSec() - rangeHours(STATE.range) * 3600;
+    while (STATE.series.length && STATE.series[0].ts < cutoff) STATE.series.shift();
+  }
+  recomputeNet();
+
+  if (inc > 0)  STATE.ticker.unshift({ kind: 'entry', n: inc,  t: now });
+  if (outc > 0) STATE.ticker.unshift({ kind: 'exit',  n: outc, t: now });
+  STATE.ticker = STATE.ticker.slice(0, 6);
+
+  if (inc > 0)  pushEvent({ kind: 'entry', payload: `+${inc} entry · gate=A`,  ts: now });
+  if (outc > 0) pushEvent({ kind: 'exit',  payload: `−${outc} exit · gate=B`, ts: now });
+
+  // Defer KPI render/flash to the 1Hz batch
+  kpiAccum.inc += inc;
+  kpiAccum.outc += outc;
+  kpiAccum.dirty = true;
+
+  recomputeAggregates();
+  renderLiveStrip();
+  renderHeatmapNow();
+  renderRadial();
+  updateChartLive();
+  $('#last-update').textContent = now.toLocaleTimeString();
+}
+
+function kpiTick(){
+  if (!kpiAccum.dirty) return;
+  pulseKpis(kpiAccum.inc, kpiAccum.outc);
+  renderKpis();
+  renderConversion();
+  kpiAccum = { inc: 0, outc: 0, dirty: false };
+}
+
+function pushEvent(e){
+  STATE.events.unshift({ ...e, fresh: true });
+  STATE.events = STATE.events.slice(0, 30);
+  renderEvents();
+}
+
+function recomputeAggregates(){
+  // 24-hour hourly rollup (anchored to the sim clock)
+  const cutoff = simSec() - 24 * 3600;
+  const hourly = Array.from({ length: 24 }, (_, h) => ({ hour: h, entries: 0, exits: 0 }));
+  STATE.series.forEach(p => {
+    if (p.ts < cutoff) return;
+    const h = new Date(p.ts * 1000).getHours();
+    hourly[h].entries += p.entries;
+    hourly[h].exits += p.exits;
+  });
+  STATE.hourly = hourly;
+  STATE.totals = STATE.series.reduce((a, p) => ({ entries: a.entries + p.entries, exits: a.exits + p.exits }), { entries: 0, exits: 0 });
+  STATE.peak = hourly.reduce((best, h) => h.entries > (best?.count ?? -1) ? { hour: h.hour, count: h.entries } : best, null);
+  STATE.occupancy = STATE.series.length ? STATE.series[STATE.series.length - 1].net : 0;
+  // Unique visitors: dedupe revisits & dwell-filtered re-entries (~58% of entries).
+  // Transactions: typical mid-tier retail conversion sits around 18-24%.
+  const visitors = Math.round(STATE.totals.entries * 0.58);
+  const transactions = Math.round(visitors * 0.22);
+  STATE.conversion = { visitors, transactions, rate: visitors ? transactions / visitors : 0 };
+}
+
+// ── Number count-up animation ────────────────────────────────────
+function animateNumber(el, to, opts = {}){
+  const decimals = opts.decimals || 0;
+  const suffix = opts.suffix || '';
+  const from = parseFloat(el.dataset.val || '0');
+  if (from === to) {
+    el.textContent = to.toFixed(decimals) + suffix;
+    return;
+  }
+  const start = performance.now();
+  const dur = 400;
+  function step(t){
+    const k = Math.min(1, (t - start) / dur);
+    const eased = 1 - Math.pow(1 - k, 3);
+    const v = from + (to - from) * eased;
+    el.textContent = (decimals ? v.toFixed(decimals) : Math.round(v).toLocaleString()) + suffix;
+    if (k < 1) requestAnimationFrame(step);
+    else el.dataset.val = String(to);
+  }
+  requestAnimationFrame(step);
+}
+
+function pulseKpis(inc, outc){
+  if (inc > 0) {
+    const c = $('#kpi-entries-card');
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
+  if (outc > 0) {
+    const c = $('#kpi-exits-card');
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
+  if (inc + outc > 0) {
+    const c = $('#kpi-occupancy-card');
+    c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderKpis(){
+  // Ease the displayed occupancy toward the actual rolling count.
+  const target = STATE.occupancy;
+  occDisplay = (occDisplay === null) ? target : occDisplay + (target - occDisplay) * OCC_EMA_ALPHA;
+  animateNumber($('#kpi-occupancy'), Math.round(occDisplay));
+  animateNumber($('#kpi-entries'),   STATE.totals.entries);
+  animateNumber($('#kpi-exits'),     STATE.totals.exits);
+  $('#kpi-peak').innerHTML = STATE.peak && STATE.peak.count
+    ? `${hourLabel(STATE.peak.hour)}<span class="unit">${fmt(STATE.peak.count)} in</span>`
+    : '—';
+  // synthetic delta
+  const prior = Math.max(1, Math.round(STATE.totals.entries * 0.92));
+  const delta = STATE.totals.entries - prior;
+  const pct = prior ? Math.round((delta / prior) * 100) : 0;
+  const el = $('#kpi-entries-delta');
+  el.className = 'kpi-delta ' + (pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral');
+  el.innerHTML = (pct >= 0 ? '▲' : '▼') + ' ' + Math.abs(pct) + '% vs prior window';
+}
+
+function renderConversion(){
+  const c = STATE.conversion; if (!c) return;
+  animateNumber($('#conv-visitors'), c.visitors);
+  animateNumber($('#conv-trans'),    c.transactions);
+  animateNumber($('#conv-rate'),     c.rate * 100, { decimals: 1, suffix: '%' });
+  $('#conv-sub').textContent = `Entries × dwell-filter ratio · ${STATE.range} window`;
+}
+
+// uPlot — entries area, exits area, net on secondary axis
+function buildChart(){
+  const host = $('#chart');
+  const xs = STATE.series.map(p => p.ts);
+  const ent = STATE.series.map(p => p.entries);
+  const exi = STATE.series.map(p => p.exits);
+  const net = STATE.series.map(p => p.net);
+  const data = [xs, ent, exi, net];
+
+  const rangeSec = rangeHours(STATE.range) * 3600;
+  const opts = {
+    width: host.clientWidth || 600,
+    height: 320,
+    cursor: { drag: { x: false, y: false }, points: { size: 7, width: 2, stroke: c => c.stroke, fill: 'hsl(220 25% 6%)' } },
+    legend: { live: true },
+    scales: {
+      x:   { time: true, range: () => [simSec() - rangeSec, simSec()] },
+      y:   { auto: true },
+      net: { auto: true },
+    },
+    series: [
+      { value: (u, v) => v == null ? '' : new Date(v * 1000).toLocaleTimeString() },
+      { label: 'Entries',        stroke: 'hsl(185, 80%, 55%)', width: 2,   fill: 'hsla(185, 80%, 55%, 0.18)', points: { show: false }, value: (u, v) => v == null ? '—' : fmt(v) },
+      { label: 'Exits',          stroke: 'hsl(35, 90%, 60%)',  width: 2,   fill: 'hsla(35, 90%, 60%, 0.12)',  points: { show: false }, value: (u, v) => v == null ? '—' : fmt(v) },
+      { label: 'Net occupancy',  stroke: 'hsl(142, 70%, 55%)', width: 2.5, fill: 'hsla(142, 70%, 50%, 0.08)', scale: 'net', points: { show: false }, value: (u, v) => v == null ? '—' : fmt(v) },
+    ],
+    axes: [
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)', width: 1 }, ticks: { stroke: 'hsl(220, 15%, 22%)' }, font: "11px 'JetBrains Mono', monospace", space: 80 },
+      { stroke: 'hsl(185, 80%, 60%)', grid: { stroke: 'hsl(220, 15%, 18%)', width: 1 }, ticks: { stroke: 'hsl(220, 15%, 22%)' }, font: "11px 'JetBrains Mono', monospace", size: 50, values: (u, vs) => vs.map(v => fmt(v)) },
+      { side: 1, scale: 'net', stroke: 'hsl(142, 70%, 60%)', grid: { show: false }, ticks: { stroke: 'hsl(220, 15%, 22%)' }, font: "11px 'JetBrains Mono', monospace", size: 56, values: (u, vs) => vs.map(v => fmt(v)) },
+    ],
+  };
+
+  if (STATE.plot) STATE.plot.destroy();
+  host.innerHTML = '';
+  STATE.plot = new uPlot(opts, data, host);
+}
+
+function updateChartLive(){
+  if (!STATE.plot) return;
+  const xs = STATE.series.map(p => p.ts);
+  const ent = STATE.series.map(p => p.entries);
+  const exi = STATE.series.map(p => p.exits);
+  const net = STATE.series.map(p => p.net);
+  STATE.plot.setData([xs, ent, exi, net]);
+}
+
+function renderLiveStrip(){
+  const el = $('#live-strip');
+  if (!STATE.ticker.length) {
+    el.innerHTML = '<span style="opacity:0.6">streaming · awaiting first arrivals…</span>';
+    return;
+  }
+  el.innerHTML = STATE.ticker.map((t, i) => {
+    const ts = pad2(t.t.getHours()) + ':' + pad2(t.t.getMinutes()) + ':' + pad2(t.t.getSeconds());
+    const sign = t.kind === 'entry' ? '↑' : '↓';
+    const label = t.kind === 'entry' ? 'in' : 'out';
+    return `<span class="tick ${t.kind} ${i === 0 ? 'fresh' : ''}">${sign} ${t.n} ${label} · ${ts}</span>`;
+  }).join('');
+}
+
+// ── 24-hour radial polar chart ───────────────────────────────────
+function renderRadial(){
+  const svg = $('#radial');
+  const cx = 200, cy = 200;
+  // Bigger inner empty disc (rMin) so the center text can never be
+  // overlapped by a wedge; wedges fill more of the outer area too.
+  const rEntryMax = 188, rExitMax = 145, rMin = 95;
+  const segDeg = 15;
+  const max = Math.max(1, ...STATE.hourly.map(h => Math.max(h.entries, h.exits)));
+  const nowHour = simNow().getHours();
+  const peakHour = STATE.peak ? STATE.peak.hour : -1;
+
+  const out = [];
+  // Background dial: center disc + concentric rings.
+  out.push(`<circle cx="${cx}" cy="${cy}" r="${rMin - 1}" fill="hsl(220 25% 6%)" stroke="hsl(var(--border))" stroke-width="0.6"/>`);
+  out.push(`<circle class="ring" cx="${cx}" cy="${cy}" r="${rMin + (rEntryMax - rMin) * 0.33}"/>`);
+  out.push(`<circle class="ring" cx="${cx}" cy="${cy}" r="${rMin + (rEntryMax - rMin) * 0.66}"/>`);
+  out.push(`<circle class="ring" cx="${cx}" cy="${cy}" r="${rEntryMax}"/>`);
+  // Axis spokes every 6 hours
+  [0, 6, 12, 18].forEach(h => {
+    const a = (h * segDeg - 90) * Math.PI / 180;
+    const x1 = cx + Math.cos(a) * rMin;
+    const y1 = cy + Math.sin(a) * rMin;
+    const x2 = cx + Math.cos(a) * (rEntryMax + 4);
+    const y2 = cy + Math.sin(a) * (rEntryMax + 4);
+    out.push(`<line class="axis-line" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+  });
+
+  STATE.hourly.forEach((h, i) => {
+    const a1 = ((i - 0.44) * segDeg - 90) * Math.PI / 180;
+    const a2 = ((i + 0.44) * segDeg - 90) * Math.PI / 180;
+    const rE = rMin + (h.entries / max) * (rEntryMax - rMin);
+    const rX = rMin + (h.exits   / max) * (rExitMax  - rMin);
+    out.push(wedgePath(cx, cy, a1, a2, rMin, rE, 'wedge' + (i === nowHour ? ' now' : '')));
+    out.push(wedgePath(cx, cy, a1, a2, rMin, rX, 'wedge exit' + (i === nowHour ? ' now' : '')));
+  });
+
+  // Hour labels around the outside
+  for (let h = 0; h < 24; h += 3) {
+    const a = (h * segDeg - 90) * Math.PI / 180;
+    const r = rEntryMax + 14;
+    const cls = 'hour-label' + (h === nowHour ? ' now' : h === peakHour ? ' peak' : '');
+    out.push(`<text class="${cls}" x="${cx + Math.cos(a) * r}" y="${cy + Math.sin(a) * r}">${pad2(h)}</text>`);
+  }
+
+  svg.innerHTML = out.join('');
+
+  $('#radial-now').textContent = fmt(STATE.hourly[nowHour]?.entries || 0);
+  $('#radial-lbl').textContent = `entries · ${hourLabel(nowHour)}`;
+  $('#radial-peak').innerHTML = STATE.peak
+    ? `peak ${hourLabel(STATE.peak.hour)} · ${fmt(STATE.peak.count)}`
+    : '';
+}
+
+function wedgePath(cx, cy, a1, a2, r1, r2, cls){
+  const x1 = cx + Math.cos(a1) * r1, y1 = cy + Math.sin(a1) * r1;
+  const x2 = cx + Math.cos(a1) * r2, y2 = cy + Math.sin(a1) * r2;
+  const x3 = cx + Math.cos(a2) * r2, y3 = cy + Math.sin(a2) * r2;
+  const x4 = cx + Math.cos(a2) * r1, y4 = cy + Math.sin(a2) * r1;
+  const large = (a2 - a1) > Math.PI ? 1 : 0;
+  return `<path class="${cls}" d="M${x1.toFixed(2)},${y1.toFixed(2)} L${x2.toFixed(2)},${y2.toFixed(2)} A${r2},${r2} 0 ${large} 1 ${x3.toFixed(2)},${y3.toFixed(2)} L${x4.toFixed(2)},${y4.toFixed(2)} A${r1},${r1} 0 ${large} 0 ${x1.toFixed(2)},${y1.toFixed(2)} Z"/>`;
+}
+
+// ── Heatmap ──────────────────────────────────────────────────────
+function renderHeatmap(){
+  const grid = $('#heatmap');
+  const max = Math.max(1, ...STATE.heatmap.flat());
+  const todayIdx = (simNow().getDay() + 6) % 7;
+  const nowHour = simNow().getHours();
+  const rows = [];
+  rows.push('<div></div>');
+  for (let h = 0; h < 24; h++) {
+    rows.push(`<div class="hm-hour-label">${h % 2 === 0 ? pad2(h) : ''}</div>`);
+  }
+  STATE.heatmap.forEach((row, d) => {
+    rows.push(`<div class="hm-day-label ${d === todayIdx ? 'today' : ''}">${DAYS[d]}</div>`);
+    row.forEach((v, h) => {
+      const a = v / max;
+      let bg;
+      if (a < 0.05)      bg = `hsl(220 15% 18% / 0.5)`;
+      else if (a < 0.5)  { const t = (a - 0.05) / 0.45; bg = `hsl(185 80% ${(35 + t*20).toFixed(0)}% / ${(0.35 + t*0.35).toFixed(2)})`; }
+      else               { const t = (a - 0.5) / 0.5;  const hue = 185 - t * 43; bg = `hsl(${hue.toFixed(0)} 80% ${(55 + t*5).toFixed(0)}% / ${(0.70 + t*0.25).toFixed(2)})`; }
+      const isNow = (d === todayIdx && h === nowHour);
+      rows.push(`<div class="hm-cell ${isNow ? 'now' : ''}" data-d="${d}" data-h="${h}" style="background:${bg}" title="${DAYS[d]} ${pad2(h)}:00 · ${v} entries/hr"></div>`);
+    });
+  });
+  grid.innerHTML = rows.join('');
+}
+function renderHeatmapNow(){
+  // re-stamp the 'now' class without redrawing the whole grid
+  const todayIdx = (simNow().getDay() + 6) % 7;
+  const nowHour = simNow().getHours();
+  $$('.hm-cell').forEach(c => c.classList.remove('now'));
+  const el = document.querySelector(`.hm-cell[data-d="${todayIdx}"][data-h="${nowHour}"]`);
+  if (el) el.classList.add('now');
+}
+
+// ── Sensors with sparkline ────────────────────────────────────────
+function renderSensors(){
+  const sensors = [
+    { name: 'esp32-s3-entry-a', kind: 'CSI presence', rssi: -52, uptime: '4d 12h', status: 'up',   last: '2s' },
+    { name: 'esp32-s3-entry-b', kind: 'PIR motion',   rssi: -61, uptime: '4d 12h', status: 'up',   last: '1s' },
+    { name: 'esp32-s3-exit-a',  kind: 'CSI presence', rssi: -58, uptime: '4d 12h', status: 'up',   last: '3s' },
+    { name: 'esp32-s3-exit-b',  kind: 'PIR motion',   rssi: -74, uptime: '2d 03h', status: 'warn', last: '12s' },
+  ];
+  STATE.sensors = sensors;
+  $('#sensors').innerHTML = sensors.map((s, i) => `
+    <div class="sensor">
+      ${sparkSvg(i)}
+      <div class="sensor-h">
+        <span class="sensor-name">${s.name}</span>
+        <span class="badge ${s.status === 'up' ? 'ok' : s.status === 'warn' ? 'warn' : 'err'}">
+          <span class="dot ${s.status === 'up' ? 'up' : s.status === 'warn' ? 'warn' : 'down'}"></span>
+          ${s.status === 'up' ? 'online' : s.status === 'warn' ? 'weak signal' : 'offline'}
+        </span>
+      </div>
+      <div class="sensor-meta">
+        <div><span class="l">input</span>${s.kind}</div>
+        <div><span class="l">rssi</span>${s.rssi} dBm</div>
+        <div><span class="l">uptime</span>${s.uptime}</div>
+        <div><span class="l">last seen</span>${s.last} ago</div>
+      </div>
+    </div>`).join('');
+}
+function sparkSvg(seed){
+  // tiny breathing line — purely decorative
+  const pts = Array.from({ length: 16 }, (_, i) => {
+    const v = 4 + Math.sin((seed + 1) * (i / 2.4) + Date.now() / 1500) * 3 + Math.random() * 1.5;
+    return [i * 4, 7 - v].join(',');
+  });
+  return `<svg class="sparkline" viewBox="0 0 60 14" preserveAspectRatio="none">
+    <polyline fill="none" stroke="hsl(185 80% 55%)" stroke-width="1.2" points="${pts.join(' ')}"/>
+  </svg>`;
+}
+
+function renderEvents(){
+  const labelMap = { entry: 'entry_count', exit: 'exit_count', net: 'net_occupancy', peak: 'peak_detected' };
+  $('#events-list').innerHTML = STATE.events.map((e, i) => `
+    <div class="event ${e.fresh && i < 2 ? 'fresh' : ''}">
+      <span class="ts">${pad2(e.ts.getHours())}:${pad2(e.ts.getMinutes())}:${pad2(e.ts.getSeconds())}</span>
+      <span class="kind ${e.kind}">${labelMap[e.kind] || e.kind}</span>
+      <span class="payload">${e.payload}</span>
+    </div>`).join('');
+  // strip the 'fresh' marker after a beat so it only animates once
+  STATE.events.forEach(e => { e.fresh = false; });
+}
+
+// ── Nav (responsive, no observer fight) ──────────────────────────
+let navLockUntil = 0;
+function bindNav(){
+  const toggle = $('#nav-toggle');
+  const navEl  = $('#nav');
+  toggle.addEventListener('click', () => {
+    const open = navEl.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  const links = $$('#nav a');
+  links.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.getElementById(a.dataset.target);
+      if (!target) return;
+      links.forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+      navLockUntil = Date.now() + 900;
+      navEl.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      const top = target.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  });
+
+  // Scroll-spy via getBoundingClientRect — robust and survives mobile rotations
+  const sectionIds = links.map(a => a.dataset.target);
+  window.addEventListener('scroll', () => {
+    if (Date.now() < navLockUntil) return;
+    let activeId = sectionIds[0];
+    for (const id of sectionIds) {
+      const s = document.getElementById(id);
+      if (!s) continue;
+      const r = s.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.35) activeId = id;
+    }
+    links.forEach(l => l.classList.toggle('active', l.dataset.target === activeId));
+  }, { passive: true });
+
+  // Close mobile menu when clicking outside
+  document.addEventListener('click', e => {
+    if (!navEl.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+      navEl.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+function bindRange(){
+  $$('.range-bar [data-range]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.range-bar [data-range]').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      STATE.range = btn.dataset.range;
+      bootstrapSeries(rangeHours(STATE.range));
+      buildChart();
+      renderKpis();
+      renderConversion();
+      renderRadial();
+    });
+  });
+}
+
+function rangeHours(r){
+  if (r === '1h')  return 1;
+  if (r === '6h')  return 6;
+  if (r === '24h') return 24;
+  if (r === '7d')  return 24 * 7;
+  return 24;
+}
+
+// Resize → rebuild chart at new width
+window.addEventListener('resize', () => {
+  if (STATE.plot) STATE.plot.setSize({ width: $('#chart').clientWidth, height: 320 });
+});
+
+// Refresh decorative sparklines slowly so they "breathe"
+setInterval(() => renderSensors(), 2400);
+
+window.addEventListener('DOMContentLoaded', () => {
+  bindNav();
+  bindRange();
+  bootstrapSeries(rangeHours(STATE.range));
+  buildChart();
+  renderKpis();
+  renderConversion();
+  renderRadial();
+  renderHeatmap();
+  renderSensors();
+  // seed a couple of events so the stream isn't empty at first paint
+  if (STATE.peak) pushEvent({ kind: 'peak', payload: `peak window · ${hourLabel(STATE.peak.hour)} · <em>${STATE.peak.count} entries</em>`, ts: simNow() });
+  pushEvent({ kind: 'net', payload: `occupancy=${STATE.occupancy} · zone=floor`, ts: simNow() });
+
+  setInterval(tickLive, TICK_MS);
+  setInterval(kpiTick,  KPI_TICK_MS);
+  $('#last-update').textContent = simNow().toLocaleTimeString();
+});
+</script>
+</body>
+</html>
