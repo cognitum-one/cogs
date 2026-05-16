@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cluster Health Monitor — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Cognitum — shared chrome (CSS tokens + base layout + nav + cards + buttons + tables) */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  /* keep anchored sections clear of the sticky appbar */
+  #overview,#seeds,#alerts,#events,#thresholds{scroll-margin-top:5.5rem}
+  :root{
+    --background:220 25% 6%;
+    --foreground:210 20% 92%;
+    --card:220 20% 10%;
+    --card-foreground:210 20% 92%;
+    --popover:220 20% 10%;
+    --popover-foreground:210 20% 92%;
+    --primary:185 80% 50%;
+    --primary-foreground:220 25% 6%;
+    --secondary:220 20% 14%;
+    --secondary-foreground:210 20% 80%;
+    --accent:142 70% 50%;
+    --accent-foreground:220 25% 6%;
+    --muted:220 15% 15%;
+    --muted-foreground:215 15% 55%;
+    --destructive:0 65% 50%;
+    --destructive-foreground:210 20% 92%;
+    --border:220 15% 18%;
+    --input:220 15% 18%;
+    --ring:185 80% 50%;
+    --radius:0.75rem;
+    --glow-primary:185 80% 50%;
+    --glow-accent:142 70% 50%;
+    --surface-elevated:220 20% 12%;
+    --surface-overlay:220 20% 8%;
+    --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+    --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+    --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+    --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+    --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+    --font-display:'Outfit',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  body{
+    font-family:var(--font-display);
+    background:hsl(var(--background));color:hsl(var(--foreground));
+    min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+  }
+  *::-webkit-scrollbar{width:8px;height:8px}
+  *::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+  *::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+  *::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+  code,.mono{font-family:var(--font-mono)}
+  a{color:hsl(var(--primary));text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* App bar */
+  .appbar{
+    position:sticky;top:0;z-index:50;
+    background:hsl(var(--background) / 0.9);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid hsl(var(--border) / 0.5);
+    padding:0.875rem 1.25rem;
+  }
+  .appbar-row{
+    max-width:1400px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:1rem;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+  .brand-mark{
+    width:32px;height:32px;border-radius:0.5rem;
+    background:hsl(var(--primary) / 0.12);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+  .brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+  .brand-text b{color:hsl(var(--foreground));font-weight:600}
+  .brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+  .brand-ver{
+    font-family:var(--font-mono);font-size:0.6875rem;
+    color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+  }
+  .nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+  .nav a{
+    display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+    font-size:0.8125rem;color:hsl(var(--muted-foreground));
+    font-weight:500;text-decoration:none;transition:all 0.2s;
+  }
+  .nav a:hover,.nav a.active,.nav a[data-active="true"]{
+    color:hsl(var(--foreground));background:hsl(var(--secondary));
+    text-decoration:none;
+  }
+  .nav a.active,.nav a[data-active="true"]{color:hsl(var(--primary))}
+
+  /* Layout */
+  .wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+  .section{margin-bottom:1.5rem}
+  .section h2{
+    font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+    color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+  }
+  h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+  .lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+  /* Cards */
+  .card{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+    padding:1.25rem;
+  }
+  .card-h{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:0.75rem;gap:0.5rem;
+  }
+  .card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+  .card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+  /* Empty-state card */
+  .empty-card{
+    background:var(--gradient-card);
+    border:1px dashed hsl(var(--border));
+    border-radius:var(--radius);
+    padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));
+  }
+  .empty-card h3{
+    font-size:1rem;font-weight:600;color:hsl(var(--primary));
+    margin-bottom:0.5rem;letter-spacing:-0.01em;
+  }
+  .empty-card p{font-size:0.875rem;line-height:1.6;max-width:36rem;margin:0 auto 0.75rem}
+  .empty-card.compact{padding:1rem 1.125rem}
+  .empty-card.compact p{font-size:0.8125rem;margin:0}
+
+  /* KPI grid */
+  .kpi-grid{
+    display:grid;gap:0.75rem;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  }
+  .kpi{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);
+    padding:1rem 1.125rem;
+    display:flex;align-items:center;gap:0.875rem;
+  }
+  .kpi-ic{
+    width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+    background:hsl(var(--primary) / 0.12);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+  .kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+  .kpi-ic.accent svg{stroke:hsl(var(--accent))}
+  .kpi-info{flex:1;min-width:0}
+  .kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+  .kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+  .kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+  /* Generic grids */
+  .grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+
+  /* Node card */
+  .node{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);padding:1rem 1.125rem;
+  }
+  .node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+  .node-name{font-size:0.875rem;font-weight:600}
+  .node-meta{
+    font-family:var(--font-mono);font-size:0.75rem;
+    color:hsl(var(--muted-foreground));line-height:1.7;
+  }
+  .node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+  /* Badges */
+  .badge{
+    display:inline-flex;align-items:center;gap:0.25rem;
+    padding:0.125rem 0.5rem;border-radius:9999px;
+    font-size:0.6875rem;font-weight:600;
+    border:1px solid transparent;
+  }
+  .badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+  .badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+  .badge.unknown{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+  .badge.unpaired{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+  .badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+
+  .dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+  .dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+  .dot.down{background:hsl(0 65% 50%)}
+
+  /* Tables */
+  table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+  thead th{
+    text-align:left;padding:0.4rem 0.5rem;
+    font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+    color:hsl(var(--muted-foreground));
+    border-bottom:1px solid hsl(var(--border) / 0.5);
+  }
+  tbody td{
+    padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+    font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+  }
+
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;gap:0.4rem;
+    padding:0.5rem 0.875rem;border-radius:0.4rem;
+    border:1px solid hsl(var(--border));
+    background:hsl(var(--secondary));color:hsl(var(--foreground));
+    font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+    cursor:pointer;transition:all 0.2s;
+  }
+  .btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+  .btn:disabled{opacity:0.5;cursor:not-allowed}
+  .btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+  .btn.primary{
+    background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+    border-color:hsl(var(--primary));font-weight:600;
+    box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+  }
+  .btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+  .btn.outline{background:transparent}
+
+  /* Inputs */
+  input,textarea,select{
+    background:hsl(var(--input));color:hsl(var(--foreground));
+    border:1px solid hsl(var(--border));border-radius:0.4rem;
+    padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+    outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+  }
+  input:focus,textarea:focus,select:focus{
+    border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+  }
+  input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+
+  /* Footer */
+  footer.appfoot{
+    margin-top:2.5rem;padding-top:1.25rem;
+    border-top:1px solid hsl(var(--border) / 0.5);
+    font-size:0.75rem;color:hsl(var(--muted-foreground));
+    text-align:center;line-height:1.8;
+  }
+  footer.appfoot .mono{font-size:0.6875rem}
+
+  /* Pill tabs */
+  .pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+  .pill-tab{
+    padding:0.4rem 0.75rem;border-radius:0.375rem;
+    font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+    background:hsl(var(--muted));border:1px solid transparent;
+    cursor:pointer;transition:all 0.2s;
+    font-family:var(--font-display);
+  }
+  .pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+  .pill-tab.on{
+    background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+    border-color:hsl(var(--primary));font-weight:600;
+  }
+
+  /* ─── Page-local additions for the Cluster Health Monitor cog ─── */
+  .page-h {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .page-h h1.page { margin: 0; display: flex; align-items: center; gap: 0.55rem; }
+  .page-h .lede { margin: 0.35rem 0 0; }
+  .page-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .live {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.25rem 0.625rem; border-radius: 9999px;
+    background: hsl(142 70% 50% / 0.1); color: hsl(142 70% 60%);
+    border: 1px solid hsl(142 70% 50% / 0.25);
+  }
+  .live::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: hsl(142 70% 50%); box-shadow: 0 0 6px hsl(142 70% 50% / 0.7);
+    animation: pulse-live 2s infinite;
+  }
+  @keyframes pulse-live {
+    0%   { box-shadow: 0 0 0 0 hsl(142 70% 50% / 0.6); }
+    70%  { box-shadow: 0 0 0 8px hsl(142 70% 50% / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(142 70% 50% / 0); }
+  }
+
+  /* Two-column dashboard layout */
+  .cols-2 {
+    display: grid; gap: 1rem;
+    grid-template-columns: 1.55fr 1fr;
+  }
+  @media (max-width: 1000px) { .cols-2 { grid-template-columns: 1fr; } }
+
+  /* Seed cards extend the template's .node */
+  .seed-grid {
+    display: grid; gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .seed.alert { border-color: hsl(35 85% 55% / 0.45); }
+  .seed.offline { border-color: hsl(0 65% 50% / 0.4); opacity: 0.9; }
+
+  .metrics {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 0.875rem;
+    margin-top: 0.625rem;
+  }
+  .metric .l {
+    font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: hsl(var(--muted-foreground)); font-weight: 600;
+  }
+  .metric .v {
+    font-family: var(--font-mono); font-size: 0.8125rem;
+    color: hsl(var(--foreground)); font-variant-numeric: tabular-nums;
+    margin-top: 0.125rem;
+  }
+  .metric .v.warn   { color: hsl(35 85% 65%); }
+  .metric .v.danger { color: hsl(0 70% 70%); }
+  .bar {
+    height: 3px; background: hsl(var(--muted)); border-radius: 2px;
+    overflow: hidden; margin-top: 0.25rem;
+  }
+  .bar-fill {
+    height: 100%; background: hsl(var(--primary));
+    border-radius: 2px; transition: width 0.4s ease;
+  }
+  .bar-fill.warn   { background: hsl(35 85% 55%); }
+  .bar-fill.danger { background: hsl(var(--destructive)); }
+  .bar-fill.accent { background: hsl(var(--accent)); }
+
+  .seed-footer {
+    margin-top: 0.75rem; padding-top: 0.625rem;
+    border-top: 1px dashed hsl(var(--border) / 0.6);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; flex-wrap: wrap;
+  }
+  .seed-cogs { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+  .cog-pill {
+    font-family: var(--font-mono);
+    font-size: 0.625rem; font-weight: 500;
+    padding: 0.125rem 0.4rem; border-radius: 0.25rem;
+    background: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.18);
+  }
+  .seed-footer .when {
+    font-family: var(--font-mono); font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Toolbar (search + filter chips) */
+  .toolbar {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .search {
+    flex: 1; min-width: 220px;
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0 0.75rem; height: 2.4rem;
+    background: hsl(var(--input)); border: 1px solid hsl(var(--border));
+    border-radius: 0.4rem;
+  }
+  .search:focus-within {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3);
+  }
+  .search svg {
+    width: 14px; height: 14px; flex-shrink: 0;
+    stroke: hsl(var(--muted-foreground)); stroke-width: 2; fill: none;
+  }
+  .search input {
+    flex: 1; background: transparent; border: none; padding: 0;
+    font-size: 0.8125rem; outline: none; height: auto;
+  }
+  .search input:focus { box-shadow: none; }
+
+  /* Alert rows */
+  .alert-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+  .alert-row {
+    display: flex; gap: 0.625rem; align-items: center;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border) / 0.6);
+    background: hsl(var(--surface-overlay));
+  }
+  .alert-row.crit {
+    border-color: hsl(var(--destructive) / 0.35);
+    background: hsl(0 65% 50% / 0.06);
+  }
+  .alert-row.warn {
+    border-color: hsl(35 85% 55% / 0.35);
+    background: hsl(35 85% 55% / 0.06);
+  }
+  .alert-row .ic {
+    width: 28px; height: 28px; border-radius: 0.4rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .alert-row.crit .ic { background: hsl(var(--destructive) / 0.15); color: hsl(0 70% 70%); }
+  .alert-row.warn .ic { background: hsl(35 85% 55% / 0.15); color: hsl(35 85% 70%); }
+  .alert-row .ic svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+  .alert-row .body { flex: 1; min-width: 0; }
+  .alert-row .msg { font-size: 0.8125rem; color: hsl(var(--foreground)); }
+  .alert-row .msg b { font-family: var(--font-mono); color: hsl(var(--primary)); font-weight: 500; }
+  .alert-row .meta { font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.125rem; }
+  .alert-row .when { font-size: 0.6875rem; color: hsl(var(--muted-foreground)); font-family: var(--font-mono); white-space: nowrap; }
+
+  /* Event stream */
+  .events { display: flex; flex-direction: column; }
+  .event {
+    display: flex; gap: 0.625rem; align-items: flex-start;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid hsl(var(--border) / 0.4);
+    font-size: 0.8125rem;
+  }
+  .event:last-child { border-bottom: none; }
+  .event .ic {
+    width: 22px; height: 22px; border-radius: 0.35rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: hsl(var(--muted)); color: hsl(var(--muted-foreground));
+  }
+  .event .ic.ok     { background: hsl(142 70% 50% / 0.12); color: hsl(142 70% 65%); }
+  .event .ic.warn   { background: hsl(35 85% 55% / 0.12);  color: hsl(35 85% 70%); }
+  .event .ic.danger { background: hsl(0 65% 50% / 0.12);   color: hsl(0 70% 70%); }
+  .event .ic svg { width: 11px; height: 11px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+  .event .body { flex: 1; min-width: 0; }
+  .event .msg { line-height: 1.45; }
+  .event .msg .mono { color: hsl(var(--primary)); }
+  .event .meta {
+    font-size: 0.6875rem; color: hsl(var(--muted-foreground));
+    margin-top: 0.15rem; display: flex; gap: 0.5rem; align-items: center;
+  }
+  .event .meta .type {
+    font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500;
+    padding: 0.075rem 0.4rem; border-radius: 0.25rem;
+    background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground));
+  }
+
+  /* Threshold table tweaks */
+  table.thresholds td:first-child {
+    font-family: var(--font-display);
+    color: hsl(var(--foreground)); font-weight: 500; font-size: 0.8125rem;
+  }
+  table.thresholds td:first-child .unit {
+    display: block; font-family: var(--font-mono); font-size: 0.6875rem;
+    color: hsl(var(--muted-foreground)); font-weight: 400; margin-top: 0.1rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Cluster Health Monitor<span class="brand-ver mono">v1.0.0</span>
+      </span>
+    </div>
+    <nav class="nav">
+      <a href="#overview"   class="active">Overview</a>
+      <a href="#seeds">Seeds</a>
+      <a href="#alerts">Alerts</a>
+      <a href="#events">Events</a>
+      <a href="#thresholds">Thresholds</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Page header -->
+  <div class="page-h" id="overview">
+    <div>
+      <h1 class="page">📟 Cluster Health Monitor</h1>
+      <p class="lede">Real-time dashboard of all seeds in the swarm. Monitors uptime, vector count, CPU temperature, WiFi signal, disk usage, and installed cogs — and alerts when a seed goes offline or exceeds thresholds.</p>
+    </div>
+    <div class="page-actions">
+      <span class="live">Live</span>
+      <button class="btn sm" id="btn-refresh">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+      <button class="btn sm primary">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>
+        Add seed
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Seeds online</div>
+          <div class="kpi-val"><span id="kpi-online">11</span><span style="color:hsl(var(--muted-foreground));font-weight:400"> / <span id="kpi-total">12</span></span></div>
+          <div class="kpi-sub" id="kpi-online-sub">1 offline · 92% reachable</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Active alerts</div>
+          <div class="kpi-val" id="kpi-alerts">3</div>
+          <div class="kpi-sub" id="kpi-alerts-sub">1 critical · 2 warning</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Avg CPU temp</div>
+          <div class="kpi-val">54.2<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));font-weight:400">°C</span></div>
+          <div class="kpi-sub">↓ 2.1°C vs 1h ago</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Vectors indexed</div>
+          <div class="kpi-val">2.41<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));font-weight:400">M</span></div>
+          <div class="kpi-sub">across 12 seeds</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Avg WiFi signal</div>
+          <div class="kpi-val">-62<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));font-weight:400"> dBm</span></div>
+          <div class="kpi-sub">good signal strength</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Fleet uptime</div>
+          <div class="kpi-val">14<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));font-weight:400">d 6h</span></div>
+          <div class="kpi-sub">median across seeds</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seeds + sidebar -->
+  <div class="section">
+    <div class="cols-2">
+
+      <!-- Seeds -->
+      <div>
+        <h2 id="seeds">Swarm seeds</h2>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title" id="seeds-title">Edge Seed Fleet · 12 registered · 11 online</div>
+              <div class="card-sub" id="seeds-sub">Pi Zero 2 W seeds running cognitum-seed agents on the Tailscale network</div>
+            </div>
+            <div class="actions">
+              <button class="btn sm">Discover</button>
+              <a class="btn sm outline" href="#" target="_blank">Fleet JSON</a>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="search">
+              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="seed-search" placeholder="Search seeds by hostname or device ID…">
+            </div>
+            <div class="pill-tabs" id="seed-filters">
+              <button class="pill-tab on" data-filter="all">All</button>
+              <button class="pill-tab" data-filter="online">Online</button>
+              <button class="pill-tab" data-filter="alert">Alerting</button>
+              <button class="pill-tab" data-filter="offline">Offline</button>
+            </div>
+          </div>
+          <div class="seed-grid" id="seed-grid"></div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <div id="alerts-anchor">
+          <h2 id="alerts">Active alerts</h2>
+          <div class="card">
+            <div class="card-h">
+              <div>
+                <div class="card-title">3 firing</div>
+                <div class="card-sub">threshold_exceeded · seed_offline</div>
+              </div>
+              <button class="btn sm outline">Acknowledge all</button>
+            </div>
+            <div class="alert-list" id="alerts-list"></div>
+          </div>
+        </div>
+
+        <div>
+          <h2 id="events">Event stream</h2>
+          <div class="card">
+            <div class="card-h">
+              <div>
+                <div class="card-title">Recent events</div>
+                <div class="card-sub">seed_online · seed_offline · threshold_exceeded · health_report</div>
+              </div>
+              <button class="btn sm outline" id="btn-pause">Pause</button>
+            </div>
+            <div class="events" id="events-list"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Thresholds -->
+  <div class="section">
+    <h2 id="thresholds">Threshold configuration</h2>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Alert thresholds</div>
+          <div class="card-sub">Trigger <span class="mono">threshold_exceeded</span> events when any seed exceeds these limits</div>
+        </div>
+        <button class="btn sm">
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="thresholds">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Warning</th>
+              <th>Critical</th>
+              <th>Sustained for</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CPU temperature<span class="unit">°C</span></td>
+              <td>70</td>
+              <td>85</td>
+              <td>5m</td>
+              <td><span class="badge unpaired"><span class="dot"></span>1 breaching</span></td>
+            </tr>
+            <tr>
+              <td>Disk usage<span class="unit">%</span></td>
+              <td>85</td>
+              <td>95</td>
+              <td>1m</td>
+              <td><span class="badge unpaired"><span class="dot"></span>1 breaching</span></td>
+            </tr>
+            <tr>
+              <td>WiFi signal<span class="unit">dBm (lower = weaker)</span></td>
+              <td>-75</td>
+              <td>-85</td>
+              <td>2m</td>
+              <td><span class="badge online"><span class="dot up"></span>nominal</span></td>
+            </tr>
+            <tr>
+              <td>Memory usage<span class="unit">%</span></td>
+              <td>80</td>
+              <td>92</td>
+              <td>3m</td>
+              <td><span class="badge online"><span class="dot up"></span>nominal</span></td>
+            </tr>
+            <tr>
+              <td>Offline timeout<span class="unit">missing heartbeats</span></td>
+              <td>2</td>
+              <td>5</td>
+              <td>—</td>
+              <td><span class="badge offline"><span class="dot down"></span>1 critical</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cogs/swarm-cluster-monitor</span> &middot; <span class="mono">v1.0.0</span> &middot; 6 KB &middot; Easy &middot; WiFi only</div>
+    <div style="margin-top:0.4rem">
+      <a href="#overview">overview</a> &middot;
+      <a href="#seeds">seeds</a> &middot;
+      <a href="#events">events</a> &middot;
+      <a href="#thresholds">thresholds</a> &middot;
+      <a href="https://github.com/cognitum-one/cogs">cognitum-one/cogs</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const escapeHtml = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Mock fleet — replace with real fetch to cog-gateway when wiring up
+  const SEEDS = [
+    { id: 'seed-01', host: 'seed-01.local',  status: 'online',  uptime: '15d 4h',  vectors: 218430, cpuTemp: 52, wifi: -58, disk: 42, mem: 64, cogs: ['rvf-index','sensor-bridge','mqtt-relay'] },
+    { id: 'seed-02', host: 'seed-02.local',  status: 'online',  uptime: '14d 22h', vectors: 198120, cpuTemp: 49, wifi: -61, disk: 38, mem: 58, cogs: ['rvf-index','gps-tracker'] },
+    { id: 'seed-03', host: 'seed-03.local',  status: 'online',  uptime: '14d 6h',  vectors: 245680, cpuTemp: 56, wifi: -65, disk: 55, mem: 71, cogs: ['rvf-index','sensor-bridge','cam-stream'] },
+    { id: 'seed-04', host: 'seed-04.local',  status: 'offline', uptime: '—',       vectors: 0,      cpuTemp: 0,  wifi: 0,   disk: 0,  mem: 0,  cogs: [] },
+    { id: 'seed-05', host: 'seed-05.local',  status: 'online',  uptime: '14d 2h',  vectors: 187340, cpuTemp: 51, wifi: -55, disk: 47, mem: 60, cogs: ['rvf-index','mqtt-relay'] },
+    { id: 'seed-06', host: 'seed-06.local',  status: 'online',  uptime: '13d 18h', vectors: 211200, cpuTemp: 53, wifi: -67, disk: 51, mem: 66, cogs: ['rvf-index','sensor-bridge'] },
+    { id: 'seed-07', host: 'seed-07.local',  status: 'alert',   uptime: '12d 11h', vectors: 234900, cpuTemp: 78, wifi: -59, disk: 49, mem: 73, cogs: ['rvf-index','cam-stream','sensor-bridge'] },
+    { id: 'seed-08', host: 'seed-08.local',  status: 'online',  uptime: '15d 1h',  vectors: 169430, cpuTemp: 48, wifi: -62, disk: 36, mem: 55, cogs: ['rvf-index','gps-tracker'] },
+    { id: 'seed-09', host: 'seed-09.local',  status: 'online',  uptime: '14d 9h',  vectors: 203560, cpuTemp: 54, wifi: -70, disk: 44, mem: 62, cogs: ['rvf-index','mqtt-relay','sensor-bridge'] },
+    { id: 'seed-10', host: 'seed-10.local',  status: 'online',  uptime: '14d 17h', vectors: 192880, cpuTemp: 50, wifi: -63, disk: 41, mem: 59, cogs: ['rvf-index','sensor-bridge'] },
+    { id: 'seed-11', host: 'seed-11.local',  status: 'alert',   uptime: '15d 0h',  vectors: 287120, cpuTemp: 57, wifi: -64, disk: 89, mem: 68, cogs: ['rvf-index','cam-stream','sensor-bridge','mqtt-relay'] },
+    { id: 'seed-12', host: 'seed-12.local',  status: 'online',  uptime: '13d 22h', vectors: 178990, cpuTemp: 52, wifi: -68, disk: 39, mem: 57, cogs: ['rvf-index','gps-tracker'] },
+  ];
+
+  const ALERTS = [
+    { sev: 'crit', when: '8m ago',  msg: '<b>seed-04</b> offline for 8 minutes',           meta: 'last_seen 14:32 UTC · WiFi lost' },
+    { sev: 'warn', when: '12m ago', msg: '<b>seed-07</b> CPU temp 78°C exceeds threshold', meta: 'warning at 70°C · sustained 6m' },
+    { sev: 'warn', when: '31m ago', msg: '<b>seed-11</b> disk usage 89%',                  meta: 'warning at 85% · vector store growth' },
+  ];
+
+  const EVENTS = [
+    { type: 'seed_offline',        t: '8m',  sev: 'danger', html: '<span class="mono">seed-04</span> went offline — last heartbeat 14:32 UTC' },
+    { type: 'threshold_exceeded',  t: '12m', sev: 'warn',   html: '<span class="mono">seed-07</span> cpu_temp 78°C exceeded warning threshold (70°C)' },
+    { type: 'threshold_exceeded',  t: '31m', sev: 'warn',   html: '<span class="mono">seed-11</span> disk_usage 89% exceeded warning threshold (85%)' },
+    { type: 'health_report',       t: '1h',  sev: 'ok',     html: 'health_report from <span class="mono">seed-03</span> — all metrics nominal' },
+    { type: 'seed_online',         t: '2h',  sev: 'ok',     html: '<span class="mono">seed-09</span> rejoined the swarm after reboot' },
+    { type: 'health_report',       t: '2h',  sev: 'ok',     html: 'health_report aggregated from <span class="mono">12 seeds</span> — fleet uptime 14d 6h median' },
+    { type: 'threshold_exceeded',  t: '3h',  sev: 'warn',   html: '<span class="mono">seed-07</span> cpu_temp 72°C (transient, auto-cleared)' },
+    { type: 'seed_online',         t: '6h',  sev: 'ok',     html: '<span class="mono">seed-12</span> registered with swarm registry' },
+  ];
+
+  function fmtVec(n) {
+    if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M';
+    if (n >= 1_000)     return (n/1_000).toFixed(1) + 'k';
+    return String(n);
+  }
+  function metricClass(metric, val) {
+    if (metric === 'cpu')  return val >= 75 ? 'danger' : val >= 65 ? 'warn' : '';
+    if (metric === 'disk') return val >= 90 ? 'danger' : val >= 80 ? 'warn' : '';
+    if (metric === 'wifi') return val <= -80 ? 'danger' : val <= -72 ? 'warn' : '';
+    if (metric === 'mem')  return val >= 90 ? 'danger' : val >= 80 ? 'warn' : '';
+    return '';
+  }
+  function statusBadge(status) {
+    if (status === 'online')  return '<span class="badge online"><span class="dot up"></span>online</span>';
+    if (status === 'offline') return '<span class="badge offline"><span class="dot down"></span>offline</span>';
+    if (status === 'alert')   return '<span class="badge unpaired"><span class="dot"></span>alerting</span>';
+    return '<span class="badge unknown">unknown</span>';
+  }
+
+  function renderSeeds(filter, query) {
+    filter = filter || 'all';
+    query  = (query || '').trim().toLowerCase();
+    const html = SEEDS.filter(s => {
+      if (filter === 'online'  && s.status !== 'online')  return false;
+      if (filter === 'alert'   && s.status !== 'alert')   return false;
+      if (filter === 'offline' && s.status !== 'offline') return false;
+      if (query && !(s.id.toLowerCase().includes(query) || s.host.toLowerCase().includes(query))) return false;
+      return true;
+    }).map(s => {
+      if (s.status === 'offline') {
+        return `<div class="node seed offline">
+          <div class="node-h">
+            <span class="node-name">${escapeHtml(s.id)}</span>
+            ${statusBadge('offline')}
+          </div>
+          <div class="node-meta">
+            <div><span class="l">host</span>${escapeHtml(s.host)}</div>
+            <div><span class="l">last_seen</span>14:32 UTC (8m ago)</div>
+            <div><span class="l">heartbeat</span>lost</div>
+          </div>
+          <div style="margin-top:0.6rem;padding-top:0.5rem;border-top:1px dashed hsl(var(--border) / 0.5);font-size:0.6875rem;color:hsl(var(--muted-foreground));text-align:center">
+            no telemetry available
+          </div>
+        </div>`;
+      }
+      const cpuC  = metricClass('cpu',  s.cpuTemp);
+      const diskC = metricClass('disk', s.disk);
+      const wifiC = metricClass('wifi', s.wifi);
+      const memC  = metricClass('mem',  s.mem);
+      const cls   = s.status === 'alert' ? 'node seed alert' : 'node seed';
+      const wifiPct = Math.max(0, Math.min(100, (100 + s.wifi)));
+      return `<div class="${cls}">
+        <div class="node-h">
+          <span class="node-name">${escapeHtml(s.id)} <span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground));font-weight:400">${escapeHtml(s.host)}</span></span>
+          ${statusBadge(s.status)}
+        </div>
+        <div class="node-meta">
+          <div><span class="l">uptime</span>${escapeHtml(s.uptime)}</div>
+          <div><span class="l">vectors</span>${fmtVec(s.vectors)}</div>
+        </div>
+        <div class="metrics">
+          <div class="metric">
+            <div class="l">CPU temp</div>
+            <div class="v ${cpuC}">${s.cpuTemp}°C</div>
+            <div class="bar"><div class="bar-fill ${cpuC || 'accent'}" style="width:${Math.min(100, s.cpuTemp)}%"></div></div>
+          </div>
+          <div class="metric">
+            <div class="l">Disk</div>
+            <div class="v ${diskC}">${s.disk}%</div>
+            <div class="bar"><div class="bar-fill ${diskC || ''}" style="width:${s.disk}%"></div></div>
+          </div>
+          <div class="metric">
+            <div class="l">WiFi</div>
+            <div class="v ${wifiC}">${s.wifi} dBm</div>
+            <div class="bar"><div class="bar-fill ${wifiC || 'accent'}" style="width:${wifiPct}%"></div></div>
+          </div>
+          <div class="metric">
+            <div class="l">Memory</div>
+            <div class="v ${memC}">${s.mem}%</div>
+            <div class="bar"><div class="bar-fill ${memC || ''}" style="width:${s.mem}%"></div></div>
+          </div>
+        </div>
+        <div class="seed-footer">
+          <div class="seed-cogs">${s.cogs.map(c => `<span class="cog-pill">${escapeHtml(c)}</span>`).join('')}</div>
+          <span class="when">${s.cogs.length} cogs</span>
+        </div>
+      </div>`;
+    }).join('');
+    $('#seed-grid').innerHTML = html || `<div class="empty-card compact" style="grid-column:1/-1"><p>No seeds match the current filter.</p></div>`;
+  }
+
+  function renderAlerts() {
+    const icons = {
+      crit: '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      warn: '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    };
+    $('#alerts-list').innerHTML = ALERTS.map(a => `
+      <div class="alert-row ${a.sev}">
+        <div class="ic">${icons[a.sev]}</div>
+        <div class="body">
+          <div class="msg">${a.msg}</div>
+          <div class="meta">${a.meta}</div>
+        </div>
+        <div class="when">${a.when}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderEvents() {
+    const icons = {
+      ok:     '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      warn:   '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      danger: '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    };
+    $('#events-list').innerHTML = EVENTS.map(e => `
+      <div class="event">
+        <div class="ic ${e.sev}">${icons[e.sev]}</div>
+        <div class="body">
+          <div class="msg">${e.html}</div>
+          <div class="meta"><span class="type">${e.type}</span> ${e.t} ago</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function refresh() {
+    renderSeeds(currentFilter, $('#seed-search').value);
+    renderAlerts();
+    renderEvents();
+    const online  = SEEDS.filter(s => s.status === 'online').length;
+    const alert   = SEEDS.filter(s => s.status === 'alert').length;
+    const reachable = online + alert;
+    $('#kpi-online').textContent = reachable;
+    $('#kpi-total').textContent  = SEEDS.length;
+    $('#kpi-online-sub').textContent = (SEEDS.length - reachable) + ' offline · ' + Math.round(reachable/SEEDS.length*100) + '% reachable';
+    $('#seeds-title').textContent = 'Edge Seed Fleet · ' + SEEDS.length + ' registered · ' + reachable + ' online';
+  }
+
+  let currentFilter = 'all';
+  document.querySelectorAll('#seed-filters .pill-tab').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#seed-filters .pill-tab').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      currentFilter = b.getAttribute('data-filter');
+      renderSeeds(currentFilter, $('#seed-search').value);
+    });
+  });
+  $('#seed-search').addEventListener('input', () => renderSeeds(currentFilter, $('#seed-search').value));
+  $('#btn-refresh').addEventListener('click', refresh);
+
+  // Nav: smooth-scroll on click + scrollspy that tracks the section in view
+  const navLinks = Array.from(document.querySelectorAll('.nav a[href^="#"]'));
+  const navById  = Object.fromEntries(navLinks.map(a => [a.getAttribute('href').slice(1), a]));
+  const sectionIds = Object.keys(navById);
+
+  function setActive(id) {
+    if (!navById[id]) return;
+    navLinks.forEach(a => a.classList.remove('active'));
+    navById[id].classList.add('active');
+  }
+
+  // Click: immediately set active (observer will reconfirm once scroll settles)
+  let suppressSpyUntil = 0;
+  navLinks.forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.getAttribute('href').slice(1);
+      setActive(id);
+      // Pause spy briefly so the smooth-scroll doesn't flicker the active item
+      suppressSpyUntil = performance.now() + 700;
+    });
+  });
+
+  // Scrollspy: a section is "active" when its anchor is in the top band of the viewport.
+  // rootMargin shrinks the observation window to ~the area just below the sticky appbar.
+  const targets = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+  const spy = new IntersectionObserver(entries => {
+    if (performance.now() < suppressSpyUntil) return;
+    const visible = entries
+      .filter(e => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if (visible.length) setActive(visible[0].target.id);
+  }, { rootMargin: '-88px 0px -70% 0px', threshold: 0 });
+  targets.forEach(t => spy.observe(t));
+
+  // Edge cases: at the very top of the page, force Overview active.
+  // At the very bottom, force the last section active (it might never cross the top band).
+  window.addEventListener('scroll', () => {
+    if (performance.now() < suppressSpyUntil) return;
+    if (window.scrollY < 80) {
+      setActive(sectionIds[0]);
+    } else if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+      setActive(sectionIds[sectionIds.length - 1]);
+    }
+  }, { passive: true });
+
+  let paused = false;
+  $('#btn-pause').addEventListener('click', () => {
+    paused = !paused;
+    $('#btn-pause').textContent = paused ? 'Resume' : 'Pause';
+  });
+
+  refresh();
+  setInterval(() => { if (!paused) refresh(); }, 5000);
+</script>
+</body>
+</html>

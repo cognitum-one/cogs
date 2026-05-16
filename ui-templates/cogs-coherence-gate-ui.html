@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coherence Gate — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js" defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%; --foreground:210 20% 92%;
+  --card:220 20% 10%; --card-foreground:210 20% 92%;
+  --primary:185 80% 50%; --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%; --accent:142 70% 50%;
+  --muted:220 15% 15%; --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%; --border:220 15% 18%; --input:220 15% 18%;
+  --ring:185 80% 50%; --radius:0.75rem;
+  --warn:35 85% 55%;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth;scroll-padding-top:5rem}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+[id]{scroll-margin-top:5rem}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;transition:all 0.2s}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.crumb{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem;font-family:var(--font-mono)}
+.crumb a{color:hsl(var(--muted-foreground))}
+.crumb a:hover{color:hsl(var(--primary))}
+.crumb .sep{margin:0 0.4rem;opacity:0.4}
+
+/* Hero / cog header */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center;padding:1.5rem;border-radius:var(--radius);background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);margin-bottom:1.25rem}
+.hero-ic{width:72px;height:72px;border-radius:1rem;background:hsl(var(--primary) / 0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hero-ic svg{width:36px;height:36px;stroke:hsl(var(--primary));fill:none;stroke-width:1.8}
+.hero-info h1{font-size:1.75rem;font-weight:700;line-height:1.15}
+.hero-info p{font-size:0.9375rem;color:hsl(var(--muted-foreground));margin-top:0.3rem;max-width:48rem}
+.hero-meta{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem}
+.hero-actions{display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end}
+@media (max-width:760px){
+  .hero{grid-template-columns:auto 1fr;}
+  .hero-actions{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:flex-start}
+}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.18rem 0.55rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent;font-family:var(--font-mono)}
+.badge.cat{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.ver{background:hsl(var(--secondary));color:hsl(var(--foreground));border-color:hsl(var(--border))}
+.badge.diff{background:hsl(var(--warn) / 0.12);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3)}
+.badge.size{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.live{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3)}
+.badge.live .dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent));box-shadow:0 0 6px hsl(var(--accent));animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.55rem 1rem;border-radius:0.45rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+
+/* Grids / cards */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:1.25rem}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+.kpi-val{font-size:1.5rem;font-weight:600;line-height:1.2;margin-top:0.125rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+
+.layout{display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:flex-start}
+@media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem;margin-bottom:1rem}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+
+/* Chart hosts (match template /analytics) */
+.chart-host{width:100%;height:240px;margin-top:0.4rem}
+.chart-host.short{height:200px}
+.legend{display:flex;gap:1.1rem;flex-wrap:wrap;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.7rem;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:0.4rem}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.legend i.line{height:2px;width:14px;border-radius:1px}
+
+/* CSS heatmap (matches template /analytics .heatmap) */
+.heatmap{display:grid;gap:2px;font-family:var(--font-mono);font-size:0.625rem;grid-template-columns:repeat(60,1fr);align-items:center;margin-top:0.5rem}
+.heat-cell{height:14px;background:hsl(var(--muted));border-radius:2px}
+.heat-cell.up{background:hsl(142 70% 50% / 0.7)}
+.heat-cell.down{background:hsl(0 65% 50% / 0.7)}
+.heat-cell.empty{background:hsl(var(--muted) / 0.3)}
+.ribbon-row{display:grid;grid-template-columns:90px 1fr;gap:0.5rem;align-items:center;margin-top:0.4rem}
+.ribbon-label{color:hsl(var(--muted-foreground));font-size:0.6875rem;font-family:var(--font-mono);text-align:right;padding-right:0.5rem}
+/* uPlot dark-theme tweaks so titles + values inherit our palette */
+.u-legend{font-family:var(--font-mono)!important;font-size:0.6875rem!important;color:hsl(var(--muted-foreground))!important}
+.u-legend .u-marker{border-radius:2px!important}
+
+/* Adaptive panel */
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.55rem 0;border-bottom:1px solid hsl(var(--border) / 0.3)}
+.ctrl-row:last-child{border-bottom:none}
+.ctrl-lbl{font-size:0.8125rem;color:hsl(var(--foreground))}
+.ctrl-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.15rem}
+.seg{display:inline-flex;background:hsl(var(--secondary) / 0.5);border:1px solid hsl(var(--border));border-radius:0.4rem;padding:2px;gap:2px}
+.seg button{padding:0.3rem 0.65rem;border-radius:0.3rem;font-size:0.75rem;font-family:var(--font-display);background:transparent;border:none;color:hsl(var(--muted-foreground));cursor:pointer;font-weight:500}
+.seg button.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-weight:600}
+input[type=range]{width:140px;accent-color:hsl(var(--primary))}
+.mono-val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--primary));min-width:3.5rem;text-align:right}
+
+/* Event stream */
+.evt-stream{max-height:340px;overflow-y:auto;font-family:var(--font-mono);font-size:0.75rem;display:flex;flex-direction:column;gap:0.25rem}
+.evt{display:grid;grid-template-columns:auto auto 1fr;gap:0.6rem;padding:0.4rem 0.55rem;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.4);border-radius:0.35rem;align-items:center}
+.evt .ts{color:hsl(var(--muted-foreground) / 0.8);font-size:0.6875rem}
+.evt .ty{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;padding:0.1rem 0.4rem;border-radius:0.25rem}
+.evt .ty.coherence_score{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary))}
+.evt .ty.gate_state{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent))}
+.evt .ty.filtered_pct{background:hsl(var(--warn) / 0.15);color:hsl(var(--warn))}
+.evt .val{color:hsl(var(--foreground));font-size:0.75rem}
+
+/* Spec table */
+.spec{display:grid;grid-template-columns:auto 1fr;gap:0.4rem 1rem;font-family:var(--font-mono);font-size:0.75rem}
+.spec dt{color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-size:0.6875rem;padding-top:0.15rem}
+.spec dd{color:hsl(var(--foreground));word-break:break-all}
+
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+footer.appfoot .mono{font-size:0.6875rem;font-family:var(--font-mono)}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Coherence Gate<span class="brand-ver mono">v1.0.0</span></span>
+    </div>
+    <nav class="nav">
+      <a href="#overview" class="active">Overview</a>
+      <a href="#live">Live</a>
+      <a href="#subcarriers">Subcarriers</a>
+      <a href="#threshold">Threshold</a>
+      <a href="#events">Events</a>
+      <a href="#manifest">Manifest</a>
+      <a href="#source">Source</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="crumb">
+    <a href="#">Cogs</a><span class="sep">/</span><a href="#">Signal</a><span class="sep">/</span><span style="color:hsl(var(--foreground))">coherence-gate</span>
+  </div>
+
+  <!-- Cog header -->
+  <div class="hero" id="overview">
+    <div class="hero-ic">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
+        <circle cx="3" cy="12" r="1.2" fill="currentColor"/>
+        <circle cx="9" cy="12" r="1.2" fill="currentColor"/>
+        <circle cx="15" cy="12" r="1.2" fill="currentColor"/>
+        <circle cx="21" cy="12" r="1.2" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="hero-info">
+      <h1>Coherence Gate</h1>
+      <p>Adaptive gating based on subcarrier coherence scores. Gates CSI data through coherence scoring, filtering unreliable subcarriers and adapting thresholds to environmental conditions.</p>
+      <div class="hero-meta">
+        <span class="badge cat">Signal</span>
+        <span class="badge ver">v1.0.0</span>
+        <span class="badge size">18 KB</span>
+        <span class="badge diff">Hard</span>
+        <span class="badge live"><span class="dot"></span>Live</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn primary" id="install-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m0 0l-6-6m6 6l6-6"/></svg>
+        Install
+      </button>
+      <button class="btn outline sm">Details</button>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpi-grid" id="live">
+    <div class="kpi">
+      <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h3l3-8 4 16 3-8h5"/></svg></div>
+      <div class="kpi-info">
+        <div class="kpi-label">Coherence Score</div>
+        <div class="kpi-val" id="kpi-score">0.000</div>
+        <div class="kpi-sub" id="kpi-score-sub">mean · 64 subcarriers</div>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <div class="kpi-info">
+        <div class="kpi-label">Gate State</div>
+        <div class="kpi-val" id="kpi-gate">—</div>
+        <div class="kpi-sub" id="kpi-gate-sub">since 0s</div>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg></div>
+      <div class="kpi-info">
+        <div class="kpi-label">Filtered</div>
+        <div class="kpi-val" id="kpi-filtered">0%</div>
+        <div class="kpi-sub" id="kpi-filtered-sub">0 / 64 dropped</div>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/></svg></div>
+      <div class="kpi-info">
+        <div class="kpi-label">Threshold</div>
+        <div class="kpi-val" id="kpi-thr">0.65</div>
+        <div class="kpi-sub" id="kpi-thr-sub">adaptive · τ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Left column: charts -->
+    <div>
+      <div class="card" id="subcarriers">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Subcarrier Coherence</div>
+            <div class="card-sub">CSI phase · 64 subcarriers · live</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <button class="btn sm outline" id="pause-btn">Pause</button>
+            <button class="btn sm outline" id="reset-btn">Reset</button>
+          </div>
+        </div>
+        <div id="chart-sc" class="chart-host"></div>
+        <div class="legend">
+          <span><i class="line" style="background:hsl(185 80% 55%)"></i>Coherence</span>
+          <span><i class="line" style="background:hsl(35 85% 60%)"></i>Adaptive threshold τ</span>
+          <span><i style="background:hsl(0 65% 55%);border-radius:50%;width:8px;height:8px"></i>Filtered (&lt; τ)</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Gate State Timeline</div>
+            <div class="card-sub">last 120 s · open / closed transitions</div>
+          </div>
+          <span class="badge live" id="tl-badge"><span class="dot"></span><span id="tl-state">open</span></span>
+        </div>
+        <div id="chart-gt" class="chart-host short"></div>
+        <div class="ribbon-row">
+          <div class="ribbon-label">gate state</div>
+          <div id="gate-ribbon" class="heatmap"></div>
+        </div>
+      </div>
+
+      <div class="card" id="threshold">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Adaptive Threshold</div>
+            <div class="card-sub">tracks environmental noise floor</div>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div>
+            <div class="ctrl-lbl">Mode</div>
+            <div class="ctrl-sub">switch between adaptive and fixed-threshold gating</div>
+          </div>
+          <div class="seg" id="mode-seg">
+            <button class="on" data-mode="adaptive">Adaptive</button>
+            <button data-mode="fixed">Fixed</button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div>
+            <div class="ctrl-lbl">Sensitivity</div>
+            <div class="ctrl-sub">aggressiveness of filtering · higher = stricter</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <input type="range" id="sens" min="0" max="100" value="55">
+            <span class="mono-val" id="sens-val">0.55</span>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div>
+            <div class="ctrl-lbl">Smoothing window</div>
+            <div class="ctrl-sub">EMA samples used for adaptive τ</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <input type="range" id="win" min="4" max="128" value="32">
+            <span class="mono-val" id="win-val">32</span>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <div>
+            <div class="ctrl-lbl">Min subcarriers to gate open</div>
+            <div class="ctrl-sub">below this count, gate closes</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <input type="range" id="quorum" min="1" max="64" value="40">
+            <span class="mono-val" id="quorum-val">40</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: events + spec -->
+    <div>
+      <div class="card" id="events">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Event Stream</div>
+            <div class="card-sub" id="evt-rate">— ev/s</div>
+          </div>
+          <button class="btn sm outline" id="clear-evt">Clear</button>
+        </div>
+        <div class="evt-stream" id="evt-stream"></div>
+      </div>
+
+      <div class="card" id="manifest">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Manifest</div>
+            <div class="card-sub">cog specification</div>
+          </div>
+        </div>
+        <dl class="spec">
+          <dt>Category</dt><dd>Signal</dd>
+          <dt>Version</dt><dd>1.0.0</dd>
+          <dt>Size</dt><dd>18 KB</dd>
+          <dt>Difficulty</dt><dd>Hard</dd>
+          <dt>Hardware</dt><dd>ESP32-S3</dd>
+          <dt>Input</dt><dd>CSI phase</dd>
+          <dt>Events</dt><dd>coherence_score · gate_state · filtered_pct</dd>
+        </dl>
+      </div>
+
+      <div class="card" id="source">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Source</div>
+            <div class="card-sub">repository path</div>
+          </div>
+        </div>
+        <div class="mono" style="font-size:0.75rem;color:hsl(var(--primary));word-break:break-all;padding:0.55rem 0.7rem;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);border-radius:0.4rem">cognitum-one/cogs/src/cogs/coherence-gate</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: coherence-gate@1.0.0</span> · <span class="mono">cognitum-one/cogs/src/cogs/coherence-gate</span></div>
+    <div style="margin-top:0.4rem"><a href="#manifest">manifest</a> · <a href="#events">events</a> · <a href="#source">source</a></div>
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const N_SC = 64;
+
+const state = {
+  paused: false,
+  mode: 'adaptive',
+  sensitivity: 0.55,
+  window: 32,
+  quorum: 40,
+  fixedThr: 0.65,
+  emaThr: 0.65,
+  scores: new Array(N_SC).fill(0.7),
+  gateOpen: true,
+  gateChangedAt: Date.now(),
+  filteredCount: 0,
+  timeline: [],
+  events: [],
+  rateBucket: { t: Date.now(), n: 0, rate: 0 },
+  t: 0,
+};
+
+/* ── Synthetic CSI coherence model ──────────────────────────────
+   Real coherence-gate cogs read CSI phase off an ESP32-S3 over
+   the wire; here we synthesise plausible per-subcarrier scores
+   so the UI is exercisable without hardware attached. */
+function step(){
+  state.t += 1;
+  const drift = 0.06 * Math.sin(state.t / 38);
+  const noiseFloor = 0.55 + 0.15 * Math.sin(state.t / 71) + drift;
+  for (let i = 0; i < N_SC; i++){
+    const carrierBias = 0.18 * Math.sin((i / N_SC) * Math.PI * 2 + state.t / 22);
+    const jitter = (Math.random() - 0.5) * 0.18;
+    const dropout = (i % 17 === state.t % 17) ? -0.35 : 0;
+    let v = noiseFloor + carrierBias + jitter + dropout;
+    if (v < 0) v = 0;
+    if (v > 1) v = 1;
+    state.scores[i] = 0.55 * state.scores[i] + 0.45 * v;
+  }
+  const mean = state.scores.reduce((a,b)=>a+b,0) / N_SC;
+  state.emaThr = (1 - 1/state.window) * state.emaThr + (1/state.window) * (mean - 0.08);
+  const thr = state.mode === 'adaptive'
+    ? Math.max(0.2, Math.min(0.9, state.emaThr - (state.sensitivity - 0.55) * 0.3))
+    : state.fixedThr;
+  state.thr = thr;
+  state.mean = mean;
+  let filtered = 0;
+  for (let i = 0; i < N_SC; i++) if (state.scores[i] < thr) filtered++;
+  state.filteredCount = filtered;
+  const passing = N_SC - filtered;
+  const shouldOpen = passing >= state.quorum;
+  if (shouldOpen !== state.gateOpen){
+    state.gateOpen = shouldOpen;
+    state.gateChangedAt = Date.now();
+    emit('gate_state', shouldOpen ? 'open' : 'closed');
+  }
+  state.timeline.push({ t: Date.now(), open: state.gateOpen, mean, filtered, thr });
+  if (state.timeline.length > 240) state.timeline.shift();
+  if (state.t % 4 === 0) emit('coherence_score', mean.toFixed(3));
+  if (state.t % 6 === 0) emit('filtered_pct', ((filtered / N_SC) * 100).toFixed(1) + '%');
+}
+
+function emit(type, val){
+  state.events.unshift({ t: Date.now(), type, val });
+  if (state.events.length > 80) state.events.pop();
+  state.rateBucket.n += 1;
+  const dt = Date.now() - state.rateBucket.t;
+  if (dt >= 1000){
+    state.rateBucket.rate = (state.rateBucket.n / (dt / 1000));
+    state.rateBucket.t = Date.now();
+    state.rateBucket.n = 0;
+  }
+}
+
+/* ── Renderers ─────────────────────────────────────────────── */
+function renderKPI(){
+  $('#kpi-score').textContent = state.mean.toFixed(3);
+  $('#kpi-score-sub').textContent = 'mean · ' + N_SC + ' subcarriers';
+  $('#kpi-gate').textContent = state.gateOpen ? 'OPEN' : 'CLOSED';
+  $('#kpi-gate').style.color = state.gateOpen ? 'hsl(var(--accent))' : 'hsl(var(--destructive))';
+  const secs = Math.round((Date.now() - state.gateChangedAt) / 1000);
+  $('#kpi-gate-sub').textContent = 'since ' + secs + 's';
+  const pct = (state.filteredCount / N_SC) * 100;
+  $('#kpi-filtered').textContent = pct.toFixed(1) + '%';
+  $('#kpi-filtered-sub').textContent = state.filteredCount + ' / ' + N_SC + ' dropped';
+  $('#kpi-thr').textContent = state.thr.toFixed(3);
+  $('#kpi-thr-sub').textContent = state.mode === 'adaptive' ? 'adaptive · τ' : 'fixed · τ';
+  $('#tl-state').textContent = state.gateOpen ? 'open' : 'closed';
+  $('#tl-badge').style.background = state.gateOpen
+    ? 'hsl(var(--accent) / 0.12)' : 'hsl(var(--destructive) / 0.12)';
+  $('#tl-badge').style.color = state.gateOpen
+    ? 'hsl(var(--accent))' : 'hsl(0 70% 70%)';
+  $('#tl-badge').style.borderColor = state.gateOpen
+    ? 'hsl(var(--accent) / 0.3)' : 'hsl(var(--destructive) / 0.3)';
+}
+
+/* uPlot-driven charts, matching the colour + axis treatment used on the
+   template's /analytics page (cyan stroke + translucent fill, muted grid). */
+const AXIS_COL = 'hsl(215, 15%, 55%)';
+const GRID_COL = 'hsl(220, 15%, 18%)';
+
+let scPlot = null, gtPlot = null;
+
+function uplotReady(){ return typeof uPlot !== 'undefined'; }
+
+function buildSubcarrierPlot(){
+  const xs = Array.from({ length: N_SC }, (_, i) => i);
+  const ys = state.scores.slice();
+  const filteredPts = state.scores.map(v => v < state.thr ? v : null);
+  const thrLine = state.scores.map(() => state.thr);
+  const data = [xs, ys, filteredPts, thrLine];
+  const host = $('#chart-sc');
+  const opts = {
+    width: host.clientWidth || 400,
+    height: 240,
+    cursor: { show: false },
+    legend: { show: false },
+    scales: { x: { time: false, range: [0, N_SC - 1] }, y: { range: [0, 1] } },
+    series: [
+      {},
+      { label: 'coherence', stroke: 'hsl(185, 80%, 55%)', fill: 'hsla(185, 80%, 50%, 0.15)', width: 2 },
+      { label: 'filtered',  stroke: 'hsl(0, 65%, 55%)',   width: 0,
+        points: { show: true, size: 6, stroke: 'hsl(0, 65%, 55%)', fill: 'hsla(0, 65%, 55%, 0.85)' } },
+      { label: 'τ',         stroke: 'hsl(35, 85%, 60%)',  width: 1.5, dash: [4, 3] },
+    ],
+    axes: [
+      { stroke: AXIS_COL, grid: { stroke: GRID_COL }, font: '10px JetBrains Mono',
+        values: (u, s) => s.map(v => 'sc' + v), incrs: [8, 16] },
+      { stroke: AXIS_COL, grid: { stroke: GRID_COL }, font: '10px JetBrains Mono',
+        values: (u, s) => s.map(v => v.toFixed(2)) },
+    ],
+  };
+  scPlot = new uPlot(opts, data, host);
+}
+
+function buildTimelinePlot(){
+  const data = [[0], [null], [null]];
+  const host = $('#chart-gt');
+  const opts = {
+    width: host.clientWidth || 400,
+    height: 200,
+    legend: { show: false },
+    scales: { x: { time: true }, y: { range: [0, 1] } },
+    series: [
+      {},
+      { label: 'mean coherence', stroke: 'hsl(185, 80%, 55%)', width: 2, fill: 'hsla(185, 80%, 50%, 0.15)' },
+      { label: 'threshold τ',     stroke: 'hsl(35, 85%, 60%)', width: 1.5, dash: [4, 3] },
+    ],
+    axes: [
+      { stroke: AXIS_COL, grid: { stroke: GRID_COL }, font: '10px JetBrains Mono' },
+      { stroke: AXIS_COL, grid: { stroke: GRID_COL }, font: '10px JetBrains Mono' },
+    ],
+  };
+  gtPlot = new uPlot(opts, data, host);
+}
+
+function renderSubcarriers(){
+  if (!uplotReady()) return;
+  if (!scPlot) buildSubcarrierPlot();
+  const xs = Array.from({ length: N_SC }, (_, i) => i);
+  const ys = state.scores.slice();
+  const filteredPts = state.scores.map(v => v < state.thr ? v : null);
+  const thrLine = state.scores.map(() => state.thr);
+  scPlot.setData([xs, ys, filteredPts, thrLine]);
+}
+
+function renderTimeline(){
+  if (!uplotReady()) return;
+  const tl = state.timeline;
+  if (tl.length < 2) return;
+  if (!gtPlot) buildTimelinePlot();
+  const xs   = tl.map(p => p.t / 1000);
+  const mean = tl.map(p => p.mean);
+  const thr  = tl.map(p => p.thr);
+  gtPlot.setData([xs, mean, thr]);
+}
+
+function renderGateRibbon(){
+  const N = 60;
+  const tl = state.timeline.slice(-N);
+  const cells = [];
+  for (let i = 0; i < N - tl.length; i++) cells.push('<div class="heat-cell empty"></div>');
+  tl.forEach(c => {
+    const cls = c.open ? 'up' : 'down';
+    const ttl = c.open ? 'open' : 'closed';
+    cells.push('<div class="heat-cell ' + cls + '" title="' + ttl + '"></div>');
+  });
+  $('#gate-ribbon').innerHTML = cells.join('');
+}
+
+function renderEvents(){
+  const host = $('#evt-stream');
+  host.innerHTML = state.events.slice(0, 40).map(e => {
+    const ts = new Date(e.t);
+    const hh = String(ts.getHours()).padStart(2, '0');
+    const mm = String(ts.getMinutes()).padStart(2, '0');
+    const ss = String(ts.getSeconds()).padStart(2, '0');
+    const ms = String(ts.getMilliseconds()).padStart(3, '0');
+    return '<div class="evt"><span class="ts">' + hh + ':' + mm + ':' + ss + '.' + ms + '</span>' +
+      '<span class="ty ' + e.type + '">' + e.type + '</span>' +
+      '<span class="val">' + e.val + '</span></div>';
+  }).join('');
+  $('#evt-rate').textContent = state.rateBucket.rate.toFixed(1) + ' ev/s';
+}
+
+/* ── Controls ──────────────────────────────────────────────── */
+document.querySelectorAll('#mode-seg button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#mode-seg button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.mode = b.dataset.mode;
+  });
+});
+$('#sens').addEventListener('input', e => {
+  state.sensitivity = e.target.value / 100;
+  $('#sens-val').textContent = state.sensitivity.toFixed(2);
+});
+$('#win').addEventListener('input', e => {
+  state.window = parseInt(e.target.value);
+  $('#win-val').textContent = state.window;
+});
+$('#quorum').addEventListener('input', e => {
+  state.quorum = parseInt(e.target.value);
+  $('#quorum-val').textContent = state.quorum;
+});
+$('#pause-btn').addEventListener('click', () => {
+  state.paused = !state.paused;
+  $('#pause-btn').textContent = state.paused ? 'Resume' : 'Pause';
+});
+$('#reset-btn').addEventListener('click', () => {
+  state.scores = new Array(N_SC).fill(0.7);
+  state.timeline = [];
+  state.events = [];
+});
+$('#clear-evt').addEventListener('click', () => { state.events = []; renderEvents(); });
+$('#install-btn').addEventListener('click', e => {
+  const b = e.currentTarget;
+  b.disabled = true;
+  b.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Installed';
+});
+
+/* ── Loop ──────────────────────────────────────────────────── */
+function tick(){
+  if (!state.paused) step();
+  renderKPI();
+  renderSubcarriers();
+  renderTimeline();
+  renderGateRibbon();
+  renderEvents();
+}
+tick();
+setInterval(tick, 250);
+
+function resizePlots(){
+  if (scPlot){
+    const h = $('#chart-sc'); scPlot.setSize({ width: h.clientWidth, height: 240 });
+  }
+  if (gtPlot){
+    const h = $('#chart-gt'); gtPlot.setSize({ width: h.clientWidth, height: 200 });
+  }
+}
+window.addEventListener('resize', resizePlots);
+
+const navLinks = document.querySelectorAll('.nav a');
+const sectionIds = ['overview','live','subcarriers','threshold','events','manifest','source'];
+function setActive(id){
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+}
+function syncNav(){
+  let active = sectionIds[0];
+  for (const id of sectionIds){
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= 120) active = id;
+  }
+  setActive(active);
+}
+function scrollToId(id){
+  const el = document.getElementById(id);
+  if (!el) return false;
+  setActive(id);
+  history.replaceState(null, '', '#' + id);
+  const top = el.getBoundingClientRect().top + window.scrollY - 76;
+  window.scrollTo({ top, behavior: 'smooth' });
+  return true;
+}
+document.addEventListener('scroll', syncNav, { passive: true });
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href') || '';
+    if (href === '#' || href.length < 2) return;
+    if (scrollToId(href.slice(1))) e.preventDefault();
+  });
+});
+if (location.hash && location.hash.length > 1){
+  setTimeout(() => scrollToId(location.hash.slice(1)), 50);
+}
+</script>
+</body>
+</html>

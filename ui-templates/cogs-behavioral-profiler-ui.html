@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Behavioral Profiler — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --surface-elevated:220 20% 12%;
+  --surface-overlay:220 20% 8%;
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center;font-size:1.05rem;line-height:1}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.empty-card{background:var(--gradient-card);border:1px dashed hsl(var(--border));border-radius:var(--radius);padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground))}
+.empty-card h3{font-size:1rem;font-weight:600;color:hsl(var(--primary));margin-bottom:0.5rem;letter-spacing:-0.01em}
+.empty-card p{font-size:0.875rem;line-height:1.6;max-width:36rem;margin:0 auto 0.75rem}
+.empty-card.compact{padding:1rem 1.125rem}
+.empty-card.compact p{font-size:0.8125rem;margin:0}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 65%)}
+.kpi-ic.warn{background:hsl(35 85% 55% / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(35 85% 65%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.cols-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.unknown{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.accent{background:hsl(var(--accent) / 0.12);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(35 85% 55%);box-shadow:0 0 6px hsl(35 85% 55% / 0.5)}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.4rem 0.5rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+tbody tr:hover td{background:hsl(var(--secondary) / 0.3)}
+
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+.input{width:100%;height:2.4rem;border:1px solid hsl(var(--input));background:hsl(var(--background))}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+footer.appfoot .mono{font-size:0.6875rem}
+
+pre.logbox{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;font-family:var(--font-mono);font-size:0.6875rem;overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));white-space:pre-wrap;word-break:break-word}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{padding:0.4rem 0.75rem;border-radius:0.375rem;font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));background:hsl(var(--muted));border:1px solid transparent;cursor:pointer;transition:all 0.2s;font-family:var(--font-display)}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+/* Panels */
+.panel{display:none}
+.panel.on{display:block}
+
+/* Page hero — neutral card background to match the template's dashboard/detail pages */
+.page-hero{position:relative;display:flex;align-items:flex-end;gap:1.5rem;padding:1.5rem 1.5rem 1.25rem;margin-bottom:1.5rem;border-radius:var(--radius);overflow:hidden;border:1px solid hsl(var(--border) / 0.5);background:var(--gradient-card);box-shadow:var(--shadow-card)}
+.page-hero .emoji{font-size:2.75rem;line-height:1;flex-shrink:0}
+.page-hero .h-cat{display:inline-block;font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--primary));background:hsl(var(--primary) / 0.12);border:1px solid hsl(var(--primary) / 0.25);padding:0.2rem 0.55rem;border-radius:9999px;font-weight:600;font-family:var(--font-mono);margin-bottom:0.5rem}
+.page-hero h1{font-size:1.5rem;font-weight:600;line-height:1.2;margin-bottom:0.3rem;letter-spacing:-0.02em}
+.page-hero p{font-size:0.875rem;color:hsl(var(--muted-foreground));line-height:1.55;max-width:48rem}
+.page-hero .hero-meta{margin-top:0.75rem;display:flex;gap:1.25rem;flex-wrap:wrap;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.page-hero .hero-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+.page-hero .hero-meta b{color:hsl(var(--foreground));font-weight:600}
+
+/* Charts */
+.charts-grid{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.chart-card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1rem 1.125rem}
+.chart-host{width:100%;height:252px;margin-top:0.4rem}
+
+/* Heatmap */
+.heatmap{display:grid;gap:2px;font-family:var(--font-mono);font-size:0.625rem;align-items:center;margin-top:0.5rem}
+.heatmap.hour-day{grid-template-columns:54px repeat(24, 1fr)}
+.heat-cell{height:18px;border-radius:2px;background:hsl(var(--muted));position:relative;cursor:default;transition:transform 0.1s}
+.heat-cell:hover{transform:scale(1.15);z-index:2;outline:1px solid hsl(var(--primary));outline-offset:0}
+.heat-label{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right;padding-right:0.5rem}
+.heat-axis-x{display:grid;grid-template-columns:54px repeat(24, 1fr);gap:2px;font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));text-align:center;margin-top:0.25rem}
+.heat-axis-x .a-empty{visibility:hidden}
+.heat-legend{display:flex;align-items:center;gap:0.5rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.75rem}
+.heat-legend .ramp{flex:0 0 160px;height:8px;border-radius:2px;background:linear-gradient(90deg,hsl(220 15% 20%) 0%,hsl(185 80% 30%) 40%,hsl(185 80% 50%) 70%,hsl(142 70% 55%) 100%)}
+
+/* Gauge */
+.gauge-wrap{display:flex;align-items:center;justify-content:center;gap:1.5rem;padding:0.5rem 0.25rem 1.5rem;flex-wrap:wrap}
+.gauge{position:relative;width:200px;height:120px;margin-bottom:1.25rem}
+.gauge svg{width:100%;height:100%;display:block}
+.gauge .g-val{position:absolute;left:0;right:0;bottom:0.25rem;text-align:center;font-family:var(--font-display);font-size:1.875rem;font-weight:700;color:hsl(var(--foreground));line-height:1}
+.gauge .g-sub{position:absolute;left:0;right:0;bottom:-1.75rem;text-align:center;font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted-foreground))}
+.gauge-legend{display:flex;flex-direction:column;gap:0.4rem;font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.gauge-legend .row{display:flex;align-items:center;gap:0.5rem}
+.gauge-legend .sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* Bars */
+.bar-list{display:flex;flex-direction:column;gap:0.45rem;margin-top:0.5rem}
+.bar-row{display:grid;grid-template-columns:140px 1fr 44px;gap:0.5rem;align-items:center;font-family:var(--font-mono);font-size:0.75rem}
+.bar-bar{background:hsl(var(--secondary));border-radius:0.25rem;height:14px;overflow:hidden}
+.bar-fill{background:hsl(var(--primary) / 0.8);height:100%;transition:width 0.3s}
+.bar-fill.accent{background:hsl(var(--accent) / 0.8)}
+.bar-fill.warn{background:hsl(35 85% 55% / 0.85)}
+.bar-fill.danger{background:hsl(0 65% 55% / 0.85)}
+.bar-row .nbr{text-align:right;color:hsl(var(--foreground))}
+
+/* Events */
+.evt-list{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;font-family:var(--font-mono);font-size:0.75rem}
+.evt-row{display:grid;grid-template-columns:170px 130px 1fr 70px;gap:0.5rem;padding:0.55rem 0.65rem;border-bottom:1px solid hsl(var(--border) / 0.3);border-left:2px solid transparent;border-radius:2px;transition:background 0.15s;align-items:center}
+.evt-row:hover{background:hsl(var(--secondary) / 0.3)}
+.evt-row.anomaly{border-left-color:hsl(0 70% 60%)}
+.evt-row.deviation{border-left-color:hsl(35 85% 60%)}
+.evt-row.profile{border-left-color:hsl(var(--accent))}
+.evt-row .ts{color:hsl(var(--muted-foreground))}
+.evt-row .ev{font-weight:600;color:hsl(var(--foreground))}
+.evt-row .meta{color:hsl(var(--muted-foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evt-row .sc{text-align:right;color:hsl(var(--foreground));font-weight:600}
+
+/* Routine ring */
+.routine-ring{display:flex;align-items:center;justify-content:center;padding:0.5rem 0}
+.routine-ring svg{max-width:280px;width:100%;height:auto}
+.routine-ring .label{font-family:var(--font-mono);font-size:0.625rem;fill:hsl(var(--muted-foreground))}
+
+/* Sparkline */
+.spark{width:100%;height:48px;display:block}
+
+/* Live animation */
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.78)}}
+.dot.up,.dot.warn{animation:pulse-dot 1.8s ease-in-out infinite}
+@keyframes evt-flash{0%{background:hsl(var(--primary) / 0.22);box-shadow:inset 3px 0 0 hsl(var(--primary))}100%{background:transparent;box-shadow:none}}
+.evt-row.new{animation:evt-flash 1.6s ease-out}
+#gauge-arc{transition:stroke-dashoffset 1.2s cubic-bezier(0.22,0.61,0.36,1)}
+#gauge-needle{transition:transform 1.2s cubic-bezier(0.22,0.61,0.36,1)}
+.gauge .g-val,.kpi-val{transition:color 0.4s}
+@keyframes live-glow{0%,100%{box-shadow:0 0 0 0 hsl(142 70% 50% / 0)}50%{box-shadow:0 0 0 4px hsl(142 70% 50% / 0.18)}}
+.badge.online{animation:live-glow 2.4s ease-in-out infinite}
+.evt-row{transition:background 0.3s}
+.spark polyline{transition:points 0.6s ease}
+
+/* Sensor row */
+.sensor-row{display:grid;grid-template-columns:1fr 80px 60px;gap:0.5rem;align-items:center;padding:0.55rem 0.75rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem}
+.sensor-row:last-child{border-bottom:none}
+.sensor-row .nm{color:hsl(var(--foreground));font-weight:600}
+.sensor-row .rt{color:hsl(var(--muted-foreground));text-align:right}
+
+/* Stats */
+.stat-grid{display:grid;gap:0.5rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0.5rem}
+.stat-cell{background:hsl(var(--secondary) / 0.4);border:1px solid hsl(var(--border) / 0.4);border-radius:0.5rem;padding:0.6rem 0.75rem}
+.stat-cell .lab{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))}
+.stat-cell .v{font-family:var(--font-mono);font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.2rem}
+
+/* Banner */
+.banner{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:1rem;background:hsl(var(--primary) / 0.08);border:1px solid hsl(var(--primary) / 0.25);font-size:0.8125rem;color:hsl(var(--foreground))}
+.banner.warn{background:hsl(35 85% 55% / 0.10);border-color:hsl(35 85% 55% / 0.3)}
+.banner.danger{background:hsl(0 65% 50% / 0.10);border-color:hsl(0 65% 50% / 0.3)}
+.banner .b-ic{width:28px;height:28px;border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:hsl(var(--primary) / 0.18)}
+.banner .b-ic svg{width:14px;height:14px;stroke:hsl(var(--primary));fill:none;stroke-width:2.2}
+.banner.warn .b-ic{background:hsl(35 85% 55% / 0.2)}
+.banner.warn .b-ic svg{stroke:hsl(35 85% 65%)}
+.banner.danger .b-ic{background:hsl(0 65% 50% / 0.2)}
+.banner.danger .b-ic svg{stroke:hsl(0 70% 70%)}
+
+/* Distribution */
+.dist-row{display:grid;grid-template-columns:60px 1fr 40px;gap:0.5rem;align-items:center;font-family:var(--font-mono);font-size:0.6875rem;margin-bottom:0.25rem}
+.dist-row .rng{color:hsl(var(--muted-foreground));text-align:right}
+.dist-row .bar{background:hsl(var(--secondary));border-radius:0.2rem;height:10px;overflow:hidden}
+.dist-row .fill{height:100%;background:hsl(var(--primary) / 0.7)}
+.dist-row .fill.warn{background:hsl(35 85% 60% / 0.85)}
+.dist-row .fill.danger{background:hsl(0 65% 60% / 0.85)}
+.dist-row .n{text-align:right;color:hsl(var(--foreground))}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">🧠</div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Behavioral Profiler<span class="brand-ver mono">v0.9.0</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-route="overview">Overview</a>
+      <a data-route="baseline">Baseline</a>
+      <a data-route="anomalies">Anomalies</a>
+      <a data-route="events">Events</a>
+      <a data-route="profile">Profile</a>
+      <a data-route="details">Details</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ───────────────────────────── Overview ───────────────────────────── -->
+<div class="panel" id="panel-overview">
+
+  <div class="page-hero">
+    <div class="emoji">🧠</div>
+    <div style="flex:1;min-width:0">
+      <span class="h-cat">Security</span>
+      <h1>Behavioral Profiler</h1>
+      <p>Builds behavioral baselines and scores anomalies based on deviation from learned routine patterns over time.</p>
+      <div class="hero-meta">
+        <span><span class="l">events</span><b>anomaly_score</b> &middot; <b>routine_deviation</b> &middot; <b>profile_update</b></span>
+        <span><span class="l">hardware</span><b>ESP32-S3</b></span>
+        <span><span class="l">input</span><b>CSI presence, motion</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner">
+    <div class="b-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+    <div style="flex:1"><b>Profile online</b> · <span class="mono" id="banner-info">—</span></div>
+    <span class="badge online"><span class="dot up"></span>learning</span>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Anomaly score</div><div class="kpi-val" id="kpi-score">—</div><div class="kpi-sub">current · threshold 0.50</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="kpi-info"><div class="kpi-label">Anomalies · 24h</div><div class="kpi-val" id="kpi-anom">—</div><div class="kpi-sub" id="kpi-anom-sub">peak score —</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="kpi-info"><div class="kpi-label">Profile samples</div><div class="kpi-val" id="kpi-samples">—</div><div class="kpi-sub" id="kpi-samples-sub">rev —</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="kpi-info"><div class="kpi-label">Baseline coverage</div><div class="kpi-val" id="kpi-cov">—</div><div class="kpi-sub" id="kpi-cov-sub">168 bins · — days</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Deviations · 24h</div><div class="kpi-val" id="kpi-dev">—</div><div class="kpi-sub">routine_deviation</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Live anomaly score</div><div class="card-sub">Rolling 5-minute window · threshold 0.50</div></div>
+          <a class="btn sm outline" data-route="anomalies">History &rarr;</a>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge" id="gauge">
+            <svg viewBox="0 0 200 120">
+              <defs><linearGradient id="g-ramp" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="hsl(142, 70%, 55%)"/>
+                <stop offset="40%" stop-color="hsl(185, 80%, 55%)"/>
+                <stop offset="70%" stop-color="hsl(35, 85%, 60%)"/>
+                <stop offset="100%" stop-color="hsl(0, 70%, 60%)"/>
+              </linearGradient></defs>
+              <path d="M 16 110 A 84 84 0 0 1 184 110" stroke="hsl(220, 15%, 18%)" stroke-width="14" fill="none" stroke-linecap="round"/>
+              <path id="gauge-arc" d="M 16 110 A 84 84 0 0 1 184 110" stroke="url(#g-ramp)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"/>
+              <g id="gauge-thresh"></g>
+              <g id="gauge-needle" transform="rotate(-90 100 110)">
+                <line x1="100" y1="110" x2="100" y2="38" stroke="hsl(210, 20%, 92%)" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="100" cy="110" r="5" fill="hsl(185, 80%, 55%)"/>
+              </g>
+            </svg>
+            <div class="g-val" id="gauge-val">—</div>
+            <div class="g-sub" id="gauge-sub">—</div>
+          </div>
+          <div class="gauge-legend">
+            <div class="row"><span class="sw" style="background:hsl(142, 70%, 55%)"></span><span>0.00 – 0.20 &nbsp;normal</span></div>
+            <div class="row"><span class="sw" style="background:hsl(185, 80%, 55%)"></span><span>0.20 – 0.40 &nbsp;notable</span></div>
+            <div class="row"><span class="sw" style="background:hsl(35, 85%, 60%)"></span><span>0.40 – 0.60 &nbsp;elevated</span></div>
+            <div class="row"><span class="sw" style="background:hsl(0, 70%, 60%)"></span><span>0.60 – 1.00 &nbsp;critical</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Today's routine (24h)</div><div class="card-sub">Hourly activity vs baseline · solid = observed, dashed = expected</div></div>
+          <a class="btn sm outline" data-route="baseline">Baseline &rarr;</a>
+        </div>
+        <div class="routine-ring"><svg id="ring" viewBox="0 0 240 240"></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Anomaly score · last 24h</div><div class="card-sub" id="score24-sub">288 samples · 5-minute bins</div></div>
+      </div>
+      <div id="chart-score" class="chart-host"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Recent events</div><div class="card-sub" id="evt-sub">Last 8 emitted from the cog</div></div>
+          <a class="btn sm outline" data-route="events">All events &rarr;</a>
+        </div>
+        <div class="evt-list" id="recent-events"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Sensor inputs</div><div class="card-sub">CSI presence + motion · ESP32-S3</div></div>
+          <span class="badge online"><span class="dot up"></span>streaming</span>
+        </div>
+        <div id="sensor-list"></div>
+        <div class="stat-grid" style="margin-top:0.75rem">
+          <div class="stat-cell"><div class="lab">Sample rate</div><div class="v">5 Hz</div></div>
+          <div class="stat-cell"><div class="lab">Frame size</div><div class="v">64 × 1 CSI</div></div>
+          <div class="stat-cell"><div class="lab">Buffer</div><div class="v">3.2 KB</div></div>
+          <div class="stat-cell"><div class="lab">Uptime</div><div class="v" id="stat-uptime">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Baseline ───────────────────────────── -->
+<div class="panel" id="panel-baseline">
+  <div class="section">
+    <h1 class="page">Baseline</h1>
+    <p class="lede">Learned routine patterns over a rolling 7-day window. Each cell is the expected occupancy/activity intensity for that hour of day, derived from CSI presence and motion samples. Anomaly scoring compares fresh observations against these baselines.</p>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div><div class="kpi-info"><div class="kpi-label">Bins filled</div><div class="kpi-val" id="b-kpi-bins">—</div><div class="kpi-sub">of 168 (7d × 24h)</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Total samples</div><div class="kpi-val" id="b-kpi-samples">—</div><div class="kpi-sub">profile rev <span id="b-kpi-rev">—</span></div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="kpi-info"><div class="kpi-label">Baseline age</div><div class="kpi-val" id="b-kpi-age">—</div><div class="kpi-sub">since first sample</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="kpi-info"><div class="kpi-label">Hottest hour</div><div class="kpi-val" id="b-kpi-peak">—</div><div class="kpi-sub" id="b-kpi-peak-sub">—</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Learned baseline · hour × day</div><div class="card-sub">Mean activity intensity (0–1). Brighter = more occupied.</div></div>
+        <div class="pill-tabs" id="hm-tabs">
+          <button class="pill-tab on" data-view="baseline">Baseline</button>
+          <button class="pill-tab" data-view="observed">Observed (last 7d)</button>
+          <button class="pill-tab" data-view="deviation">Deviation</button>
+        </div>
+      </div>
+      <div class="heatmap hour-day" id="hm-grid"></div>
+      <div class="heat-axis-x" id="hm-axis"></div>
+      <div class="heat-legend">
+        <div class="ramp" id="hm-ramp"></div>
+        <span><span id="hm-min">0.0</span> &rarr; <span id="hm-max">1.0</span></span>
+        <span style="margin-left:auto;color:hsl(var(--muted-foreground))">Hover a cell for value</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-h"><div><div class="card-title">Hourly activity profile</div><div class="card-sub">Averaged across all weekdays</div></div></div>
+        <div id="chart-hour" class="chart-host"></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-h"><div><div class="card-title">Per-weekday intensity</div><div class="card-sub">Mean baseline activity per day</div></div></div>
+        <div class="bar-list" id="weekday-bars"></div>
+      </div>
+      <div class="chart-card" style="grid-column:1/-1">
+        <div class="card-h"><div><div class="card-title">Learning progress</div><div class="card-sub">Profile samples ingested · last 12 days</div></div></div>
+        <div id="chart-learn" class="chart-host"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Anomalies ───────────────────────────── -->
+<div class="panel" id="panel-anomalies">
+  <div class="section">
+    <h1 class="page">Anomalies</h1>
+    <p class="lede">Continuous anomaly scoring against the learned baseline. Each score is a normalized deviation (0–1) emitted every 5 minutes as <code>anomaly_score</code>. Crossings of the threshold escalate to <code>routine_deviation</code> events.</p>
+  </div>
+
+  <div class="banner warn" id="a-banner">
+    <div class="b-ic"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div style="flex:1"><b id="a-banner-headline">—</b> · <span class="mono" id="a-banner-info">—</span></div>
+    <button class="btn sm outline" id="a-ack-btn">Acknowledge</button>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="kpi-info"><div class="kpi-label">Above threshold · 24h</div><div class="kpi-val" id="a-kpi-above">—</div><div class="kpi-sub">samples > 0.50</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Peak score · 24h</div><div class="kpi-val" id="a-kpi-peak">—</div><div class="kpi-sub" id="a-kpi-peak-sub">—</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Mean score · 24h</div><div class="kpi-val" id="a-kpi-mean">—</div><div class="kpi-sub">288 samples</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div class="kpi-info"><div class="kpi-label">Deviation events · 24h</div><div class="kpi-val" id="a-kpi-dev">—</div><div class="kpi-sub">routine_deviation</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Anomaly score history</div><div class="card-sub" id="a-hist-sub">—</div></div>
+        <div class="pill-tabs" id="a-range-tabs">
+          <button class="pill-tab" data-rng="1h">1h</button>
+          <button class="pill-tab on" data-rng="24h">24h</button>
+          <button class="pill-tab" data-rng="7d">7d</button>
+        </div>
+      </div>
+      <div id="chart-hist" class="chart-host" style="height:292px"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Score distribution</div><div class="card-sub">Bin counts · last 24h</div></div></div>
+        <div id="a-dist"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">
+          <span>p50 <b id="a-p50" style="color:hsl(var(--foreground))">—</b></span>
+          <span>p90 <b id="a-p90" style="color:hsl(var(--foreground))">—</b></span>
+          <span>p99 <b id="a-p99" style="color:hsl(var(--foreground))">—</b></span>
+          <span>max <b id="a-pmax" style="color:hsl(var(--foreground))">—</b></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">By time-of-day</div><div class="card-sub">Average score per hour · 24h window</div></div></div>
+        <div id="chart-tod" class="chart-host"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Detected anomalies</div><div class="card-sub" id="a-tbl-sub">—</div></div>
+        <a class="btn sm outline" data-route="events">Open event stream &rarr;</a>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Timestamp</th><th>Score</th><th>Severity</th><th>Cell</th><th>Detail</th></tr></thead>
+          <tbody id="a-anom-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Events ───────────────────────────── -->
+<div class="panel" id="panel-events">
+  <div class="section">
+    <h1 class="page">Event stream</h1>
+    <p class="lede">Raw events emitted by the behavioral-profiler cog. Three event types are produced: <code>anomaly_score</code> (continuous scoring), <code>routine_deviation</code> (threshold crossings &amp; cluster shifts), <code>profile_update</code> (baseline retrain / sample ingestion).</p>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Events · session</div><div class="kpi-val" id="e-kpi-total">—</div><div class="kpi-sub">all types</div></div></div>
+      <div class="kpi"><div class="kpi-ic danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="kpi-info"><div class="kpi-label">anomaly_score</div><div class="kpi-val" id="e-kpi-anom">—</div><div class="kpi-sub">scoring emissions</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="kpi-info"><div class="kpi-label">routine_deviation</div><div class="kpi-val" id="e-kpi-dev">—</div><div class="kpi-sub">cluster shifts</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><div class="kpi-info"><div class="kpi-label">profile_update</div><div class="kpi-val" id="e-kpi-prof">—</div><div class="kpi-sub">baseline writes</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Event timeline</div><div class="card-sub" id="e-tl-sub">Density across the session</div></div>
+        <div class="pill-tabs" style="font-family:var(--font-mono);font-size:0.6875rem">
+          <span class="pill-tab" style="cursor:default"><span class="dot down" style="margin-right:0.4rem"></span>anomaly</span>
+          <span class="pill-tab" style="cursor:default"><span class="dot warn" style="margin-right:0.4rem"></span>deviation</span>
+          <span class="pill-tab" style="cursor:default"><span class="dot up" style="margin-right:0.4rem"></span>profile</span>
+        </div>
+      </div>
+      <svg id="e-timeline" viewBox="0 0 1000 100" preserveAspectRatio="none" style="width:100%;height:120px"></svg>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Live stream</div><div class="card-sub" id="e-stream-sub">—</div></div>
+        <div class="pill-tabs" id="e-filter-tabs">
+          <button class="pill-tab on" data-f="all">All</button>
+          <button class="pill-tab" data-f="anomaly_score">anomaly_score</button>
+          <button class="pill-tab" data-f="routine_deviation">routine_deviation</button>
+          <button class="pill-tab" data-f="profile_update">profile_update</button>
+        </div>
+      </div>
+      <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+        <input class="input" id="e-search" style="max-width:320px" placeholder="Search by message, cell, or cluster…">
+        <button class="btn sm outline" id="e-clear-search">Clear</button>
+        <span style="flex:1"></span>
+        <button class="btn sm outline" id="e-pause-btn"><svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause</button>
+        <button class="btn sm primary" id="e-export-btn">Export JSON</button>
+      </div>
+      <div class="evt-list" id="e-stream"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Profile ───────────────────────────── -->
+<div class="panel" id="panel-profile">
+  <div class="section">
+    <h1 class="page">Profile</h1>
+    <p class="lede">Current state of the resident profile model — feature weights, cluster centroids, retraining cadence, and detection sensitivity. Tune sensitivity below to trade between false positives and missed anomalies.</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Routine clusters</div><div class="card-sub">5 latent clusters · k-means over 168-bin profile</div></div>
+        <span class="badge primary"><span class="dot" style="background:hsl(var(--primary));margin-right:0.4rem"></span>active</span>
+      </div>
+      <svg id="p-clusters" viewBox="0 0 800 280" preserveAspectRatio="xMidYMid meet" style="width:100%;height:280px"></svg>
+      <div id="p-cluster-legend" style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.5rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Feature weights</div><div class="card-sub">Contribution to anomaly_score</div></div></div>
+        <div class="bar-list" id="p-weights"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Detection sensitivity</div><div class="card-sub">Threshold &amp; smoothing</div></div></div>
+        <div style="margin-top:0.5rem">
+          <label style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Threshold (anomaly_score)</label>
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem">
+            <input type="range" id="p-thr-slider" min="10" max="90" value="50" style="flex:1">
+            <span class="mono" id="p-thr-val" style="min-width:3rem;text-align:right">0.50</span>
+          </div>
+          <p style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.5rem" id="p-thr-impact">Crossings above this value emit a routine_deviation event.</p>
+        </div>
+        <div style="margin-top:1rem">
+          <label style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Smoothing window</label>
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem">
+            <input type="range" id="p-smooth-slider" min="1" max="30" value="5" style="flex:1">
+            <span class="mono" id="p-smooth-val" style="min-width:3rem;text-align:right">5 min</span>
+          </div>
+        </div>
+        <div class="stat-grid" style="margin-top:1rem">
+          <div class="stat-cell"><div class="lab">Above threshold</div><div class="v" id="p-impact-above">—</div></div>
+          <div class="stat-cell"><div class="lab">Predicted alerts/day</div><div class="v" id="p-impact-alerts">—</div></div>
+          <div class="stat-cell"><div class="lab">Estimated FP rate</div><div class="v" id="p-impact-fp">—</div></div>
+          <div class="stat-cell"><div class="lab">Latency-to-alert</div><div class="v" id="p-impact-latency">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Profile updates · last 14 days</div><div class="card-sub">profile_update events per day</div></div>
+        <button class="btn sm primary" id="p-retrain-btn">Force retrain</button>
+      </div>
+      <div id="chart-updates" class="chart-host"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── Details ───────────────────────────── -->
+<div class="panel" id="panel-details">
+  <div class="section">
+    <div class="page-hero" style="align-items:flex-start;flex-wrap:wrap">
+      <div class="emoji">🧠</div>
+      <div style="flex:1;min-width:260px">
+        <span class="h-cat">Security</span>
+        <h1>Behavioral Profiler</h1>
+        <p>Behavioral anomaly scoring from routine pattern deviation</p>
+        <div class="hero-meta">
+          <span><span class="l">version</span><b>v0.9.0</b></span>
+          <span><span class="l">size</span><b>26 KB</b></span>
+          <span><span class="l">difficulty</span><b>Hard</b></span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end">
+        <button class="btn primary" id="d-install-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install
+        </button>
+        <span class="badge online" id="d-install-status" style="display:none"><span class="dot up"></span>installed</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Description</div><div class="card-sub">What this cog does</div></div></div>
+        <p style="font-size:0.875rem;line-height:1.65;color:hsl(var(--card-foreground))">Builds behavioral baselines and scores anomalies based on deviation from learned routine patterns over time.</p>
+        <p style="font-size:0.8125rem;line-height:1.65;color:hsl(var(--muted-foreground));margin-top:0.75rem">Activity is binned into a 7-day × 24-hour grid built from CSI presence and motion samples. After a warm-up period the cog continuously scores incoming observations against the learned baseline, emitting an <code>anomaly_score</code> every 5 minutes and an escalated <code>routine_deviation</code> event whenever the score crosses a configurable threshold.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Manifest</div><div class="card-sub">cog.toml fields</div></div></div>
+        <div class="stat-grid" style="margin-top:0">
+          <div class="stat-cell"><div class="lab">ID</div><div class="v">behavioral-profiler</div></div>
+          <div class="stat-cell"><div class="lab">Category</div><div class="v">Security</div></div>
+          <div class="stat-cell"><div class="lab">Version</div><div class="v">v0.9.0</div></div>
+          <div class="stat-cell"><div class="lab">Size</div><div class="v">26 KB</div></div>
+          <div class="stat-cell"><div class="lab">Difficulty</div><div class="v">Hard</div></div>
+          <div class="stat-cell"><div class="lab">License</div><div class="v">Apache-2.0</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Events</div><div class="card-sub">Topics emitted on the cog bus</div></div></div>
+        <div class="evt-list" style="margin-top:0">
+          <div class="evt-row anomaly"><span class="ts">topic</span><span class="ev">anomaly_score</span><span class="meta">Continuous scoring · payload includes score, cell, z-score, contributing features</span><span class="sc">5m</span></div>
+          <div class="evt-row deviation"><span class="ts">topic</span><span class="ev">routine_deviation</span><span class="meta">Threshold crossing or cluster shift · payload includes cluster, delta, duration</span><span class="sc">edge</span></div>
+          <div class="evt-row profile"><span class="ts">topic</span><span class="ev">profile_update</span><span class="meta">Baseline retrain · payload includes samples, rev, retrain_window</span><span class="sc">15m</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Hardware &amp; Input</div><div class="card-sub">Device + sensor channels</div></div></div>
+        <div class="stat-grid" style="margin-top:0">
+          <div class="stat-cell"><div class="lab">Hardware</div><div class="v">ESP32-S3</div></div>
+          <div class="stat-cell"><div class="lab">Flash</div><div class="v">≥ 4 MB</div></div>
+          <div class="stat-cell"><div class="lab">PSRAM</div><div class="v">≥ 2 MB</div></div>
+          <div class="stat-cell"><div class="lab">RTOS</div><div class="v">ESP-IDF 5.x</div></div>
+        </div>
+        <div style="margin-top:0.875rem">
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem">Input channels</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem">
+            <span class="badge primary">csi_presence</span>
+            <span class="badge primary">csi_breathing</span>
+            <span class="badge accent">motion_pir</span>
+            <span class="badge accent">motion_accel</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="cols-2">
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Source</div><div class="card-sub">Repository path</div></div>
+          <button class="btn sm outline" id="d-copy-src"><svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+        </div>
+        <pre class="logbox" style="margin:0;max-height:none">cognitum-one/cogs/src/cogs/behavioral-profiler</pre>
+        <div style="margin-top:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.7">
+          <div><span style="color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem">commit</span>a3f9b21 · <b style="color:hsl(var(--foreground))">main</b></div>
+          <div><span style="color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem">build</span>esp-idf 5.1.4 · target esp32s3</div>
+          <div><span style="color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem">hash</span>sha256:b8c7…f1a4</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Dependencies</div><div class="card-sub">Runtime cogs + capabilities</div></div></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Name</th><th>Kind</th><th>Required</th></tr></thead>
+            <tbody>
+              <tr><td>csi-presence</td><td>cog</td><td><span class="badge primary">required</span></td></tr>
+              <tr><td>motion-sensor</td><td>cog</td><td><span class="badge primary">required</span></td></tr>
+              <tr><td>nv-storage</td><td>capability</td><td><span class="badge primary">required</span></td></tr>
+              <tr><td>brain-mini</td><td>service</td><td><span class="badge accent">optional</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Quickstart</div><div class="card-sub">Deploy this cog to a paired seed</div></div></div>
+      <pre class="logbox" style="margin-top:0.5rem">$ cogctl install behavioral-profiler --seed seed-living-room
+$ cogctl tail behavioral-profiler --follow
+[profile_update]    samples=14210  rev=0.9.0+212  retrain_window=7d
+[anomaly_score]     score=0.18     cell=Mon/19:30  z=0.4σ
+[routine_deviation] cluster=evening_peak  delta=+0.27  duration_short</pre>
+    </div>
+  </div>
+</div>
+
+<footer class="appfoot">
+  <div><span class="mono">cog: behavioral-profiler</span> &middot; <span class="mono">v0.9.0</span> &middot; <span class="mono">26 KB</span> &middot; <span class="mono">ESP32-S3</span></div>
+  <div style="margin-top:0.4rem"><a data-route="overview">overview</a> &middot; <a data-route="baseline">baseline</a> &middot; <a data-route="anomalies">anomalies</a> &middot; <a data-route="events">events</a> &middot; <a data-route="profile">profile</a> &middot; <a data-route="details">details</a></div>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  // ──────────────────────────────────────────────────────────────
+  // Synthetic data model
+  // ──────────────────────────────────────────────────────────────
+  function escapeHtml(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  const fmtNum = (n) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString();
+  const fmtPct = (n, d=0) => (n == null || isNaN(n)) ? '—' : (n*100).toFixed(d) + '%';
+  function fmtTs(ts){
+    const d = (ts instanceof Date) ? ts : new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    const p = n => String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  }
+  function fmtRel(ts){
+    const t = (ts instanceof Date ? ts : new Date(ts)).getTime();
+    if (isNaN(t)) return '—';
+    const diff = Math.round((Date.now() - t) / 1000);
+    if (diff < 5) return 'just now';
+    if (diff < 60) return diff + 's ago';
+    const m = Math.round(diff/60);
+    if (m < 60) return m + 'm ago';
+    const h = Math.round(m/60);
+    if (h < 24) return h + 'h ago';
+    return Math.round(h/24) + 'd ago';
+  }
+  function mulberry32(seed){
+    return function(){
+      let t = (seed += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function buildBaseline(){
+    const rng = mulberry32(42);
+    const grid = [];
+    for (let day = 0; day < 7; day++){
+      const isWeekend = day === 5 || day === 6;
+      const row = [];
+      for (let hour = 0; hour < 24; hour++){
+        let v;
+        if (hour < 6) v = 0.05 + rng()*0.06;
+        else if (hour === 6) v = isWeekend ? 0.12 : 0.35;
+        else if (hour === 7) v = isWeekend ? 0.22 : 0.74;
+        else if (hour === 8) v = isWeekend ? 0.35 : 0.62;
+        else if (hour < 12) v = isWeekend ? 0.55 : 0.18 + rng()*0.1;
+        else if (hour === 12) v = 0.5 + rng()*0.1;
+        else if (hour < 17) v = isWeekend ? 0.6 : 0.22 + rng()*0.12;
+        else if (hour === 17) v = 0.7;
+        else if (hour === 18) v = 0.85;
+        else if (hour === 19) v = 0.92;
+        else if (hour === 20) v = 0.88;
+        else if (hour === 21) v = 0.7;
+        else if (hour === 22) v = 0.45;
+        else v = 0.18;
+        v += (rng()-0.5)*0.08;
+        row.push(Math.max(0, Math.min(1, v)));
+      }
+      grid.push(row);
+    }
+    return grid;
+  }
+  function buildObserved(baseline){
+    const rng = mulberry32(101);
+    const observed = baseline.map(row => row.map(v => Math.max(0, Math.min(1, v + (rng()-0.5)*0.12))));
+    observed[1][3] = 0.78;
+    observed[2][13] = 0.05;
+    observed[4][23] = 0.95;
+    observed[0][14] = 0.66;
+    return observed;
+  }
+  const buildDeviation = (b, o) => b.map((row, d) => row.map((v, h) => Math.abs(o[d][h] - v)));
+
+  function buildScoreHistory(){
+    const rng = mulberry32(7);
+    const now = Math.floor(Date.now()/1000);
+    const step = 300;
+    const series = [];
+    for (let i = 287; i >= 0; i--){
+      const ts = now - i*step;
+      const d = new Date(ts*1000);
+      const hour = d.getHours();
+      let base = 0.08;
+      if (hour >= 6 && hour < 10) base = 0.18;
+      else if (hour >= 17 && hour < 23) base = 0.22;
+      base += (rng()-0.5)*0.08;
+      let spike = 0;
+      if (i === 14) spike = 0.74;
+      else if (i === 47) spike = 0.55;
+      else if (i === 96) spike = 0.41;
+      else if (i === 180) spike = 0.62;
+      else if (i === 240) spike = 0.38;
+      series.push({ ts, score: Math.max(0.01, Math.min(0.98, base + spike)) });
+    }
+    return series;
+  }
+
+  function buildEvents(){
+    const rng = mulberry32(33);
+    const msgs = {
+      anomaly_score: [
+        'score=0.74  cell=Tue/03:00  z=3.2σ  presence_csi',
+        'score=0.62  cell=Fri/23:00  z=2.8σ  motion+presence',
+        'score=0.55  cell=Mon/02:30  z=2.6σ  presence_csi',
+        'score=0.41  cell=Wed/13:00  z=2.1σ  absence',
+        'score=0.38  cell=Sat/08:15  z=1.9σ  early_motion',
+        'score=0.32  cell=Thu/16:45  z=1.7σ  occupancy_drift',
+      ],
+      routine_deviation: [
+        'cluster=morning_routine  delta=+0.27  hours_shifted=1.4',
+        'cluster=evening_peak     delta=-0.18  duration_short',
+        'cluster=midday_quiet     delta=+0.31  unexpected_motion',
+        'cluster=night_low        delta=+0.42  presence_03:00',
+        'cluster=weekend_pattern  delta=-0.12  reduced_activity',
+      ],
+      profile_update: [
+        'samples=14210  rev=0.9.0+212  retrain_window=7d',
+        'samples=14198  rev=0.9.0+211  partial_update',
+        'samples=14156  rev=0.9.0+210  weight_decay=0.02',
+        'samples=14132  rev=0.9.0+209  initial_baseline_revised',
+        'samples=14098  rev=0.9.0+208  hourly_bin_smooth',
+      ],
+    };
+    const events = [];
+    let t = Date.now();
+    for (let i = 0; i < 60; i++){
+      t -= Math.floor(20_000 + rng()*240_000);
+      let type;
+      const pick = rng();
+      if (pick < 0.18) type = 'anomaly_score';
+      else if (pick < 0.5) type = 'routine_deviation';
+      else type = 'profile_update';
+      const pool = msgs[type];
+      const msg = pool[Math.floor(rng()*pool.length)];
+      let score = null;
+      if (type === 'anomaly_score'){
+        const m = msg.match(/score=([\d.]+)/);
+        if (m) score = parseFloat(m[1]);
+      } else if (type === 'routine_deviation'){
+        const m = msg.match(/delta=([+-][\d.]+)/);
+        if (m) score = Math.abs(parseFloat(m[1]));
+      }
+      events.push({ ts: t, type, msg, score });
+    }
+    return events;
+  }
+
+  const SENSORS = [
+    { name: 'csi_presence',  value: '0.82', unit: 'p',   spark: [0.7,0.74,0.78,0.81,0.79,0.83,0.86,0.84,0.82] },
+    { name: 'csi_breathing', value: '14.2', unit: 'bpm', spark: [13.6,14.0,14.1,14.3,14.4,14.2,14.0,14.1,14.2] },
+    { name: 'motion_pir',    value: 'idle', unit: '',    spark: [0,0,1,1,0,0,1,0,0] },
+    { name: 'motion_accel',  value: '0.04', unit: 'g',   spark: [0.02,0.03,0.05,0.04,0.04,0.03,0.04,0.05,0.04] },
+  ];
+
+  const baseline = buildBaseline();
+  const observed = buildObserved(baseline);
+  const deviation = buildDeviation(baseline, observed);
+  const scoreHistory = buildScoreHistory();
+  const events = buildEvents();
+  let eventSeq = 0;
+  events.forEach(e => { e.id = ++eventSeq; });
+  const scores = scoreHistory.map(s => s.score);
+  const stats = {
+    anomaly_score_current: scores[scores.length-1],
+    anomaly_score_max_24h: Math.max(...scores),
+    anomalies_24h: events.filter(e => e.type === 'anomaly_score').length,
+    deviations_24h: events.filter(e => e.type === 'routine_deviation').length,
+    baseline_samples: 14210,
+    baseline_coverage: baseline.flat().filter(v => v > 0.01).length / 168,
+    baseline_age_days: 12,
+    profile_revisions: 212,
+    uptime: '6d 18h',
+    last_update_ts: Date.now() - 47_000,
+  };
+
+  function sparkline(values, opts){
+    opts = opts || {};
+    const w = opts.width || 120, h = opts.height || 36, pad = 2;
+    if (!values || !values.length) return '';
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max - min) || 1;
+    const stepX = (w - pad*2) / (values.length - 1 || 1);
+    const pts = values.map((v, i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - ((v - min) / range) * (h - pad*2);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+    const stroke = opts.stroke || 'hsl(185, 80%, 55%)';
+    return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  }
+  function heatColor(v){
+    if (v < 0.05) return 'hsl(220, 15%, 18%)';
+    if (v < 0.2)  return 'hsl(220, 30%, 26%)';
+    if (v < 0.35) return 'hsl(200, 60%, 32%)';
+    if (v < 0.5)  return 'hsl(190, 75%, 38%)';
+    if (v < 0.65) return 'hsl(185, 80%, 44%)';
+    if (v < 0.8)  return 'hsl(170, 75%, 48%)';
+    return 'hsl(142, 70%, 55%)';
+  }
+  function devColor(v){
+    if (v < 0.05) return 'hsl(220, 15%, 18%)';
+    if (v < 0.15) return 'hsl(220, 30%, 26%)';
+    if (v < 0.3)  return 'hsl(35, 75%, 38%)';
+    if (v < 0.45) return 'hsl(20, 80%, 48%)';
+    if (v < 0.6)  return 'hsl(8, 80%, 55%)';
+    return 'hsl(0, 75%, 60%)';
+  }
+  function severityBadge(score){
+    if (score == null) return '<span class="badge unknown">—</span>';
+    if (score >= 0.6) return '<span class="badge danger">critical</span>';
+    if (score >= 0.4) return '<span class="badge warn">elevated</span>';
+    if (score >= 0.2) return '<span class="badge primary">notable</span>';
+    return '<span class="badge accent">normal</span>';
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Live tick registry — each panel registers a redraw fn for its
+  // visible elements; the global simulator mutates shared state and
+  // calls the active panel's redraw every TICK_MS.
+  // ──────────────────────────────────────────────────────────────
+  const live = {};
+  let overviewPlot = null;
+  let anomHistPlot = null;
+  let anomHistMode = '24h'; // bumped from initAnomalies so simulator knows
+  const TICK_MS = 2500;
+
+  function renderGauge(s){
+    $('#gauge-val').textContent = s.toFixed(2);
+    $('#gauge-sub').textContent = s >= 0.5 ? 'above threshold' : 'within baseline';
+    $('#gauge-arc').setAttribute('stroke-dashoffset', 264*(1-s));
+    $('#gauge-needle').setAttribute('transform', 'rotate('+(-90 + s*180)+' 100 110)');
+    const valEl = $('#gauge-val');
+    valEl.style.color = s >= 0.6 ? 'hsl(0, 70%, 70%)' : (s >= 0.4 ? 'hsl(35, 85%, 65%)' : (s >= 0.2 ? 'hsl(185, 80%, 60%)' : 'hsl(142, 70%, 65%)'));
+  }
+  function renderSparklines(){
+    $('#sensor-list').innerHTML = SENSORS.map(s => '<div class="sensor-row"><span class="nm">'+escapeHtml(s.name)+'</span>'+sparkline(s.spark,{width:90,height:30})+'<span class="rt">'+escapeHtml(s.value)+' '+escapeHtml(s.unit)+'</span></div>').join('');
+  }
+  function renderRecentEvents(flashIds){
+    const recent = events.slice(0, 8);
+    $('#recent-events').innerHTML = recent.map(e => {
+      const cls = e.type === 'anomaly_score' ? 'anomaly' : (e.type === 'routine_deviation' ? 'deviation' : 'profile');
+      const isNew = flashIds && flashIds.has(e.id) ? ' new' : '';
+      const sc = e.score != null ? e.score.toFixed(2) : '—';
+      return '<div class="evt-row '+cls+isNew+'"><span class="ts">'+escapeHtml(fmtTs(e.ts))+'</span><span class="ev">'+escapeHtml(e.type)+'</span><span class="meta" title="'+escapeHtml(e.msg)+'">'+escapeHtml(e.msg)+'</span><span class="sc">'+sc+'</span></div>';
+    }).join('');
+    $('#evt-sub').textContent = 'Last ' + recent.length + ' · ' + events.length + ' total this session';
+  }
+
+  function initOverview(){
+    $('#kpi-score').textContent = stats.anomaly_score_current.toFixed(2);
+    $('#kpi-anom').textContent = stats.anomalies_24h;
+    $('#kpi-anom-sub').textContent = 'peak score ' + stats.anomaly_score_max_24h.toFixed(2);
+    $('#kpi-samples').textContent = fmtNum(stats.baseline_samples);
+    $('#kpi-samples-sub').textContent = 'rev ' + stats.profile_revisions;
+    $('#kpi-cov').textContent = fmtPct(stats.baseline_coverage, 0);
+    $('#kpi-cov-sub').textContent = '168 bins · ' + stats.baseline_age_days + ' days';
+    $('#kpi-dev').textContent = stats.deviations_24h;
+    $('#stat-uptime').textContent = stats.uptime;
+    $('#banner-info').textContent = stats.baseline_samples.toLocaleString() + ' samples · last update ' + fmtRel(Date.now() - 47_000);
+
+    // Threshold tick (drawn once)
+    {
+      const tDeg = 0, rad = tDeg * Math.PI / 180;
+      const x1 = 100 + Math.cos(rad)*70, y1 = 110 + Math.sin(rad)*70;
+      const x2 = 100 + Math.cos(rad)*92, y2 = 110 + Math.sin(rad)*92;
+      $('#gauge-thresh').innerHTML =
+        '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="hsl(35, 85%, 65%)" stroke-width="2"/>' +
+        '<text x="'+x2+'" y="'+(y2-4)+'" fill="hsl(215, 15%, 70%)" font-family="JetBrains Mono" font-size="9" text-anchor="middle">0.50</text>';
+    }
+
+    // Ring
+    const today = new Date().getDay();
+    const idx = (today + 6) % 7;
+    const bRow = baseline[idx], oRow = observed[idx];
+    const cx = 120, cy = 120, rOut = 100, rIn = 50;
+    const parts = [];
+    for (let h = 0; h < 24; h++){
+      const a0 = (h/24)*Math.PI*2 - Math.PI/2;
+      const a1 = ((h+1)/24)*Math.PI*2 - Math.PI/2;
+      const v = oRow[h];
+      const reach = rIn + (rOut - rIn)*v;
+      const x0a = cx + Math.cos(a0)*rIn,    y0a = cy + Math.sin(a0)*rIn;
+      const x1a = cx + Math.cos(a0)*reach,  y1a = cy + Math.sin(a0)*reach;
+      const x2a = cx + Math.cos(a1)*reach,  y2a = cy + Math.sin(a1)*reach;
+      const x3a = cx + Math.cos(a1)*rIn,    y3a = cy + Math.sin(a1)*rIn;
+      parts.push('<path d="M '+x0a.toFixed(1)+' '+y0a.toFixed(1)+' L '+x1a.toFixed(1)+' '+y1a.toFixed(1)+' A '+reach.toFixed(1)+' '+reach.toFixed(1)+' 0 0 1 '+x2a.toFixed(1)+' '+y2a.toFixed(1)+' L '+x3a.toFixed(1)+' '+y3a.toFixed(1)+' Z" fill="'+heatColor(v)+'" opacity="0.92"/>');
+      const bReach = rIn + (rOut - rIn)*bRow[h];
+      const bx1 = cx + Math.cos(a0)*bReach, by1 = cy + Math.sin(a0)*bReach;
+      const bx2 = cx + Math.cos(a1)*bReach, by2 = cy + Math.sin(a1)*bReach;
+      parts.push('<line x1="'+bx1.toFixed(1)+'" y1="'+by1.toFixed(1)+'" x2="'+bx2.toFixed(1)+'" y2="'+by2.toFixed(1)+'" stroke="hsl(210, 20%, 92%)" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.65"/>');
+    }
+    for (let h = 0; h < 24; h += 3){
+      const a = (h/24)*Math.PI*2 - Math.PI/2;
+      const lx = cx + Math.cos(a)*(rOut+14), ly = cy + Math.sin(a)*(rOut+14);
+      parts.push('<text class="label" x="'+lx.toFixed(1)+'" y="'+(ly+3).toFixed(1)+'" text-anchor="middle">'+String(h).padStart(2,'0')+'</text>');
+    }
+    parts.push('<circle cx="'+cx+'" cy="'+cy+'" r="'+(rIn-2)+'" fill="hsl(220, 25%, 8%)" stroke="hsl(220, 15%, 18%)"/>');
+    const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
+    parts.push('<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="Outfit" font-size="13" font-weight="600" fill="hsl(210, 20%, 92%)">'+dayName+'</text>');
+    parts.push('<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="hsl(215, 15%, 55%)">24h activity</text>');
+    $('#ring').innerHTML = parts.join('');
+
+    // uPlot score chart
+    function build(){
+      if (typeof uPlot === 'undefined'){ setTimeout(build, 80); return; }
+      const host = $('#chart-score');
+      if (!host.offsetWidth) { setTimeout(build, 80); return; }
+      const xs = scoreHistory.map(p => p.ts);
+      const ys = scoreHistory.map(p => p.score);
+      const thr = ys.map(() => 0.5);
+      host.innerHTML = '';
+      overviewPlot = new uPlot({
+        width: host.clientWidth, height: 220, padding: [8,12,0,0],
+        scales: { x: { time: true }, y: { range: [0, 1] } },
+        series: [{}, { label: 'score', stroke: 'hsl(185, 80%, 55%)', width: 1.8, fill: 'hsla(185, 80%, 50%, 0.18)' },
+                     { label: 'threshold', stroke: 'hsl(35, 85%, 60%)', width: 1.2, dash: [4,3] }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>x.toFixed(2)) }],
+      }, [xs, ys, thr], host);
+      $('#score24-sub').textContent = xs.length + ' samples · last = ' + ys[ys.length-1].toFixed(2);
+    }
+    build();
+
+    renderRecentEvents();
+    renderSparklines();
+
+    // Live updater — called by the global tick when this panel is active.
+    live.overview = function (flashIds) {
+      renderGauge(stats.anomaly_score_current);
+      $('#kpi-score').textContent = stats.anomaly_score_current.toFixed(2);
+      $('#kpi-anom').textContent = stats.anomalies_24h;
+      $('#kpi-anom-sub').textContent = 'peak score ' + stats.anomaly_score_max_24h.toFixed(2);
+      $('#kpi-dev').textContent = stats.deviations_24h;
+      $('#banner-info').textContent = stats.baseline_samples.toLocaleString() + ' samples · last update ' + fmtRel(stats.last_update_ts);
+      renderSparklines();
+      renderRecentEvents(flashIds);
+      if (overviewPlot) {
+        const xs = scoreHistory.map(p => p.ts);
+        const ys = scoreHistory.map(p => p.score);
+        overviewPlot.setData([xs, ys, ys.map(()=>0.5)]);
+        $('#score24-sub').textContent = xs.length + ' samples · last = ' + ys[ys.length-1].toFixed(2);
+      }
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Baseline panel
+  // ──────────────────────────────────────────────────────────────
+  let baselineMode = 'baseline';
+  function initBaseline(){
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    $('#b-kpi-bins').textContent = '168';
+    $('#b-kpi-samples').textContent = fmtNum(stats.baseline_samples);
+    $('#b-kpi-rev').textContent = stats.profile_revisions;
+    $('#b-kpi-age').textContent = stats.baseline_age_days + ' days';
+    let peak = { v: 0, d: 0, h: 0 };
+    baseline.forEach((row, d) => row.forEach((v, h) => { if (v > peak.v) peak = { v, d, h }; }));
+    $('#b-kpi-peak').textContent = DAYS[peak.d] + ' ' + String(peak.h).padStart(2,'0') + ':00';
+    $('#b-kpi-peak-sub').textContent = 'intensity ' + peak.v.toFixed(2);
+
+    function gridFor(m){ return m === 'observed' ? observed : (m === 'deviation' ? deviation : baseline); }
+    function renderHm(){
+      const grid = gridFor(baselineMode);
+      const cells = [];
+      for (let d = 0; d < 7; d++){
+        cells.push('<div class="heat-label">'+DAYS[d]+'</div>');
+        for (let h = 0; h < 24; h++){
+          const v = grid[d][h];
+          const c = baselineMode === 'deviation' ? devColor(v) : heatColor(v);
+          cells.push('<div class="heat-cell" style="background:'+c+'" title="'+DAYS[d]+' '+String(h).padStart(2,'0')+':00 · '+baselineMode+'='+v.toFixed(2)+'"></div>');
+        }
+      }
+      $('#hm-grid').innerHTML = cells.join('');
+      const axis = ['<span class="a-empty">—</span>'];
+      for (let h = 0; h < 24; h++) axis.push('<span>'+(h%3===0?String(h).padStart(2,'0'):'')+'</span>');
+      $('#hm-axis').innerHTML = axis.join('');
+      const ramp = $('#hm-ramp');
+      if (baselineMode === 'deviation'){
+        ramp.style.background = 'linear-gradient(90deg, hsl(220 15% 20%) 0%, hsl(35 75% 40%) 35%, hsl(20 80% 50%) 60%, hsl(0 75% 60%) 100%)';
+        $('#hm-min').textContent = '0.00'; $('#hm-max').textContent = '0.60+';
+      } else {
+        ramp.style.background = 'linear-gradient(90deg, hsl(220 15% 20%) 0%, hsl(185 80% 30%) 40%, hsl(185 80% 50%) 70%, hsl(142 70% 55%) 100%)';
+        $('#hm-min').textContent = '0.00'; $('#hm-max').textContent = '1.00';
+      }
+    }
+    renderHm();
+    $$('#hm-tabs .pill-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        $$('#hm-tabs .pill-tab').forEach(x => x.classList.remove('on'));
+        t.classList.add('on');
+        baselineMode = t.getAttribute('data-view');
+        renderHm();
+      });
+    });
+
+    function buildHourly(){
+      if (typeof uPlot === 'undefined'){ setTimeout(buildHourly, 80); return; }
+      const host = $('#chart-hour');
+      if (!host.offsetWidth){ setTimeout(buildHourly, 80); return; }
+      const hours = Array.from({length:24}, (_,i)=>i);
+      const base = hours.map(h => { let s = 0; for (let d = 0; d < 5; d++) s += baseline[d][h]; return s/5; });
+      const obs = hours.map(h => { let s = 0; for (let d = 0; d < 5; d++) s += observed[d][h]; return s/5; });
+      host.innerHTML = '';
+      new uPlot({
+        width: host.clientWidth, height: 220, padding: [8,10,0,0],
+        scales: { x: { time: false }, y: { range: [0, 1] } },
+        series: [{ value: (u,v) => String(v).padStart(2,'0')+':00' },
+                 { label: 'baseline', stroke: 'hsl(185, 80%, 55%)', width: 1.8, fill: 'hsla(185, 80%, 50%, 0.15)' },
+                 { label: 'observed', stroke: 'hsl(142, 70%, 60%)', width: 1.6, dash: [4,3] }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>String(x).padStart(2,'0')) },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>x.toFixed(2)) }],
+      }, [hours, base, obs], host);
+    }
+    buildHourly();
+
+    const wd = baseline.map((row, d) => ({ day: DAYS[d], v: row.reduce((a,b)=>a+b,0)/row.length }));
+    const max = Math.max(...wd.map(r => r.v));
+    $('#weekday-bars').innerHTML = wd.map(r => '<div class="bar-row"><span>'+r.day+'</span><div class="bar-bar"><div class="bar-fill '+(r.v>0.5?'accent':'')+'" style="width:'+(r.v/max*100).toFixed(1)+'%"></div></div><span class="nbr">'+r.v.toFixed(2)+'</span></div>').join('');
+
+    function buildLearn(){
+      if (typeof uPlot === 'undefined'){ setTimeout(buildLearn, 80); return; }
+      const host = $('#chart-learn');
+      if (!host.offsetWidth){ setTimeout(buildLearn, 80); return; }
+      const now = Math.floor(Date.now()/1000);
+      const xs = [], ys = [];
+      let total = 0;
+      const rng = (() => { let s = 9; return () => { s = (s*9301 + 49297) % 233280; return s/233280; }; })();
+      for (let i = 12; i >= 0; i--){
+        xs.push(now - i*86400);
+        total += Math.round(900 + rng()*700);
+        ys.push(total);
+      }
+      host.innerHTML = '';
+      new uPlot({
+        width: host.clientWidth, height: 220, padding: [8,12,0,0],
+        scales: { x: { time: true } },
+        series: [{}, { label: 'samples', stroke: 'hsl(142, 70%, 55%)', width: 1.8, fill: 'hsla(142, 70%, 50%, 0.18)' }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>x.toLocaleString()) }],
+      }, [xs, ys], host);
+    }
+    buildLearn();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Anomalies panel
+  // ──────────────────────────────────────────────────────────────
+  function initAnomalies(){
+    const tss = scoreHistory.map(p => p.ts);
+    const sc = scoreHistory.map(p => p.score);
+    const above = sc.filter(v => v > 0.5);
+    const peak = Math.max(...sc);
+    const peakIdx = sc.indexOf(peak);
+    const peakTs = fmtTs(tss[peakIdx]*1000);
+    const mean = sc.reduce((a,b)=>a+b,0)/sc.length;
+    $('#a-kpi-above').textContent = above.length;
+    $('#a-kpi-peak').textContent = peak.toFixed(2);
+    $('#a-kpi-peak-sub').textContent = 'at ' + peakTs;
+    $('#a-kpi-mean').textContent = mean.toFixed(2);
+    $('#a-kpi-dev').textContent = stats.deviations_24h;
+
+    $('#a-banner-headline').textContent = peak >= 0.6 ? 'Critical anomaly detected' : (peak >= 0.4 ? 'Elevated anomalies in last 24h' : 'No critical anomalies');
+    $('#a-banner-info').textContent = 'peak=' + peak.toFixed(2) + ' · at ' + peakTs;
+    const ackBtn = $('#a-ack-btn');
+    ackBtn.onclick = () => { $('#a-banner').style.opacity = '0.55'; ackBtn.textContent = 'Acknowledged'; ackBtn.disabled = true; };
+
+    function buildHistData(){
+      const ts2 = scoreHistory.map(p => p.ts);
+      const sc2 = scoreHistory.map(p => p.score);
+      if (anomHistMode === '24h') return { xs: ts2, ys: sc2 };
+      if (anomHistMode === '1h') return { xs: ts2.slice(-12), ys: sc2.slice(-12) };
+      const xs = [], ys = [];
+      const now = Math.floor(Date.now()/1000);
+      for (let i = 168; i >= 0; i--){
+        xs.push(now - i*3600);
+        const hour = new Date(xs[xs.length-1]*1000).getHours();
+        let base = 0.10 + (hour >= 17 ? 0.06 : 0) + (hour >= 22 || hour <= 5 ? -0.02 : 0);
+        const noise = ((i*9301 + 49297) % 233280) / 233280 * 0.10;
+        let spike = 0;
+        if (i === 14) spike = 0.55;
+        else if (i === 38) spike = 0.62;
+        else if (i === 72) spike = 0.41;
+        else if (i === 130) spike = 0.48;
+        ys.push(Math.max(0.02, Math.min(0.95, base + noise + spike)));
+      }
+      return { xs, ys };
+    }
+    function buildHist(){
+      if (typeof uPlot === 'undefined'){ setTimeout(buildHist, 80); return; }
+      const host = $('#chart-hist');
+      if (!host.offsetWidth){ setTimeout(buildHist, 80); return; }
+      const { xs, ys } = buildHistData();
+      const thr = ys.map(() => 0.5);
+      host.innerHTML = '';
+      anomHistPlot = new uPlot({
+        width: host.clientWidth, height: 260, padding: [10,16,0,0],
+        scales: { x: { time: true }, y: { range: [0,1] } },
+        series: [{}, { label: 'score', stroke: 'hsl(185, 80%, 55%)', width: 1.8, fill: 'hsla(185, 80%, 50%, 0.20)' },
+                     { label: 'threshold', stroke: 'hsl(35, 85%, 60%)', width: 1.2, dash: [4,3] }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>x.toFixed(2)) }],
+      }, [xs, ys, thr], host);
+      const pk = Math.max(...ys);
+      $('#a-hist-sub').textContent = xs.length + ' samples · peak ' + pk.toFixed(2) + ' at ' + fmtTs(xs[ys.indexOf(pk)]*1000);
+    }
+    buildHist();
+
+    // Live updater
+    live.anomalies = function () {
+      $('#a-kpi-mean').textContent = (scoreHistory.reduce((a,b)=>a+b.score,0)/scoreHistory.length).toFixed(2);
+      $('#a-kpi-above').textContent = scoreHistory.filter(p => p.score > 0.5).length;
+      const pk2 = Math.max(...scoreHistory.map(p => p.score));
+      $('#a-kpi-peak').textContent = pk2.toFixed(2);
+      if (anomHistPlot && anomHistMode === '24h') {
+        const { xs, ys } = buildHistData();
+        anomHistPlot.setData([xs, ys, ys.map(()=>0.5)]);
+        const pk = Math.max(...ys);
+        $('#a-hist-sub').textContent = xs.length + ' samples · peak ' + pk.toFixed(2) + ' at ' + fmtTs(xs[ys.indexOf(pk)]*1000);
+      }
+    };
+    $$('#a-range-tabs .pill-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        $$('#a-range-tabs .pill-tab').forEach(x => x.classList.remove('on'));
+        t.classList.add('on');
+        anomHistMode = t.getAttribute('data-rng');
+        buildHist();
+      });
+    });
+
+    // Distribution
+    const bins = Array(10).fill(0);
+    sc.forEach(v => bins[Math.min(9, Math.floor(v*10))]++);
+    const dmax = Math.max(...bins);
+    $('#a-dist').innerHTML = bins.map((n, i) => {
+      const lo = (i/10).toFixed(1), hi = ((i+1)/10).toFixed(1);
+      const cls = i >= 6 ? 'danger' : (i >= 4 ? 'warn' : '');
+      return '<div class="dist-row"><span class="rng">'+lo+'–'+hi+'</span><div class="bar"><div class="fill '+cls+'" style="width:'+(n/dmax*100||0).toFixed(1)+'%"></div></div><span class="n">'+n+'</span></div>';
+    }).join('');
+    const sorted = [...sc].sort((a,b)=>a-b);
+    const pct = q => sorted[Math.floor(sorted.length*q)] || 0;
+    $('#a-p50').textContent = pct(0.50).toFixed(2);
+    $('#a-p90').textContent = pct(0.90).toFixed(2);
+    $('#a-p99').textContent = pct(0.99).toFixed(2);
+    $('#a-pmax').textContent = peak.toFixed(2);
+
+    function buildTod(){
+      if (typeof uPlot === 'undefined'){ setTimeout(buildTod, 80); return; }
+      const host = $('#chart-tod');
+      if (!host.offsetWidth){ setTimeout(buildTod, 80); return; }
+      const hours = Array.from({length:24}, (_,i)=>i);
+      const sums = Array(24).fill(0), counts = Array(24).fill(0);
+      scoreHistory.forEach(p => { const h = new Date(p.ts*1000).getHours(); sums[h] += p.score; counts[h]++; });
+      const avgs = hours.map(h => counts[h] ? sums[h]/counts[h] : 0);
+      const thr = avgs.map(() => 0.5);
+      host.innerHTML = '';
+      new uPlot({
+        width: host.clientWidth, height: 220, padding: [8,12,0,0],
+        scales: { x: { time: false }, y: { range: [0,1] } },
+        series: [{ value: (u,v)=>String(v).padStart(2,'0')+':00' },
+                 { label: 'avg score', stroke: 'hsl(185, 80%, 55%)', width: 1.8, fill: 'hsla(185, 80%, 50%, 0.15)' },
+                 { label: 'threshold', stroke: 'hsl(35, 85%, 60%)', width: 1.2, dash: [4,3] }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>String(x).padStart(2,'0')) },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u,v)=>v.map(x=>x.toFixed(2)) }],
+      }, [hours, avgs, thr], host);
+    }
+    buildTod();
+
+    const anoms = events.filter(e => e.type === 'anomaly_score').slice(0, 12);
+    if (!anoms.length){
+      $('#a-anom-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:hsl(var(--muted-foreground))">No anomalies detected</td></tr>';
+    } else {
+      $('#a-anom-tbody').innerHTML = anoms.map(a => {
+        const m = a.msg.match(/cell=([\w/:]+)/);
+        const cell = m ? m[1] : '—';
+        return '<tr><td>'+escapeHtml(fmtTs(a.ts))+'</td><td>'+a.score.toFixed(2)+'</td><td>'+severityBadge(a.score)+'</td><td>'+escapeHtml(cell)+'</td><td>'+escapeHtml(a.msg)+'</td></tr>';
+      }).join('');
+    }
+    $('#a-tbl-sub').textContent = anoms.length + ' rows · sorted newest first';
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Events panel
+  // ──────────────────────────────────────────────────────────────
+  let evtFilter = 'all';
+  let evtPaused = false;
+  let evtSearch = '';
+  function initEvents(){
+    $('#e-kpi-total').textContent = events.length;
+    $('#e-kpi-anom').textContent = events.filter(e => e.type === 'anomaly_score').length;
+    $('#e-kpi-dev').textContent = events.filter(e => e.type === 'routine_deviation').length;
+    $('#e-kpi-prof').textContent = events.filter(e => e.type === 'profile_update').length;
+
+    const sorted = [...events].sort((a,b)=>a.ts-b.ts);
+    const t0 = sorted[0].ts, t1 = sorted[sorted.length-1].ts;
+    const range = (t1 - t0) || 1;
+    const W = 1000;
+    const lanes = { profile_update: 22, routine_deviation: 50, anomaly_score: 78 };
+    const colors = { profile_update: 'hsl(142, 70%, 55%)', routine_deviation: 'hsl(35, 85%, 60%)', anomaly_score: 'hsl(0, 70%, 60%)' };
+    const tl = [];
+    Object.entries(lanes).forEach(([k, y]) => {
+      tl.push('<line x1="80" y1="'+y+'" x2="'+W+'" y2="'+y+'" stroke="hsl(220, 15%, 18%)" stroke-width="1" stroke-dasharray="2 2"/>');
+      tl.push('<text x="74" y="'+(y+3)+'" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(215, 15%, 55%)">'+k.replace('_',' ')+'</text>');
+    });
+    sorted.forEach(e => {
+      const x = 80 + ((e.ts - t0)/range)*(W-90);
+      const y = lanes[e.type];
+      const r = e.score != null ? Math.max(2, 2 + e.score*4) : 2.5;
+      tl.push('<circle cx="'+x.toFixed(1)+'" cy="'+y+'" r="'+r+'" fill="'+colors[e.type]+'" opacity="0.85"><title>'+e.type+' · '+fmtTs(e.ts)+'</title></circle>');
+    });
+    const tickAt = f => {
+      const x = 80 + f*(W-90), t = t0 + range*f;
+      return '<line x1="'+x+'" y1="90" x2="'+x+'" y2="94" stroke="hsl(215, 15%, 55%)"/><text x="'+x+'" y="99" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="hsl(215, 15%, 55%)">'+fmtTs(t).slice(11,16)+'</text>';
+    };
+    tl.push(tickAt(0), tickAt(0.5), tickAt(1));
+    $('#e-timeline').innerHTML = tl.join('');
+    $('#e-tl-sub').textContent = events.length + ' events spanning ' + Math.round(range/60_000) + 'm';
+
+    function renderStream(flashIds){
+      let list = events.slice();
+      if (evtFilter !== 'all') list = list.filter(e => e.type === evtFilter);
+      if (evtSearch){
+        const q = evtSearch.toLowerCase();
+        list = list.filter(e => e.msg.toLowerCase().includes(q) || e.type.includes(q));
+      }
+      list = list.slice(0, 60);
+      if (!list.length){
+        $('#e-stream').innerHTML = '<div class="empty-card compact"><p>No events match the current filter.</p></div>';
+      } else {
+        $('#e-stream').innerHTML = list.map(e => {
+          const cls = e.type === 'anomaly_score' ? 'anomaly' : (e.type === 'routine_deviation' ? 'deviation' : 'profile');
+          const isNew = flashIds && flashIds.has(e.id) ? ' new' : '';
+          const sc = e.score != null ? e.score.toFixed(2) : '—';
+          return '<div class="evt-row '+cls+isNew+'"><span class="ts">'+escapeHtml(fmtTs(e.ts))+'</span><span class="ev">'+escapeHtml(e.type)+'</span><span class="meta" title="'+escapeHtml(e.msg)+'">'+escapeHtml(e.msg)+'</span><span class="sc">'+sc+'</span></div>';
+        }).join('');
+      }
+      $('#e-stream-sub').textContent = list.length + ' shown · ' + events.length + ' total · ' + (evtPaused ? 'paused' : 'live');
+    }
+    renderStream();
+
+    // Live updater
+    live.events = function (flashIds) {
+      $('#e-kpi-total').textContent = events.length;
+      $('#e-kpi-anom').textContent = events.filter(e => e.type === 'anomaly_score').length;
+      $('#e-kpi-dev').textContent = events.filter(e => e.type === 'routine_deviation').length;
+      $('#e-kpi-prof').textContent = events.filter(e => e.type === 'profile_update').length;
+      if (!evtPaused) renderStream(flashIds);
+    };
+
+    $$('#e-filter-tabs .pill-tab').forEach(b => {
+      b.onclick = () => {
+        $$('#e-filter-tabs .pill-tab').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        evtFilter = b.getAttribute('data-f');
+        renderStream();
+      };
+    });
+    const sInput = $('#e-search');
+    sInput.oninput = (e) => { evtSearch = e.target.value.trim(); renderStream(); };
+    $('#e-clear-search').onclick = () => { sInput.value = ''; evtSearch = ''; renderStream(); };
+    const pauseBtn = $('#e-pause-btn');
+    pauseBtn.onclick = () => {
+      evtPaused = !evtPaused;
+      pauseBtn.innerHTML = evtPaused
+        ? '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>Resume'
+        : '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause';
+      renderStream();
+    };
+    $('#e-export-btn').onclick = () => {
+      const data = JSON.stringify(events.map(e => ({ ts: new Date(e.ts).toISOString(), type: e.type, score: e.score, msg: e.msg })), null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'behavioral-profiler-events.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Profile panel
+  // ──────────────────────────────────────────────────────────────
+  function initProfile(){
+    const CLUSTERS = [
+      { name: 'morning_routine', color: 'hsl(35, 85%, 60%)',  curve: h => Math.max(0, Math.min(1, 0.15 + 0.85*Math.exp(-Math.pow((h-7.5)/2.0, 2)))) },
+      { name: 'midday_quiet',    color: 'hsl(220, 70%, 60%)', curve: h => Math.max(0, Math.min(1, 0.55*Math.exp(-Math.pow((h-12.5)/2.6, 2)) + 0.08)) },
+      { name: 'evening_peak',    color: 'hsl(185, 80%, 55%)', curve: h => Math.max(0, Math.min(1, 0.10 + 0.92*Math.exp(-Math.pow((h-19.5)/2.2, 2)))) },
+      { name: 'night_low',       color: 'hsl(280, 60%, 65%)', curve: h => Math.max(0, Math.min(1, 0.20*Math.exp(-Math.pow((h-2)/3, 2)) + 0.05)) },
+      { name: 'weekend_pattern', color: 'hsl(142, 70%, 55%)', curve: h => Math.max(0, Math.min(1, 0.45 + 0.4*Math.sin((h-6)/24*Math.PI*1.4) + ((h>6 && h<22) ? 0.15 : -0.1))) },
+    ];
+    const W = 800, H = 280, pad = { l: 36, r: 16, t: 16, b: 32 };
+    const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+    const parts = [];
+    parts.push('<line x1="'+pad.l+'" y1="'+(H-pad.b)+'" x2="'+(W-pad.r)+'" y2="'+(H-pad.b)+'" stroke="hsl(220, 15%, 18%)"/>');
+    parts.push('<line x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(H-pad.b)+'" stroke="hsl(220, 15%, 18%)"/>');
+    for (let i = 0; i <= 4; i++){
+      const y = pad.t + (ih/4)*i;
+      parts.push('<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="hsl(220, 15%, 18%)" stroke-dasharray="2 3"/>');
+      parts.push('<text x="'+(pad.l-6)+'" y="'+(y+3)+'" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(215, 15%, 55%)">'+(1-i/4).toFixed(2)+'</text>');
+    }
+    for (let h = 0; h <= 24; h += 3){
+      const x = pad.l + (h/24)*iw;
+      parts.push('<line x1="'+x+'" y1="'+(H-pad.b)+'" x2="'+x+'" y2="'+(H-pad.b+4)+'" stroke="hsl(215, 15%, 55%)"/>');
+      parts.push('<text x="'+x+'" y="'+(H-pad.b+16)+'" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="hsl(215, 15%, 55%)">'+String(h).padStart(2,'0')+'</text>');
+    }
+    CLUSTERS.forEach(c => {
+      const pts = [];
+      for (let h = 0; h <= 24; h += 0.25){
+        const v = c.curve(h);
+        const x = pad.l + (h/24)*iw;
+        const y = pad.t + (1-v)*ih;
+        pts.push(x.toFixed(1)+','+y.toFixed(1));
+      }
+      parts.push('<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c.color+'" stroke-width="2" stroke-linejoin="round"/>');
+      let pkH = 0, pkV = 0;
+      for (let h = 0; h <= 24; h += 0.5){ const v = c.curve(h); if (v > pkV){ pkV = v; pkH = h; } }
+      const cx = pad.l + (pkH/24)*iw, cy = pad.t + (1-pkV)*ih;
+      parts.push('<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="4" fill="'+c.color+'" stroke="hsl(220 25% 6%)" stroke-width="1.5"/>');
+    });
+    $('#p-clusters').innerHTML = parts.join('');
+    $('#p-cluster-legend').innerHTML = CLUSTERS.map(c => '<span style="display:inline-flex;align-items:center;gap:0.4rem"><span style="width:10px;height:10px;border-radius:2px;background:'+c.color+'"></span>'+c.name+'</span>').join('');
+
+    const WEIGHTS = [
+      { name: 'csi_presence',       v: 0.34, cls: '' },
+      { name: 'motion_intensity',   v: 0.22, cls: '' },
+      { name: 'hour_of_day_match',  v: 0.18, cls: 'accent' },
+      { name: 'cluster_distance',   v: 0.14, cls: 'accent' },
+      { name: 'breathing_variance', v: 0.08, cls: 'warn' },
+      { name: 'duration_drift',     v: 0.04, cls: 'warn' },
+    ];
+    $('#p-weights').innerHTML = WEIGHTS.map(w => '<div class="bar-row"><span>'+w.name+'</span><div class="bar-bar"><div class="bar-fill '+w.cls+'" style="width:'+(w.v*100).toFixed(1)+'%"></div></div><span class="nbr">'+(w.v*100).toFixed(0)+'%</span></div>').join('');
+
+    function updateImpact(){
+      const thr = parseInt($('#p-thr-slider').value, 10) / 100;
+      const smooth = parseInt($('#p-smooth-slider').value, 10);
+      $('#p-thr-val').textContent = thr.toFixed(2);
+      $('#p-smooth-val').textContent = smooth + ' min';
+      const sc = scoreHistory.map(p => p.score);
+      const above = sc.filter(v => v > thr).length;
+      const perDay = above;
+      const fp = Math.max(0.005, Math.pow(1-thr, 2)*0.4 / Math.max(1, smooth/5));
+      const latency = Math.max(1, Math.round(smooth*(thr < 0.4 ? 0.5 : 1.0)));
+      $('#p-impact-above').textContent = above;
+      $('#p-impact-alerts').textContent = perDay;
+      $('#p-impact-fp').textContent = (fp*100).toFixed(1) + '%';
+      $('#p-impact-latency').textContent = latency + ' min';
+      $('#p-thr-impact').textContent = 'Crossings above ' + thr.toFixed(2) + ' emit a routine_deviation event. Predicted ' + perDay + ' alerts/day at current sensitivity.';
+    }
+    $('#p-thr-slider').oninput = updateImpact;
+    $('#p-smooth-slider').oninput = updateImpact;
+    updateImpact();
+
+    $('#p-retrain-btn').onclick = () => {
+      const b = $('#p-retrain-btn');
+      b.disabled = true; b.textContent = 'Retraining…';
+      setTimeout(() => {
+        b.disabled = false;
+        b.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.4" fill="none"><polyline points="20 6 9 17 4 12"/></svg>Retrained';
+        setTimeout(() => { b.textContent = 'Force retrain'; }, 2500);
+      }, 1200);
+    };
+
+    function buildUpdates(){
+      if (typeof uPlot === 'undefined'){ setTimeout(buildUpdates, 80); return; }
+      const host = $('#chart-updates');
+      if (!host.offsetWidth){ setTimeout(buildUpdates, 80); return; }
+      const now = Math.floor(Date.now()/1000);
+      const xs = [], ys = [];
+      const rng = (() => { let s = 21; return () => { s = (s*9301 + 49297) % 233280; return s/233280; }; })();
+      for (let i = 13; i >= 0; i--){ xs.push(now - i*86400); ys.push(Math.round(14 + rng()*8)); }
+      host.innerHTML = '';
+      new uPlot({
+        width: host.clientWidth, height: 220, padding: [8,12,0,0],
+        scales: { x: { time: true } },
+        series: [{}, { label: 'updates', stroke: 'hsl(142, 70%, 55%)', width: 1.8, fill: 'hsla(142, 70%, 50%, 0.20)', points: { show: true, size: 4, stroke: 'hsl(142, 70%, 65%)', fill: 'hsl(220, 25%, 6%)' } }],
+        axes: [{ stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+               { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } }],
+      }, [xs, ys], host);
+    }
+    buildUpdates();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Details panel
+  // ──────────────────────────────────────────────────────────────
+  function initDetails(){
+    const KEY = 'profiler_installed';
+    function refresh(){
+      const btn = $('#d-install-btn'), tag = $('#d-install-status');
+      if (localStorage.getItem(KEY) === '1'){
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><polyline points="20 6 9 17 4 12"/></svg>Installed';
+        btn.classList.remove('primary'); btn.classList.add('outline');
+        tag.style.display = '';
+      } else {
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Install';
+        btn.classList.add('primary'); btn.classList.remove('outline');
+        tag.style.display = 'none';
+      }
+    }
+    refresh();
+    $('#d-install-btn').onclick = () => {
+      if (localStorage.getItem(KEY) === '1') localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY, '1');
+      refresh();
+    };
+    $('#d-copy-src').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText('cognitum-one/cogs/src/cogs/behavioral-profiler');
+        const b = $('#d-copy-src'), orig = b.innerHTML;
+        b.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.4" fill="none"><polyline points="20 6 9 17 4 12"/></svg>Copied';
+        setTimeout(() => { b.innerHTML = orig; }, 1500);
+      } catch (_) {}
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Router
+  // ──────────────────────────────────────────────────────────────
+  const ROUTES = {
+    overview:  { init: initOverview,  done: false },
+    baseline:  { init: initBaseline,  done: false },
+    anomalies: { init: initAnomalies, done: false },
+    events:    { init: initEvents,    done: false },
+    profile:   { init: initProfile,   done: false },
+    details:   { init: initDetails,   done: false },
+  };
+
+  function showRoute(name){
+    if (!ROUTES[name]) name = 'overview';
+    $$('.panel').forEach(p => p.classList.remove('on'));
+    $('#panel-' + name).classList.add('on');
+    $$('#nav a').forEach(a => a.classList.toggle('active', a.getAttribute('data-route') === name));
+    if (!ROUTES[name].done){
+      ROUTES[name].init();
+      ROUTES[name].done = true;
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  function currentRoute(){
+    const h = (location.hash || '').replace(/^#\/?/, '').toLowerCase();
+    return ROUTES[h] ? h : 'overview';
+  }
+
+  // Wire any [data-route] element (nav, footer links, inline CTAs)
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-route]');
+    if (!t) return;
+    e.preventDefault();
+    const route = t.getAttribute('data-route');
+    if (location.hash.replace(/^#\/?/, '') === route){
+      // same route, force re-show
+      showRoute(route);
+    } else {
+      location.hash = '#/' + route;
+    }
+  });
+  window.addEventListener('hashchange', () => showRoute(currentRoute()));
+
+  // Set hrefs on nav anchors so links look clickable
+  $$('#nav a[data-route]').forEach(a => a.setAttribute('href', '#/' + a.getAttribute('data-route')));
+  $$('a[data-route]').forEach(a => { if (!a.hasAttribute('href')) a.setAttribute('href', '#/' + a.getAttribute('data-route')); });
+
+  // ──────────────────────────────────────────────────────────────
+  // Global live simulator — runs every TICK_MS, mutates shared state,
+  // then asks the active panel to redraw.
+  // ──────────────────────────────────────────────────────────────
+  const EVT_MSGS = {
+    anomaly_score: [
+      'score=%S  cell=Mon/19:30  z=0.6σ  presence_csi',
+      'score=%S  cell=Tue/03:00  z=3.2σ  presence_csi',
+      'score=%S  cell=Wed/13:00  z=2.1σ  absence',
+      'score=%S  cell=Fri/23:00  z=2.8σ  motion+presence',
+      'score=%S  cell=Sat/08:15  z=1.9σ  early_motion',
+      'score=%S  cell=Thu/16:45  z=1.7σ  occupancy_drift',
+    ],
+    routine_deviation: [
+      'cluster=morning_routine  delta=+0.27  hours_shifted=1.4',
+      'cluster=evening_peak     delta=-0.18  duration_short',
+      'cluster=midday_quiet     delta=+0.31  unexpected_motion',
+      'cluster=night_low        delta=+0.42  presence_03:00',
+      'cluster=weekend_pattern  delta=-0.12  reduced_activity',
+    ],
+    profile_update: [
+      'samples=%N  rev=0.9.0+%R  retrain_window=7d',
+      'samples=%N  rev=0.9.0+%R  partial_update',
+      'samples=%N  rev=0.9.0+%R  weight_decay=0.02',
+      'samples=%N  rev=0.9.0+%R  hourly_bin_smooth',
+    ],
+  };
+
+  function simulate() {
+    // 1. New anomaly score sample with momentum + small drift + rare spikes.
+    const prev = scoreHistory[scoreHistory.length - 1].score;
+    const hr = new Date().getHours();
+    let bias = 0.08;
+    if (hr >= 6 && hr < 10) bias = 0.18;
+    else if (hr >= 17 && hr < 23) bias = 0.22;
+    const drift = (Math.random() - 0.5) * 0.06;
+    const spike = Math.random() < 0.045 ? (0.35 + Math.random() * 0.4) : 0;
+    let next = prev * 0.65 + bias * 0.35 + drift + spike;
+    next = Math.max(0.02, Math.min(0.97, next));
+    const nowSec = Math.floor(Date.now() / 1000);
+    scoreHistory.push({ ts: nowSec, score: next });
+    if (scoreHistory.length > 288) scoreHistory.shift();
+    stats.anomaly_score_current = next;
+    stats.anomaly_score_max_24h = Math.max(...scoreHistory.map(p => p.score));
+    stats.last_update_ts = Date.now();
+
+    // 2. Sensor jitter — small random walks; sparklines roll.
+    SENSORS.forEach(sensor => {
+      const last = sensor.spark[sensor.spark.length - 1];
+      let v;
+      if (sensor.name === 'motion_pir') {
+        v = Math.random() < 0.18 ? 1 : 0;
+        sensor.value = v ? 'active' : 'idle';
+      } else {
+        const step = (Math.random() - 0.5) * (sensor.name === 'csi_breathing' ? 0.4 : 0.06);
+        v = Math.max(0, last + step);
+        if (sensor.name === 'csi_presence') { v = Math.max(0.55, Math.min(0.95, v)); sensor.value = v.toFixed(2); }
+        else if (sensor.name === 'csi_breathing') { v = Math.max(11, Math.min(18, v)); sensor.value = v.toFixed(1); }
+        else if (sensor.name === 'motion_accel') { v = Math.max(0, Math.min(0.2, v)); sensor.value = v.toFixed(2); }
+      }
+      sensor.spark.push(v);
+      if (sensor.spark.length > 12) sensor.spark.shift();
+    });
+
+    // 3. Maybe drop a new event. Spike score → anomaly_score event;
+    //    routine_deviation when score crosses threshold; profile_update otherwise.
+    const flashed = new Set();
+    let emitNew = false;
+    let eventType = null;
+    if (spike > 0 && next > 0.45) {
+      eventType = next >= 0.5 ? (Math.random() < 0.6 ? 'anomaly_score' : 'routine_deviation') : 'anomaly_score';
+      emitNew = true;
+    } else if (Math.random() < 0.22) {
+      eventType = Math.random() < 0.7 ? 'profile_update' : 'routine_deviation';
+      emitNew = true;
+    }
+    if (emitNew) {
+      const pool = EVT_MSGS[eventType];
+      let msg = pool[Math.floor(Math.random() * pool.length)];
+      let evScore = null;
+      if (eventType === 'anomaly_score') {
+        evScore = next;
+        msg = msg.replace('%S', next.toFixed(2));
+      } else if (eventType === 'routine_deviation') {
+        const m = msg.match(/delta=([+-][\d.]+)/);
+        if (m) evScore = Math.abs(parseFloat(m[1]));
+      } else if (eventType === 'profile_update') {
+        stats.profile_revisions += 1;
+        stats.baseline_samples += Math.floor(Math.random() * 4 + 1);
+        msg = msg.replace('%N', stats.baseline_samples.toLocaleString()).replace('%R', stats.profile_revisions);
+      }
+      const ev = { id: ++eventSeq, ts: Date.now(), type: eventType, msg, score: evScore };
+      events.unshift(ev);
+      if (events.length > 200) events.length = 200;
+      flashed.add(ev.id);
+      stats.anomalies_24h = events.filter(e => e.type === 'anomaly_score').length;
+      stats.deviations_24h = events.filter(e => e.type === 'routine_deviation').length;
+    }
+    return flashed;
+  }
+
+  let tickHandle = null;
+  function startTick() {
+    if (tickHandle) return;
+    tickHandle = setInterval(() => {
+      try {
+        const flashed = simulate();
+        const r = currentRoute();
+        if (live[r]) live[r](flashed);
+      } catch (_) { /* swallow render errors so the loop keeps going */ }
+    }, TICK_MS);
+  }
+
+  showRoute(currentRoute());
+  startTick();
+})();
+</script>
+</body>
+</html>

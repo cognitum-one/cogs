@@ -1,0 +1,3272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dream Stage — Sleep Stage Classification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* ── Template tokens (mirror cognitum-one/management) ── */
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --glow-primary:185 80% 50%;
+  --glow-accent:142 70% 50%;
+
+  /* ── Sleep-stage palette, drawn from template chip hues ── */
+  --stage-awake:35 85% 60%;
+  --stage-rem:280 70% 60%;
+  --stage-nrem1:185 80% 55%;
+  --stage-nrem2:220 75% 60%;
+  --stage-deep:142 70% 50%;
+
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+  background-image:
+    radial-gradient(ellipse at top right, hsl(185 70% 12% / 0.35), transparent 60%),
+    radial-gradient(ellipse at bottom left, hsl(142 60% 10% / 0.25), transparent 60%);
+  background-attachment:fixed;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.85);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:36px;height:36px;border-radius:0.5rem;
+  background:linear-gradient(135deg,hsl(var(--primary) / 0.18),hsl(var(--accent) / 0.14));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;
+  border:1px solid hsl(var(--primary) / 0.3);
+  box-shadow:0 0 22px hsl(var(--primary) / 0.3);
+}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.live-pill{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.25rem 0.55rem;border-radius:9999px;
+  background:hsl(0 70% 55% / 0.12);color:hsl(0 80% 70%);
+  border:1px solid hsl(0 70% 55% / 0.3);
+  font-size:0.6875rem;font-family:var(--font-mono);
+  margin-left:0.5rem;
+}
+.live-pill .pulse-dot{
+  width:6px;height:6px;border-radius:50%;background:hsl(0 80% 60%);
+  animation:livePulse 1.4s ease-in-out infinite;
+}
+@keyframes livePulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.6);opacity:0.6}
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav button{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.4rem 0.85rem;border-radius:0.45rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;background:none;border:1px solid transparent;
+  font-family:var(--font-display);
+  cursor:pointer;transition:all 0.2s;
+}
+.nav button:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav button.active{
+  color:hsl(var(--primary-foreground));background:hsl(var(--primary));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 14px -4px hsl(var(--primary) / 0.5);
+}
+.nav button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.panel{display:none;animation:fadeIn 0.3s ease}
+.panel.on{display:block}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+h1.page{font-size:1.75rem;font-weight:600;margin-bottom:0.35rem;display:flex;align-items:center;gap:0.5rem}
+h1.page .moon{font-size:1.5rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.5rem;max-width:54rem}
+
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+  font-family:var(--font-mono);
+}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:0.875rem;gap:0.5rem;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* KPI grid */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+  position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(135deg,hsl(var(--primary) / 0.05),transparent 50%);
+  pointer-events:none;
+}
+.kpi-ic{
+  width:42px;height:42px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;
+  border:1px solid hsl(var(--primary) / 0.2);
+}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12);border-color:hsl(var(--accent) / 0.2)}
+.kpi-ic.rem{background:hsl(var(--stage-rem) / 0.15);border-color:hsl(var(--stage-rem) / 0.3)}
+.kpi-ic.deep{background:hsl(var(--stage-deep) / 0.15);border-color:hsl(var(--stage-deep) / 0.3)}
+.kpi-info{flex:1;min-width:0;position:relative;z-index:1}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono)}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.15;margin-top:0.125rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+.kpi-sub.up{color:hsl(142 70% 60%)}
+.kpi-sub.down{color:hsl(0 70% 65%)}
+
+/* Stage badge */
+.stage-pill{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.35rem 0.7rem;border-radius:9999px;
+  font-size:0.75rem;font-weight:600;
+  font-family:var(--font-mono);
+  border:1px solid transparent;
+}
+.stage-pill.s-awake{background:hsl(var(--stage-awake) / 0.15);color:hsl(var(--stage-awake));border-color:hsl(var(--stage-awake) / 0.3)}
+.stage-pill.s-rem{background:hsl(var(--stage-rem) / 0.15);color:hsl(var(--stage-rem));border-color:hsl(var(--stage-rem) / 0.3)}
+.stage-pill.s-nrem1{background:hsl(var(--stage-nrem1) / 0.15);color:hsl(var(--stage-nrem1));border-color:hsl(var(--stage-nrem1) / 0.3)}
+.stage-pill.s-nrem2{background:hsl(var(--stage-nrem2) / 0.15);color:hsl(var(--stage-nrem2));border-color:hsl(var(--stage-nrem2) / 0.3)}
+.stage-pill.s-deep{background:hsl(var(--stage-deep) / 0.15);color:hsl(var(--stage-deep));border-color:hsl(var(--stage-deep) / 0.3)}
+.stage-pill .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:livePulse 1.6s ease-in-out infinite}
+
+/* Layout grids */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-wide{display:grid;gap:0.875rem;grid-template-columns:2fr 1fr}
+@media (max-width:900px){.grid-wide{grid-template-columns:1fr}}
+
+/* Chart areas */
+.chart-host{width:100%;height:200px;position:relative}
+.chart-host.tall{height:260px}
+.chart-host.short{height:140px}
+canvas{display:block;width:100%;height:100%}
+
+/* Current-stage KPI accent */
+#kpi-stage-card{
+  border-color:hsl(var(--primary) / 0.4);
+  box-shadow:0 0 18px -6px hsl(var(--primary) / 0.35);
+}
+#kpi-stage-card .kpi-ic{
+  background:hsl(var(--primary) / 0.18);
+  border-color:hsl(var(--primary) / 0.35);
+  animation:stageBreath 4s ease-in-out infinite;
+}
+@keyframes stageBreath{
+  0%,100%{box-shadow:0 0 0 hsl(var(--primary) / 0)}
+  50%{box-shadow:0 0 14px hsl(var(--primary) / 0.55)}
+}
+
+/* Event list */
+.evt-list{display:flex;flex-direction:column;gap:0.4rem}
+.evt-row{
+  display:grid;grid-template-columns:80px 130px 1fr auto;gap:0.625rem;
+  align-items:center;padding:0.5rem 0.625rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.4rem;
+  font-family:var(--font-mono);font-size:0.75rem;
+  animation:slideIn 0.35s ease;
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateX(-6px)}
+  to{opacity:1;transform:translateX(0)}
+}
+.evt-row .ts{color:hsl(var(--muted-foreground))}
+.evt-row .ev{font-weight:600;color:hsl(var(--accent))}
+.evt-row .desc{color:hsl(var(--foreground))}
+@media (max-width:700px){
+  .evt-row{grid-template-columns:1fr 1fr}
+}
+
+/* Stage distribution donut */
+.donut-wrap{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.donut-svg{flex-shrink:0;filter:drop-shadow(0 0 12px hsl(var(--primary) / 0.25))}
+.donut-legend{display:flex;flex-direction:column;gap:0.5rem;flex:1;min-width:160px}
+.donut-row{display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem}
+.donut-row .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.donut-row .lbl{flex:1;color:hsl(var(--foreground))}
+.donut-row .pct{font-family:var(--font-mono);color:hsl(var(--muted-foreground));font-size:0.75rem}
+.donut-row .dur{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.8);margin-left:0.5rem}
+
+/* Heatmap (CSI subcarriers) */
+.csi-heatmap{
+  display:grid;gap:1px;
+  grid-template-columns:repeat(48,1fr);
+  grid-auto-rows:8px;
+}
+.csi-cell{background:hsl(var(--muted));border-radius:1px;transition:background 0.15s}
+
+/* Night cards (history) */
+.night-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:0.625rem;
+}
+.night-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:0.75rem 0.875rem 0.625rem;
+  cursor:pointer;transition:all 0.2s;
+  display:flex;flex-direction:column;gap:0.4rem;
+  position:relative;overflow:hidden;
+}
+.night-card:hover{
+  border-color:hsl(var(--primary) / 0.5);
+  transform:translateY(-3px);
+  box-shadow:0 12px 24px -10px hsl(var(--primary) / 0.45);
+}
+.night-card.today{
+  border-color:hsl(var(--primary) / 0.55);
+  box-shadow:0 0 18px -4px hsl(var(--primary) / 0.35);
+}
+.night-card.today::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,hsl(var(--primary)),transparent);
+  animation:scanBeam 2.4s ease-in-out infinite;
+}
+@keyframes scanBeam{
+  0%,100%{opacity:0.2;transform:translateX(-30%)}
+  50%{opacity:1;transform:translateX(30%)}
+}
+.nc-live{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.05rem 0.4rem;border-radius:9999px;
+  background:hsl(var(--primary) / 0.15);
+  border:1px solid hsl(var(--primary) / 0.4);
+  font-family:var(--font-mono);font-size:0.5625rem;
+  letter-spacing:0.08em;color:hsl(var(--primary));
+  font-weight:600;
+}
+.nc-live::before{
+  content:"";width:5px;height:5px;border-radius:50%;
+  background:hsl(var(--primary));
+  box-shadow:0 0 4px hsl(var(--primary) / 0.6);
+  animation:livePulse 1.4s ease-in-out infinite;
+}
+.night-card .nc-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:0.5rem;flex-wrap:wrap;
+}
+.night-card .nc-date{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.06em;
+  display:inline-flex;align-items:center;gap:0.4rem;flex-wrap:wrap;
+}
+.night-card .nc-q{
+  font-family:var(--font-mono);font-size:0.9375rem;font-weight:600;
+  color:hsl(var(--accent));
+  text-shadow:0 0 6px hsl(var(--accent) / 0.4);
+}
+.night-card canvas{width:100%;height:56px;display:block}
+.night-card .nc-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+  border-top:1px dashed hsl(var(--border) / 0.5);
+  padding-top:0.4rem;
+}
+.night-card .nc-dur{color:hsl(var(--foreground));font-weight:500}
+.night-card .nc-rem{color:hsl(var(--stage-rem))}
+.night-card .nc-deep{color:hsl(var(--stage-deep))}
+
+/* Device card */
+.dev-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.dev-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+}
+.dev-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;gap:0.5rem}
+.dev-name{font-size:0.9375rem;font-weight:600;display:flex;align-items:center;gap:0.4rem}
+.dev-name .chip-emo{font-size:1.1rem}
+.dev-meta{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.85}
+.dev-meta .l{color:hsl(var(--muted-foreground) / 0.6);margin-right:0.4rem;text-transform:uppercase;font-size:0.625rem;letter-spacing:0.05em}
+.dev-meta strong{color:hsl(var(--foreground));font-weight:500}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.15rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+  font-family:var(--font-mono);
+}
+.badge.online{background:hsl(142 70% 50% / 0.12);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.3)}
+.badge.offline{background:hsl(0 70% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 70% 50% / 0.3)}
+.badge.cat-health{background:hsl(0 70% 55% / 0.12);color:hsl(0 80% 75%);border-color:hsl(0 70% 55% / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));display:inline-block}
+.dot.up{background:hsl(142 70% 55%);box-shadow:0 0 8px hsl(142 70% 50% / 0.6)}
+.dot.down{background:hsl(0 65% 55%)}
+
+/* Buttons & inputs */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover{background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn.sm{padding:0.3rem 0.65rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 12px -4px hsl(var(--primary) / 0.5);
+}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.outline{background:transparent}
+
+input,select,textarea{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.45rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:all 0.15s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.25);
+}
+
+/* Settings rows */
+.settings-row{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:0.75rem 0;border-bottom:1px solid hsl(var(--border) / 0.35);
+}
+.settings-row:last-child{border-bottom:none}
+.settings-row .lbl{font-size:0.875rem;color:hsl(var(--foreground));font-weight:500}
+.settings-row .desc{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.settings-row .ctl{flex-shrink:0}
+.toggle{position:relative;width:42px;height:24px;cursor:pointer}
+.toggle input{position:absolute;opacity:0;pointer-events:none}
+.toggle .track{
+  position:absolute;inset:0;border-radius:9999px;
+  background:hsl(var(--muted));transition:background 0.2s;
+}
+.toggle .thumb{
+  position:absolute;top:3px;left:3px;width:18px;height:18px;
+  border-radius:50%;background:hsl(var(--foreground) / 0.9);
+  transition:transform 0.2s;
+}
+.toggle input:checked + .track{background:hsl(var(--primary))}
+.toggle input:checked + .track + .thumb{transform:translateX(18px);background:hsl(var(--primary-foreground))}
+
+/* Hypnogram legend */
+.hyp-legend{
+  display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;
+  font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);
+}
+.hyp-legend .item{display:inline-flex;align-items:center;gap:0.35rem}
+.hyp-legend .sw{width:10px;height:10px;border-radius:2px}
+
+/* Sparkline number row */
+.spark-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.spark{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:0.875rem 1rem;
+}
+.spark .lbl{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.spark .v{font-size:1.375rem;font-weight:600;font-family:var(--font-mono);color:hsl(var(--foreground));margin:0.15rem 0}
+.spark .ch{height:36px;width:100%}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.4);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Small util */
+.row-flex{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.muted{color:hsl(var(--muted-foreground))}
+.mono{font-family:var(--font-mono)}
+.tag{
+  display:inline-block;padding:0.15rem 0.5rem;border-radius:9999px;
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+  font-size:0.625rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em;
+}
+
+.confidence-bar{
+  width:100%;height:6px;background:hsl(var(--muted));border-radius:3px;
+  overflow:hidden;margin-top:0.4rem;
+}
+.confidence-bar .fill{
+  height:100%;background:linear-gradient(90deg,hsl(var(--accent)),hsl(var(--primary)));
+  transition:width 0.5s ease;
+  box-shadow:0 0 8px hsl(var(--primary) / 0.5);
+}
+
+/* Pulsing breathing visual */
+.breath-circle{
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,hsl(var(--accent) / 0.4) 0%,hsl(var(--accent) / 0.05) 60%,transparent 80%);
+  border:1px solid hsl(var(--accent) / 0.3);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  animation:breathPulse 5s ease-in-out infinite;
+  margin:0 auto;
+}
+@keyframes breathPulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 16px hsl(var(--accent) / 0.3)}
+  50%{transform:scale(1.18);box-shadow:0 0 36px hsl(var(--accent) / 0.55)}
+}
+.breath-circle .v{font-size:1.5rem;font-weight:700;font-family:var(--font-mono);color:hsl(var(--accent))}
+.breath-circle .l{font-size:0.625rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.2rem}
+
+.empty{padding:1rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.8125rem;font-style:italic}
+
+/* Night detail modal */
+.nd-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.78);
+  backdrop-filter:blur(8px);
+  align-items:flex-start;justify-content:center;
+  padding:3rem 1rem 2rem;overflow-y:auto;
+  animation:ndFade 0.18s ease;
+}
+.nd-bg.show{display:flex}
+@keyframes ndFade{
+  from{opacity:0;backdrop-filter:blur(0)}
+  to{opacity:1;backdrop-filter:blur(8px)}
+}
+.nd-modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  width:min(960px,100%);
+  padding:1.5rem 1.75rem 1.75rem;
+  position:relative;
+  box-shadow:0 24px 80px -16px hsl(var(--primary) / 0.35),0 8px 24px -8px hsl(220 25% 2% / 0.8);
+  animation:ndIn 0.22s cubic-bezier(.16,.84,.4,1.0);
+}
+@keyframes ndIn{
+  from{transform:translateY(20px) scale(0.97);opacity:0}
+  to{transform:translateY(0) scale(1);opacity:1}
+}
+.nd-modal.live{border-color:hsl(var(--primary) / 0.5)}
+.nd-close{
+  position:absolute;top:0.9rem;right:0.9rem;
+  width:32px;height:32px;border-radius:50%;
+  background:hsl(var(--secondary));border:1px solid hsl(var(--border));
+  color:hsl(var(--foreground));cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;line-height:1;transition:all 0.15s;
+}
+.nd-close:hover{background:hsl(var(--destructive) / 0.18);border-color:hsl(var(--destructive) / 0.5);color:hsl(0 80% 75%)}
+.nd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding-right:2.5rem}
+.nd-title{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));font-family:var(--font-display);line-height:1.2}
+.nd-title-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+.nd-pill-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem}
+.nd-kpis{
+  display:grid;gap:0.625rem;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  margin-bottom:1rem;
+}
+.nd-kpi{
+  background:hsl(var(--secondary) / 0.45);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;
+  padding:0.625rem 0.75rem;
+}
+.nd-kpi .lbl{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.nd-kpi .v{font-size:1.125rem;font-weight:600;color:hsl(var(--foreground));font-family:var(--font-mono);margin-top:0.1rem}
+.nd-section{margin-top:1.25rem}
+.nd-section h4{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;
+  color:hsl(var(--muted-foreground));font-weight:600;
+  margin-bottom:0.6rem;font-family:var(--font-mono);
+}
+.nd-chart{width:100%;height:240px;position:relative}
+.nd-chart canvas{display:block;width:100%;height:100%}
+.nd-grid{display:grid;gap:1rem;grid-template-columns:2fr 1fr}
+@media (max-width:760px){.nd-grid{grid-template-columns:1fr}}
+.nd-events{
+  display:flex;flex-direction:column;gap:0.35rem;
+  max-height:240px;overflow-y:auto;
+}
+.nd-evt{
+  display:grid;grid-template-columns:60px 1fr auto;gap:0.5rem;
+  align-items:center;padding:0.4rem 0.55rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.35rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+}
+.nd-evt .ts{color:hsl(var(--muted-foreground))}
+.nd-evt .ev{font-weight:600}
+.nd-evt .badge{font-size:0.5625rem}
+.nd-cards-row{display:grid;gap:0.625rem;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-top:0.5rem}
+.nd-prev{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;border-radius:50%;
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  color:hsl(var(--foreground));cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;line-height:1;
+}
+.nd-prev:hover{border-color:hsl(var(--primary) / 0.5)}
+.nd-prev.left{left:-46px}
+.nd-prev.right{right:-46px}
+@media (max-width:1080px){
+  .nd-prev.left{left:0.5rem}
+  .nd-prev.right{right:0.5rem}
+}
+.nd-prev:disabled{opacity:0.3;cursor:not-allowed}
+
+@media (max-width:700px){
+  .night-card canvas{height:48px}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><span>🌙</span></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Dream Stage<span class="brand-ver mono">v0.9.0</span></span>
+      <span class="live-pill"><span class="pulse-dot"></span><span>LIVE</span></span>
+    </div>
+    <nav class="nav" id="main-nav">
+      <button data-tab="overview" class="active">
+        <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+        Overview
+      </button>
+      <button data-tab="live">
+        <svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+        Live Monitor
+      </button>
+      <button data-tab="hypnogram">
+        <svg viewBox="0 0 24 24"><path d="M3 18l4-8 4 4 4-12 4 8 2-2"/></svg>
+        Hypnogram
+      </button>
+      <button data-tab="events">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Events
+      </button>
+      <button data-tab="history">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="6" y="12" width="3" height="6"/><rect x="11" y="8" width="3" height="10"/><rect x="16" y="4" width="3" height="14"/></svg>
+        History
+      </button>
+      <button data-tab="hardware">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+        Hardware
+      </button>
+      <button data-tab="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Settings
+      </button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ───────────── OVERVIEW ───────────── -->
+  <div class="panel on" id="panel-overview">
+    <h1 class="page"><span class="moon">🌙</span> Dream Stage</h1>
+    <p class="lede">Classifies sleep stages — REM, NREM 1/2, and deep — using motion density and breathing rate patterns captured through WiFi CSI on the ESP32-S3. No camera, no wearable; signals are drawn from ambient radio scattering.</p>
+
+    <!-- KPI strip -->
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi" id="kpi-stage-card">
+          <div class="kpi-ic" id="kpi-stage-ic">😴</div>
+          <div class="kpi-info">
+            <div class="kpi-label">Current stage</div>
+            <div class="kpi-val" id="now-stage" style="font-size:1.125rem">NREM 2</div>
+            <div class="kpi-sub" id="now-since">in stage for 14 min · cycle 3 of 5</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic">⏱️</div>
+          <div class="kpi-info">
+            <div class="kpi-label">Total sleep</div>
+            <div class="kpi-val" id="ov-total">6h 42m</div>
+            <div class="kpi-sub" id="ov-asleep">since 23:14</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic rem">🌀</div>
+          <div class="kpi-info">
+            <div class="kpi-label">REM</div>
+            <div class="kpi-val" id="ov-rem">1h 24m</div>
+            <div class="kpi-sub" id="ov-rem-pct">21%</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic deep">💤</div>
+          <div class="kpi-info">
+            <div class="kpi-label">Deep (NREM3)</div>
+            <div class="kpi-val" id="ov-deep">1h 18m</div>
+            <div class="kpi-sub" id="ov-deep-pct">19%</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent">✨</div>
+          <div class="kpi-info">
+            <div class="kpi-label">Sleep quality</div>
+            <div class="kpi-val" id="ov-quality">87 / 100</div>
+            <div class="kpi-sub" id="ov-conf">conf 0.94</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic">🫁</div>
+          <div class="kpi-info">
+            <div class="kpi-label">Breathing</div>
+            <div class="kpi-val" id="kpi-breath">13.4<small style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-left:0.2rem;font-weight:400">bpm</small></div>
+            <div class="kpi-sub" id="ov-cycles">cycle 3 of 5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini hypnogram + donut -->
+    <div class="section grid-wide">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Tonight's hypnogram</div>
+            <div class="card-sub">Live updating · started 23:14 · auto-scrolling</div>
+          </div>
+          <span class="tag">live</span>
+        </div>
+        <div class="chart-host tall"><canvas id="ov-hypnogram"></canvas></div>
+        <div class="hyp-legend">
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-awake))"></span>Awake</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-rem))"></span>REM</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem1))"></span>NREM 1</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem2))"></span>NREM 2</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-deep))"></span>Deep</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Stage distribution</div>
+            <div class="card-sub">Time spent per stage tonight</div>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" id="donut" width="160" height="160" viewBox="0 0 160 160"></svg>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Latest events -->
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent events</div>
+            <div class="card-sub">Streaming · last 5 stage transitions and detections</div>
+          </div>
+          <button class="btn sm outline" onclick="switchTab('events')">View all →</button>
+        </div>
+        <div class="evt-list" id="ov-events"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── LIVE MONITOR ───────────── -->
+  <div class="panel" id="panel-live">
+    <h1 class="page">Live Monitor</h1>
+    <p class="lede">Real-time biosignals derived from WiFi CSI scatter. Motion density, breathing rate, and per-subcarrier amplitude update at 10 Hz.</p>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Breathing waveform</div>
+            <div class="card-sub"><span id="live-bpm">13.4</span> breaths / min · variability <span class="mono">±0.4</span></div>
+          </div>
+          <div class="row-flex">
+            <span class="stage-pill s-nrem2"><span class="pulse"></span>regular</span>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="live-breath"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Motion density</div>
+            <div class="card-sub">Rolling 60s window · normalized index</div>
+          </div>
+          <div class="row-flex">
+            <span class="tag" id="motion-tag">low</span>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="live-motion"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section grid-wide">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI subcarrier amplitude</div>
+            <div class="card-sub">52 subcarriers × 200 frames · ESP32-S3 channel 6, 20 MHz</div>
+          </div>
+          <span class="tag">stream</span>
+        </div>
+        <div class="chart-host tall"><canvas id="live-csi"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Vitals</div>
+            <div class="card-sub">Derived from CSI</div>
+          </div>
+        </div>
+        <div style="margin:0.5rem 0 1rem">
+          <div class="breath-circle">
+            <div class="v" id="breath-circle-bpm">13</div>
+            <div class="l">breaths / min</div>
+          </div>
+        </div>
+        <div class="settings-row" style="padding:0.5rem 0">
+          <div>
+            <div class="lbl">Stage confidence</div>
+            <div class="desc"><span id="conf-val" class="mono">0.94</span> · classifier softmax</div>
+          </div>
+        </div>
+        <div class="confidence-bar"><div class="fill" id="conf-fill" style="width:94%"></div></div>
+        <div style="margin-top:1rem">
+          <div class="spark-grid">
+            <div class="spark">
+              <div class="lbl">Heart proxy</div>
+              <div class="v" id="hr-val">62</div>
+              <canvas class="ch" id="spark-hr"></canvas>
+            </div>
+            <div class="spark">
+              <div class="lbl">Motion idx</div>
+              <div class="v" id="mi-val">0.08</div>
+              <canvas class="ch" id="spark-mi"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── HYPNOGRAM ───────────── -->
+  <div class="panel" id="panel-hypnogram">
+    <h1 class="page">Hypnogram</h1>
+    <p class="lede">Full-night sleep architecture. Each step represents a 30-second epoch classified by the model. Hover to inspect cycles.</p>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Tonight · 23:14 → 06:00 (live)</div>
+            <div class="card-sub">5 expected cycles · currently mid-cycle 3</div>
+          </div>
+          <div class="row-flex">
+            <button class="btn sm outline" id="zoom-out">−</button>
+            <span class="mono muted" style="font-size:0.75rem">zoom</span>
+            <button class="btn sm outline" id="zoom-in">+</button>
+          </div>
+        </div>
+        <div class="chart-host tall" style="height:320px"><canvas id="hyp-big"></canvas></div>
+        <div class="hyp-legend">
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-awake))"></span>Awake</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-rem))"></span>REM</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem1))"></span>NREM 1</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem2))"></span>NREM 2</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-deep))"></span>Deep (NREM 3)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid-3">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Cycle timing</div><div class="card-sub">Per cycle, in minutes</div></div></div>
+        <div class="chart-host short"><canvas id="cycle-bars"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">REM density</div><div class="card-sub">Time-of-night histogram</div></div></div>
+        <div class="chart-host short"><canvas id="rem-density"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Deep sleep window</div><div class="card-sub">Most deep sleep in first 3 hours</div></div></div>
+        <div class="chart-host short"><canvas id="deep-density"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── EVENTS ───────────── -->
+  <div class="panel" id="panel-events">
+    <h1 class="page">Events</h1>
+    <p class="lede">Stream of classifier emissions: <code class="mono">sleep_stage</code>, <code class="mono">rem_detected</code>, <code class="mono">deep_sleep</code>, <code class="mono">sleep_quality</code>. Streaming from the cog over MCP.</p>
+
+    <div class="section grid-3">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Tonight's count</div></div></div>
+        <div style="display:flex;gap:1.25rem;flex-wrap:wrap;font-family:var(--font-mono)">
+          <div>
+            <div class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em">sleep_stage</div>
+            <div style="font-size:1.5rem;font-weight:600" id="cnt-stage">42</div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em">rem_detected</div>
+            <div style="font-size:1.5rem;font-weight:600;color:hsl(var(--stage-rem))" id="cnt-rem">2</div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em">deep_sleep</div>
+            <div style="font-size:1.5rem;font-weight:600;color:hsl(var(--stage-deep))" id="cnt-deep">2</div>
+          </div>
+          <div>
+            <div class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em">sleep_quality</div>
+            <div style="font-size:1.5rem;font-weight:600;color:hsl(var(--accent))" id="cnt-quality">1</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="grid-column:span 2">
+        <div class="card-h"><div><div class="card-title">Event rate</div><div class="card-sub">Per-minute throughput, last 30 min</div></div></div>
+        <div class="chart-host short"><canvas id="evt-rate"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Event stream</div>
+            <div class="card-sub">Auto-scrolls · newest first · click event to inspect payload</div>
+          </div>
+          <div class="row-flex">
+            <select id="evt-filter">
+              <option value="all">All events</option>
+              <option value="sleep_stage">sleep_stage</option>
+              <option value="rem_detected">rem_detected</option>
+              <option value="deep_sleep">deep_sleep</option>
+              <option value="sleep_quality">sleep_quality</option>
+            </select>
+            <button class="btn sm outline" id="evt-pause">⏸ Pause</button>
+          </div>
+        </div>
+        <div class="evt-list" id="evt-stream"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── HISTORY ───────────── -->
+  <div class="panel" id="panel-history">
+    <h1 class="page">History</h1>
+    <p class="lede">Past nights — sleep architecture and quality trends across the last 14 nights.</p>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">14-night architecture</div>
+            <div class="card-sub">Each card replays the night's hypnogram · hover to lift · tonight is live</div>
+          </div>
+          <span class="tag">14 nights</span>
+        </div>
+        <div class="night-grid" id="night-grid"></div>
+        <div class="hyp-legend" style="margin-top:1rem">
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-awake))"></span>Awake</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-rem))"></span>REM</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem1))"></span>NREM 1</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem2))"></span>NREM 2</span>
+          <span class="item"><span class="sw" style="background:hsl(var(--stage-deep))"></span>Deep</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Sleep quality trend</div><div class="card-sub">Score / 100 · rolling 14 nights</div></div></div>
+        <div class="chart-host"><canvas id="quality-trend"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Total sleep time</div><div class="card-sub">Hours per night</div></div></div>
+        <div class="chart-host"><canvas id="tst-trend"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Night detail modal -->
+    <div class="nd-bg" id="nd-bg" role="dialog" aria-modal="true">
+      <div class="nd-modal" id="nd-modal">
+        <button class="nd-close" id="nd-close" aria-label="Close">✕</button>
+        <button class="nd-prev left" id="nd-prev" aria-label="Previous night">‹</button>
+        <button class="nd-prev right" id="nd-next" aria-label="Next night">›</button>
+        <div class="nd-head">
+          <div>
+            <div class="nd-title" id="nd-title">—</div>
+            <div class="nd-title-sub" id="nd-sub">—</div>
+            <div class="nd-pill-row" id="nd-pills"></div>
+          </div>
+        </div>
+        <div class="nd-kpis" id="nd-kpis"></div>
+        <div class="nd-section">
+          <h4 id="nd-hyp-head">Hypnogram</h4>
+          <div class="nd-chart"><canvas id="nd-canvas"></canvas></div>
+          <div class="hyp-legend">
+            <span class="item"><span class="sw" style="background:hsl(var(--stage-awake))"></span>Awake</span>
+            <span class="item"><span class="sw" style="background:hsl(var(--stage-rem))"></span>REM</span>
+            <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem1))"></span>NREM 1</span>
+            <span class="item"><span class="sw" style="background:hsl(var(--stage-nrem2))"></span>NREM 2</span>
+            <span class="item"><span class="sw" style="background:hsl(var(--stage-deep))"></span>Deep</span>
+          </div>
+        </div>
+        <div class="nd-section nd-grid">
+          <div>
+            <h4>Stage timeline events</h4>
+            <div class="nd-events" id="nd-events"></div>
+          </div>
+          <div>
+            <h4>Stage distribution</h4>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+              <svg id="nd-donut" width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0"></svg>
+              <div id="nd-donut-legend" style="display:flex;flex-direction:column;gap:0.4rem;flex:1;min-width:120px;font-family:var(--font-mono);font-size:0.75rem"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── HARDWARE ───────────── -->
+  <div class="panel" id="panel-hardware">
+    <h1 class="page">Hardware</h1>
+    <p class="lede">ESP32-S3 sensor module capturing WiFi Channel State Information. CSI is fed through breathing extraction and motion-density estimators before classification.</p>
+
+    <div class="section dev-grid">
+      <div class="dev-card">
+        <div class="dev-h">
+          <div class="dev-name"><span class="chip-emo">📡</span>esp32-bedroom-01</div>
+          <span class="badge online"><span class="dot up"></span>online</span>
+        </div>
+        <div class="dev-meta">
+          <div><span class="l">model</span><strong>ESP32-S3-WROOM</strong></div>
+          <div><span class="l">firmware</span><strong>cogs-dream-stage 0.9.0</strong></div>
+          <div><span class="l">uptime</span><strong id="hw-uptime">14h 22m</strong></div>
+          <div><span class="l">wifi rssi</span><strong id="hw-rssi">-46 dBm</strong></div>
+          <div><span class="l">channel</span><strong>6 (2437 MHz, 20 MHz)</strong></div>
+        </div>
+      </div>
+      <div class="dev-card">
+        <div class="dev-h"><div class="dev-name"><span class="chip-emo">⚙️</span>CSI capture</div><span class="badge cat-health">26 KB</span></div>
+        <div class="dev-meta">
+          <div><span class="l">sample rate</span><strong>100 Hz</strong></div>
+          <div><span class="l">subcarriers</span><strong>52 (HT20)</strong></div>
+          <div><span class="l">packets / s</span><strong id="hw-pps">98.4</strong></div>
+          <div><span class="l">buffer</span><strong id="hw-buf">42 / 256</strong></div>
+        </div>
+      </div>
+      <div class="dev-card">
+        <div class="dev-h"><div class="dev-name"><span class="chip-emo">🧠</span>Classifier</div><span class="tag">int8 model</span></div>
+        <div class="dev-meta">
+          <div><span class="l">arch</span><strong>1D-CNN + GRU</strong></div>
+          <div><span class="l">params</span><strong>184k</strong></div>
+          <div><span class="l">inference</span><strong>17 ms / epoch</strong></div>
+          <div><span class="l">accuracy</span><strong>0.86 vs PSG</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Packet rate</div><div class="card-sub">CSI frames / second from ESP32</div></div></div>
+        <div class="chart-host short"><canvas id="hw-pkts"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">WiFi RSSI</div><div class="card-sub">Signal strength of probe AP</div></div></div>
+        <div class="chart-host short"><canvas id="hw-rssi-chart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Source</div>
+            <div class="card-sub">cogs-dream-stage cog spec</div>
+          </div>
+          <span class="badge cat-health">Health</span>
+        </div>
+        <pre style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.875rem;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));overflow-x:auto;line-height:1.6;margin-top:0.5rem">name: dream-stage
+version: 0.9.0
+category: health
+difficulty: hard
+size: 26 KB
+hardware:
+  - ESP32-S3
+inputs:
+  - csi.motion
+  - csi.breathing
+events:
+  - sleep_stage
+  - rem_detected
+  - deep_sleep
+  - sleep_quality
+source: cognitum-one/cogs/src/cogs/dream-stage</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── SETTINGS ───────────── -->
+  <div class="panel" id="panel-settings">
+    <h1 class="page">Settings</h1>
+    <p class="lede">Tune classifier behaviour, event emissions, and capture parameters.</p>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Classifier</div><div class="card-sub">Stage detection thresholds</div></div></div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">REM detection sensitivity</div>
+            <div class="desc">Lower = fewer false REM detections</div>
+          </div>
+          <div class="ctl row-flex">
+            <input type="range" min="0" max="100" value="65" id="s-rem" style="width:140px">
+            <span class="mono" id="s-rem-v" style="width:36px;text-align:right">0.65</span>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Deep sleep threshold</div>
+            <div class="desc">Motion-density cutoff for NREM 3</div>
+          </div>
+          <div class="ctl row-flex">
+            <input type="range" min="0" max="100" value="22" id="s-deep" style="width:140px">
+            <span class="mono" id="s-deep-v" style="width:36px;text-align:right">0.22</span>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Epoch length</div>
+            <div class="desc">Classification window in seconds</div>
+          </div>
+          <div class="ctl">
+            <select id="s-epoch">
+              <option>15s</option>
+              <option selected>30s</option>
+              <option>45s</option>
+              <option>60s</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Smoothing</div>
+            <div class="desc">Majority vote across N epochs</div>
+          </div>
+          <div class="ctl">
+            <select id="s-smooth">
+              <option>off</option>
+              <option>3 epochs</option>
+              <option selected>5 epochs</option>
+              <option>7 epochs</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Event emissions</div><div class="card-sub">What this cog publishes to the bus</div></div></div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">sleep_stage</div>
+            <div class="desc">Fires on every classified epoch</div>
+          </div>
+          <div class="ctl">
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="lbl">rem_detected</div>
+            <div class="desc">Fires once when entering a REM episode</div>
+          </div>
+          <div class="ctl">
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="lbl">deep_sleep</div>
+            <div class="desc">Fires on transitions into NREM 3</div>
+          </div>
+          <div class="ctl">
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="lbl">sleep_quality</div>
+            <div class="desc">Single end-of-night summary score</div>
+          </div>
+          <div class="ctl">
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">CSI capture</div><div class="card-sub">ESP32-S3 sensor parameters</div></div></div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Sample rate</div>
+            <div class="desc">Higher = better resolution, more power</div>
+          </div>
+          <div class="ctl">
+            <select>
+              <option>50 Hz</option>
+              <option selected>100 Hz</option>
+              <option>200 Hz</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">WiFi channel</div>
+            <div class="desc">Pick a quiet channel for cleaner CSI</div>
+          </div>
+          <div class="ctl">
+            <select>
+              <option>1 (2412 MHz)</option>
+              <option selected>6 (2437 MHz)</option>
+              <option>11 (2462 MHz)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Bandwidth</div>
+            <div class="desc">HT20 = 52 subcarriers, HT40 = 114</div>
+          </div>
+          <div class="ctl">
+            <select>
+              <option selected>HT20</option>
+              <option>HT40</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div>
+            <div class="lbl">Low-power mode</div>
+            <div class="desc">Drop sample rate when room is empty</div>
+          </div>
+          <div class="ctl">
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button class="btn outline">Discard</button>
+          <button class="btn primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cogs-dream-stage</span> &middot; <span class="mono">v0.9.0</span> &middot; <span class="mono">cognitum-one/cogs/src/cogs/dream-stage</span></div>
+    <div style="margin-top:0.4rem">Sleep stage classification (REM/NREM/deep) from motion patterns &middot; ESP32-S3 &middot; WiFi CSI</div>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────────────
+//  Tab navigation
+// ─────────────────────────────────────────────────────────────
+const navButtons = document.querySelectorAll('#main-nav button');
+function switchTab(name){
+  navButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('on', p.id === 'panel-' + name);
+  });
+  // update hash so back/forward works
+  if (location.hash.slice(1) !== name) history.replaceState(null, '', '#' + name);
+  // Scroll page so the panel's page title sits right under the appbar
+  const panel = document.getElementById('panel-' + name);
+  if (panel){
+    const title = panel.querySelector('h1.page');
+    const appbar = document.querySelector('.appbar');
+    const offset = appbar ? appbar.offsetHeight : 0;
+    if (title){
+      const top = title.getBoundingClientRect().top + window.scrollY - offset - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+  // when switching to a panel, force chart resize so it grabs the new size
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+}
+navButtons.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+const initial = (location.hash.slice(1)) || 'overview';
+if (['overview','live','hypnogram','events','history','hardware','settings'].includes(initial)){
+  switchTab(initial);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Theme tokens (mirror CSS variables for canvas)
+// ─────────────────────────────────────────────────────────────
+const C = {
+  bg: 'hsl(220,25%,6%)',
+  border: 'rgba(255,255,255,0.08)',
+  grid: 'rgba(180,220,255,0.05)',
+  gridStrong: 'rgba(185,220,255,0.12)',
+  muted: 'rgba(200,215,235,0.45)',
+  fg: 'rgba(225,235,245,0.92)',
+  primary: 'hsl(185,80%,50%)',
+  accent: 'hsl(142,70%,50%)',
+  stages: {
+    awake: 'hsl(35,85%,60%)',
+    rem:   'hsl(280,70%,60%)',
+    nrem1: 'hsl(185,80%,55%)',
+    nrem2: 'hsl(220,75%,60%)',
+    deep:  'hsl(142,70%,50%)',
+  }
+};
+const STAGE_LEVEL = { awake:5, rem:4, nrem1:3, nrem2:2, deep:1 };
+const STAGE_LABELS = { 5:'Awake', 4:'REM', 3:'NREM 1', 2:'NREM 2', 1:'Deep' };
+const LEVEL_TO_STAGE = { 5:'awake', 4:'rem', 3:'nrem1', 2:'nrem2', 1:'deep' };
+const STAGE_EMOJI = { awake:'☕', rem:'🌀', nrem1:'🌥️', nrem2:'😴', deep:'💤' };
+
+// ─────────────────────────────────────────────────────────────
+//  Canvas helpers (HiDPI)
+// ─────────────────────────────────────────────────────────────
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w: rect.width, h: rect.height };
+}
+function clear(c){ c.ctx.clearRect(0,0,c.w,c.h); }
+
+// ─────────────────────────────────────────────────────────────
+//  Build a full-night hypnogram (synthetic but realistic)
+// ─────────────────────────────────────────────────────────────
+function generateNightHypnogram(epochs, currentEpoch){
+  // epochs: total 30-sec epochs (e.g. ~820 for 6h50)
+  const out = [];
+  // cycle approx ~90 min = 180 epochs; 5 cycles
+  for (let i=0;i<epochs;i++){
+    const cycleEpochs = 180;
+    const c = Math.floor(i / cycleEpochs);
+    const pos = (i % cycleEpochs) / cycleEpochs; // 0..1 within cycle
+    let level;
+    // First few minutes — sleep onset
+    if (i < 6) level = 3;            // NREM 1
+    else if (i < 20 && c === 0) level = 2;
+    // within a cycle: nrem2 -> deep (more early in night) -> nrem2 -> rem
+    else if (pos < 0.15) level = 2;
+    else if (pos < 0.45) {
+      // deep more likely in early cycles
+      const deepProb = c === 0 ? 0.95 : c === 1 ? 0.7 : c === 2 ? 0.4 : 0.1;
+      level = (Math.random() < deepProb) ? 1 : 2;
+    }
+    else if (pos < 0.75) level = 2;
+    else if (pos < 0.95) {
+      // REM longer in later cycles
+      const remDur = c === 0 ? 0.5 : c === 1 ? 0.7 : c === 2 ? 0.8 : 0.9;
+      level = (pos > (0.95 - 0.2*remDur)) ? 4 : 2;
+    }
+    else level = 2;
+    // small chance of brief awake
+    if (Math.random() < 0.005 && i > 50) level = 5;
+    out.push(level);
+  }
+  // Smooth small spikes
+  for (let i=1;i<out.length-1;i++){
+    if (out[i] !== out[i-1] && out[i] !== out[i+1] && out[i-1] === out[i+1]){
+      out[i] = out[i-1];
+    }
+  }
+  // Trim to currentEpoch (rest is "future / unknown")
+  return out.slice(0, currentEpoch);
+}
+
+// State
+const TOTAL_EPOCHS = 820;           // ~6h50
+let CURRENT_EPOCH = 410;            // ~3h25 into night → mid cycle 3
+let HYP = generateNightHypnogram(TOTAL_EPOCHS, CURRENT_EPOCH);
+
+// ─────────────────────────────────────────────────────────────
+//  Time helpers
+// ─────────────────────────────────────────────────────────────
+const SLEEP_START_MIN = 23 * 60 + 14; // 23:14
+function epochToTime(e){
+  const totalMin = SLEEP_START_MIN + Math.floor(e * 0.5); // 30s epochs
+  const m = totalMin % (24*60);
+  const hh = Math.floor(m/60).toString().padStart(2,'0');
+  const mm = (m%60).toString().padStart(2,'0');
+  return hh + ':' + mm;
+}
+function fmtClock(d){
+  return d.toTimeString().slice(0,8);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Reusable axis painter
+// ─────────────────────────────────────────────────────────────
+function drawAxes(c, padL, padR, padT, padB, opts){
+  const { ctx, w, h } = c;
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  // y gridlines
+  const yLines = opts.yLines || 4;
+  for (let i=0;i<=yLines;i++){
+    const y = padT + (h - padT - padB) * (i / yLines);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Hypnogram — smoothed glowing trace (no bars, no step lines)
+// ─────────────────────────────────────────────────────────────
+function drawHypnogram(canvas, opts = {}){
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c;
+  clear(c);
+
+  const padL = 56, padR = 16, padT = 18, padB = 28;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const data = opts.data || HYP;
+  const total = opts.total || (opts.data ? data.length : TOTAL_EPOCHS);
+  const showFuture = opts.showFuture !== false;
+  const startMin = (opts.startMin !== undefined) ? opts.startMin : SLEEP_START_MIN;
+  const N = data.length;
+  if (N === 0) return;
+
+  // ── Background: dotted holographic grid ──────────────────
+  ctx.save();
+  ctx.fillStyle = 'rgba(133,193,233,0.10)';
+  const dotStep = 14;
+  for (let x = padL; x < w - padR; x += dotStep){
+    for (let y = padT; y < h - padB; y += dotStep){
+      ctx.beginPath(); ctx.arc(x, y, 0.7, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // ── Stage bands (soft horizontal washes) ─────────────────
+  for (let lvl=1; lvl<=5; lvl++){
+    const y = padT + plotH * (1 - (lvl-1)/4);
+    const band = plotH / 4 / 2;
+    const stage = LEVEL_TO_STAGE[lvl];
+    const col = C.stages[stage];
+    const g = ctx.createLinearGradient(padL, y - band, padL, y + band);
+    g.addColorStop(0, col.replace(')', ',0)').replace('hsl','hsla'));
+    g.addColorStop(0.5, col.replace(')', ',0.06)').replace('hsl','hsla'));
+    g.addColorStop(1, col.replace(')', ',0)').replace('hsl','hsla'));
+    ctx.fillStyle = g;
+    ctx.fillRect(padL, y - band, plotW, band*2);
+    // mid-line
+    ctx.strokeStyle = col.replace(')', ',0.18)').replace('hsl','hsla');
+    ctx.setLineDash([2,4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Y-axis stage labels ──────────────────────────────────
+  ctx.font = '600 10px Outfit, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let lvl=1; lvl<=5; lvl++){
+    const y = padT + plotH * (1 - (lvl-1)/4);
+    const stage = LEVEL_TO_STAGE[lvl];
+    ctx.fillStyle = C.stages[stage];
+    ctx.shadowColor = C.stages[stage];
+    ctx.shadowBlur = 6;
+    ctx.fillText(STAGE_LABELS[lvl].toUpperCase(), padL - 8, y);
+    ctx.shadowBlur = 0;
+  }
+
+  // ── X-axis time markers ──────────────────────────────────
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = C.muted;
+  ctx.font = '10px JetBrains Mono, monospace';
+  const tStep = total > 600 ? 120 : Math.max(60, Math.round(total / 8));
+  const localEpochToTime = (e) => {
+    const totalMin = startMin + Math.floor(e * 0.5);
+    const m = ((totalMin % (24*60)) + (24*60)) % (24*60);
+    const hh = Math.floor(m/60).toString().padStart(2,'0');
+    const mm = (m%60).toString().padStart(2,'0');
+    return hh + ':' + mm;
+  };
+  for (let e=0; e<=total; e += tStep){
+    const x = padL + (e / total) * plotW;
+    if (x > w - padR) break;
+    ctx.strokeStyle = 'rgba(133,193,233,0.06)';
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+    // tick
+    ctx.fillStyle = C.muted;
+    ctx.fillText(localEpochToTime(e), x, h - padB + 6);
+  }
+
+  // ── Smoothed sample path: convert step data to a soft curve
+  // Levels 1..5 → y; smooth between transitions over a window
+  const ramp = 6; // epochs of ease in/out at each transition
+  const pts = []; // {x,y,lvl}
+  let prevLvl = data[0];
+  for (let i=0; i<N; i++){
+    const lvl = data[i];
+    let interpolated = lvl;
+    if (lvl !== prevLvl){
+      // already changed — handled smoothly by sampling nearby epochs
+    }
+    pts.push({
+      i,
+      x: padL + (i / total) * plotW,
+      y: padT + plotH * (1 - (lvl-1)/4),
+      lvl,
+    });
+    prevLvl = lvl;
+  }
+  // Apply smoothing pass on y values
+  const ySmooth = pts.map(p => p.y);
+  for (let pass=0; pass<2; pass++){
+    const next = ySmooth.slice();
+    for (let i=1; i<ySmooth.length-1; i++){
+      next[i] = ySmooth[i-1]*0.25 + ySmooth[i]*0.5 + ySmooth[i+1]*0.25;
+    }
+    for (let i=0;i<ySmooth.length;i++) ySmooth[i] = next[i];
+  }
+
+  // Catmull-Rom → bezier
+  function pathSmooth(){
+    ctx.beginPath();
+    if (pts.length < 2) return;
+    ctx.moveTo(pts[0].x, ySmooth[0]);
+    for (let i=0; i<pts.length-1; i++){
+      const p0 = pts[Math.max(0,i-1)];
+      const p1 = pts[i];
+      const p2 = pts[i+1];
+      const p3 = pts[Math.min(pts.length-1,i+2)];
+      const y0 = ySmooth[Math.max(0,i-1)];
+      const y1 = ySmooth[i];
+      const y2 = ySmooth[i+1];
+      const y3 = ySmooth[Math.min(pts.length-1,i+2)];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = y1 + (y2 - y0) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = y2 - (y3 - y1) / 6;
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, y2);
+    }
+  }
+
+  // ── Underlay filled area (subtle gradient) ───────────────
+  pathSmooth();
+  ctx.lineTo(pts[pts.length-1].x, padT + plotH);
+  ctx.lineTo(pts[0].x, padT + plotH);
+  ctx.closePath();
+  const fillGrad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  fillGrad.addColorStop(0, 'hsla(185,80%,55%,0.16)');
+  fillGrad.addColorStop(1, 'hsla(220,30%,10%,0)');
+  ctx.fillStyle = fillGrad;
+  ctx.fill();
+
+  // ── Glow stroke (3 passes) ───────────────────────────────
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const pass of [
+    { w: 10, alpha: 0.10, color: 'hsl(185,90%,60%)' },
+    { w: 5,  alpha: 0.30, color: 'hsl(185,90%,65%)' },
+    { w: 1.8, alpha: 1.0, color: 'hsl(185,95%,75%)' },
+  ]){
+    pathSmooth();
+    ctx.globalAlpha = pass.alpha;
+    ctx.strokeStyle = pass.color;
+    ctx.lineWidth = pass.w;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // ── Recolor segments by stage on top (chromatic overlay) ─
+  // Walk the path again drawing per-stage segment recolored
+  let segStart = 0;
+  for (let i=1; i<=N; i++){
+    if (i === N || data[i] !== data[segStart]){
+      const lvl = data[segStart];
+      const stage = LEVEL_TO_STAGE[lvl];
+      ctx.beginPath();
+      ctx.moveTo(pts[segStart].x, ySmooth[segStart]);
+      for (let j=segStart; j<i-1; j++){
+        const p0 = pts[Math.max(0,j-1)];
+        const p1 = pts[j], p2 = pts[j+1];
+        const p3 = pts[Math.min(N-1,j+2)];
+        const y0 = ySmooth[Math.max(0,j-1)];
+        const y1 = ySmooth[j];
+        const y2 = ySmooth[j+1];
+        const y3 = ySmooth[Math.min(N-1,j+2)];
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = y1 + (y2 - y0) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = y2 - (y3 - y1) / 6;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, y2);
+      }
+      ctx.strokeStyle = C.stages[stage];
+      ctx.shadowColor = C.stages[stage];
+      ctx.shadowBlur = 10;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      segStart = i;
+    }
+  }
+
+  // ── NOW marker: scanning beam + comet head ───────────────
+  if (showFuture && N < total){
+    const x = pts[N-1].x;
+    const y = ySmooth[N-1];
+    // future area (subtle hatch)
+    ctx.fillStyle = 'rgba(180,220,255,0.025)';
+    ctx.fillRect(x, padT, (w - padR) - x, plotH);
+    // vertical scan beam
+    const beam = ctx.createLinearGradient(x-12, 0, x+12, 0);
+    beam.addColorStop(0, 'hsla(185,90%,70%,0)');
+    beam.addColorStop(0.5, 'hsla(185,90%,75%,0.5)');
+    beam.addColorStop(1, 'hsla(185,90%,70%,0)');
+    ctx.fillStyle = beam;
+    ctx.fillRect(x-12, padT, 24, plotH);
+
+    // scanning particles falling
+    const t = performance.now() / 1000;
+    for (let k=0; k<6; k++){
+      const py = padT + ((t * 60 + k*30) % plotH);
+      ctx.globalAlpha = 0.5 - (k*0.06);
+      ctx.fillStyle = 'hsl(185,90%,75%)';
+      ctx.beginPath(); ctx.arc(x, py, 1.6, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // comet head
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now()/280);
+    const lastStage = LEVEL_TO_STAGE[data[N-1]];
+    const headCol = C.stages[lastStage];
+    // outer halo
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, 24);
+    halo.addColorStop(0, headCol.replace(')', ',0.7)').replace('hsl','hsla'));
+    halo.addColorStop(1, headCol.replace(')', ',0)').replace('hsl','hsla'));
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(x, y, 22 + 6*pulse, 0, Math.PI*2); ctx.fill();
+    // core
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = headCol;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.stroke();
+
+    // NOW label
+    ctx.font = '600 9px JetBrains Mono, monospace';
+    ctx.fillStyle = 'hsl(185,90%,80%)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    if (x + 8 < w - padR - 36){
+      ctx.fillText('▸ NOW · ' + STAGE_LABELS[data[N-1]].toUpperCase(), x + 10, padT + 12);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Donut chart
+// ─────────────────────────────────────────────────────────────
+function renderDonut(){
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  HYP.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const total = HYP.length;
+  const segments = [
+    ['awake','Awake'],
+    ['rem','REM'],
+    ['nrem1','NREM 1'],
+    ['nrem2','NREM 2'],
+    ['deep','Deep'],
+  ];
+  const svg = document.getElementById('donut');
+  const cx = 80, cy = 80, r = 56, w = 16;
+  let acc = 0;
+  let html = '<defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  html += '<circle cx="80" cy="80" r="56" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="16"/>';
+
+  segments.forEach(([key, lbl]) => {
+    const frac = total ? counts[key] / total : 0;
+    if (frac < 0.001) return;
+    const a0 = -Math.PI/2 + acc * Math.PI * 2;
+    const a1 = -Math.PI/2 + (acc + frac) * Math.PI * 2;
+    acc += frac;
+    const lar = (a1 - a0) > Math.PI ? 1 : 0;
+    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    html += `<path d="M ${x0} ${y0} A ${r} ${r} 0 ${lar} 1 ${x1} ${y1}" fill="none" stroke="${C.stages[key]}" stroke-width="16" stroke-linecap="round"/>`;
+  });
+
+  // Center text
+  const sleepEpochs = HYP.filter(l => l !== 5).length;
+  const mins = sleepEpochs * 0.5;
+  const hh = Math.floor(mins / 60);
+  const mm = Math.floor(mins % 60);
+  html += `<text x="80" y="78" fill="${C.fg}" font-size="20" font-family="JetBrains Mono, monospace" text-anchor="middle" font-weight="600">${hh}h ${mm}m</text>`;
+  html += `<text x="80" y="96" fill="${C.muted}" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle" letter-spacing="1">TOTAL SLEEP</text>`;
+  svg.innerHTML = html;
+
+  // Legend
+  const legend = document.getElementById('donut-legend');
+  legend.innerHTML = segments.map(([key, lbl]) => {
+    const frac = total ? counts[key]/total : 0;
+    const dur = counts[key] * 0.5;
+    const dh = Math.floor(dur/60), dm = Math.floor(dur%60);
+    const durStr = dh > 0 ? `${dh}h ${dm}m` : `${dm}m`;
+    return `<div class="donut-row">
+      <span class="swatch" style="background:${C.stages[key]}"></span>
+      <span class="lbl">${lbl}</span>
+      <span class="pct">${(frac*100).toFixed(1)}%</span>
+      <span class="dur">${durStr}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Breathing waveform (Live monitor)
+// ─────────────────────────────────────────────────────────────
+const BREATH_BUF = new Array(300).fill(0);
+let BREATH_PHASE = 0;
+let BREATH_BPM = 13.4;
+function tickBreath(){
+  BREATH_PHASE += (BREATH_BPM / 60) * 0.1; // 10Hz tick
+  const noise = (Math.random()-0.5) * 0.05;
+  const v = Math.sin(BREATH_PHASE * Math.PI * 2) * 0.85 + noise;
+  BREATH_BUF.shift(); BREATH_BUF.push(v);
+}
+function drawBreathChart(){
+  const canvas = document.getElementById('live-breath');
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const padL = 30, padR = 10, padT = 10, padB = 20;
+  const pw = w - padL - padR, ph = h - padT - padB;
+
+  // grid
+  ctx.strokeStyle = C.grid;
+  for (let i=0;i<=4;i++){
+    const y = padT + ph*i/4;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+  }
+  ctx.fillStyle = C.muted;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ['+1','0','-1'].forEach((l,i) => ctx.fillText(l, padL-4, padT + ph*i/2));
+
+  // Filled area
+  ctx.beginPath();
+  ctx.moveTo(padL, padT + ph/2);
+  BREATH_BUF.forEach((v,i) => {
+    const x = padL + (i / (BREATH_BUF.length-1)) * pw;
+    const y = padT + ph/2 - v * (ph/2 - 4);
+    if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  const grad = ctx.createLinearGradient(0, padT, 0, padT+ph);
+  grad.addColorStop(0, 'hsla(185,80%,55%,0.4)');
+  grad.addColorStop(1, 'hsla(185,80%,55%,0)');
+  ctx.lineTo(padL + pw, padT + ph/2);
+  ctx.lineTo(padL, padT + ph/2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Stroke
+  ctx.beginPath();
+  BREATH_BUF.forEach((v,i) => {
+    const x = padL + (i / (BREATH_BUF.length-1)) * pw;
+    const y = padT + ph/2 - v * (ph/2 - 4);
+    if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = C.accent;
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = C.accent;
+  ctx.shadowBlur = 8;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Tail dot
+  const last = BREATH_BUF[BREATH_BUF.length - 1];
+  const lx = padL + pw;
+  const ly = padT + ph/2 - last * (ph/2 - 4);
+  ctx.fillStyle = C.accent;
+  ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI*2); ctx.fill();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Motion density (Live monitor)
+// ─────────────────────────────────────────────────────────────
+const MOTION_BUF = new Array(180).fill(0);
+let MOTION_BASE = 0.08;
+function tickMotion(){
+  // current stage
+  const lvl = HYP[HYP.length-1] || 2;
+  if (lvl === 5) MOTION_BASE = 0.6;
+  else if (lvl === 4) MOTION_BASE = 0.22;
+  else if (lvl === 3) MOTION_BASE = 0.14;
+  else if (lvl === 2) MOTION_BASE = 0.08;
+  else MOTION_BASE = 0.03;
+  const v = Math.max(0, MOTION_BASE + (Math.random()-0.5) * 0.06 + (Math.random() < 0.02 ? Math.random()*0.4 : 0));
+  MOTION_BUF.shift(); MOTION_BUF.push(v);
+}
+function drawMotionChart(){
+  const canvas = document.getElementById('live-motion');
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const padL = 38, padR = 14, padT = 14, padB = 22;
+  const pw = w - padL - padR, ph = h - padT - padB;
+
+  // ── Holographic dot grid ─────────────────────────────────
+  ctx.fillStyle = 'rgba(133,193,233,0.08)';
+  for (let x = padL; x < w - padR; x += 16){
+    for (let y = padT; y < h - padB; y += 16){
+      ctx.beginPath(); ctx.arc(x, y, 0.6, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // ── Axis scale (subtle) ──────────────────────────────────
+  ctx.fillStyle = C.muted;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ['1.0','0.5','0'].forEach((l,i) => ctx.fillText(l, padL-4, padT + ph*i/2));
+
+  // ── Threshold guides ────────────────────────────────────
+  [
+    { y: 0.18, label: 'REM', color: C.stages.rem },
+    { y: 0.40, label: 'WAKE', color: C.stages.awake },
+  ].forEach(t => {
+    const yt = padT + ph * (1 - t.y);
+    ctx.setLineDash([3,5]);
+    ctx.strokeStyle = t.color.replace(')', ',0.35)').replace('hsl','hsla');
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, yt); ctx.lineTo(w-padR, yt); ctx.stroke();
+    ctx.setLineDash([]);
+    // label
+    ctx.fillStyle = t.color;
+    ctx.font = '600 9px JetBrains Mono, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(t.label, w - padR - 4, yt - 2);
+  });
+
+  const N = MOTION_BUF.length;
+  const xAt = i => padL + (i / (N-1)) * pw;
+  const yAt = v => padT + ph - Math.min(1, v) * (ph - 4) - 2;
+
+  // ── Two layered area waves (aurora effect) ───────────────
+  function smoothPath(buf, offset){
+    ctx.beginPath();
+    for (let i=0;i<buf.length;i++){
+      const x = xAt(i);
+      const v = buf[i] + offset;
+      const y = yAt(v);
+      if (i===0) ctx.moveTo(x,y);
+      else {
+        const px = xAt(i-1);
+        const py = yAt(buf[i-1] + offset);
+        const cx = (px + x) / 2;
+        ctx.quadraticCurveTo(cx, py, cx, (py+y)/2);
+      }
+    }
+  }
+
+  // Back layer (broader, dimmer)
+  smoothPath(MOTION_BUF, 0.0);
+  ctx.lineTo(xAt(N-1), padT + ph);
+  ctx.lineTo(xAt(0), padT + ph);
+  ctx.closePath();
+  const gBack = ctx.createLinearGradient(0, padT, 0, padT + ph);
+  gBack.addColorStop(0, 'hsla(185,80%,55%,0.45)');
+  gBack.addColorStop(0.5,'hsla(280,70%,60%,0.18)');
+  gBack.addColorStop(1, 'hsla(220,30%,10%,0)');
+  ctx.fillStyle = gBack;
+  ctx.fill();
+
+  // Front bright line — 3-pass glow
+  for (const pass of [
+    { w: 10, alpha: 0.10, color: 'hsl(185,90%,60%)' },
+    { w: 5,  alpha: 0.30, color: 'hsl(185,90%,65%)' },
+    { w: 1.8, alpha: 1.0, color: 'hsl(185,95%,80%)' },
+  ]){
+    smoothPath(MOTION_BUF, 0.0);
+    ctx.globalAlpha = pass.alpha;
+    ctx.strokeStyle = pass.color;
+    ctx.lineWidth = pass.w;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Leading comet head
+  const last = MOTION_BUF[N-1];
+  const lx = xAt(N-1), ly = yAt(last);
+  const halo = ctx.createRadialGradient(lx, ly, 0, lx, ly, 22);
+  let headCol;
+  if (last > 0.4) headCol = C.stages.awake;
+  else if (last > 0.18) headCol = C.stages.rem;
+  else headCol = C.primary;
+  halo.addColorStop(0, headCol.replace(')', ',0.7)').replace('hsl','hsla'));
+  halo.addColorStop(1, headCol.replace(')', ',0)').replace('hsl','hsla'));
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(lx, ly, 18, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI*2); ctx.fill();
+
+  // ── Spike particles when motion is high ──────────────────
+  if (last > 0.18){
+    const t = performance.now()/1000;
+    for (let k=0;k<5;k++){
+      const drift = ((t*40 + k*60) % 80);
+      const px = lx - drift;
+      const py = ly + Math.sin(t*3 + k) * 4;
+      ctx.globalAlpha = 0.6 - drift/120;
+      ctx.fillStyle = headCol;
+      ctx.beginPath(); ctx.arc(px, py, 1.2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ── Update DOM tags ──────────────────────────────────────
+  const tag = document.getElementById('motion-tag');
+  if (tag){
+    if (last > 0.4)      { tag.textContent = 'high';   tag.style.color = 'hsl(35,85%,70%)'; }
+    else if (last > 0.18){ tag.textContent = 'medium'; tag.style.color = 'hsl(280,70%,75%)'; }
+    else                 { tag.textContent = 'low';    tag.style.color = 'hsl(185,80%,70%)'; }
+  }
+  const miv = document.getElementById('mi-val');
+  if (miv) miv.textContent = last.toFixed(2);
+  const kpiM = document.getElementById('kpi-motion');
+  if (kpiM) kpiM.innerHTML = last.toFixed(2) + '<small>idx</small>';
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CSI heatmap (subcarriers × frames)
+// ─────────────────────────────────────────────────────────────
+const CSI_FRAMES = 200, CSI_SUBC = 52;
+const CSI_DATA = [];
+function initCsi(){
+  for (let i=0;i<CSI_FRAMES;i++){
+    const frame = [];
+    for (let s=0;s<CSI_SUBC;s++){
+      // smooth across subcarriers + slight time drift
+      const v = 0.5 + 0.35 * Math.sin(s/8 + i/30) + (Math.random()-0.5)*0.2;
+      frame.push(Math.max(0, Math.min(1, v)));
+    }
+    CSI_DATA.push(frame);
+  }
+}
+initCsi();
+function tickCsi(){
+  CSI_DATA.shift();
+  const i = CSI_DATA.length;
+  const t = performance.now() / 1000;
+  const frame = [];
+  for (let s=0;s<CSI_SUBC;s++){
+    const breath = Math.sin(t * BREATH_BPM / 60 * Math.PI * 2 + s/12) * 0.18;
+    const noise = (Math.random()-0.5) * 0.18;
+    const slow = Math.sin(t*0.1 + s/9) * 0.2;
+    const v = 0.5 + breath + noise + slow;
+    frame.push(Math.max(0, Math.min(1, v)));
+  }
+  CSI_DATA.push(frame);
+}
+function drawCsi(){
+  const canvas = document.getElementById('live-csi');
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+
+  // ── Holographic backdrop ────────────────────────────────
+  ctx.fillStyle = 'rgba(133,193,233,0.06)';
+  for (let x = 0; x < w; x += 20){
+    for (let y = 0; y < h; y += 20){
+      ctx.beginPath(); ctx.arc(x, y, 0.5, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // Subsample CSI for performance and a cleaner ridge look
+  const FRAME_STEP = 4;             // every 4th frame
+  const SUBC_STEP = 1;              // every subcarrier
+  const frames = [];
+  for (let i=0; i<CSI_FRAMES; i+=FRAME_STEP) frames.push(i);
+  const subs = [];
+  for (let s=0; s<CSI_SUBC; s+=SUBC_STEP) subs.push(s);
+
+  // Isometric projection params
+  const padL = 60, padR = 24, padT = 16, padB = 30;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+  const F = frames.length, S = subs.length;
+
+  // Project (i, s, amp) → screen (x, y)
+  // i is "depth" (time), s is "across" (subcarrier), amp is "height"
+  const cellW = plotW / (S + F * 0.4);
+  const cellD = plotH / (F * 0.55 + S * 0.05);
+  const heightScale = plotH * 0.35;
+  const tilt = 0.36;     // depth tilt factor
+
+  function project(i, s, amp){
+    const sx = padL + s * cellW + i * cellW * 0.4;
+    const sy = padT + plotH - i * cellD * tilt * 0.85 - amp * heightScale - s * cellW * 0.06;
+    return [sx, sy];
+  }
+
+  // Floor grid (subtle iso wireframe)
+  ctx.strokeStyle = 'rgba(133,193,233,0.10)';
+  ctx.lineWidth = 0.7;
+  for (let s=0; s<S; s+=8){
+    const [x0,y0] = project(0, s, 0);
+    const [x1,y1] = project(F-1, s, 0);
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  }
+  for (let i=0; i<F; i+=10){
+    const [x0,y0] = project(i, 0, 0);
+    const [x1,y1] = project(i, S-1, 0);
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  }
+
+  // Render ridge lines, back-to-front
+  for (let fi = F-1; fi >= 0; fi--){
+    const i = frames[fi];
+    const row = CSI_DATA[i];
+    // Build path along subcarriers for this frame
+    const pts = [];
+    for (let si = 0; si < S; si++){
+      const s = subs[si];
+      const amp = row[s];
+      pts.push({ p: project(fi, si, amp), amp });
+    }
+
+    // Filled ribbon down to floor for this row
+    ctx.beginPath();
+    ctx.moveTo(pts[0].p[0], pts[0].p[1]);
+    for (let k=1; k<pts.length; k++){
+      const a = pts[k-1].p, b = pts[k].p;
+      const midX = (a[0]+b[0])/2;
+      ctx.quadraticCurveTo(midX, a[1], b[0], b[1]);
+    }
+    const [fx, fy] = project(fi, S-1, 0);
+    ctx.lineTo(fx, fy);
+    const [fx0, fy0] = project(fi, 0, 0);
+    ctx.lineTo(fx0, fy0);
+    ctx.closePath();
+
+    // Ribbon gradient by depth — recent frames brighter (front)
+    const depth = fi / (F-1);                // 0 = oldest, 1 = newest
+    const front = 1 - depth;
+    const alpha = 0.10 + front * 0.45;
+    const ribbon = ctx.createLinearGradient(0, 0, 0, h);
+    ribbon.addColorStop(0, `hsla(185,90%,60%,${alpha})`);
+    ribbon.addColorStop(0.6, `hsla(142,70%,50%,${alpha*0.5})`);
+    ribbon.addColorStop(1, 'hsla(220,30%,10%,0)');
+    ctx.fillStyle = ribbon;
+    ctx.fill();
+
+    // Ridge line on top
+    ctx.beginPath();
+    ctx.moveTo(pts[0].p[0], pts[0].p[1]);
+    for (let k=1; k<pts.length; k++){
+      const a = pts[k-1].p, b = pts[k].p;
+      const midX = (a[0]+b[0])/2;
+      ctx.quadraticCurveTo(midX, a[1], b[0], b[1]);
+    }
+    // Glow proportional to recency
+    const lineAlpha = 0.4 + front * 0.6;
+    ctx.strokeStyle = `hsla(185,95%,${65 + front*15}%,${lineAlpha})`;
+    ctx.shadowColor = 'hsl(185,90%,60%)';
+    ctx.shadowBlur = 4 + front * 8;
+    ctx.lineWidth = 0.8 + front * 0.8;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Peak markers on the newest few rows
+    if (fi >= F - 3){
+      for (let k=0; k<pts.length; k++){
+        if (pts[k].amp > 0.7){
+          ctx.fillStyle = `hsla(142,70%,70%,${lineAlpha})`;
+          ctx.beginPath(); ctx.arc(pts[k].p[0], pts[k].p[1], 1.6, 0, Math.PI*2); ctx.fill();
+        }
+      }
+    }
+  }
+
+  // Axes labels
+  ctx.fillStyle = C.muted;
+  ctx.font = '600 9px JetBrains Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  // subcarrier labels along the front edge
+  for (let si = 0; si < S; si += 13){
+    const [x,y] = project(0, si, 0);
+    ctx.fillText('sc' + subs[si], x - 6, y + 4);
+  }
+  // time labels along the side
+  ctx.textAlign = 'left';
+  for (let fi = 0; fi < F; fi += Math.floor(F/4)){
+    const [x,y] = project(fi, S-1, 0);
+    const secs = Math.round((CSI_FRAMES - frames[fi]) / 5);
+    ctx.fillText('−' + secs + 's', x + 8, y - 4);
+  }
+
+  // Title corner
+  ctx.fillStyle = 'hsla(185,90%,75%,0.85)';
+  ctx.font = '600 9px JetBrains Mono, monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('CSI · 52 subcarriers · waterfall', padL, padT - 2);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Sparklines (heart proxy, motion idx)
+// ─────────────────────────────────────────────────────────────
+const HR_BUF = new Array(60).fill(62);
+const MI_BUF = new Array(60).fill(0.08);
+function tickSparks(){
+  HR_BUF.shift();
+  HR_BUF.push(62 + (Math.random()-0.5)*2 + Math.sin(performance.now()/2000)*1.5);
+  MI_BUF.shift();
+  MI_BUF.push(MOTION_BUF[MOTION_BUF.length-1]);
+  document.getElementById('hr-val').textContent = Math.round(HR_BUF[HR_BUF.length-1]);
+}
+function drawSpark(canvasId, buf, color){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const min = Math.min(...buf), max = Math.max(...buf);
+  const range = max - min || 1;
+  ctx.beginPath();
+  buf.forEach((v,i) => {
+    const x = (i / (buf.length-1)) * w;
+    const y = h - ((v - min)/range) * (h-4) - 2;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+  // fill
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, color.replace(')', ',0.3)').replace('hsl','hsla'));
+  g.addColorStop(1, color.replace(')', ',0)').replace('hsl','hsla'));
+  ctx.fillStyle = g; ctx.fill();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Cycle bars (hypnogram panel)
+// ─────────────────────────────────────────────────────────────
+function drawCycleBars(){
+  const canvas = document.getElementById('cycle-bars');
+  if (!canvas) return;
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  // Derive cycle durations live from HYP: every 180 epochs = 90 min
+  const cycles = [];
+  for (let i=0;i<5;i++){
+    const start = i*180, end = Math.min((i+1)*180, HYP.length);
+    if (end <= start) { cycles.push(0); continue; }
+    cycles.push((end - start) * 0.5); // minutes
+  }
+  const padL = 22, padR = 8, padT = 8, padB = 22;
+  const pw = w - padL - padR, ph = h - padT - padB;
+  const maxV = 120;
+  const barW = pw / cycles.length;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = C.muted;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+
+  const currentCycleIdx = Math.min(4, Math.floor((HYP.length-1) / 180));
+  cycles.forEach((v,i) => {
+    const x = padL + i*barW + 6;
+    const bw = barW - 12;
+    const bh = (v/maxV) * ph;
+    const y = padT + ph - bh;
+    if (v === 0){
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillRect(x, padT + ph - 4, bw, 4);
+    } else {
+      const grad = ctx.createLinearGradient(0, padT, 0, padT+ph);
+      grad.addColorStop(0, 'hsl(185,80%,55%)');
+      grad.addColorStop(1, 'hsl(142,70%,50%)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, bw, bh);
+      // pulse the current cycle bar
+      if (i === currentCycleIdx){
+        const pulse = 0.4 + 0.4 * Math.sin(performance.now()/400);
+        ctx.fillStyle = `hsla(185,90%,75%,${pulse})`;
+        ctx.fillRect(x, y, bw, 3);
+      }
+    }
+    ctx.fillStyle = C.muted;
+    ctx.fillText('C' + (i+1), x + bw/2, h - padB + 4);
+    if (v > 0){
+      ctx.fillStyle = C.fg;
+      ctx.fillText(Math.round(v) + 'm', x + bw/2, y - 12);
+    }
+  });
+}
+
+function drawDensityChart(canvasId, getValue, color){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const padL = 22, padR = 8, padT = 8, padB = 22;
+  const pw = w - padL - padR, ph = h - padT - padB;
+  const buckets = 16;
+  const vals = [];
+  for (let i=0;i<buckets;i++) vals.push(getValue(i, buckets));
+  const max = Math.max(...vals, 1);
+  ctx.font = '10px JetBrains Mono, monospace';
+  // area
+  ctx.beginPath();
+  vals.forEach((v,i) => {
+    const x = padL + (i/(buckets-1))*pw;
+    const y = padT + ph - (v/max) * (ph-2);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  const sx = padL + pw, sy = padT + ph;
+  ctx.lineTo(sx, sy); ctx.lineTo(padL, sy); ctx.closePath();
+  const g = ctx.createLinearGradient(0, padT, 0, padT+ph);
+  g.addColorStop(0, color.replace(')', ',0.55)').replace('hsl','hsla'));
+  g.addColorStop(1, color.replace(')', ',0)').replace('hsl','hsla'));
+  ctx.fillStyle = g; ctx.fill();
+  // stroke
+  ctx.beginPath();
+  vals.forEach((v,i) => {
+    const x = padL + (i/(buckets-1))*pw;
+    const y = padT + ph - (v/max) * (ph-2);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+  // x-axis hour labels
+  ctx.fillStyle = C.muted;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let i=0;i<=4;i++){
+    const x = padL + (i/4)*pw;
+    ctx.fillText((i*2) + 'h', x, h - padB + 4);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Event stream
+// ─────────────────────────────────────────────────────────────
+const EVENTS = [];
+let EVT_PAUSED = false;
+let EVT_LAST_LVL = HYP[HYP.length-1];
+const EVT_TYPE_LABELS = {
+  sleep_stage: 'Stage classified',
+  rem_detected: 'REM episode started',
+  deep_sleep: 'Entered deep sleep',
+  sleep_quality: 'Quality update'
+};
+function pushEvent(type, payload){
+  if (EVT_PAUSED) return;
+  const e = {
+    t: new Date(),
+    type,
+    desc: payload,
+  };
+  EVENTS.unshift(e);
+  if (EVENTS.length > 200) EVENTS.length = 200;
+  renderEventStream();
+  renderOvEvents();
+  bumpEvtRate(type);
+}
+function renderEventStream(){
+  const root = document.getElementById('evt-stream');
+  if (!root) return;
+  const filter = document.getElementById('evt-filter').value;
+  const filtered = (filter === 'all' ? EVENTS : EVENTS.filter(e => e.type === filter)).slice(0, 40);
+  if (filtered.length === 0){
+    root.innerHTML = '<div class="empty">No events yet. Waiting for classifier…</div>';
+    return;
+  }
+  root.innerHTML = filtered.map(e => {
+    let evColor = 'hsl(var(--accent))';
+    if (e.type === 'rem_detected') evColor = C.stages.rem;
+    else if (e.type === 'deep_sleep') evColor = C.stages.deep;
+    else if (e.type === 'sleep_quality') evColor = 'hsl(var(--accent))';
+    return `<div class="evt-row">
+      <span class="ts">${fmtClock(e.t)}</span>
+      <span class="ev" style="color:${evColor}">${e.type}</span>
+      <span class="desc">${e.desc}</span>
+      <span class="muted mono" style="font-size:0.6875rem">${EVT_TYPE_LABELS[e.type] || ''}</span>
+    </div>`;
+  }).join('');
+}
+function renderOvEvents(){
+  const root = document.getElementById('ov-events');
+  if (!root) return;
+  const last5 = EVENTS.slice(0,5);
+  if (last5.length === 0){
+    root.innerHTML = '<div class="empty">No events tonight yet.</div>';
+    return;
+  }
+  root.innerHTML = last5.map(e => {
+    let evColor = 'hsl(var(--accent))';
+    if (e.type === 'rem_detected') evColor = C.stages.rem;
+    else if (e.type === 'deep_sleep') evColor = C.stages.deep;
+    return `<div class="evt-row">
+      <span class="ts">${fmtClock(e.t)}</span>
+      <span class="ev" style="color:${evColor}">${e.type}</span>
+      <span class="desc">${e.desc}</span>
+      <span class="muted mono" style="font-size:0.6875rem">${EVT_TYPE_LABELS[e.type] || ''}</span>
+    </div>`;
+  }).join('');
+}
+
+// Event rate chart
+const EVT_RATE_BUCKETS = 30;
+const EVT_RATE_COUNTS = {
+  sleep_stage: new Array(EVT_RATE_BUCKETS).fill(2),
+  rem_detected: new Array(EVT_RATE_BUCKETS).fill(0),
+  deep_sleep: new Array(EVT_RATE_BUCKETS).fill(0),
+  sleep_quality: new Array(EVT_RATE_BUCKETS).fill(0),
+};
+function bumpEvtRate(type){
+  if (EVT_RATE_COUNTS[type]) EVT_RATE_COUNTS[type][EVT_RATE_BUCKETS-1]++;
+}
+function rotateEvtRate(){
+  Object.keys(EVT_RATE_COUNTS).forEach(k => {
+    EVT_RATE_COUNTS[k].shift();
+    EVT_RATE_COUNTS[k].push(k === 'sleep_stage' ? 2 : 0);
+  });
+}
+function drawEvtRate(){
+  const canvas = document.getElementById('evt-rate');
+  if (!canvas) return;
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const padL = 38, padR = 16, padT = 16, padB = 24;
+  const pw = w - padL - padR, ph = h - padT - padB;
+  const N = EVT_RATE_BUCKETS;
+
+  // ── Dot-grid backdrop ────────────────────────────────────
+  ctx.fillStyle = 'rgba(133,193,233,0.07)';
+  for (let x = padL; x < w - padR; x += 18){
+    for (let y = padT; y < h - padB; y += 18){
+      ctx.beginPath(); ctx.arc(x, y, 0.6, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  const order = [
+    ['sleep_stage',   C.primary],
+    ['rem_detected',  C.stages.rem],
+    ['deep_sleep',    C.stages.deep],
+    ['sleep_quality', C.accent],
+  ];
+
+  // Max total height
+  let max = 0;
+  for (let i=0;i<N;i++){
+    let s = 0; order.forEach(([k]) => s += EVT_RATE_COUNTS[k][i]);
+    if (s > max) max = s;
+  }
+  max = Math.max(max, 5);
+
+  // Per-series smoothed cumulative values
+  const xAt = i => padL + (i / (N-1)) * pw;
+  const yAt = v => padT + ph - (v / max) * ph;
+  // Build cumulative stacks per bucket
+  const stacks = []; // stacks[i] = [v0, v0+v1, v0+v1+v2, ...]
+  for (let i=0;i<N;i++){
+    const row = []; let acc = 0;
+    for (const [k] of order){ acc += EVT_RATE_COUNTS[k][i]; row.push(acc); }
+    stacks.push(row);
+  }
+  // Smooth each stack curve (low-pass) for a "future" feel
+  const smoothed = [];
+  for (let s=0; s<order.length; s++){
+    const arr = stacks.map(r => r[s]);
+    // 3-pass moving average
+    for (let pass=0; pass<2; pass++){
+      const next = arr.slice();
+      for (let i=1;i<arr.length-1;i++){
+        next[i] = arr[i-1]*0.25 + arr[i]*0.5 + arr[i+1]*0.25;
+      }
+      for (let i=0;i<arr.length;i++) arr[i] = next[i];
+    }
+    smoothed.push(arr);
+  }
+
+  // ── Render stacked filled areas, back-to-front ───────────
+  function smoothCurve(arr, base){
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), yAt(arr[0]));
+    for (let i=1;i<arr.length;i++){
+      const px = xAt(i-1), py = yAt(arr[i-1]);
+      const x = xAt(i), y = yAt(arr[i]);
+      const cx = (px + x) / 2;
+      ctx.bezierCurveTo(cx, py, cx, y, x, y);
+    }
+    // close down to baseline (also smoothed, drawn in reverse)
+    for (let i=arr.length-1;i>=0;i--){
+      const x = xAt(i), y = yAt(base[i]);
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+  const zero = new Array(N).fill(0);
+  for (let s=0; s<order.length; s++){
+    const top = smoothed[s];
+    const bottom = s === 0 ? zero : smoothed[s-1];
+    const [, col] = order[s];
+    smoothCurve(top, bottom);
+    const g = ctx.createLinearGradient(0, padT, 0, padT + ph);
+    g.addColorStop(0, col.replace(')', ',0.7)').replace('hsl','hsla'));
+    g.addColorStop(1, col.replace(')', ',0.05)').replace('hsl','hsla'));
+    ctx.fillStyle = g;
+    ctx.fill();
+    // top glow stroke
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), yAt(top[0]));
+    for (let i=1;i<top.length;i++){
+      const px = xAt(i-1), py = yAt(top[i-1]);
+      const x = xAt(i), y = yAt(top[i]);
+      const cx = (px + x) / 2;
+      ctx.bezierCurveTo(cx, py, cx, y, x, y);
+    }
+    ctx.strokeStyle = col;
+    ctx.shadowColor = col; ctx.shadowBlur = 8;
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // ── Particle stream travelling right-to-left ─────────────
+  const t = performance.now() / 1000;
+  for (let s=0; s<order.length; s++){
+    const top = smoothed[s];
+    const base = s === 0 ? zero : smoothed[s-1];
+    const [, col] = order[s];
+    for (let k=0; k<3; k++){
+      const phase = ((t * 0.4 + k*0.33 + s*0.21) % 1);
+      const idx = phase * (N - 1);
+      const i0 = Math.floor(idx), i1 = Math.min(N-1, i0+1);
+      const f = idx - i0;
+      const yT = yAt(top[i0]*(1-f) + top[i1]*f);
+      const yB = yAt(base[i0]*(1-f) + base[i1]*f);
+      const yMid = yT + (yB - yT) * 0.5;
+      const x = xAt(idx);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(x, yMid, 1.6, 0, Math.PI*2); ctx.fill();
+      // trail
+      for (let tr=1; tr<5; tr++){
+        ctx.globalAlpha = 0.45 / tr;
+        ctx.beginPath(); ctx.arc(x + tr*3, yMid, 1.2 - tr*0.15, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // ── Y axis labels (subtle) ───────────────────────────────
+  ctx.fillStyle = C.muted;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0;i<=2;i++){
+    const v = Math.round(max * (1 - i/2));
+    ctx.fillText(v, padL - 4, padT + ph * (i/2));
+  }
+  // X axis ticks
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ['−30m','−20m','−10m','now'].forEach((l, i) => {
+    const x = padL + pw * (i/3);
+    ctx.fillText(l, x, h - padB + 4);
+  });
+
+  // NOW edge marker
+  const nowX = xAt(N-1);
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now()/400);
+  ctx.strokeStyle = `hsla(185,90%,80%,${0.4 + 0.3*pulse})`;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(nowX, padT); ctx.lineTo(nowX, padT + ph); ctx.stroke();
+  ctx.fillStyle = 'hsl(185,90%,80%)';
+  ctx.beginPath(); ctx.arc(nowX, padT + ph, 3, 0, Math.PI*2); ctx.fill();
+}
+
+// Seed initial events
+function seedEvents(){
+  const seed = [
+    [4, 'sleep_stage', 'NREM 2 · conf 0.94'],
+    [7, 'rem_detected', 'cycle 3 · expected ~10m'],
+    [12, 'sleep_stage', 'NREM 2 → REM transition'],
+    [18, 'sleep_stage', 'NREM 2 · conf 0.91'],
+    [24, 'deep_sleep', 'cycle 2 · NREM 3 entered'],
+    [28, 'sleep_stage', 'Deep · conf 0.88'],
+    [32, 'sleep_stage', 'Deep → NREM 2'],
+    [38, 'rem_detected', 'cycle 2 · 8 min'],
+    [44, 'sleep_stage', 'REM · conf 0.92'],
+    [52, 'deep_sleep', 'cycle 1 · NREM 3 entered'],
+    [58, 'sleep_quality', 'mid-night score 86 / 100'],
+    [62, 'sleep_stage', 'NREM 2 · conf 0.90'],
+  ];
+  const now = new Date();
+  seed.forEach(([minsAgo, type, desc]) => {
+    EVENTS.push({
+      t: new Date(now.getTime() - minsAgo*60*1000),
+      type, desc
+    });
+  });
+  EVENTS.sort((a,b) => b.t - a.t);
+  renderEventStream();
+  renderOvEvents();
+  // counts
+  document.getElementById('cnt-stage').textContent = EVENTS.filter(e=>e.type==='sleep_stage').length + 30;
+  document.getElementById('cnt-rem').textContent   = EVENTS.filter(e=>e.type==='rem_detected').length;
+  document.getElementById('cnt-deep').textContent  = EVENTS.filter(e=>e.type==='deep_sleep').length;
+  document.getElementById('cnt-quality').textContent = EVENTS.filter(e=>e.type==='sleep_quality').length;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  History panel
+// ─────────────────────────────────────────────────────────────
+function generateHistoryNights(n){
+  const out = [];
+  for (let i=0;i<n;i++){
+    const totalEpochs = 720 + Math.floor(Math.random()*180); // ~6h to ~7h30
+    // Generate a full hypnogram for this night
+    const hyp = generateNightHypnogram(totalEpochs, totalEpochs);
+    // Count stages
+    const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+    hyp.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+    const quality = Math.min(100, 55 + Math.round((counts.deep/totalEpochs)*120 + (counts.rem/totalEpochs)*70 - (counts.awake/totalEpochs)*40));
+    out.push({
+      hyp,
+      awake: counts.awake,
+      rem: counts.rem,
+      nrem1: counts.nrem1,
+      nrem2: counts.nrem2,
+      deep: counts.deep,
+      quality,
+      total: totalEpochs,
+    });
+  }
+  return out;
+}
+const HISTORY = generateHistoryNights(14);
+
+const WEEKDAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function buildHistoryGrid(){
+  const root = document.getElementById('night-grid');
+  if (!root) return;
+  if (root.dataset.built === '1') return;          // build markup once
+  const today = new Date();
+  root.innerHTML = HISTORY.map((n, idx) => {
+    const isToday = idx === HISTORY.length - 1;
+    const d = new Date(today.getTime() - (HISTORY.length - idx - 1) * 86400000);
+    const date = (d.getMonth()+1) + '/' + d.getDate();
+    return `
+      <div class="night-card ${isToday ? 'today' : ''}" data-idx="${idx}" role="button" tabindex="0" title="Click to inspect ${WEEKDAY[d.getDay()]} ${date}">
+        <div class="nc-head">
+          <span class="nc-date">
+            <span>${WEEKDAY[d.getDay()]} · ${date}</span>
+            ${isToday ? '<span class="nc-live">LIVE</span>' : ''}
+          </span>
+          <span class="nc-q">${n.quality}</span>
+        </div>
+        <canvas></canvas>
+        <div class="nc-foot">
+          <span class="nc-dur"></span>
+          <span><span class="nc-rem"></span> · <span class="nc-deep"></span></span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  // Wire click + keyboard
+  root.querySelectorAll('.night-card').forEach(card => {
+    card.addEventListener('click', () => openNightDetail(parseInt(card.dataset.idx, 10)));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        openNightDetail(parseInt(card.dataset.idx, 10));
+      }
+    });
+  });
+  root.dataset.built = '1';
+}
+
+function updateHistoryGrid(){
+  const root = document.getElementById('night-grid');
+  if (!root) return;
+  buildHistoryGrid();
+
+  // Refresh tonight's record from the live HYP
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  HYP.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const tonight = HISTORY[HISTORY.length-1];
+  tonight.hyp = HYP.slice();
+  tonight.awake = counts.awake;
+  tonight.rem = counts.rem;
+  tonight.nrem1 = counts.nrem1;
+  tonight.nrem2 = counts.nrem2;
+  tonight.deep = counts.deep;
+  tonight.total = HYP.length;
+  // Live quality estimate
+  const tot = HYP.length || 1;
+  tonight.quality = Math.min(100, 55 + Math.round(
+    (counts.deep/tot)*120 + (counts.rem/tot)*70 - (counts.awake/tot)*40
+  ));
+
+  const cards = root.querySelectorAll('.night-card');
+  cards.forEach((card, idx) => {
+    const n = HISTORY[idx];
+    const totEpochs = n.hyp.length;
+    const mins = totEpochs * 0.5;
+    const hh = Math.floor(mins/60), mm = Math.floor(mins%60);
+    card.querySelector('.nc-q').textContent = n.quality;
+    card.querySelector('.nc-dur').textContent = `${hh}h ${mm}m`;
+    card.querySelector('.nc-rem').textContent = `REM ${Math.round(n.rem*0.5)}m`;
+    card.querySelector('.nc-deep').textContent = `Deep ${Math.round(n.deep*0.5)}m`;
+    drawMiniHypnogram(card.querySelector('canvas'), n.hyp, idx === HISTORY.length-1);
+  });
+}
+
+function drawMiniHypnogram(canvas, hyp, isLive){
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+
+  if (hyp.length === 0){
+    ctx.fillStyle = C.muted;
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('—', w/2, h/2);
+    return;
+  }
+
+  // Soft horizontal stage bands
+  for (let lvl=1; lvl<=5; lvl++){
+    const y = h * (1 - (lvl-1)/4);
+    const stage = LEVEL_TO_STAGE[lvl];
+    ctx.strokeStyle = C.stages[stage].replace(')', ',0.10)').replace('hsl','hsla');
+    ctx.setLineDash([1,3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  const N = hyp.length;
+  const totalEpochs = isLive ? TOTAL_EPOCHS : N;
+  const xAt = i => (i / (totalEpochs-1)) * w;
+
+  // Smooth y series
+  const ys = hyp.map(l => h * (1 - (l-1)/4));
+  for (let pass=0; pass<2; pass++){
+    const next = ys.slice();
+    for (let i=1;i<ys.length-1;i++) next[i] = ys[i-1]*0.25 + ys[i]*0.5 + ys[i+1]*0.25;
+    for (let i=0;i<ys.length;i++) ys[i] = next[i];
+  }
+
+  function path(){
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), ys[0]);
+    for (let i=0;i<N-1;i++){
+      const p0 = Math.max(0, i-1), p1 = i, p2 = i+1, p3 = Math.min(N-1, i+2);
+      const cp1x = xAt(p1) + (xAt(p2) - xAt(p0)) / 6;
+      const cp1y = ys[p1]  + (ys[p2]  - ys[p0])  / 6;
+      const cp2x = xAt(p2) - (xAt(p3) - xAt(p1)) / 6;
+      const cp2y = ys[p2]  - (ys[p3]  - ys[p1])  / 6;
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, xAt(p2), ys[p2]);
+    }
+  }
+
+  // Fill under curve
+  path();
+  ctx.lineTo(xAt(N-1), h); ctx.lineTo(xAt(0), h); ctx.closePath();
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, 'hsla(185,80%,55%,0.22)');
+  g.addColorStop(1, 'hsla(220,30%,10%,0)');
+  ctx.fillStyle = g; ctx.fill();
+
+  // 3-pass glow stroke
+  for (const pass of [
+    { w: 4, alpha: 0.20, color: 'hsl(185,90%,60%)' },
+    { w: 2, alpha: 0.55, color: 'hsl(185,90%,70%)' },
+    { w: 1, alpha: 1.0,  color: 'hsl(185,95%,82%)' },
+  ]){
+    path();
+    ctx.globalAlpha = pass.alpha;
+    ctx.strokeStyle = pass.color;
+    ctx.lineWidth = pass.w;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Live: now dot
+  if (isLive && N < totalEpochs){
+    const x = xAt(N-1);
+    const y = ys[N-1];
+    // future area shading
+    ctx.fillStyle = 'rgba(180,220,255,0.04)';
+    ctx.fillRect(x, 0, w - x, h);
+    // pulsing dot
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now()/280);
+    const lastStage = LEVEL_TO_STAGE[hyp[N-1]];
+    const col = C.stages[lastStage];
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, 10);
+    halo.addColorStop(0, col.replace(')', ',0.7)').replace('hsl','hsla'));
+    halo.addColorStop(1, col.replace(')', ',0)').replace('hsl','hsla'));
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(x, y, 8 + 3*pulse, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+// Kept as a shim so older callers don't break
+function renderHistoryBars(){ updateHistoryGrid(); }
+
+// ─────────────────────────────────────────────────────────────
+//  Night detail modal
+// ─────────────────────────────────────────────────────────────
+let ND_IDX = null;
+
+function nightStartMinFor(idx){
+  // Slight randomization so different nights show different bedtimes
+  const variance = ((idx * 37) % 11) - 5;     // -5..+5 minutes
+  return SLEEP_START_MIN + variance;
+}
+
+function synthesizeNightEvents(hyp, startMin){
+  // Walk the hypnogram and emit transition events
+  const events = [];
+  const fmt = (e) => {
+    const totalMin = startMin + Math.floor(e * 0.5);
+    const m = ((totalMin % (24*60)) + (24*60)) % (24*60);
+    return Math.floor(m/60).toString().padStart(2,'0') + ':' + (m%60).toString().padStart(2,'0');
+  };
+  // Start of sleep
+  events.push({ epoch:0, ts: fmt(0), type:'sleep_stage', desc:'Sleep onset · ' + STAGE_LABELS[hyp[0]] });
+  let cycleStart = 0;
+  for (let i=1;i<hyp.length;i++){
+    if (hyp[i] !== hyp[i-1]){
+      const stage = LEVEL_TO_STAGE[hyp[i]];
+      const cycle = Math.ceil(i/180);
+      if (stage === 'rem'){
+        events.push({ epoch:i, ts: fmt(i), type:'rem_detected', desc:`cycle ${cycle} · REM episode entered` });
+      } else if (stage === 'deep'){
+        events.push({ epoch:i, ts: fmt(i), type:'deep_sleep',   desc:`cycle ${cycle} · NREM 3 entered` });
+      } else {
+        events.push({ epoch:i, ts: fmt(i), type:'sleep_stage',  desc:`→ ${STAGE_LABELS[hyp[i]]}` });
+      }
+    }
+    // Cycle boundary
+    if (i % 180 === 0){
+      events.push({ epoch:i, ts: fmt(i), type:'sleep_stage', desc:`Cycle ${i/180} complete` });
+    }
+  }
+  // End of night quality
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  hyp.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const tot = hyp.length || 1;
+  const q = Math.min(100, 55 + Math.round(
+    (counts.deep/tot)*120 + (counts.rem/tot)*70 - (counts.awake/tot)*40
+  ));
+  events.push({ epoch:hyp.length, ts: fmt(hyp.length), type:'sleep_quality', desc:'End-of-night score ' + q + ' / 100' });
+  return events;
+}
+
+function renderNdDonut(hyp){
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  hyp.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const total = hyp.length || 1;
+  const segments = [
+    ['awake','Awake'],['rem','REM'],['nrem1','NREM 1'],['nrem2','NREM 2'],['deep','Deep'],
+  ];
+  const svg = document.getElementById('nd-donut');
+  if (!svg) return;
+  const cx = 70, cy = 70, r = 50;
+  let acc = 0;
+  let html = '<circle cx="70" cy="70" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>';
+  segments.forEach(([key]) => {
+    const frac = counts[key] / total;
+    if (frac < 0.001) return;
+    const a0 = -Math.PI/2 + acc * Math.PI * 2;
+    const a1 = -Math.PI/2 + (acc + frac) * Math.PI * 2;
+    acc += frac;
+    const lar = (a1 - a0) > Math.PI ? 1 : 0;
+    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    html += `<path d="M ${x0} ${y0} A ${r} ${r} 0 ${lar} 1 ${x1} ${y1}" fill="none" stroke="${C.stages[key]}" stroke-width="14" stroke-linecap="round"/>`;
+  });
+  const sleepEpochs = hyp.filter(l => l !== 5).length;
+  const mins = sleepEpochs * 0.5;
+  const hh = Math.floor(mins/60), mm = Math.floor(mins%60);
+  html += `<text x="70" y="68" fill="${C.fg}" font-size="17" font-family="JetBrains Mono, monospace" text-anchor="middle" font-weight="600">${hh}h ${mm}m</text>`;
+  html += `<text x="70" y="84" fill="${C.muted}" font-size="8" font-family="JetBrains Mono, monospace" text-anchor="middle" letter-spacing="1">SLEEP</text>`;
+  svg.innerHTML = html;
+
+  const legend = document.getElementById('nd-donut-legend');
+  if (legend){
+    legend.innerHTML = segments.map(([key, lbl]) => {
+      const frac = counts[key]/total;
+      const dur = counts[key] * 0.5;
+      const dh = Math.floor(dur/60), dm = Math.floor(dur%60);
+      const durStr = dh > 0 ? `${dh}h ${dm}m` : `${dm}m`;
+      return `<div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="width:10px;height:10px;border-radius:2px;background:${C.stages[key]};flex-shrink:0"></span>
+        <span style="flex:1;color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem">${lbl}</span>
+        <span style="color:hsl(var(--muted-foreground))">${(frac*100).toFixed(0)}%</span>
+        <span style="color:hsl(var(--muted-foreground) / 0.8);font-size:0.6875rem">${durStr}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+function renderNdEvents(events){
+  const root = document.getElementById('nd-events');
+  if (!root) return;
+  if (events.length === 0){ root.innerHTML = '<div class="empty">No transitions.</div>'; return; }
+  root.innerHTML = events.map(e => {
+    let evColor = 'hsl(var(--accent))';
+    if (e.type === 'rem_detected') evColor = C.stages.rem;
+    else if (e.type === 'deep_sleep') evColor = C.stages.deep;
+    else if (e.type === 'sleep_quality') evColor = 'hsl(var(--accent))';
+    return `<div class="nd-evt">
+      <span class="ts">${e.ts}</span>
+      <span class="desc">${e.desc}</span>
+      <span class="ev" style="color:${evColor}">${e.type}</span>
+    </div>`;
+  }).join('');
+}
+
+function openNightDetail(idx){
+  if (idx < 0 || idx >= HISTORY.length) return;
+  ND_IDX = idx;
+  const isToday = idx === HISTORY.length - 1;
+  const n = HISTORY[idx];
+  // Tonight's HYP should be the live data
+  const hyp = isToday ? HYP.slice() : n.hyp;
+  const today = new Date();
+  const d = new Date(today.getTime() - (HISTORY.length - idx - 1) * 86400000);
+  const dateStr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()] + ', ' +
+                  ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] +
+                  ' ' + d.getDate();
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  hyp.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const totMin = hyp.length * 0.5;
+  const tH = Math.floor(totMin/60), tM = Math.floor(totMin%60);
+  const startMin = isToday ? SLEEP_START_MIN : nightStartMinFor(idx);
+  const remMin = counts.rem * 0.5, deepMin = counts.deep * 0.5;
+  const tot = hyp.length || 1;
+  const quality = Math.min(100, 55 + Math.round(
+    (counts.deep/tot)*120 + (counts.rem/tot)*70 - (counts.awake/tot)*40
+  ));
+  const cycles = Math.max(1, Math.round(hyp.length / 180));
+
+  // Header
+  document.getElementById('nd-title').textContent = (isToday ? 'Tonight · ' : '') + dateStr;
+  // Compute bedtime / wake time
+  const fmtTime = (mins) => {
+    const m = ((mins % (24*60)) + (24*60)) % (24*60);
+    return Math.floor(m/60).toString().padStart(2,'0') + ':' + (m%60).toString().padStart(2,'0');
+  };
+  const wakeMin = startMin + Math.floor(hyp.length * 0.5);
+  document.getElementById('nd-sub').textContent = isToday
+    ? `Live · started ${fmtTime(startMin)} · ${tH}h ${tM}m so far`
+    : `${fmtTime(startMin)} → ${fmtTime(wakeMin)} · ${tH}h ${tM}m`;
+
+  // Stage pill
+  const ldStage = LEVEL_TO_STAGE[hyp[hyp.length-1]];
+  document.getElementById('nd-pills').innerHTML =
+    (isToday ? `<span class="nc-live">LIVE</span>` : '') +
+    `<span class="stage-pill s-${ldStage}">${isToday ? '<span class="pulse"></span>' : ''}${STAGE_LABELS[hyp[hyp.length-1]]}</span>` +
+    `<span class="tag">${cycles} cycles</span>`;
+
+  // KPIs
+  const kpis = [
+    { lbl: 'Quality', v: quality + ' / 100' },
+    { lbl: 'Total sleep', v: tH + 'h ' + tM + 'm' },
+    { lbl: 'REM', v: Math.floor(remMin/60) + 'h ' + Math.floor(remMin%60) + 'm · ' + ((counts.rem/tot)*100).toFixed(0) + '%' },
+    { lbl: 'Deep', v: Math.floor(deepMin/60) + 'h ' + Math.floor(deepMin%60) + 'm · ' + ((counts.deep/tot)*100).toFixed(0) + '%' },
+    { lbl: 'Awake', v: Math.round(counts.awake*0.5) + 'm' },
+    { lbl: 'Cycles', v: cycles + (isToday ? ' / 5' : '') },
+  ];
+  document.getElementById('nd-kpis').innerHTML = kpis.map(k =>
+    `<div class="nd-kpi"><div class="lbl">${k.lbl}</div><div class="v">${k.v}</div></div>`
+  ).join('');
+
+  // Hypnogram head
+  document.getElementById('nd-hyp-head').textContent = isToday ? 'Tonight · live hypnogram' : 'Hypnogram';
+
+  // Modal accent
+  const modalEl = document.getElementById('nd-modal');
+  modalEl.classList.toggle('live', isToday);
+
+  // Events
+  renderNdEvents(synthesizeNightEvents(hyp, startMin));
+
+  // Donut
+  renderNdDonut(hyp);
+
+  // Prev/next state
+  document.getElementById('nd-prev').disabled = idx <= 0;
+  document.getElementById('nd-next').disabled = idx >= HISTORY.length - 1;
+
+  // Show modal
+  document.getElementById('nd-bg').classList.add('show');
+  // First draw of hypnogram
+  drawNdHypnogram();
+}
+
+function drawNdHypnogram(){
+  if (ND_IDX === null) return;
+  const idx = ND_IDX;
+  const isToday = idx === HISTORY.length - 1;
+  const n = HISTORY[idx];
+  const hyp = isToday ? HYP : n.hyp;
+  const startMin = isToday ? SLEEP_START_MIN : nightStartMinFor(idx);
+  const canvas = document.getElementById('nd-canvas');
+  if (!canvas) return;
+  drawHypnogram(canvas, {
+    data: hyp,
+    total: isToday ? TOTAL_EPOCHS : hyp.length,
+    showFuture: isToday,
+    startMin,
+  });
+}
+
+function closeNightDetail(){
+  document.getElementById('nd-bg').classList.remove('show');
+  ND_IDX = null;
+}
+
+// Wire modal events
+document.getElementById('nd-close').addEventListener('click', closeNightDetail);
+document.getElementById('nd-bg').addEventListener('click', e => {
+  if (e.target.id === 'nd-bg') closeNightDetail();
+});
+document.addEventListener('keydown', e => {
+  if (document.getElementById('nd-bg').classList.contains('show')){
+    if (e.key === 'Escape') closeNightDetail();
+    if (e.key === 'ArrowLeft' && ND_IDX > 0) openNightDetail(ND_IDX - 1);
+    if (e.key === 'ArrowRight' && ND_IDX < HISTORY.length - 1) openNightDetail(ND_IDX + 1);
+  }
+});
+document.getElementById('nd-prev').addEventListener('click', () => {
+  if (ND_IDX !== null && ND_IDX > 0) openNightDetail(ND_IDX - 1);
+});
+document.getElementById('nd-next').addEventListener('click', () => {
+  if (ND_IDX !== null && ND_IDX < HISTORY.length - 1) openNightDetail(ND_IDX + 1);
+});
+
+function drawTrend(canvasId, values, color, fmt){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const c = setupCanvas(canvas); if (!c) return;
+  const { ctx, w, h } = c; clear(c);
+  const padL = 30, padR = 10, padT = 14, padB = 22;
+  const pw = w - padL - padR, ph = h - padT - padB;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = max - min || 1;
+  // grid
+  ctx.strokeStyle = C.grid;
+  for (let i=0;i<=3;i++){
+    const y = padT + ph*i/3;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+  }
+  ctx.fillStyle = C.muted;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0;i<=2;i++){
+    const v = max - (max-min)*i/2;
+    ctx.fillText(fmt(v), padL-4, padT + ph*i/2);
+  }
+  // fill area
+  ctx.beginPath();
+  values.forEach((v,i) => {
+    const x = padL + (i/(values.length-1))*pw;
+    const y = padT + ph - ((v-min)/range)*(ph-4) - 2;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(padL+pw, padT+ph); ctx.lineTo(padL, padT+ph);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0,padT,0,padT+ph);
+  g.addColorStop(0, color.replace(')', ',0.4)').replace('hsl','hsla'));
+  g.addColorStop(1, color.replace(')', ',0)').replace('hsl','hsla'));
+  ctx.fillStyle = g; ctx.fill();
+  // line
+  ctx.beginPath();
+  values.forEach((v,i) => {
+    const x = padL + (i/(values.length-1))*pw;
+    const y = padT + ph - ((v-min)/range)*(ph-4) - 2;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+  ctx.stroke();
+  // dots — last one pulsing
+  values.forEach((v,i) => {
+    const x = padL + (i/(values.length-1))*pw;
+    const y = padT + ph - ((v-min)/range)*(ph-4) - 2;
+    if (i === values.length-1){
+      const pulse = 0.5 + 0.5*Math.sin(performance.now()/400);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.3 + 0.4*pulse;
+      ctx.beginPath(); ctx.arc(x, y, 5 + 3*pulse, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
+  });
+  // x-axis labels
+  ctx.fillStyle = C.muted;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const today = new Date();
+  for (let i=0;i<values.length;i+=Math.ceil(values.length/5)){
+    const x = padL + (i/(values.length-1))*pw;
+    const d = new Date(today.getTime() - (values.length-i-1)*86400000);
+    ctx.fillText((d.getMonth()+1)+'/'+d.getDate(), x, h - padB + 4);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Hardware sparklines
+// ─────────────────────────────────────────────────────────────
+const HW_PKTS = new Array(60).fill(98);
+const HW_RSSI = new Array(60).fill(-46);
+function tickHardware(){
+  HW_PKTS.shift();
+  HW_PKTS.push(98 + (Math.random()-0.5)*5);
+  HW_RSSI.shift();
+  HW_RSSI.push(-46 + (Math.random()-0.5)*4);
+  const ppsEl = document.getElementById('hw-pps');
+  if (ppsEl) ppsEl.textContent = HW_PKTS[HW_PKTS.length-1].toFixed(1);
+  const rssiEl = document.getElementById('hw-rssi');
+  if (rssiEl) rssiEl.textContent = Math.round(HW_RSSI[HW_RSSI.length-1]) + ' dBm';
+  // buffer
+  const bufEl = document.getElementById('hw-buf');
+  if (bufEl) bufEl.textContent = (32 + Math.floor(Math.random()*22)) + ' / 256';
+}
+function drawHwCharts(){
+  drawTrend('hw-pkts', HW_PKTS, 'hsl(185,80%,55%)', v => v.toFixed(0));
+  drawTrend('hw-rssi-chart', HW_RSSI, 'hsl(142,70%,50%)', v => v.toFixed(0));
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Stage progression (advance HYP, fire events)
+// ─────────────────────────────────────────────────────────────
+let LAST_STAGE_TICK = 0;
+function advanceClassifier(now){
+  // Add a new epoch every 4 seconds (sped up vs real 30s)
+  if (now - LAST_STAGE_TICK < 4000) return;
+  LAST_STAGE_TICK = now;
+  if (CURRENT_EPOCH >= TOTAL_EPOCHS) return;
+
+  // Take the next pre-generated stage but allow small perturbations
+  const full = generateNightHypnogram(TOTAL_EPOCHS, TOTAL_EPOCHS);
+  const next = full[CURRENT_EPOCH];
+  HYP.push(next);
+  CURRENT_EPOCH++;
+
+  // Update banner
+  updateNowBanner();
+  renderDonut();
+
+  // Fire events if stage transition
+  if (HYP.length >= 2 && HYP[HYP.length-1] !== HYP[HYP.length-2]){
+    const newLvl = HYP[HYP.length-1];
+    const newStage = LEVEL_TO_STAGE[newLvl];
+    if (newStage === 'rem') pushEvent('rem_detected', 'cycle ' + Math.ceil(CURRENT_EPOCH/180) + ' · transition from ' + LEVEL_TO_STAGE[HYP[HYP.length-2]]);
+    if (newStage === 'deep') pushEvent('deep_sleep', 'cycle ' + Math.ceil(CURRENT_EPOCH/180) + ' · NREM 3 entered');
+    pushEvent('sleep_stage', STAGE_LABELS[newLvl] + ' · conf ' + (0.85 + Math.random()*0.12).toFixed(2));
+  } else {
+    // occasional stage classification event without transition
+    if (Math.random() < 0.3){
+      pushEvent('sleep_stage', STAGE_LABELS[HYP[HYP.length-1]] + ' · conf ' + (0.85 + Math.random()*0.12).toFixed(2));
+    }
+  }
+}
+
+function setTxt(id, txt){ const el = document.getElementById(id); if (el) el.textContent = txt; }
+function setHtml(id, html){ const el = document.getElementById(id); if (el) el.innerHTML = html; }
+
+function updateNowBanner(){
+  const lvl = HYP[HYP.length-1];
+  const stage = LEVEL_TO_STAGE[lvl];
+
+  // Current stage KPI
+  setTxt('now-stage', STAGE_LABELS[lvl]);
+  const ic = document.getElementById('kpi-stage-ic');
+  if (ic) ic.textContent = STAGE_EMOJI[stage];
+  const stageCard = document.getElementById('kpi-stage-card');
+  if (stageCard){
+    // Tint border by stage color
+    stageCard.style.borderColor = `hsl(var(--stage-${stage}) / 0.5)`;
+    stageCard.style.boxShadow = `0 0 18px -6px hsl(var(--stage-${stage}) / 0.45)`;
+  }
+  const stageIc = document.getElementById('kpi-stage-ic');
+  if (stageIc){
+    stageIc.style.background = `hsl(var(--stage-${stage}) / 0.18)`;
+    stageIc.style.borderColor = `hsl(var(--stage-${stage}) / 0.4)`;
+  }
+
+  let same = 1;
+  for (let i = HYP.length-2; i >= 0 && HYP[i] === lvl; i--) same++;
+  const mins = Math.round(same * 0.5);
+  const cycle = Math.min(5, Math.ceil(CURRENT_EPOCH/180));
+  setTxt('now-since', `in stage for ${mins} min · cycle ${cycle} of 5`);
+
+  // Breathing rate by stage
+  if (stage === 'awake')      BREATH_BPM = 16 + Math.random()*2;
+  else if (stage === 'rem')   BREATH_BPM = 14.5 + Math.random()*1.5;
+  else if (stage === 'nrem1') BREATH_BPM = 13.5 + Math.random()*1;
+  else if (stage === 'nrem2') BREATH_BPM = 12.5 + Math.random()*1;
+  else                        BREATH_BPM = 11 + Math.random()*1;
+  setHtml('kpi-breath', BREATH_BPM.toFixed(1) +
+    '<small style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-left:0.2rem;font-weight:400">bpm</small>');
+  setTxt('live-bpm', BREATH_BPM.toFixed(1));
+  setTxt('breath-circle-bpm', Math.round(BREATH_BPM));
+
+  // Confidence
+  const conf = 0.85 + Math.random()*0.13;
+  setTxt('conf-val', conf.toFixed(2));
+  setTxt('ov-conf', 'conf ' + conf.toFixed(2));
+  const confFill = document.getElementById('conf-fill');
+  if (confFill) confFill.style.width = (conf*100).toFixed(0) + '%';
+
+  // Overview stage breakdowns
+  const counts = { awake:0, rem:0, nrem1:0, nrem2:0, deep:0 };
+  HYP.forEach(l => counts[LEVEL_TO_STAGE[l]]++);
+  const total = HYP.length || 1;
+  const totalMin = HYP.length * 0.5;
+  const tH = Math.floor(totalMin/60), tM = Math.floor(totalMin%60);
+  setTxt('ov-total', `${tH}h ${tM}m`);
+  setTxt('ov-asleep', 'since 23:14');
+  const remMin = counts.rem * 0.5;
+  setTxt('ov-rem', `${Math.floor(remMin/60)}h ${Math.floor(remMin%60)}m`);
+  setTxt('ov-rem-pct', ((counts.rem/total)*100).toFixed(0) + '% of sleep');
+  const deepMin = counts.deep * 0.5;
+  setTxt('ov-deep', `${Math.floor(deepMin/60)}h ${Math.floor(deepMin%60)}m`);
+  setTxt('ov-deep-pct', ((counts.deep/total)*100).toFixed(0) + '% of sleep');
+  setTxt('ov-cycles', `cycle ${cycle} of 5`);
+
+  // Quality score (live)
+  const liveQ = Math.min(100, 55 + Math.round(
+    (counts.deep/total)*120 + (counts.rem/total)*70 - (counts.awake/total)*40
+  ));
+  setTxt('ov-quality', liveQ + ' / 100');
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Settings sliders
+// ─────────────────────────────────────────────────────────────
+function wireSliders(){
+  const slRem = document.getElementById('s-rem');
+  const slRemV = document.getElementById('s-rem-v');
+  slRem.addEventListener('input', () => slRemV.textContent = (slRem.value/100).toFixed(2));
+  const slDeep = document.getElementById('s-deep');
+  const slDeepV = document.getElementById('s-deep-v');
+  slDeep.addEventListener('input', () => slDeepV.textContent = (slDeep.value/100).toFixed(2));
+}
+wireSliders();
+
+// ─────────────────────────────────────────────────────────────
+//  Event filter / pause
+// ─────────────────────────────────────────────────────────────
+document.getElementById('evt-filter').addEventListener('change', renderEventStream);
+document.getElementById('evt-pause').addEventListener('click', e => {
+  EVT_PAUSED = !EVT_PAUSED;
+  e.target.textContent = EVT_PAUSED ? '▶ Resume' : '⏸ Pause';
+});
+
+// Zoom buttons (placeholder visual feedback)
+let HYP_ZOOM = 1;
+document.getElementById('zoom-in')?.addEventListener('click', () => { HYP_ZOOM = Math.min(2, HYP_ZOOM + 0.25); });
+document.getElementById('zoom-out')?.addEventListener('click', () => { HYP_ZOOM = Math.max(0.5, HYP_ZOOM - 0.25); });
+
+// ─────────────────────────────────────────────────────────────
+//  Animation loop
+// ─────────────────────────────────────────────────────────────
+let lastMotionTick = 0;
+let lastBreathTick = 0;
+let lastCsiTick = 0;
+let lastSparkTick = 0;
+let lastHwTick = 0;
+let lastEvtRateRotate = performance.now();
+
+function loop(now){
+  // breathing 50 Hz
+  if (now - lastBreathTick > 20){ tickBreath(); lastBreathTick = now; }
+  // motion 10 Hz
+  if (now - lastMotionTick > 100){ tickMotion(); lastMotionTick = now; }
+  // CSI 5 Hz
+  if (now - lastCsiTick > 200){ tickCsi(); lastCsiTick = now; }
+  // sparks 1 Hz
+  if (now - lastSparkTick > 1000){ tickSparks(); lastSparkTick = now; }
+  if (now - lastHwTick > 1200){ tickHardware(); lastHwTick = now; }
+  // event rate rotation every 1 min sim => 2 seconds here
+  if (now - lastEvtRateRotate > 2000){ rotateEvtRate(); lastEvtRateRotate = now; }
+
+  // classifier emits stage every 4s
+  advanceClassifier(now);
+
+  // Night-detail modal: redraw hypnogram so live "today" view stays alive
+  if (document.getElementById('nd-bg').classList.contains('show')){
+    drawNdHypnogram();
+    // If today's modal is open, refresh meta every ~30s so KPIs follow the night
+    if (ND_IDX === HISTORY.length - 1){
+      if (!loop._lastNdMeta || now - loop._lastNdMeta > 30000){
+        loop._lastNdMeta = now;
+        openNightDetail(ND_IDX);
+      }
+    }
+  }
+
+  // Draw visible panel charts
+  const active = document.querySelector('.panel.on').id;
+  if (active === 'panel-overview'){
+    drawHypnogram(document.getElementById('ov-hypnogram'));
+  } else if (active === 'panel-live'){
+    drawBreathChart();
+    drawMotionChart();
+    drawCsi();
+    drawSpark('spark-hr', HR_BUF, 'hsl(0,70%,65%)');
+    drawSpark('spark-mi', MI_BUF, 'hsl(185,80%,55%)');
+  } else if (active === 'panel-hypnogram'){
+    drawHypnogram(document.getElementById('hyp-big'));
+    drawCycleBars();
+    drawDensityChart('rem-density', (i, n) => {
+      // REM density higher later in night
+      return Math.max(0, Math.sin((i/n)*Math.PI) * 0.6 + (i/n)*0.5 + (Math.random()-0.5)*0.1);
+    }, 'hsl(280,70%,60%)');
+    drawDensityChart('deep-density', (i, n) => {
+      // Deep more in early night
+      return Math.max(0, Math.cos((i/n)*Math.PI*0.7) * 0.8 + (Math.random()-0.5)*0.1);
+    }, 'hsl(142,70%,50%)');
+  } else if (active === 'panel-events'){
+    drawEvtRate();
+  } else if (active === 'panel-history'){
+    updateHistoryGrid();
+    drawTrend('quality-trend', HISTORY.map(n => n.quality), 'hsl(185,80%,55%)', v => v.toFixed(0));
+    drawTrend('tst-trend', HISTORY.map(n => (n.awake+n.rem+n.nrem1+n.nrem2+n.deep)*0.5/60), 'hsl(142,70%,50%)', v => v.toFixed(1)+'h');
+  } else if (active === 'panel-hardware'){
+    drawHwCharts();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────────
+renderDonut();
+seedEvents();
+buildHistoryGrid();
+updateNowBanner();
+requestAnimationFrame(loop);
+
+// Redraw on resize
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    // nothing to do — loop will pick up new sizes
+  }, 100);
+});
+</script>
+</body>
+</html>

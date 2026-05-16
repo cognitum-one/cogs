@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Coherence — Multi-subcarrier phase analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── tokens (mirrors v0-chrome.css) ──────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── app bar (matches template exactly) ──────────────────────── */
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem;color:inherit;text-decoration:none}
+.brand:hover{text-decoration:none}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;transition:all 0.2s}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+
+/* ── layout ──────────────────────────────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section > h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* ── status chip (mirrors template cluster-chip) ─────────────── */
+.status-chip{display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;margin:0 0 1rem;background:hsl(var(--card) / 0.6);border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;font-size:0.8125rem;color:hsl(var(--muted-foreground))}
+.status-chip strong{color:hsl(var(--foreground));font-weight:600}
+.status-chip .chip-meta{margin-left:auto;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+
+/* ── cards (matches template) ────────────────────────────────── */
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* ── KPI grid (matches dashboard pattern) ────────────────────── */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.bad{background:hsl(0 65% 50% / 0.12)}
+.kpi-ic.bad svg{stroke:hsl(0 70% 65%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* ── generic grids ───────────────────────────────────────────── */
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+
+/* ── badges + dots ───────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.good{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.12);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.25)}
+.badge.bad{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.info{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+/* ── service-style small cards (mirrors svc-grid) ────────────── */
+.svc-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.svc{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:0.875rem 1rem;display:flex;flex-direction:column;gap:0.4rem}
+.svc-h{display:flex;align-items:center;justify-content:space-between;gap:0.4rem}
+.svc-name{font-size:0.875rem;font-weight:600}
+.svc-port{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.svc-detail{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.5}
+
+/* ── tables (template style) ─────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.4rem 0.5rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+tbody tr:last-child td{border-bottom:none}
+
+/* ── buttons ─────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+
+/* ── inputs ──────────────────────────────────────────────────── */
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input::placeholder{color:hsl(var(--muted-foreground))}
+input[type=range]{padding:0;height:1.5rem;background:transparent;border:none;accent-color:hsl(var(--primary));width:100%}
+
+/* ── pill tabs ───────────────────────────────────────────────── */
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{padding:0.4rem 0.75rem;border-radius:0.375rem;font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));background:hsl(var(--muted));border:1px solid transparent;cursor:pointer;transition:all 0.2s;font-family:var(--font-display)}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+/* ── code/log boxes ──────────────────────────────────────────── */
+pre.logbox{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;font-family:var(--font-mono);font-size:0.75rem;overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));white-space:pre-wrap;word-break:break-word}
+
+/* ── footer ──────────────────────────────────────────────────── */
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* ── router-driven panels ────────────────────────────────────── */
+.panel{display:none}
+.panel.on{display:block}
+
+/* ── gauge ───────────────────────────────────────────────────── */
+.gauge{position:relative;width:180px;height:180px;margin:0 auto}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge .track{stroke:hsl(var(--secondary));stroke-width:12;fill:none}
+.gauge .fill{stroke:hsl(var(--primary));stroke-width:12;fill:none;stroke-linecap:round;transition:stroke-dashoffset 0.4s ease,stroke 0.3s;filter:drop-shadow(0 0 6px hsl(var(--primary) / 0.45))}
+.gauge.bad .fill{stroke:hsl(0 65% 55%);filter:drop-shadow(0 0 6px hsl(0 65% 55% / 0.4))}
+.gauge.warn .fill{stroke:hsl(var(--warn));filter:drop-shadow(0 0 6px hsl(var(--warn) / 0.4))}
+.gauge.good .fill{stroke:hsl(var(--accent));filter:drop-shadow(0 0 6px hsl(var(--accent) / 0.4))}
+.gauge-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-num{font-family:var(--font-mono);font-size:2.125rem;font-weight:600;color:hsl(var(--foreground));font-variant-numeric:tabular-nums;line-height:1}
+.gauge-num.bad{color:hsl(0 70% 70%)}
+.gauge-num.warn{color:hsl(35 85% 70%)}
+.gauge-num.good{color:hsl(142 70% 65%)}
+.gauge-label{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-top:0.4rem;font-weight:600}
+
+/* ── trend / spark ───────────────────────────────────────────── */
+.trend-host{position:relative;width:100%;height:160px;margin-top:0.25rem}
+.trend-host svg{width:100%;height:100%;display:block}
+svg .grid-line{stroke:hsl(var(--border) / 0.4);stroke-width:0.5;stroke-dasharray:2 3}
+svg .line{stroke:hsl(var(--primary));stroke-width:1.6;fill:none;stroke-linejoin:round;stroke-linecap:round}
+svg .area{fill:hsl(var(--primary) / 0.12);stroke:none}
+svg .threshold{stroke:hsl(var(--warn) / 0.6);stroke-width:1;stroke-dasharray:3 3;fill:none}
+svg .axis-tick{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground))}
+
+/* ── subcarrier spectrum analyzer (animated EQ bars) ─────────── */
+.eq-stats{display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));margin:0.5rem 0 0.75rem;padding:0.45rem 0.7rem;background:hsl(var(--background) / 0.6);border-radius:0.4rem;border:1px solid hsl(var(--border) / 0.45)}
+.eq-stats .stat{display:inline-flex;align-items:baseline;gap:0.35rem}
+.eq-stats .stat-l{color:hsl(var(--muted-foreground));font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em}
+.eq-stats .stat-v{color:hsl(var(--foreground))}
+.eq-stats .stat-v.good{color:hsl(142 70% 65%)}
+.eq-stats .stat-v.bad{color:hsl(0 70% 70%)}
+
+.eq-host{position:relative;height:300px;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.7);border-radius:0.5rem;padding:14px 14px 36px 44px;overflow:hidden}
+
+/* Y axis on the left */
+.eq-yaxis{position:absolute;left:0;top:14px;bottom:36px;width:38px;font-family:var(--font-mono);font-size:0.5625rem;color:hsl(var(--muted-foreground));pointer-events:none}
+.eq-yaxis span{position:absolute;right:6px;transform:translateY(-50%);white-space:nowrap}
+.eq-yaxis span::after{content:'';position:absolute;right:-5px;top:50%;width:3px;height:1px;background:hsl(var(--border));transform:translateY(-50%)}
+
+/* plot area: a single SVG holds gridlines, threshold, area, curve, peaks, pilots */
+.eq-plot{position:absolute;left:44px;right:14px;top:14px;bottom:36px;z-index:1}
+.eq-plot svg{width:100%;height:100%;display:block;overflow:visible}
+.eq-grid-line-svg{stroke:hsl(var(--border) / 0.35);stroke-width:0.75;stroke-dasharray:2 3;fill:none}
+.eq-threshold-line{stroke:hsl(var(--warn));stroke-width:1;stroke-dasharray:4 3;fill:none;opacity:0.75}
+.eq-threshold-label{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--warn));letter-spacing:0.03em}
+/* filled area under the curve — cyan gradient that fades to transparent */
+.eq-area{stroke:none;transition:opacity 0.3s ease}
+/* the live coherence curve */
+.eq-line{stroke:hsl(var(--primary));stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px hsl(var(--primary) / 0.45));transition:filter 0.5s ease}
+.eq-line.flash{filter:drop-shadow(0 0 7px hsl(var(--primary) / 0.9))}
+/* dashed envelope showing peak-hold per subcarrier */
+.eq-peakline{stroke:hsl(var(--muted-foreground));stroke-width:1;fill:none;stroke-dasharray:2 3;opacity:0.55}
+/* pilot tone markers — accent green dots with soft halo */
+.eq-pilot-glow{fill:hsl(var(--accent));opacity:0.22}
+.eq-pilot{fill:hsl(var(--accent));stroke:hsl(var(--background));stroke-width:1}
+
+/* X axis */
+.eq-xaxis{position:absolute;left:44px;right:14px;bottom:0;height:30px;font-family:var(--font-mono);font-size:0.5625rem;color:hsl(var(--muted-foreground));padding-top:6px;display:grid;grid-template-columns:repeat(52,1fr);gap:2px;letter-spacing:0.02em}
+.eq-xaxis span{text-align:center;position:relative;line-height:1.4}
+.eq-xaxis span.major{color:hsl(var(--foreground))}
+.eq-xaxis span.pilot{color:hsl(var(--primary));font-weight:600}
+.eq-xaxis span.dc{color:hsl(var(--muted-foreground) / 0.7);font-style:italic}
+.eq-xaxis span.major::before{content:'';position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:1px;height:3px;background:hsl(var(--border))}
+
+/* legend */
+.eq-legend{display:flex;align-items:center;gap:1.1rem;margin-top:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+.eq-legend .lg-key{display:inline-flex;align-items:center;gap:0.35rem}
+.eq-legend .swatch-line{display:inline-block;width:18px;height:2px;border-radius:1px;background:hsl(var(--primary));box-shadow:0 0 4px hsl(var(--primary) / 0.5)}
+.eq-legend .swatch-peak{display:inline-block;width:18px;height:0;border-top:1px dashed hsl(var(--muted-foreground))}
+.eq-legend .swatch-gate{display:inline-block;width:18px;height:0;border-top:1px dashed hsl(var(--warn))}
+.eq-legend .swatch-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:hsl(var(--accent));box-shadow:0 0 0 2px hsl(var(--accent) / 0.2)}
+
+/* ── subcarrier grid (square heatmap, click-to-mask) ─────────── */
+.subc-grid{display:grid;gap:3px;grid-template-columns:repeat(26,1fr);margin-top:0.5rem}
+.subc-cell{aspect-ratio:1;border-radius:3px;background:hsl(var(--muted));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.5625rem;color:hsl(var(--foreground) / 0.6);transition:background 0.3s;cursor:pointer;user-select:none}
+.subc-cell.masked{background:hsl(var(--border));opacity:0.4}
+
+/* ── phase wheel (polar) ─────────────────────────────────────── */
+.phase-wheel{width:100%;max-width:220px;height:auto;margin:0 auto;display:block}
+.phase-wheel .pw-bg{fill:hsl(var(--background));stroke:hsl(var(--border));stroke-width:1}
+.phase-wheel .pw-ring{fill:none;stroke:hsl(var(--border) / 0.5);stroke-dasharray:2 4}
+.phase-wheel .pw-axis{stroke:hsl(var(--border) / 0.6);stroke-width:1}
+.phase-wheel .pw-spoke{stroke-width:1.2;stroke-linecap:round;opacity:0.85}
+.phase-wheel text{font-family:var(--font-mono);font-size:8px;fill:hsl(var(--muted-foreground))}
+
+/* ── event stream ────────────────────────────────────────────── */
+.evt-list{display:flex;flex-direction:column;gap:0.3rem}
+.evt{display:grid;grid-template-columns:74px 130px 1fr 80px;gap:0.625rem;align-items:center;padding:0.4rem 0.625rem;border-left:2px solid hsl(var(--border));background:hsl(var(--secondary) / 0.35);border-radius:0.3rem;font-family:var(--font-mono);font-size:0.75rem;transition:background 0.3s}
+.evt.fresh{animation:fresh-evt 0.5s ease}
+@keyframes fresh-evt{0%{background:hsl(var(--primary) / 0.22);transform:translateX(-2px)}100%{background:hsl(var(--secondary) / 0.35);transform:none}}
+.evt.t-score{border-left-color:hsl(var(--primary))}
+.evt.t-quality{border-left-color:hsl(var(--accent))}
+.evt.t-gate{border-left-color:hsl(var(--warn))}
+.evt-ts{color:hsl(var(--muted-foreground));font-size:0.6875rem}
+.evt-type{font-weight:600;font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.04em}
+.evt.t-score .evt-type{color:hsl(var(--primary))}
+.evt.t-quality .evt-type{color:hsl(var(--accent))}
+.evt.t-gate .evt-type{color:hsl(var(--warn))}
+.evt-body{color:hsl(var(--foreground));font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evt-meta{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right}
+
+/* ── toolbar row ─────────────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.toolbar .spacer{flex:1}
+
+/* ── config slider rows ──────────────────────────────────────── */
+.cfg-row{display:grid;grid-template-columns:180px 1fr 80px;gap:0.75rem;align-items:center;padding:0.625rem 0;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-label{font-size:0.8125rem;color:hsl(var(--foreground))}
+.cfg-label .note{display:block;font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.cfg-val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--primary));text-align:right}
+
+/* ── docs ────────────────────────────────────────────────────── */
+.doc-block{padding:1rem 0;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.doc-block:last-child{border-bottom:none;padding-bottom:0}
+.doc-block:first-child{padding-top:0}
+.doc-block h3{font-size:0.9375rem;font-weight:600;margin-bottom:0.4rem;color:hsl(var(--foreground))}
+.doc-block p{font-size:0.875rem;color:hsl(var(--foreground));line-height:1.65;margin-bottom:0.5rem}
+.doc-block code{background:hsl(var(--background));padding:0.1rem 0.35rem;border-radius:0.25rem;font-size:0.75rem;color:hsl(var(--primary));border:1px solid hsl(var(--border) / 0.5)}
+.doc-block ul{padding-left:1.25rem;font-size:0.8125rem;line-height:1.7;color:hsl(var(--foreground))}
+.doc-block ul li{margin-bottom:0.2rem}
+
+@media (max-width: 720px){
+  .cfg-row{grid-template-columns:1fr;gap:0.3rem}
+  .cfg-val{text-align:left}
+  .evt{grid-template-columns:1fr;gap:0.15rem}
+  .evt-meta{text-align:left}
+  .eq-stats{gap:0.6rem}
+  .eq-host{padding:10px 8px 32px 36px;height:240px}
+  .eq-yaxis{width:30px}
+  .eq-plot,.eq-xaxis{left:36px;right:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <a href="#/overview" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12 q3 -6 6 0 t6 0 t6 0"/>
+          <path d="M3 12 q3 6 6 0 t6 0 t6 0" opacity="0.45"/>
+        </svg>
+      </div>
+      <span class="brand-text"><b>Coherence</b><span class="slash">/</span>Phase Analysis<span class="brand-ver mono">v1.5.0</span></span>
+    </a>
+    <nav class="nav">
+      <a href="#/overview">Overview</a>
+      <a href="#/live">Live</a>
+      <a href="#/events">Events</a>
+      <a href="#/config">Config</a>
+      <a href="#/docs">Docs</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ────────────────────────────── OVERVIEW ────────────────────── -->
+  <div class="panel" data-route="overview">
+
+    <div class="section">
+      <h1 class="page">Multi-subcarrier phase coherence</h1>
+      <p class="lede">
+        Computes per-subcarrier phase coherence from CSI input and emits
+        <code>coherence_score</code> + <code>quality_report</code> events.
+        Foundation for environment quality assessment and signal gating.
+      </p>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem">
+        <button class="btn primary sm" id="hero-install">Install</button>
+        <a class="btn outline sm" href="#/docs">Docs</a>
+        <span class="badge info" style="margin-left:0.25rem">v1.5.0</span>
+        <span class="badge muted">14 KB</span>
+        <span class="badge muted">medium</span>
+        <span class="badge muted">ESP32-S3</span>
+        <span class="badge muted">input: CSI phase</span>
+      </div>
+    </div>
+
+    <div class="status-chip">
+      <span class="dot up pulse"></span>
+      <span>CSI capture <strong>online</strong> · analyzer running at <strong id="hdr-rate">1 Hz</strong></span>
+      <span class="chip-meta" id="hdr-uptime">uptime 00:00</span>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12c3-6 6 0 6 0s3 6 6 0 6 0 6 0"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Coherence score</div>
+            <div class="kpi-val mono" id="kpi-score">—</div>
+            <div class="kpi-sub" id="kpi-score-sub">mean across active subcarriers</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent" id="kpi-grade-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Quality grade</div>
+            <div class="kpi-val" id="kpi-grade" style="font-size:1.125rem">—</div>
+            <div class="kpi-sub" id="kpi-grade-sub">5s rolling window</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M4 19V5M9 19V9M14 19v-7M19 19V3"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Active subcarriers</div>
+            <div class="kpi-val mono" id="kpi-sub">— / 52</div>
+            <div class="kpi-sub" id="kpi-sub-sub">OFDM data subcarriers</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M11 10v4M15 10v4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Gate state</div>
+            <div class="kpi-val" id="kpi-gate" style="font-size:1.125rem">—</div>
+            <div class="kpi-sub" id="kpi-gate-sub">threshold 0.60</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Events / sec</div>
+            <div class="kpi-val mono" id="kpi-rate">—</div>
+            <div class="kpi-sub">rolling 5s</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live signal -->
+    <div class="section">
+      <h2>Live signal</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Aggregate score</div>
+              <div class="card-sub">mean coherence · 0..1</div>
+            </div>
+            <a class="btn sm outline" href="#/live">Live →</a>
+          </div>
+          <div class="gauge" id="ov-gauge">
+            <svg viewBox="0 0 200 200">
+              <circle class="track" cx="100" cy="100" r="80"/>
+              <circle class="fill" id="ov-gauge-fill" cx="100" cy="100" r="80" stroke-dasharray="502.65" stroke-dashoffset="502.65"/>
+            </svg>
+            <div class="gauge-val">
+              <div class="gauge-num mono" id="ov-gauge-num">—</div>
+              <div class="gauge-label" id="ov-gauge-label">coherence</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Score · last 60s</div>
+              <div class="card-sub">dashed line = gate threshold</div>
+            </div>
+          </div>
+          <div class="trend-host" style="flex:1;min-height:160px">
+            <svg id="ov-spark" viewBox="0 0 600 160" preserveAspectRatio="none">
+              <g id="ov-spark-grid"></g>
+              <path class="area" id="ov-spark-area" d=""/>
+              <path class="line" id="ov-spark-line" d=""/>
+              <line class="threshold" x1="0" y1="96" x2="600" y2="96"/>
+            </svg>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.25rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">
+            <span>min <span id="ov-min" style="color:hsl(var(--foreground))">—</span></span>
+            <span>mean <span id="ov-mean" style="color:hsl(var(--foreground))">—</span></span>
+            <span>max <span id="ov-max" style="color:hsl(var(--foreground))">—</span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Recent events</div>
+              <div class="card-sub">last 5 emitted</div>
+            </div>
+            <a class="btn sm outline" href="#/events">All →</a>
+          </div>
+          <div class="evt-list" id="ov-recent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subcarrier health -->
+    <div class="section">
+      <h2>Subcarrier health</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI coherence waterfall</div>
+            <div class="card-sub">52 OFDM data subcarriers × last 60 samples · pilot tones marked · DC null at index 0</div>
+          </div>
+          <span class="badge muted mono" id="ov-sub-count">— / 52 active</span>
+        </div>
+        <div class="eq-stats">
+          <span class="stat"><span class="stat-l">mean</span><span class="stat-v mono" id="ov-stat-mean">—</span></span>
+          <span class="stat"><span class="stat-l">worst</span><span class="stat-v mono" id="ov-stat-worst">—</span></span>
+          <span class="stat"><span class="stat-l">best</span><span class="stat-v mono" id="ov-stat-best">—</span></span>
+          <span class="stat"><span class="stat-l">pilots</span><span class="stat-v mono" id="ov-stat-pilots">—</span></span>
+          <span class="stat" style="margin-left:auto"><span class="stat-l">peak hold</span><span class="stat-v mono" id="ov-stat-peak">—</span></span>
+        </div>
+        <div class="eq-host">
+          <div class="eq-yaxis">
+            <span style="top:0%">1.0</span>
+            <span style="top:25%">0.75</span>
+            <span style="top:50%">0.50</span>
+            <span style="top:75%">0.25</span>
+            <span style="top:100%">0.0</span>
+          </div>
+          <div class="eq-plot">
+            <svg viewBox="0 0 600 240" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="ov-area-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stop-color="hsl(185 80% 50%)" stop-opacity="0.42"/>
+                  <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="60"  y2="60"  vector-effect="non-scaling-stroke"/>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="120" y2="120" vector-effect="non-scaling-stroke"/>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="180" y2="180" vector-effect="non-scaling-stroke"/>
+              <line class="eq-threshold-line" id="ov-threshold" x1="0" x2="600" y1="96" y2="96" vector-effect="non-scaling-stroke"/>
+              <text class="eq-threshold-label" id="ov-threshold-label" x="594" y="92" text-anchor="end">gate 0.60</text>
+              <path class="eq-area"     id="ov-area"     d="" fill="url(#ov-area-grad)"/>
+              <path class="eq-peakline" id="ov-peakline" d="" vector-effect="non-scaling-stroke"/>
+              <path class="eq-line"     id="ov-line"     d="" vector-effect="non-scaling-stroke"/>
+              <g id="ov-pilots"></g>
+            </svg>
+          </div>
+          <div class="eq-xaxis" id="ov-eq-xaxis"></div>
+        </div>
+        <div class="eq-legend">
+          <span class="lg-key"><span class="swatch-line"></span> coherence</span>
+          <span class="lg-key"><span class="swatch-peak"></span> peak hold</span>
+          <span class="lg-key"><span class="swatch-dot"></span> pilot tone</span>
+          <span class="lg-key"><span class="swatch-gate"></span> gate threshold</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library manifest (mirrors LLM Router table card) -->
+    <div class="section">
+      <h2>Library manifest</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">cogs.coherence</div>
+            <div class="card-sub">module metadata · source-of-truth</div>
+          </div>
+          <a class="btn sm outline" href="#/docs">API reference →</a>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>field</th><th>value</th><th>notes</th></tr></thead>
+            <tbody>
+              <tr><td>name</td><td>coherence</td><td>module · cogs.coherence</td></tr>
+              <tr><td>version</td><td>1.5.0</td><td>semver · released 2026-04-22</td></tr>
+              <tr><td>size</td><td>14 KB</td><td>compiled footprint</td></tr>
+              <tr><td>difficulty</td><td>medium</td><td>install complexity</td></tr>
+              <tr><td>hardware</td><td>ESP32-S3</td><td>required radio</td></tr>
+              <tr><td>input</td><td>float32[52]</td><td>CSI phase (radians)</td></tr>
+              <tr><td>events</td><td>coherence_score, quality_report</td><td>cog event bus</td></tr>
+              <tr><td>source</td><td>cogs/src/cogs/coherence</td><td>relative to repo root</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────── LIVE ────────────────────────── -->
+  <div class="panel" data-route="live">
+
+    <div class="section">
+      <h1 class="page">Live signal</h1>
+      <p class="lede">Aggregate score gauge, polar phase distribution, score trend and per-subcarrier coherence — all driven by the live CSI stream.</p>
+    </div>
+
+    <div class="status-chip" id="live-chip">
+      <span class="dot up pulse" id="live-chip-dot"></span>
+      <span>gate <strong id="banner-gate">open</strong> · grade <strong id="banner-grade">—</strong> · usable <strong id="banner-usable">— / 52</strong></span>
+      <span class="chip-meta" id="live-chip-seq">seq 0</span>
+    </div>
+
+    <div class="section">
+      <h2>Real-time analysis</h2>
+      <div class="grid-3">
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Aggregate score</div>
+              <div class="card-sub">mean of active subcarriers</div>
+            </div>
+          </div>
+          <div class="gauge" id="gauge">
+            <svg viewBox="0 0 200 200">
+              <circle class="track" cx="100" cy="100" r="80"/>
+              <circle class="fill" id="gauge-fill" cx="100" cy="100" r="80" stroke-dasharray="502.65" stroke-dashoffset="502.65"/>
+            </svg>
+            <div class="gauge-val">
+              <div class="gauge-num mono" id="gauge-num">—</div>
+              <div class="gauge-label" id="gauge-label">coherence</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Phase distribution</div>
+              <div class="card-sub">per-subcarrier vectors · length = coherence</div>
+            </div>
+          </div>
+          <svg class="phase-wheel" id="phase-wheel" viewBox="-130 -130 260 260">
+            <circle class="pw-bg" cx="0" cy="0" r="108"/>
+            <circle class="pw-ring" cx="0" cy="0" r="80"/>
+            <circle class="pw-ring" cx="0" cy="0" r="40"/>
+            <line class="pw-axis" x1="-108" y1="0" x2="108" y2="0"/>
+            <line class="pw-axis" x1="0" y1="-108" x2="0" y2="108"/>
+            <text x="111" y="3">0</text>
+            <text x="-6" y="-113">π/2</text>
+            <text x="-126" y="3">π</text>
+            <text x="-12" y="121">-π/2</text>
+            <g id="phase-spokes"></g>
+          </svg>
+        </div>
+
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Score · trend</div>
+              <div class="card-sub" id="trend-sub">120 samples · 1 Hz</div>
+            </div>
+          </div>
+          <div class="trend-host" style="flex:1;min-height:160px">
+            <svg id="trend" viewBox="0 0 600 160" preserveAspectRatio="none">
+              <g id="trend-grid"></g>
+              <path class="area" id="trend-area" d=""/>
+              <path class="line" id="trend-line" d=""/>
+              <line class="threshold" x1="0" y1="96" x2="600" y2="96"/>
+            </svg>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.25rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">
+            <span>min <span id="trend-min" style="color:hsl(var(--foreground))">—</span></span>
+            <span>mean <span id="trend-mean" style="color:hsl(var(--foreground))">—</span></span>
+            <span>max <span id="trend-max" style="color:hsl(var(--foreground))">—</span></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Per-subcarrier coherence</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI coherence waterfall</div>
+            <div class="card-sub">52 OFDM data subcarriers × last 60 samples · pilot tones marked · DC null at center</div>
+          </div>
+          <span class="badge muted mono" id="subc-count">— / 52 active</span>
+        </div>
+        <div class="eq-stats">
+          <span class="stat"><span class="stat-l">mean</span><span class="stat-v mono" id="live-stat-mean">—</span></span>
+          <span class="stat"><span class="stat-l">worst</span><span class="stat-v mono" id="live-stat-worst">—</span></span>
+          <span class="stat"><span class="stat-l">best</span><span class="stat-v mono" id="live-stat-best">—</span></span>
+          <span class="stat"><span class="stat-l">pilots</span><span class="stat-v mono" id="live-stat-pilots">—</span></span>
+          <span class="stat" style="margin-left:auto"><span class="stat-l">peak hold</span><span class="stat-v mono" id="live-stat-peak">—</span></span>
+        </div>
+        <div class="eq-host">
+          <div class="eq-yaxis">
+            <span style="top:0%">1.0</span>
+            <span style="top:25%">0.75</span>
+            <span style="top:50%">0.50</span>
+            <span style="top:75%">0.25</span>
+            <span style="top:100%">0.0</span>
+          </div>
+          <div class="eq-plot">
+            <svg viewBox="0 0 600 240" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="live-area-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stop-color="hsl(185 80% 50%)" stop-opacity="0.42"/>
+                  <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="60"  y2="60"  vector-effect="non-scaling-stroke"/>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="120" y2="120" vector-effect="non-scaling-stroke"/>
+              <line class="eq-grid-line-svg" x1="0" x2="600" y1="180" y2="180" vector-effect="non-scaling-stroke"/>
+              <line class="eq-threshold-line" id="live-threshold" x1="0" x2="600" y1="96" y2="96" vector-effect="non-scaling-stroke"/>
+              <text class="eq-threshold-label" id="live-threshold-label" x="594" y="92" text-anchor="end">gate 0.60</text>
+              <path class="eq-area"     id="live-area"     d="" fill="url(#live-area-grad)"/>
+              <path class="eq-peakline" id="live-peakline" d="" vector-effect="non-scaling-stroke"/>
+              <path class="eq-line"     id="live-line"     d="" vector-effect="non-scaling-stroke"/>
+              <g id="live-pilots"></g>
+            </svg>
+          </div>
+          <div class="eq-xaxis" id="live-eq-xaxis"></div>
+        </div>
+        <div class="eq-legend">
+          <span class="lg-key"><span class="swatch-line"></span> coherence</span>
+          <span class="lg-key"><span class="swatch-peak"></span> peak hold</span>
+          <span class="lg-key"><span class="swatch-dot"></span> pilot tone</span>
+          <span class="lg-key"><span class="swatch-gate"></span> gate threshold</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────── EVENTS ──────────────────────── -->
+  <div class="panel" data-route="events">
+
+    <div class="section">
+      <h1 class="page">Events</h1>
+      <p class="lede">Streaming feed of <code>coherence_score</code>, <code>quality_report</code> and <code>gate_change</code>. Capped at 200 entries; older events drop off.</p>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Events / sec</div>
+            <div class="kpi-val mono" id="evt-rate">—</div>
+            <div class="kpi-sub">rolling 5s</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12c3-6 6 0 6 0s3 6 6 0 6 0 6 0"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">coherence_score</div>
+            <div class="kpi-val mono" id="cnt-score">0</div>
+            <div class="kpi-sub">since session start</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">quality_report</div>
+            <div class="kpi-val mono" id="cnt-quality">0</div>
+            <div class="kpi-sub">aggregated grades</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/><path d="M12 9v5"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">gate_change</div>
+            <div class="kpi-val mono" id="cnt-gate">0</div>
+            <div class="kpi-sub">edge-triggered</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Event stream</h2>
+      <div class="card">
+        <div class="toolbar">
+          <div class="pill-tabs" id="filter-tabs">
+            <button class="pill-tab on" data-filter="all">All</button>
+            <button class="pill-tab" data-filter="score">coherence_score</button>
+            <button class="pill-tab" data-filter="quality">quality_report</button>
+            <button class="pill-tab" data-filter="gate">gate_change</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn sm" id="pause-btn">Pause stream</button>
+          <button class="btn sm outline" id="clear-btn">Clear</button>
+        </div>
+        <div class="evt-list" id="stream"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────── CONFIG ──────────────────────── -->
+  <div class="panel" data-route="config">
+
+    <div class="section">
+      <h1 class="page">Configuration</h1>
+      <p class="lede">Tunable parameters. Edits update the running analyzer in this preview but do not persist.</p>
+    </div>
+
+    <div class="section">
+      <h2>Thresholds &amp; cadence</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Parameters</div>
+              <div class="card-sub">drive grading + gate state</div>
+            </div>
+            <button class="btn sm outline" id="cfg-reset">Reset</button>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-label">Emit rate
+              <span class="note">how often <code>coherence_score</code> publishes</span>
+            </div>
+            <input type="range" id="emit-rate" min="200" max="2000" value="1000" step="100">
+            <div class="cfg-val" id="emit-rate-val">1000 ms</div>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-label">Gate threshold
+              <span class="note">below this, gate closes</span>
+            </div>
+            <input type="range" id="gate-th" min="0" max="100" value="60">
+            <div class="cfg-val" id="gate-th-val">0.60</div>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-label">Warn threshold
+              <span class="note">below this, grade is <code>MARGINAL</code></span>
+            </div>
+            <input type="range" id="warn-th" min="0" max="100" value="80">
+            <div class="cfg-val" id="warn-th-val">0.80</div>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-label">Quality window
+              <span class="note">samples per <code>quality_report</code></span>
+            </div>
+            <input type="range" id="qw" min="1" max="30" value="5">
+            <div class="cfg-val" id="qw-val">5 samples</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Live preview</div>
+              <div class="card-sub">current config applied to the active stream</div>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <tbody>
+                <tr><td>current_score</td><td class="mono" id="prev-score">—</td></tr>
+                <tr><td>grade (local)</td><td id="prev-grade">—</td></tr>
+                <tr><td>gate (local)</td><td id="prev-gate">—</td></tr>
+                <tr><td>usable_subcarriers</td><td class="mono" id="prev-usable">—</td></tr>
+                <tr><td>emit_rate_ms</td><td class="mono" id="prev-rate">1000</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Subcarrier mask</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">52 OFDM subcarriers · click to toggle</div>
+            <div class="card-sub">Edge bands and DC null are commonly masked</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+            <button class="btn sm outline" id="mask-all">Enable all</button>
+            <button class="btn sm outline" id="mask-edges">Mask edges (0–5, 46–51)</button>
+            <button class="btn sm outline" id="mask-none">Disable all</button>
+          </div>
+        </div>
+        <div class="subc-grid" id="mask-grid"></div>
+        <div class="subc-legend">
+          <span class="lg-key"><span class="lg-dot" style="background:hsl(var(--primary) / 0.7)"></span> active</span>
+          <span class="lg-key"><span class="lg-dot" style="background:hsl(var(--border))"></span> masked</span>
+          <span class="spacer" style="flex:1"></span>
+          <span class="mono" id="mask-summary">— / 52 active</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Resolved configuration</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">cogs.coherence.toml</div>
+            <div class="card-sub">JSON payload sent to the on-device library</div>
+          </div>
+          <button class="btn sm outline" id="copy-cfg">Copy</button>
+        </div>
+        <pre class="logbox" id="config-json">—</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────────────── DOCS ────────────────────────── -->
+  <div class="panel" data-route="docs">
+
+    <div class="section">
+      <h1 class="page">Documentation</h1>
+      <p class="lede">Coherence consumes per-subcarrier CSI phase from an ESP32-S3 and emits a scalar coherence score plus a categorical quality report. Downstream cogs use the score (or the derived gate signal) to drop frames captured during interference or motion-induced phase chaos.</p>
+    </div>
+
+    <div class="section">
+      <h2>Reference</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Quick reference</div>
+              <div class="card-sub">cogs.coherence · v1.5.0</div>
+            </div>
+          </div>
+          <table>
+            <tbody>
+              <tr><td>module</td><td>cogs.coherence</td></tr>
+              <tr><td>hardware</td><td>ESP32-S3</td></tr>
+              <tr><td>input</td><td>float32[52] phase (rad)</td></tr>
+              <tr><td>output</td><td>float32 score · grade</td></tr>
+              <tr><td>events</td><td>coherence_score, quality_report, gate_change</td></tr>
+              <tr><td>source</td><td>cogs/src/cogs/coherence</td></tr>
+              <tr><td>license</td><td>MIT</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Score derivation</div>
+              <div class="card-sub">how the scalar score is computed</div>
+            </div>
+          </div>
+          <p style="font-size:0.875rem;color:hsl(var(--foreground));line-height:1.65">
+            For each tick the analyzer computes the per-subcarrier phase residual against the running mean
+            phase, then maps each residual through <code>exp(-|Δφ|)</code> to produce a per-subcarrier
+            coherence in <code>[0, 1]</code>. The reported score is the mean across <em>active</em>
+            subcarriers (see <a href="#/config">Config</a> for masking):
+          </p>
+          <pre class="logbox" style="margin-top:0.5rem">score = mean(exp(-|phase_i - phase_mean|))
+        for i in active_subcarriers</pre>
+          <p style="font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.5rem">
+            A perfectly phase-locked signal yields 1.0; uniform phase noise drifts the score toward 0.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Event schema</h2>
+      <div class="card">
+        <div class="doc-block">
+          <h3>coherence_score <span class="badge info" style="margin-left:0.5rem;font-weight:500">1 Hz</span></h3>
+          <p>Scalar coherence score plus per-subcarrier breakdown. Used by downstream cogs for gating.</p>
+          <pre class="logbox">{
+  "type": "coherence_score",
+  "ts":   1762345678.421,
+  "score": 0.872,
+  "raw_score": 0.891,
+  "usable_subcarriers": 46,
+  "total_subcarriers": 52,
+  "gate_open": true,
+  "subcarrier_coherence": [0.92, 0.88, ..., 0.74]
+}</pre>
+        </div>
+        <div class="doc-block">
+          <h3>quality_report <span class="badge good" style="margin-left:0.5rem;font-weight:500">every N ticks</span></h3>
+          <p>Categorical quality grade aggregated over a configurable window. Grades:
+            <code>STABLE</code>, <code>MARGINAL</code>, <code>DEGRADED</code>.</p>
+          <pre class="logbox">{
+  "type": "quality_report",
+  "ts":   1762345683.421,
+  "grade": "STABLE",
+  "window_s": 5,
+  "mean_score": 0.871,
+  "min_score": 0.812,
+  "usable": 46,
+  "total": 52
+}</pre>
+        </div>
+        <div class="doc-block">
+          <h3>gate_change <span class="badge warn" style="margin-left:0.5rem;font-weight:500">on transition</span></h3>
+          <p>Edge-triggered notification when the gate transitions between open and closed.</p>
+          <pre class="logbox">{
+  "type": "gate_change",
+  "ts":   1762345684.123,
+  "state": "closed",
+  "reason": "interference",
+  "score": 0.412
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Integration</h2>
+      <div class="card">
+        <div class="doc-block">
+          <h3>Subscribe to scores</h3>
+          <pre class="logbox">from cogs.coherence import Coherence
+from cogs.bus import bus
+
+coh = Coherence(emit_rate_ms=1000, gate_threshold=0.60)
+coh.start()
+
+@bus.on("coherence_score")
+def on_score(evt):
+    if not evt["gate_open"]:
+        return  # phase coherence collapsed — drop this tick
+    process_frame(evt["score"])</pre>
+        </div>
+        <div class="doc-block">
+          <h3>Configure subcarrier mask</h3>
+          <p>Edge subcarriers (indices 0–5 and 46–51) carry pilot tones or guard bands and are typically masked. The library accepts a list of indices to <em>exclude</em>:</p>
+          <pre class="logbox">coh = Coherence(
+    emit_rate_ms=1000,
+    gate_threshold=0.60,
+    warn_threshold=0.80,
+    quality_window=5,
+    subcarrier_mask=[0,1,2,3,4,5, 46,47,48,49,50,51],
+)</pre>
+        </div>
+        <div class="doc-block">
+          <h3>Gate signal contract</h3>
+          <ul>
+            <li><code>gate_open=true</code> iff <code>score &gt;= gate_threshold</code>.</li>
+            <li><code>gate_change</code> emits only on transitions, not every tick.</li>
+            <li>The gate is advisory — coherence never drops frames itself.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">coherence · v1.5.0</span> · foundation for environment quality assessment and signal gating</div>
+    <div style="margin-top:0.4rem"><span class="mono">source: cogs/src/cogs/coherence</span> · <a href="#/docs">docs</a> · <a href="#/config">config</a></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const N = 52;
+  /* index 25 is DC null (between subcarriers -1 and +1); pilots at -21, -7, +7, +21
+     in [0..51] index space those land at 5, 19, 32, 46 */
+  const DC_INDEX = 25;
+  const PILOTS = new Set([5, 19, 32, 46]);
+
+  /* ── helpers ─────────────────────────────────────────────────── */
+  const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  function fmtTime(d){ d = d instanceof Date ? d : new Date(d); const p = n => String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+  function gradeOf(s, gth, wth){ if (s >= wth) return 'good'; if (s >= gth) return 'warn'; return 'bad'; }
+  function gradeLabel(g){ return { good:'STABLE', warn:'MARGINAL', bad:'DEGRADED' }[g] || '—'; }
+
+  /* ── realistic CSI-phase coherence simulator ─────────────────────
+   * Base coherence: Ornstein-Uhlenbeck-ish walk anchored at ~0.90
+   * Frequency-selective fading: each subcarrier has its own slow random walk
+   * Poisson-spawned interference bursts: gaussian envelope over a random
+   *   contiguous range of subcarriers, ~0.2-1.5s duration
+   * Carrier frequency offset (CFO): slow drift adds linear phase ramp
+   * Pilot tones: stay near 0.95 (reference subcarriers)
+   * DC null: no data, reported as masked-equivalent (coherence undefined)
+   * Edge guard bands (0..4, 47..51): ~0.10 lower steady-state coherence
+   * ───────────────────────────────────────────────────────────── */
+  const fadingDev = new Float64Array(N);   // per-subcarrier slow drift
+  let baseCoh = 0.92, baseTgt = 0.92;
+  let cfo = 0, cfoRate = 0.0;
+  const bursts = [];                       // active interference bursts
+  let mask = new Array(N).fill(true);
+  let seq = 0;
+  const subscribers = [];
+  let emitMs = 1000;
+  let timer = null;
+  const startMs = Date.now();
+
+  function spawnBurst(now){
+    /* skew duration toward 200-600ms (human motion); occasionally longer */
+    const longRoll = Math.random() < 0.18;
+    const duration = longRoll ? 1500 + Math.random()*2500 : 200 + Math.random()*500;
+    const center = 6 + Math.random()*40;
+    const width = 4 + Math.random()*16;
+    const magnitude = 0.22 + Math.random()*0.55;
+    bursts.push({ t0:now, duration, center, width, magnitude });
+  }
+
+  function tick(){
+    const now = Date.now();
+    const dtS = emitMs / 1000;
+
+    /* base coherence: slow target walk, fast follow */
+    baseTgt += (Math.random()-0.5)*0.012*dtS*60;
+    baseTgt = Math.max(0.78, Math.min(0.96, baseTgt));
+    baseCoh += (baseTgt - baseCoh) * 0.12;
+
+    /* CFO drifts slowly, occasionally re-tracks toward 0 */
+    cfoRate += (Math.random()-0.5)*0.0006;
+    cfoRate = Math.max(-0.012, Math.min(0.012, cfoRate));
+    cfo += cfoRate;
+    if (Math.abs(cfo) > 0.6) cfo *= 0.92;  /* periodic re-lock */
+
+    /* per-subcarrier fading: random walk that decays toward 0 */
+    for (let i = 0; i < N; i++){
+      fadingDev[i] = fadingDev[i]*0.94 + (Math.random()-0.5)*0.045;
+    }
+
+    /* poisson burst spawn (~1 every 9s on average) */
+    if (Math.random() < dtS / 9) spawnBurst(now);
+
+    /* process active bursts; remove expired */
+    const burstShift = new Float64Array(N);
+    for (let bi = bursts.length - 1; bi >= 0; bi--){
+      const b = bursts[bi];
+      const age = (now - b.t0) / b.duration;
+      if (age >= 1) { bursts.splice(bi, 1); continue; }
+      /* envelope: smooth attack/decay (raised cosine) */
+      const env = 0.5 - 0.5*Math.cos(2*Math.PI*age);
+      for (let i = 0; i < N; i++){
+        const d = i - b.center;
+        const g = Math.exp(-(d*d)/(2*b.width*b.width));
+        burstShift[i] += b.magnitude * env * g;
+      }
+    }
+
+    /* compute coherence + phase per subcarrier */
+    const coh = new Array(N), phases = new Array(N);
+    let sum = 0, used = 0;
+    for (let i = 0; i < N; i++){
+      if (i === DC_INDEX){ coh[i] = null; phases[i] = null; continue; }
+      if (!mask[i])      { coh[i] = null; phases[i] = null; continue; }
+
+      const edge = Math.min(i, N-1-i) <= 4 ? 0.10 : 0;
+      let c;
+      if (PILOTS.has(i)){
+        /* pilots stay rock-solid (small jitter) */
+        c = 0.94 + (Math.random()-0.5)*0.03 - 0.4*burstShift[i];
+      } else {
+        c = baseCoh + fadingDev[i] - burstShift[i] - edge;
+      }
+      c = Math.max(0.02, Math.min(0.995, c));
+      coh[i] = c;
+
+      /* phase = CFO * subcarrier index (linear ramp) + per-subcarrier residual */
+      const idx = i - 25.5;  /* center around 0 */
+      const ramp = cfo * idx / 25.5;
+      const noise = (1 - c) * (Math.random()-0.5) * 2.2;
+      let ph = ramp + noise;
+      /* wrap to [-π, π] */
+      ph = ((ph + Math.PI) % (2*Math.PI)) - Math.PI;
+      if (ph < -Math.PI) ph += 2*Math.PI;
+      phases[i] = ph;
+      sum += c; used++;
+    }
+
+    const score = used ? sum/used : 0;
+    /* raw_score: drop CFO penalty — what coherence would be if CFO were tracked */
+    const cfoPenalty = Math.min(0.15, Math.abs(cfo)*0.25);
+    const raw = Math.max(0.02, Math.min(0.99, score + cfoPenalty*0.4));
+
+    let g;
+    /* use the active config thresholds if available (set by Config panel) */
+    if (cfgState.gate_threshold && cfgState.warn_threshold){
+      g = gradeOf(score, cfgState.gate_threshold, cfgState.warn_threshold);
+    } else {
+      g = gradeOf(score, 0.60, 0.80);
+    }
+    const gate_open = g !== 'bad';
+
+    const snap = {
+      seq: ++seq, ts: now,
+      score: +score.toFixed(4), raw_score: +raw.toFixed(4),
+      phases, subcarrier_coherence: coh,
+      usable_subcarriers: used, total_subcarriers: N,
+      grade: g, gate_open, mask: mask.slice(),
+      cfo: +cfo.toFixed(4),
+    };
+    subscribers.forEach(fn => { try { fn(snap); } catch(_){} });
+  }
+
+  /* ── lifecycle ────────────────────────────────────────────────── */
+  function start(){ if (!timer){ tick(); timer = setInterval(tick, emitMs); } }
+  function setRate(ms){ emitMs = Math.max(100, ms|0); if (timer){ clearInterval(timer); timer = setInterval(tick, emitMs); } }
+  const sim = {
+    start, setRate, on: fn => subscribers.push(fn), getRate: () => emitMs,
+    mask: {
+      get: () => mask.slice(),
+      toggle: i => { if (i>=0 && i<N) mask[i] = !mask[i]; },
+      set: a => { if (Array.isArray(a) && a.length===N) mask = a.map(Boolean); },
+      all: () => { mask = mask.map(() => true); },
+      none: () => { mask = mask.map(() => false); },
+    },
+  };
+
+  /* shared cfg state used by simulator for grading */
+  const cfgState = { gate_threshold:0.60, warn_threshold:0.80 };
+
+  /* ── router ──────────────────────────────────────────────────── */
+  const TITLES = { overview:'Overview', live:'Live', events:'Events', config:'Config', docs:'Docs' };
+  function route(){
+    let r = (location.hash || '#/overview').replace(/^#\//, '');
+    if (!TITLES[r]) r = 'overview';
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.route === r));
+    document.querySelectorAll('.nav a').forEach(a => {
+      const ar = (a.getAttribute('href')||'').replace(/^#\//, '');
+      a.classList.toggle('active', ar === r);
+    });
+    document.title = TITLES[r] + ' — Coherence';
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  if (!location.hash) location.hash = '#/overview';
+  route();
+
+  /* ── color ramp (template-faithful: cyan opacity only) ─────────
+     The template only uses --primary cyan + --accent green as data
+     colors. We encode coherence magnitude through opacity on the cyan,
+     so 0 → very dim cyan, 1 → full cyan. Pilots get accent green. */
+  function rampColor(v){
+    if (v == null) return 'hsl(var(--muted))';
+    const a = 0.20 + 0.65 * Math.max(0, Math.min(1, v));
+    return 'hsl(185 80% 50% / ' + a.toFixed(2) + ')';
+  }
+
+  /* ── reusable trend renderer ─────────────────────────────────── */
+  function renderTrend(svgSel, history, gridGroupSel, threshold){
+    const w = 600, h = 160, pad = 6;
+    if (history.length < 2){
+      document.querySelector(svgSel + ' .line').setAttribute('d', '');
+      document.querySelector(svgSel + ' .area').setAttribute('d', '');
+      return;
+    }
+    const xs = history.map((_,i) => pad + i*(w-2*pad)/Math.max(1, history.length-1));
+    const ys = history.map(v => pad + (1-v)*(h-2*pad));
+    const line = xs.map((x,i) => (i?'L':'M') + x.toFixed(1) + ' ' + ys[i].toFixed(1)).join(' ');
+    const area = line + ' L ' + xs[xs.length-1].toFixed(1) + ' ' + (h-pad) + ' L ' + xs[0].toFixed(1) + ' ' + (h-pad) + ' Z';
+    document.querySelector(svgSel + ' .line').setAttribute('d', line);
+    document.querySelector(svgSel + ' .area').setAttribute('d', area);
+    const thY = pad + (1-threshold)*(h-2*pad);
+    document.querySelector(svgSel + ' .threshold').setAttribute('y1', thY.toFixed(1));
+    document.querySelector(svgSel + ' .threshold').setAttribute('y2', thY.toFixed(1));
+    if (gridGroupSel && !document.querySelector(gridGroupSel + ' line')){
+      const g = document.querySelector(gridGroupSel);
+      [0.25,0.5,0.75].forEach(v => {
+        const y = pad + (1-v)*(h-2*pad);
+        const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        ln.setAttribute('class','grid-line');
+        ln.setAttribute('x1','0'); ln.setAttribute('x2','600');
+        ln.setAttribute('y1', y.toFixed(1)); ln.setAttribute('y2', y.toFixed(1));
+        g.appendChild(ln);
+      });
+    }
+  }
+
+  /* ── spectrum analyzer (animated EQ bars) ────────────────────── */
+  /* Subcarrier indices [0..51] map to RF-relative [-25..+26], with the
+     DC null sitting at index 25. */
+  function tickLabel(i){
+    const k = i - 25;
+    if (k > 0) return '+' + k;
+    if (k < 0) return '' + k;
+    return '0';
+  }
+
+  /* ── smooth filled-curve spectrum ─────────────────────────────
+     Renders the per-subcarrier coherence as a single Catmull-Rom
+     smoothed curve across the 52 OFDM indices. Each new snapshot
+     starts a ~600ms easeInOutQuad interpolation via rAF, so the
+     curve morphs continuously rather than snapping. Pilot tones are
+     dotted on the curve; peak-envelope is a dashed muted line. */
+  const CURVE_W = 600, CURVE_H = 240, CURVE_PAD = 4;
+  const X_STEP = (CURVE_W - 2*CURVE_PAD) / (N - 1);
+  const xOf = i => CURVE_PAD + i * X_STEP;
+  const yOf = v => CURVE_PAD + (1 - v) * (CURVE_H - 2*CURVE_PAD);
+
+  function buildXAxis(xaxisId){
+    const xax = document.getElementById(xaxisId);
+    let html = '';
+    for (let i = 0; i < N; i++){
+      const isPilot = PILOTS.has(i);
+      const isDC    = i === DC_INDEX;
+      let xlbl = '', xcls = '';
+      if (isPilot){ xlbl = '★' + tickLabel(i); xcls = 'pilot major'; }
+      else if (isDC){ xlbl = 'DC'; xcls = 'dc major'; }
+      else if (i % 5 === 0){ xlbl = tickLabel(i); xcls = 'major'; }
+      html += '<span class="' + xcls + '">' + xlbl + '</span>';
+    }
+    xax.innerHTML = html;
+  }
+
+  function buildCurve(prefix){
+    return {
+      line:           document.getElementById(prefix + '-line'),
+      area:           document.getElementById(prefix + '-area'),
+      peakline:       document.getElementById(prefix + '-peakline'),
+      pilots:         document.getElementById(prefix + '-pilots'),
+      threshold:      document.getElementById(prefix + '-threshold'),
+      thresholdLabel: document.getElementById(prefix + '-threshold-label'),
+      startVals:   new Float64Array(N),
+      currentVals: new Float64Array(N),
+      targetVals:  new Float64Array(N),
+      activeMask:  new Uint8Array(N),
+      peakVals:    new Float64Array(N),
+      animStart: 0,
+      animRaf: null,
+    };
+  }
+
+  function ingestCurve(c, snap){
+    for (let i = 0; i < N; i++){
+      c.startVals[i] = c.currentVals[i];
+      const v = snap.subcarrier_coherence[i];
+      c.activeMask[i] = (v != null && i !== DC_INDEX) ? 1 : 0;
+      c.targetVals[i] = (v != null) ? v : 0;
+      if (c.activeMask[i]){
+        if (c.targetVals[i] >= c.peakVals[i]) c.peakVals[i] = c.targetVals[i];
+        else c.peakVals[i] = Math.max(c.targetVals[i], c.peakVals[i] - 0.022);
+      } else {
+        c.peakVals[i] = 0;
+      }
+    }
+    c.animStart = performance.now();
+    if (c.animRaf == null) c.animRaf = requestAnimationFrame(() => animateCurve(c));
+    /* line flash on each new sample */
+    if (c.line){
+      c.line.classList.remove('flash');
+      void c.line.getBoundingClientRect();
+      c.line.classList.add('flash');
+    }
+  }
+
+  function animateCurve(c){
+    const now = performance.now();
+    const t = Math.min(1, (now - c.animStart) / 600);
+    /* easeInOutQuad */
+    const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+    for (let i = 0; i < N; i++){
+      c.currentVals[i] = c.startVals[i] + (c.targetVals[i] - c.startVals[i]) * e;
+    }
+    drawCurve(c);
+    if (t < 1) c.animRaf = requestAnimationFrame(() => animateCurve(c));
+    else c.animRaf = null;
+  }
+
+  function buildSegments(vals, mask){
+    const segs = [];
+    let cur = [];
+    for (let i = 0; i < N; i++){
+      if (mask[i]){
+        cur.push([xOf(i), yOf(vals[i]), i]);
+      } else if (cur.length){
+        segs.push(cur); cur = [];
+      }
+    }
+    if (cur.length) segs.push(cur);
+    return segs;
+  }
+
+  /* Catmull-Rom → cubic Bezier */
+  function smoothPath(seg){
+    if (seg.length === 0) return '';
+    if (seg.length === 1) return 'M' + seg[0][0].toFixed(1) + ' ' + seg[0][1].toFixed(1);
+    let p = 'M' + seg[0][0].toFixed(1) + ' ' + seg[0][1].toFixed(1);
+    for (let i = 0; i < seg.length - 1; i++){
+      const p0 = seg[Math.max(0, i-1)];
+      const p1 = seg[i];
+      const p2 = seg[i+1];
+      const p3 = seg[Math.min(seg.length-1, i+2)];
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      p += ' C' + cp1x.toFixed(1) + ' ' + cp1y.toFixed(1) +
+           ' '  + cp2x.toFixed(1) + ' ' + cp2y.toFixed(1) +
+           ' '  + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    return p;
+  }
+
+  function drawCurve(c){
+    const baseY = yOf(0);
+    const segs = buildSegments(c.currentVals, c.activeMask);
+    let linePath = '', areaPath = '';
+    for (const seg of segs){
+      const lp = smoothPath(seg);
+      linePath += lp + ' ';
+      if (seg.length >= 2){
+        areaPath += lp +
+          ' L' + seg[seg.length-1][0].toFixed(1) + ' ' + baseY.toFixed(1) +
+          ' L' + seg[0][0].toFixed(1)            + ' ' + baseY.toFixed(1) + ' Z ';
+      }
+    }
+    const peakSegs = buildSegments(c.peakVals, c.activeMask);
+    let peakPath = '';
+    for (const seg of peakSegs) peakPath += smoothPath(seg) + ' ';
+
+    c.line.setAttribute('d', linePath.trim());
+    c.area.setAttribute('d', areaPath.trim());
+    c.peakline.setAttribute('d', peakPath.trim());
+
+    /* pilot markers on the curve */
+    let pilotSvg = '';
+    PILOTS.forEach(i => {
+      if (!c.activeMask[i]) return;
+      const x = xOf(i), y = yOf(c.currentVals[i]);
+      pilotSvg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="6" class="eq-pilot-glow"/>';
+      pilotSvg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.5" class="eq-pilot"/>';
+    });
+    c.pilots.innerHTML = pilotSvg;
+  }
+
+  /* Move the gate-threshold line + label */
+  function updateThresholdLine(c, threshold){
+    const y = yOf(threshold);
+    c.threshold.setAttribute('y1', y.toFixed(1));
+    c.threshold.setAttribute('y2', y.toFixed(1));
+    c.thresholdLabel.setAttribute('y', (y - 4).toFixed(1));
+    c.thresholdLabel.textContent = 'gate ' + threshold.toFixed(2);
+  }
+
+  function updateEqStats(snap, prefix, peakVal){
+    let sum = 0, n = 0;
+    let worstV = 2, worstI = -1, bestV = -1, bestI = -1;
+    let pSum = 0, pN = 0;
+    for (let i = 0; i < N; i++){
+      const v = snap.subcarrier_coherence[i];
+      if (v == null) continue;
+      sum += v; n++;
+      if (PILOTS.has(i)){ pSum += v; pN++; }
+      else {
+        if (v < worstV){ worstV = v; worstI = i; }
+        if (v > bestV){ bestV = v; bestI = i; }
+      }
+    }
+    const mean = n ? sum/n : 0;
+    const pMean = pN ? pSum/pN : 0;
+    const meanGrade = mean >= 0.80 ? 'good' : mean < 0.55 ? 'bad' : '';
+    const worstGrade = worstV >= 0.55 ? 'good' : worstV < 0.30 ? 'bad' : '';
+
+    const get = id => document.getElementById(prefix + '-' + id);
+    get('mean').textContent = mean.toFixed(3);
+    get('mean').className = 'stat-v mono ' + meanGrade;
+    get('worst').textContent = worstI >= 0 ? (tickLabel(worstI) + ' · ' + worstV.toFixed(3)) : '—';
+    get('worst').className = 'stat-v mono ' + worstGrade;
+    get('best').textContent  = bestI  >= 0 ? (tickLabel(bestI)  + ' · ' + bestV.toFixed(3)) : '—';
+    get('best').className = 'stat-v mono good';
+    get('pilots').textContent = pN ? pMean.toFixed(3) : '—';
+    get('pilots').className = 'stat-v mono good';
+    get('peak').textContent = peakVal.toFixed(3);
+    get('peak').className = 'stat-v mono';
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     OVERVIEW panel
+     ════════════════════════════════════════════════════════════════ */
+  const ovHist = [];
+  let evtTotal = 0;
+  const ovRecent = [];
+  const ovRateWin = [];
+  const ovGaugeFill = $('#ov-gauge-fill');
+  buildXAxis('ov-eq-xaxis');
+  const ovCurve = buildCurve('ov');
+  const CIRC = 2*Math.PI*80;
+
+  function ovTypeName(t){ return t==='score' ? 'coherence_score' : t==='quality' ? 'quality_report' : 'gate_change'; }
+
+  function ovEvent(snap){
+    const items = [{ t:'score', ts:snap.ts, body:'score='+snap.score.toFixed(3)+' usable='+snap.usable_subcarriers, meta: snap.gate_open?'gate=open':'gate=closed' }];
+    if (snap.seq % 5 === 0) items.push({ t:'quality', ts:snap.ts, body:'grade='+gradeLabel(snap.grade), meta:'window=5s' });
+    if (!snap.gate_open && (!ovRecent[0] || ovRecent[0].t !== 'gate')) items.push({ t:'gate', ts:snap.ts, body:'gate closed (score '+snap.score.toFixed(3)+')', meta:'auto' });
+    items.forEach(e => { ovRecent.unshift(e); evtTotal++; ovRateWin.push(snap.ts); });
+    while (ovRecent.length > 5) ovRecent.pop();
+    while (ovRateWin.length && (snap.ts - ovRateWin[0]) > 5000) ovRateWin.shift();
+  }
+
+  sim.on(snap => {
+    /* KPIs */
+    $('#kpi-score').textContent = snap.score.toFixed(3);
+    $('#kpi-score-sub').textContent = 'raw (CFO-corrected) ' + snap.raw_score.toFixed(3);
+    $('#kpi-grade').textContent = gradeLabel(snap.grade);
+    $('#kpi-grade').style.color = snap.grade === 'good' ? 'hsl(142 70% 65%)' : snap.grade === 'warn' ? 'hsl(35 85% 70%)' : 'hsl(0 70% 70%)';
+    const gIc = $('#kpi-grade-ic'); gIc.className = 'kpi-ic ' + (snap.grade === 'good' ? 'accent' : snap.grade === 'warn' ? 'warn' : 'bad');
+    $('#kpi-grade-sub').textContent = 'CFO ' + (snap.cfo >= 0 ? '+' : '') + snap.cfo.toFixed(3) + ' rad';
+    $('#kpi-sub').textContent = snap.usable_subcarriers + ' / ' + snap.total_subcarriers;
+    $('#kpi-sub-sub').textContent = (N - snap.usable_subcarriers - 1) + ' masked, 1 DC null';
+    $('#kpi-gate').innerHTML = snap.gate_open ? '<span style="color:hsl(142 70% 65%)">OPEN</span>' : '<span style="color:hsl(0 70% 70%)">CLOSED</span>';
+    $('#kpi-gate-sub').textContent = 'threshold ' + cfgState.gate_threshold.toFixed(2);
+
+    /* gauge (overview) */
+    $('#ov-gauge-fill').setAttribute('stroke-dashoffset', (CIRC*(1-snap.score)).toFixed(2));
+    $('#ov-gauge').className = 'gauge ' + snap.grade;
+    $('#ov-gauge-num').textContent = snap.score.toFixed(3);
+    $('#ov-gauge-num').className = 'gauge-num mono ' + snap.grade;
+    $('#ov-gauge-label').textContent = gradeLabel(snap.grade);
+
+    /* sparkline */
+    ovHist.push(snap.score);
+    while (ovHist.length > 60) ovHist.shift();
+    renderTrend('#ov-spark', ovHist, '#ov-spark-grid', cfgState.gate_threshold);
+    if (ovHist.length){
+      const mn = Math.min(...ovHist), mx = Math.max(...ovHist);
+      $('#ov-min').textContent = mn.toFixed(3);
+      $('#ov-max').textContent = mx.toFixed(3);
+      $('#ov-mean').textContent = (ovHist.reduce((s,v)=>s+v,0)/ovHist.length).toFixed(3);
+    }
+
+    /* recent events */
+    ovEvent(snap);
+    $('#kpi-rate').textContent = (ovRateWin.length/5).toFixed(1);
+    $('#ov-recent').innerHTML = ovRecent.map((e,i) =>
+      '<div class="evt t-'+e.t+(i===0?' fresh':'')+'">' +
+        '<span class="evt-ts">'+fmtTime(e.ts)+'</span>' +
+        '<span class="evt-type">'+ovTypeName(e.t)+'</span>' +
+        '<span class="evt-body">'+esc(e.body)+'</span>' +
+        '<span class="evt-meta">'+esc(e.meta)+'</span>' +
+      '</div>'
+    ).join('');
+
+    /* spectrum curve — morphs smoothly between snapshots via rAF */
+    ingestCurve(ovCurve, snap);
+    updateThresholdLine(ovCurve, cfgState.gate_threshold);
+    let ovPeakMax = 0;
+    for (let i = 0; i < N; i++) if (ovCurve.peakVals[i] > ovPeakMax) ovPeakMax = ovCurve.peakVals[i];
+    updateEqStats(snap, 'ov-stat', ovPeakMax);
+    $('#ov-sub-count').textContent = snap.usable_subcarriers + ' / ' + N + ' active';
+
+    /* uptime + emit rate header */
+    const upSec = Math.floor((snap.ts - startMs)/1000);
+    const hh = String(Math.floor(upSec/3600)).padStart(2,'0');
+    const mm = String(Math.floor((upSec%3600)/60)).padStart(2,'0');
+    const ss = String(upSec%60).padStart(2,'0');
+    $('#hdr-uptime').textContent = 'uptime ' + hh + ':' + mm + ':' + ss;
+    $('#hdr-rate').textContent = (1000/sim.getRate()).toFixed(1) + ' Hz';
+  });
+
+  /* ════════════════════════════════════════════════════════════════
+     LIVE panel
+     ════════════════════════════════════════════════════════════════ */
+  const liveHist = [];
+  buildXAxis('live-eq-xaxis');
+  const liveCurve = buildCurve('live');
+
+  sim.on(snap => {
+    /* gauge */
+    $('#gauge-fill').setAttribute('stroke-dashoffset', (CIRC*(1-snap.score)).toFixed(2));
+    $('#gauge').className = 'gauge ' + snap.grade;
+    $('#gauge-num').textContent = snap.score.toFixed(3);
+    $('#gauge-num').className = 'gauge-num mono ' + snap.grade;
+    $('#gauge-label').textContent = gradeLabel(snap.grade);
+
+    /* chip + banner */
+    const chip = $('#live-chip');
+    chip.style.borderColor = snap.grade === 'good' ? 'hsl(var(--border) / 0.5)' : snap.grade === 'warn' ? 'hsl(var(--warn) / 0.4)' : 'hsl(0 65% 50% / 0.4)';
+    $('#live-chip-dot').className = 'dot pulse ' + (snap.grade === 'good' ? 'up' : snap.grade === 'warn' ? 'warn' : 'down');
+    $('#banner-gate').textContent = snap.gate_open ? 'open' : 'closed';
+    $('#banner-grade').textContent = gradeLabel(snap.grade);
+    $('#banner-usable').textContent = snap.usable_subcarriers + ' / ' + snap.total_subcarriers;
+    $('#live-chip-seq').textContent = 'seq ' + snap.seq;
+
+    /* phase wheel */
+    const r = 100;
+    $('#phase-spokes').innerHTML = snap.phases.map((p,i) => {
+      if (p == null) return '';
+      const len = (snap.subcarrier_coherence[i] || 0) * r;
+      const x = Math.cos(p)*len, y = -Math.sin(p)*len;
+      const col = rampColor(snap.subcarrier_coherence[i]);
+      const sw = PILOTS.has(i) ? 1.8 : 1.1;
+      return '<line class="pw-spoke" x1="0" y1="0" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+    }).join('');
+
+    /* trend */
+    liveHist.push(snap.score);
+    while (liveHist.length > 120) liveHist.shift();
+    renderTrend('#trend', liveHist, '#trend-grid', cfgState.gate_threshold);
+    if (liveHist.length){
+      const mn = Math.min(...liveHist), mx = Math.max(...liveHist);
+      $('#trend-min').textContent = mn.toFixed(3);
+      $('#trend-max').textContent = mx.toFixed(3);
+      $('#trend-mean').textContent = (liveHist.reduce((s,v)=>s+v,0)/liveHist.length).toFixed(3);
+      $('#trend-sub').textContent = liveHist.length + ' samples · ' + (1000/sim.getRate()).toFixed(1) + ' Hz';
+    }
+
+    /* spectrum curve — morphs smoothly between snapshots via rAF */
+    ingestCurve(liveCurve, snap);
+    updateThresholdLine(liveCurve, cfgState.gate_threshold);
+    let livePeakMax = 0;
+    for (let i = 0; i < N; i++) if (liveCurve.peakVals[i] > livePeakMax) livePeakMax = liveCurve.peakVals[i];
+    updateEqStats(snap, 'live-stat', livePeakMax);
+    $('#subc-count').textContent = snap.usable_subcarriers + ' / ' + N + ' active';
+  });
+
+  /* ════════════════════════════════════════════════════════════════
+     EVENTS panel
+     ════════════════════════════════════════════════════════════════ */
+  const MAX_EVT = 200;
+  const eventsList = [];
+  const evtCounts = { score:0, quality:0, gate:0 };
+  const evtRateWin = [];
+  let evtFilter = 'all', evtPaused = false, evtSeq = 0, lastGate = true;
+
+  function evtName(t){ return t==='score' ? 'coherence_score' : t==='quality' ? 'quality_report' : 'gate_change'; }
+  function evtBody(e){
+    if (e.t === 'score')   return 'score='+e.p.score.toFixed(3)+' raw='+e.p.raw.toFixed(3)+' usable='+e.p.usable+' gate='+(e.p.gate?'open':'closed');
+    if (e.t === 'quality') return 'grade='+e.p.grade+' mean='+e.p.mean.toFixed(3)+' min='+e.p.min.toFixed(3)+' window='+e.p.window+'s';
+    if (e.t === 'gate')    return 'state='+e.p.state+' reason='+e.p.reason+' score='+e.p.score.toFixed(3);
+    return '';
+  }
+  function evtRender(){
+    const filtered = evtFilter === 'all' ? eventsList : eventsList.filter(e => e.t === evtFilter);
+    const html = filtered.slice(0,100).map((e,i) =>
+      '<div class="evt t-'+e.t+(i===0 && e._fresh ? ' fresh' : '')+'">' +
+        '<span class="evt-ts">'+fmtTime(e.ts)+'</span>' +
+        '<span class="evt-type">'+evtName(e.t)+'</span>' +
+        '<span class="evt-body">'+esc(evtBody(e))+'</span>' +
+        '<span class="evt-meta">#'+e.seq+'</span>' +
+      '</div>'
+    ).join('');
+    $('#stream').innerHTML = html || '<div style="color:hsl(var(--muted-foreground));font-size:0.8125rem;padding:1.25rem 0;text-align:center">No events match the filter.</div>';
+    eventsList.forEach(e => { e._fresh = false; });
+  }
+
+  /* track recent scores for quality_report window */
+  const recentScores = [];
+  sim.on(snap => {
+    recentScores.push(snap.score);
+    while (recentScores.length > 30) recentScores.shift();
+    if (evtPaused) return;
+    const arr = [{ t:'score', ts:snap.ts, p:{ score:snap.score, raw:snap.raw_score, usable:snap.usable_subcarriers, gate:snap.gate_open } }];
+    if (snap.seq % 5 === 0){
+      const w = recentScores.slice(-5);
+      arr.push({ t:'quality', ts:snap.ts, p:{ grade:gradeLabel(snap.grade), mean:w.reduce((s,v)=>s+v,0)/w.length, min:Math.min(...w), window:5 } });
+    }
+    /* edge-triggered gate_change */
+    if (snap.gate_open !== lastGate){
+      arr.push({ t:'gate', ts:snap.ts, p:{ state: snap.gate_open ? 'open' : 'closed', reason: snap.gate_open ? 'recovered' : 'interference', score:snap.score } });
+      lastGate = snap.gate_open;
+    }
+    arr.forEach(e => {
+      e.seq = ++evtSeq; e._fresh = true;
+      eventsList.unshift(e); evtCounts[e.t]++; evtRateWin.push(snap.ts);
+    });
+    while (eventsList.length > MAX_EVT) eventsList.pop();
+    while (evtRateWin.length && (snap.ts - evtRateWin[0]) > 5000) evtRateWin.shift();
+    $('#cnt-score').textContent = evtCounts.score;
+    $('#cnt-quality').textContent = evtCounts.quality;
+    $('#cnt-gate').textContent = evtCounts.gate;
+    $('#evt-rate').textContent = (evtRateWin.length/5).toFixed(1);
+    evtRender();
+  });
+  document.querySelectorAll('#filter-tabs .pill-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-tabs .pill-tab').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on'); evtFilter = btn.dataset.filter; evtRender();
+    });
+  });
+  $('#pause-btn').addEventListener('click', () => {
+    evtPaused = !evtPaused;
+    $('#pause-btn').textContent = evtPaused ? 'Resume stream' : 'Pause stream';
+    $('#pause-btn').classList.toggle('primary', evtPaused);
+  });
+  $('#clear-btn').addEventListener('click', () => {
+    eventsList.length = 0;
+    evtCounts.score = evtCounts.quality = evtCounts.gate = 0;
+    $('#cnt-score').textContent = '0'; $('#cnt-quality').textContent = '0'; $('#cnt-gate').textContent = '0';
+    evtRender();
+  });
+
+  /* ════════════════════════════════════════════════════════════════
+     CONFIG panel
+     ════════════════════════════════════════════════════════════════ */
+  const DEFAULTS = { emit_rate_ms:1000, gate_threshold:0.60, warn_threshold:0.80, quality_window:5 };
+  const cfg = { ...DEFAULTS };
+  Object.assign(cfgState, cfg);
+
+  function bindSlider(id, valEl, fmt, fn){
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      const v = Number(el.value);
+      valEl.textContent = fmt(v); fn(v);
+      cfgState.gate_threshold = cfg.gate_threshold;
+      cfgState.warn_threshold = cfg.warn_threshold;
+      renderCfgJson();
+    });
+  }
+  bindSlider('emit-rate', $('#emit-rate-val'), v => v + ' ms',     v => { cfg.emit_rate_ms = v; sim.setRate(v); $('#prev-rate').textContent = v; });
+  bindSlider('gate-th',   $('#gate-th-val'),   v => (v/100).toFixed(2), v => { cfg.gate_threshold = v/100; });
+  bindSlider('warn-th',   $('#warn-th-val'),   v => (v/100).toFixed(2), v => { cfg.warn_threshold = v/100; });
+  bindSlider('qw',        $('#qw-val'),        v => v + ' samples', v => { cfg.quality_window = v; });
+
+  $('#cfg-reset').addEventListener('click', () => {
+    Object.assign(cfg, DEFAULTS); Object.assign(cfgState, DEFAULTS);
+    $('#emit-rate').value = cfg.emit_rate_ms; $('#emit-rate-val').textContent = cfg.emit_rate_ms + ' ms';
+    $('#gate-th').value = cfg.gate_threshold*100; $('#gate-th-val').textContent = cfg.gate_threshold.toFixed(2);
+    $('#warn-th').value = cfg.warn_threshold*100; $('#warn-th-val').textContent = cfg.warn_threshold.toFixed(2);
+    $('#qw').value = cfg.quality_window; $('#qw-val').textContent = cfg.quality_window + ' samples';
+    $('#prev-rate').textContent = cfg.emit_rate_ms;
+    sim.setRate(cfg.emit_rate_ms);
+    renderCfgJson();
+  });
+
+  /* mask grid */
+  const maskCells = [];
+  let localMask = sim.mask.get();
+  (function(){
+    const grid = $('#mask-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i < N; i++){
+      const c = document.createElement('div');
+      c.className = 'subc-cell';
+      c.textContent = String(i).padStart(2,'0');
+      c.title = 'subcarrier #' + i + (PILOTS.has(i) ? ' (pilot)' : i === DC_INDEX ? ' (DC null)' : '');
+      c.addEventListener('click', () => { sim.mask.toggle(i); localMask = sim.mask.get(); paintMask(); renderCfgJson(); });
+      grid.appendChild(c); maskCells.push(c);
+    }
+  })();
+  function paintMask(){
+    let on = 0;
+    for (let i = 0; i < N; i++){
+      const a = localMask[i];
+      const c = maskCells[i];
+      if (a){
+        c.style.background = PILOTS.has(i) ? 'hsl(var(--accent) / 0.6)' : 'hsl(var(--primary) / 0.6)';
+        c.classList.remove('masked'); on++;
+      } else {
+        c.style.background = ''; c.classList.add('masked');
+      }
+    }
+    $('#mask-summary').textContent = on + ' / ' + N + ' active';
+  }
+  $('#mask-all').addEventListener('click', () => { sim.mask.all(); localMask = sim.mask.get(); paintMask(); renderCfgJson(); });
+  $('#mask-none').addEventListener('click', () => { sim.mask.none(); localMask = sim.mask.get(); paintMask(); renderCfgJson(); });
+  $('#mask-edges').addEventListener('click', () => {
+    const m = new Array(N).fill(true);
+    for (let i = 0; i < 6; i++) m[i] = false;
+    for (let i = 46; i < 52; i++) m[i] = false;
+    sim.mask.set(m); localMask = m; paintMask(); renderCfgJson();
+  });
+  paintMask();
+
+  function renderCfgJson(){
+    const excluded = localMask.map((v,i) => v ? null : i).filter(v => v !== null);
+    const out = {
+      emit_rate_ms: cfg.emit_rate_ms,
+      gate_threshold: +cfg.gate_threshold.toFixed(2),
+      warn_threshold: +cfg.warn_threshold.toFixed(2),
+      quality_window: cfg.quality_window,
+      subcarrier_mask: excluded,
+    };
+    $('#config-json').textContent = JSON.stringify(out, null, 2);
+  }
+  renderCfgJson();
+
+  $('#copy-cfg').addEventListener('click', () => {
+    try {
+      navigator.clipboard.writeText($('#config-json').textContent);
+      const b = $('#copy-cfg'); const o = b.textContent;
+      b.textContent = 'Copied'; b.classList.add('primary');
+      setTimeout(() => { b.textContent = o; b.classList.remove('primary'); }, 1000);
+    } catch(_){}
+  });
+
+  /* live preview row */
+  sim.on(snap => {
+    const g = gradeOf(snap.score, cfg.gate_threshold, cfg.warn_threshold);
+    const open = snap.score >= cfg.gate_threshold;
+    $('#prev-score').textContent = snap.score.toFixed(3);
+    $('#prev-grade').innerHTML = '<span class="badge '+(g==='good'?'good':g==='warn'?'warn':'bad')+'">'+gradeLabel(g)+'</span>';
+    $('#prev-gate').innerHTML = open ? '<span class="badge good">open</span>' : '<span class="badge bad">closed</span>';
+    $('#prev-usable').textContent = snap.usable_subcarriers + ' / ' + snap.total_subcarriers;
+    localMask = snap.mask; paintMask();
+  });
+
+  /* ────────────────────────────────────────────────────────────── */
+  sim.start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Adversarial · Live Monitor — Cognitum Cog</title>
+<meta name="description" content="Live monitoring dashboard for the Adversarial cog: signal consistency and anomaly detection for CSI integrity on the Cognitum Seed ESP32-S3.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- Chrome tokens (mirrors COGS_UI_Template / v0-chrome.css) ---------- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html,body{min-height:100vh}
+html{scroll-behavior:smooth;scroll-padding-top:4rem}
+.section[id]{scroll-margin-top:4rem}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  -webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a:hover,.nav a.active{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+
+/* Crumb + header */
+.crumb{
+  display:flex;align-items:center;gap:0.4rem;
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--muted-foreground));margin-bottom:0.5rem;
+}
+.crumb a{color:hsl(var(--muted-foreground))}
+.crumb a:hover{color:hsl(var(--primary));text-decoration:none}
+.crumb .sep{opacity:0.4}
+.crumb .cur{color:hsl(var(--foreground))}
+
+.page-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:1.25rem;flex-wrap:wrap;margin-bottom:1rem;
+}
+.page-head .title-block{flex:1;min-width:260px}
+h1.page{
+  font-size:1.5rem;font-weight:600;
+  display:flex;align-items:center;gap:0.6rem;
+}
+h1.page .emo{font-size:1.4rem}
+h1.page .accent{color:hsl(var(--primary))}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-top:0.4rem;max-width:48rem;line-height:1.55}
+.lede .seed{font-family:var(--font-mono);color:hsl(var(--primary))}
+
+.meta-row{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.75rem}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.18rem 0.55rem;border-radius:9999px;
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:500;
+  letter-spacing:0.02em;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.accent{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.1);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.25)}
+.badge.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.3)}
+.badge.live{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3);text-transform:uppercase;letter-spacing:0.08em}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.85)}}
+
+/* Action row */
+.actions{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover{background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn .ico{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn.toggle{padding:0.4rem 0.75rem;font-family:var(--font-mono);font-size:0.75rem}
+.btn.toggle.on{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.4)}
+.btn.toggle.on .ico-dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent))}
+.btn.toggle .ico-dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted-foreground))}
+
+/* Device pill */
+.device-pill{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.3rem 0.7rem;border-radius:9999px;
+  border:1px solid hsl(var(--border));background:hsl(var(--secondary) / 0.4);
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+}
+.device-pill .chip{color:hsl(var(--primary))}
+.device-pill .sep{opacity:0.4}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card.glow{
+  border-color:hsl(var(--primary) / 0.3);
+  box-shadow:var(--shadow-card),0 0 40px -16px hsl(var(--primary) / 0.45);
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;
+}
+.card-title{
+  font-size:0.6875rem;font-family:var(--font-mono);font-weight:600;
+  text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));
+}
+.card-sub{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7)}
+
+/* Top grid: score + KPIs */
+.top-grid{
+  display:grid;gap:0.875rem;
+  grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);
+}
+@media (max-width:1000px){.top-grid{grid-template-columns:1fr}}
+
+/* Score card */
+.score-row{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.score-ring{position:relative;width:172px;height:172px;flex-shrink:0}
+.score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring .track{stroke:hsl(var(--border));}
+.score-ring .fill{stroke:hsl(var(--primary));transition:stroke-dashoffset 360ms ease,stroke 360ms ease;filter:drop-shadow(0 0 8px hsl(var(--primary) / 0.45))}
+.score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-value{font-family:var(--font-mono);font-weight:600;font-size:2.5rem;letter-spacing:-0.02em;color:hsl(var(--primary));line-height:1}
+.score-label{margin-top:0.3rem;font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.16em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.score-meta{flex:1;min-width:200px}
+.score-meta h3{font-size:1.125rem;font-weight:600;color:hsl(var(--foreground));margin-bottom:0.3rem}
+.score-state{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.18rem 0.6rem;border-radius:9999px;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  text-transform:uppercase;letter-spacing:0.08em;
+  border:1px solid transparent;
+}
+.score-state.nominal{color:hsl(var(--accent));background:hsl(var(--accent) / 0.1);border-color:hsl(var(--accent) / 0.3)}
+.score-state.warn{color:hsl(var(--warn));background:hsl(var(--warn) / 0.1);border-color:hsl(var(--warn) / 0.3)}
+.score-state.alert{color:hsl(0 70% 70%);background:hsl(var(--destructive) / 0.12);border-color:hsl(var(--destructive) / 0.35)}
+.score-state .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;animation:none}
+
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.625rem;margin-top:1rem}
+.mini{
+  padding:0.625rem 0.75rem;border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.4);border:1px solid hsl(var(--border) / 0.6);
+}
+.mini .k{font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.1em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.mini .v{font-family:var(--font-mono);font-size:1.125rem;font-weight:500;margin-top:0.2rem;color:hsl(var(--foreground))}
+.mini .v.primary{color:hsl(var(--primary))}
+.mini .v.accent{color:hsl(var(--accent))}
+.mini .v.warn{color:hsl(var(--warn))}
+
+/* KPI stack (right column) */
+.kpi-stack{display:flex;flex-direction:column;gap:0.75rem}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:0.875rem 1rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 70%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+.kpi-val{font-family:var(--font-mono);font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.1rem}
+.kpi-val.primary{color:hsl(var(--primary))}
+.kpi-val.accent{color:hsl(var(--accent))}
+.kpi-val.warn{color:hsl(var(--warn))}
+.kpi-val.danger{color:hsl(0 70% 70%)}
+.kpi-sub{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* Two-up rows */
+.row-2{display:grid;gap:0.875rem;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.row-2{grid-template-columns:1fr}}
+.row-3{display:grid;gap:0.75rem;grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:900px){.row-3{grid-template-columns:1fr}}
+
+/* Charts */
+.chart-wrap{position:relative;height:240px}
+.chart-wrap.short{height:160px}
+canvas{display:block;width:100%;height:100%}
+.legend{display:flex;gap:0.875rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.swatch{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:0.35rem;border-radius:2px}
+.sw-primary{background:hsl(var(--primary))}
+.sw-accent{background:hsl(var(--accent))}
+.sw-danger{background:hsl(var(--destructive))}
+
+/* Event feed */
+.feed{max-height:360px;overflow:hidden;display:flex;flex-direction:column}
+.feed-list{flex:1;overflow-y:auto;list-style:none}
+.ev{
+  display:grid;grid-template-columns:80px 1fr auto;gap:0.75rem;
+  padding:0.55rem 0.25rem;align-items:center;
+  border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;
+}
+.ev:last-child{border-bottom:none}
+.ev .t{color:hsl(var(--muted-foreground))}
+.ev .name{color:hsl(var(--foreground))}
+.ev .name .ac-accent{color:hsl(var(--accent))}
+.ev .name .ac-warn{color:hsl(var(--warn))}
+.ev .name .ac-danger{color:hsl(0 70% 70%)}
+.ev .v{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right;white-space:nowrap}
+.ev.new{animation:flashIn 700ms ease-out}
+.ev.new.danger{animation:flashAlert 700ms ease-out}
+@keyframes flashIn{from{background:hsl(var(--primary) / 0.14)}to{background:transparent}}
+@keyframes flashAlert{from{background:hsl(var(--destructive) / 0.16)}to{background:transparent}}
+
+/* Alerts panel */
+.alert-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem 1rem;color:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);font-size:0.75rem;
+}
+.alert-empty .ic{
+  width:44px;height:44px;border-radius:0.6rem;display:grid;place-items:center;
+  background:hsl(var(--accent) / 0.1);border:1px solid hsl(var(--accent) / 0.3);
+  color:hsl(var(--accent));margin-bottom:0.75rem;
+}
+.alert-empty .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.alert-item{
+  display:flex;gap:0.75rem;align-items:flex-start;
+  padding:0.75rem;border-radius:0.5rem;margin-bottom:0.5rem;
+  background:hsl(var(--destructive) / 0.07);
+  border:1px solid hsl(var(--destructive) / 0.3);
+}
+.alert-item:last-child{margin-bottom:0}
+.alert-ic{
+  width:30px;height:30px;flex-shrink:0;border-radius:0.4rem;
+  background:hsl(var(--destructive) / 0.18);color:hsl(0 70% 70%);
+  display:grid;place-items:center;
+}
+.alert-ic svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.alert-body{flex:1;min-width:0}
+.alert-body .h{font-size:0.8125rem;font-weight:600;color:hsl(0 70% 75%);font-family:var(--font-mono)}
+.alert-body .d{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.25rem;line-height:1.5}
+.alert-body .ts{font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground) / 0.7);margin-top:0.3rem;letter-spacing:0.05em}
+
+/* Detail table */
+.detail-grid{
+  display:grid;gap:0.5rem;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media (max-width:900px){.detail-grid{grid-template-columns:1fr 1fr}}
+.detail-cell{
+  padding:0.75rem 0.875rem;
+  border:1px solid hsl(var(--border) / 0.6);
+  border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.3);
+}
+.detail-cell .k{font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.12em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.detail-cell .v{margin-top:0.3rem;font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground));word-break:break-all;line-height:1.4}
+.detail-cell .v a{color:hsl(var(--primary))}
+
+/* CSI polar radar + log layout */
+.csi-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);
+  gap:0.875rem;
+  align-items:stretch;
+}
+@media (max-width:1000px){.csi-grid{grid-template-columns:1fr}}
+.csi-grid > .card{display:flex;flex-direction:column;min-height:0}
+.csi-wf-wrap{
+  position:relative;height:360px;flex:0 0 auto;
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.55rem;
+  background:
+    radial-gradient(circle at 50% 50%, hsl(185 75% 18% / 0.18) 0%, hsl(220 30% 4% / 0) 60%),
+    hsl(220 30% 4%);
+  overflow:hidden;
+  box-shadow:inset 0 0 80px hsl(220 30% 2% / 0.85);
+}
+
+.csi-log-wrap{
+  height:360px;flex:0 0 auto;
+  display:flex;flex-direction:column;
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.55rem;
+  background:hsl(220 25% 5%);
+  overflow:hidden;
+}
+.csi-log-head{
+  display:grid;
+  grid-template-columns:64px 60px minmax(0,1fr) minmax(0,1fr) 44px;
+  gap:0.4rem;
+  padding:0.55rem 0.75rem;
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  font-family:var(--font-mono);font-size:0.625rem;font-weight:600;
+  letter-spacing:0.1em;text-transform:uppercase;
+  color:hsl(var(--muted-foreground));
+  background:hsl(var(--secondary) / 0.4);
+  flex-shrink:0;
+}
+.csi-log-head .right{text-align:right}
+.csi-log-list{
+  flex:1;min-height:0;overflow-y:auto;
+}
+.csi-log-list::-webkit-scrollbar{width:6px}
+.csi-log-list::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.25);border-radius:6px}
+.csi-log-row{
+  display:grid;
+  grid-template-columns:64px 60px minmax(0,1fr) minmax(0,1fr) 44px;
+  gap:0.4rem;
+  padding:0.4rem 0.75rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  border-bottom:1px solid hsl(var(--border) / 0.22);
+  color:hsl(var(--foreground));
+  align-items:center;
+}
+.csi-log-row:last-child{border-bottom:none}
+.csi-log-row .t{color:hsl(var(--muted-foreground))}
+.csi-log-row .f{color:hsl(var(--muted-foreground) / 0.75)}
+.csi-log-row .m{color:hsl(var(--primary))}
+.csi-log-row .r{color:hsl(var(--foreground) / 0.9)}
+.csi-log-row .o{
+  text-align:right;font-weight:500;
+  padding:0.1rem 0.4rem;border-radius:0.25rem;
+  background:hsl(var(--muted) / 0.5);color:hsl(var(--muted-foreground));
+}
+.csi-log-row.warn   { background:hsl(var(--warn) / 0.05) }
+.csi-log-row.danger { background:hsl(var(--destructive) / 0.07) }
+.csi-log-row.warn   .o{ color:hsl(var(--warn));        background:hsl(var(--warn) / 0.14) }
+.csi-log-row.danger .o{ color:hsl(0 70% 70%);          background:hsl(var(--destructive) / 0.18) }
+.csi-log-row.new    { animation:flashIn 700ms ease-out }
+.csi-log-row.new.danger{ animation:flashAlert 700ms ease-out }
+.csi-log-foot{
+  display:flex;justify-content:space-between;align-items:center;gap:0.5rem;
+  padding:0.45rem 0.75rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  background:hsl(var(--secondary) / 0.25);
+  font-family:var(--font-mono);font-size:0.625rem;
+  color:hsl(var(--muted-foreground));
+  flex-shrink:0;
+}
+.csi-log-foot .right{color:hsl(var(--foreground) / 0.85)}
+
+/* Config schema list */
+.cfg-list{display:flex;flex-direction:column;gap:0.5rem}
+.cfg-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;
+  align-items:center;
+  gap:0.6rem 1.25rem;
+  padding:0.875rem 1rem;
+  border:1px solid hsl(var(--border) / 0.6);
+  border-radius:0.55rem;
+  background:hsl(var(--secondary) / 0.28);
+  transition:border-color 0.18s,background 0.18s;
+}
+.cfg-row:hover{border-color:hsl(var(--primary) / 0.35);background:hsl(var(--secondary) / 0.45)}
+.cfg-key{
+  font-family:var(--font-mono);font-size:0.875rem;font-weight:500;
+  color:hsl(var(--foreground));letter-spacing:-0.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cfg-meta{
+  display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;
+  min-width:0;
+}
+.cfg-type{
+  display:inline-flex;align-items:center;
+  padding:0.12rem 0.5rem;border-radius:0.3rem;
+  font-family:var(--font-mono);font-size:0.625rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.06em;
+  border:1px solid transparent;
+}
+.cfg-type.float{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.cfg-type.int{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3)}
+.cfg-type.enum{background:hsl(var(--warn) / 0.12);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3)}
+.cfg-type.bool{background:hsl(220 15% 30% / 0.4);color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.cfg-range{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+  padding:0.1rem 0.4rem;border-radius:0.3rem;
+  background:hsl(var(--muted) / 0.5);
+}
+.cfg-default{
+  font-family:var(--font-mono);font-size:0.875rem;font-weight:500;
+  color:hsl(var(--primary));text-align:right;
+  white-space:nowrap;
+  padding:0.25rem 0.7rem;
+  border-radius:0.35rem;
+  background:hsl(var(--primary) / 0.08);
+  border:1px solid hsl(var(--primary) / 0.2);
+  min-width:5rem;
+}
+.cfg-desc{
+  grid-column:1 / -1;
+  font-size:0.75rem;line-height:1.5;
+  color:hsl(var(--muted-foreground));
+  padding-top:0.1rem;
+}
+.cfg-desc .mono{color:hsl(var(--foreground) / 0.85);font-size:0.7rem;background:hsl(var(--muted) / 0.5);padding:0.05rem 0.3rem;border-radius:0.2rem}
+.cfg-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:0.5rem;
+  margin-top:0.875rem;padding-top:0.875rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.cfg-foot .legend-row{display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center}
+@media (max-width:720px){
+  .cfg-row{grid-template-columns:1fr;gap:0.4rem}
+  .cfg-default{text-align:left;justify-self:start}
+}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-family:var(--font-mono);font-size:0.6875rem}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Adversarial<span class="brand-ver mono">v1.0.0</span></span>
+    </div>
+    <nav class="nav">
+      <a href="#monitor" class="active">Monitor</a>
+      <a href="#events">Events</a>
+      <a href="#alerts">Alerts</a>
+      <a href="#csi">CSI</a>
+      <a href="#config">Config</a>
+      <a href="#source">Source</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <div class="crumb">
+      <a href="/cogs">cogs</a><span class="sep">/</span>
+      <span class="cur">adversarial</span><span class="sep">/</span>
+      <span>monitor</span>
+    </div>
+
+    <div class="page-head">
+      <div class="title-block">
+        <h1 class="page"><span class="emo">🔍</span> Adversarial<span class="accent">.</span></h1>
+        <p class="lede">Detects signal consistency anomalies that may indicate adversarial interference, replay attacks, or hardware faults. Streaming live CSI from <span class="seed" id="seed-name">seed-3a4f</span>.</p>
+        <div class="meta-row">
+          <span class="badge">v1.0.0</span>
+          <span class="badge">18 KB</span>
+          <span class="badge warn">severity · medium</span>
+          <span class="badge primary">input · csi-raw</span>
+          <span class="badge accent">esp32-s3</span>
+          <span class="badge live"><span class="dot"></span>live</span>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="device-pill" title="Connected seed">
+          <span>device</span>
+          <span class="chip" id="device-id">seed-3a4f</span>
+          <span class="sep">·</span>
+          <span>ESP32-S3</span>
+        </div>
+        <button class="btn toggle on" id="sim-toggle" type="button" aria-pressed="true">
+          <span class="ico-dot"></span>
+          <span id="sim-label">simulating</span>
+        </button>
+        <button class="btn outline" type="button" id="reset-btn" title="Clear feeds and reset counters">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          Reset
+        </button>
+        <button class="btn primary" type="button">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Install cog
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score + KPI strip -->
+  <div class="section" id="monitor">
+    <div class="top-grid">
+
+      <div class="card glow">
+        <div class="card-h">
+          <div class="card-title">consistency_score · live</div>
+          <div class="card-sub" id="last-update">updated just now</div>
+        </div>
+        <div class="score-row">
+          <div class="score-ring" aria-label="Live consistency score gauge">
+            <svg viewBox="0 0 120 120">
+              <circle class="track" cx="60" cy="60" r="52" stroke-width="10" fill="none"/>
+              <circle id="ring-fill" class="fill" cx="60" cy="60" r="52" stroke-width="10" fill="none"
+                stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="32"/>
+            </svg>
+            <div class="score-center">
+              <div class="score-value" id="score-value">94.2</div>
+              <div class="score-label">/ 100</div>
+            </div>
+          </div>
+          <div class="score-meta">
+            <h3>Signal integrity nominal</h3>
+            <div class="score-state nominal" id="score-state"><span class="dot"></span><span id="score-state-label">nominal</span></div>
+            <div class="mini-grid">
+              <div class="mini"><div class="k">10s avg</div><div class="v accent" id="avg-10s">94.6</div></div>
+              <div class="mini"><div class="k">1m min</div><div class="v warn" id="min-1m">87.3</div></div>
+              <div class="mini"><div class="k">σ jitter</div><div class="v primary" id="jitter">1.8</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="kpi-stack">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">samples / sec</div>
+            <div class="kpi-val primary" id="kpi-rate">—</div>
+            <div class="kpi-sub" id="kpi-rate-delta">CSI frames @ 50 Hz target</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">anomalies · 5m</div>
+            <div class="kpi-val warn" id="kpi-anom">0</div>
+            <div class="kpi-sub" id="kpi-anom-delta">below baseline</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic danger"><svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">integrity alerts</div>
+            <div class="kpi-val danger" id="kpi-alert">0</div>
+            <div class="kpi-sub" id="kpi-alert-delta">last: —</div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Score timeline chart -->
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">score timeline · 60s window</div>
+          <div class="card-sub">consistency_score event stream</div>
+        </div>
+        <div class="legend">
+          <span><span class="swatch sw-primary"></span>consistency_score</span>
+          <span><span class="swatch sw-danger"></span>anomaly threshold (75)</span>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-score"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CSI radar + frame log -->
+  <div class="section" id="csi">
+    <div class="csi-grid">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">csi raw · 64 subcarriers · |H(f)|</div>
+            <div class="card-sub">esp32-s3 · 2.4 GHz · HT20 · channel state</div>
+          </div>
+          <div class="legend">
+            <span><span class="swatch sw-primary"></span>amplitude</span>
+            <span><span class="swatch sw-danger"></span>outlier subcarrier</span>
+          </div>
+        </div>
+        <div class="csi-wf-wrap"><canvas id="chart-csi"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">csi frame log</div>
+            <div class="card-sub" id="csi-log-count">— frames</div>
+          </div>
+          <span class="badge primary" id="csi-log-rate">— fps</span>
+        </div>
+        <div class="csi-log-wrap">
+          <div class="csi-log-head">
+            <span>time</span>
+            <span>frame</span>
+            <span>μ |H|</span>
+            <span>ripple σ</span>
+            <span class="right">out</span>
+          </div>
+          <div class="csi-log-list" id="csi-log-list"></div>
+          <div class="csi-log-foot">
+            <span>last 60 frames · scroll for older</span>
+            <span class="right" id="csi-log-foot-stat">— outliers · 0 frames flagged</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feed + Alerts row -->
+  <div class="section" id="events">
+    <div class="row-2">
+      <div class="card feed">
+        <div class="card-h">
+          <div class="card-title">event feed</div>
+          <div class="card-sub" id="feed-count">0 events</div>
+        </div>
+        <ul class="feed-list" id="feed-list"></ul>
+      </div>
+
+      <div class="card" id="alerts">
+        <div class="card-h">
+          <div class="card-title">integrity_alert · active</div>
+          <div class="card-sub" id="alert-count">0 active</div>
+        </div>
+        <div id="alerts-body">
+          <div class="alert-empty">
+            <div class="ic">
+              <svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div>no integrity violations detected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config schema -->
+  <div class="section" id="config">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">config schema</div>
+          <div class="card-sub">runtime parameters · adversarial v1.0.0</div>
+        </div>
+        <div class="actions">
+          <span class="badge">6 keys</span>
+          <button class="btn sm outline" type="button" id="copy-cfg">
+            <svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            Copy JSON
+          </button>
+        </div>
+      </div>
+
+      <div class="cfg-list">
+        <div class="cfg-row">
+          <div class="cfg-key">anomaly_threshold</div>
+          <div class="cfg-meta">
+            <span class="cfg-type float">float</span>
+            <span class="cfg-range">0 – 100</span>
+          </div>
+          <div class="cfg-default">75.0</div>
+          <div class="cfg-desc">Score below which an <span class="mono">anomaly_detected</span> event is emitted.</div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-key">alert_min_score</div>
+          <div class="cfg-meta">
+            <span class="cfg-type float">float</span>
+            <span class="cfg-range">0 – 100</span>
+          </div>
+          <div class="cfg-default">55.0</div>
+          <div class="cfg-desc">Score below which an <span class="mono">integrity_alert</span> is escalated.</div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-key">window_ms</div>
+          <div class="cfg-meta">
+            <span class="cfg-type int">int</span>
+            <span class="cfg-range">5 000 – 300 000</span>
+          </div>
+          <div class="cfg-default">60000</div>
+          <div class="cfg-desc">Rolling window (ms) for jitter and minimum-score statistics.</div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-key">emit_score_every</div>
+          <div class="cfg-meta">
+            <span class="cfg-type int">int</span>
+            <span class="cfg-range">1 – 60</span>
+          </div>
+          <div class="cfg-default">5</div>
+          <div class="cfg-desc">Throttle for <span class="mono">consistency_score</span> events — emit every <span class="mono">N</span> frames.</div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-key">subcarriers</div>
+          <div class="cfg-meta">
+            <span class="cfg-type enum">enum</span>
+            <span class="cfg-range">32 · 56 · 64</span>
+          </div>
+          <div class="cfg-default">64</div>
+          <div class="cfg-desc">HT20 subcarrier count for CSI ingest.</div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-key">profile</div>
+          <div class="cfg-meta">
+            <span class="cfg-type enum">enum</span>
+            <span class="cfg-range">learned · strict · permissive</span>
+          </div>
+          <div class="cfg-default">"learned"</div>
+          <div class="cfg-desc">Fingerprint comparison strictness vs the learned device profile.</div>
+        </div>
+      </div>
+
+      <div class="cfg-foot">
+        <div class="legend-row">
+          <span><span class="cfg-type float" style="margin-right:0.3rem">float</span> continuous</span>
+          <span><span class="cfg-type int" style="margin-right:0.3rem">int</span> integer</span>
+          <span><span class="cfg-type enum" style="margin-right:0.3rem">enum</span> fixed set</span>
+        </div>
+        <span>schema · read-only on running cog</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cog details -->
+  <div class="section" id="source">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">cog details</div>
+          <div class="card-sub">manifest · adversarial v1.0.0</div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-cell">
+          <div class="k">events emitted</div>
+          <div class="v">anomaly_detected · consistency_score · integrity_alert</div>
+        </div>
+        <div class="detail-cell">
+          <div class="k">hardware</div>
+          <div class="v">ESP32-S3</div>
+        </div>
+        <div class="detail-cell">
+          <div class="k">input</div>
+          <div class="v">CSI raw</div>
+        </div>
+        <div class="detail-cell">
+          <div class="k">source</div>
+          <div class="v"><a href="#">cognitum-one/cogs/src/cogs/adversarial</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: adversarial@1.0.0</span> &middot; <span class="mono">seed firmware r0.9.4</span> &middot; <span class="mono">MCP bridge ok</span></div>
+    <div style="margin-top:0.4rem">© cognitum · adversarial cog runtime &middot; <a href="https://github.com/cognitum-one/cogs">source</a></div>
+  </footer>
+
+</div>
+
+<script>
+// Adversarial cog · live monitor (mock simulator)
+// Models: consistency_score (0–100), anomaly_detected, integrity_alert
+(() => {
+  const el = (id) => document.getElementById(id);
+
+  const SUBCARRIERS = 64;
+  const MAX_SCORE_POINTS = 240;
+  const FRAMES_PER_TICK = 12;
+  const TICK_MS = 250;
+  const ANOM_THRESHOLD = 75;
+  const ALERT_TYPES = [
+    { code: 'replay_attack',   msg: 'Repeated CSI signature in window — possible replay attack.' },
+    { code: 'rf_interference', msg: 'Cross-band interference: phase variance exceeds tolerance.' },
+    { code: 'hardware_drift',  msg: 'Subcarrier amplitude bias suggests RF front-end fault.' },
+    { code: 'spoof_signature', msg: 'CSI fingerprint deviates from learned device profile.' },
+  ];
+
+  // Theme colours sampled from CSS tokens (HSL strings ready for rgba/hsla)
+  const C = {
+    primary: 'hsl(185, 80%, 50%)',
+    primarySoft: 'hsla(185, 80%, 50%, 0.28)',
+    primaryGlow: 'hsla(185, 80%, 50%, 0.55)',
+    primaryFade: 'hsla(185, 80%, 50%, 0)',
+    accent: 'hsl(142, 70%, 50%)',
+    warn: 'hsl(35, 85%, 55%)',
+    danger: 'hsl(0, 65%, 55%)',
+    grid: 'hsla(220, 15%, 50%, 0.12)',
+    axis: 'hsl(215, 15%, 55%)',
+    threshold: 'hsla(0, 65%, 55%, 0.55)',
+  };
+
+  const state = {
+    simulating: true, score: 94.2,
+    scoreHistory: [], anomalyWindow: [], alerts: [], events: [],
+    framesTotal: 0, ratePoints: [], anomalyMode: null,
+    csi: new Float32Array(SUBCARRIERS), csiHistory: [], csiHistoryMax: 96,
+    csiLog: [], csiFrame: 0,
+  };
+  for (let i = 0; i < SUBCARRIERS; i++) {
+    const x = (i - SUBCARRIERS / 2) / (SUBCARRIERS / 2);
+    state.csi[i] = 0.78 - 0.22 * x * x + (Math.random() - 0.5) * 0.04;
+  }
+
+  const now = () => Date.now();
+  const fmtTime = (t) => new Date(t).toTimeString().slice(0, 8);
+  const fmtAgo = (t) => {
+    const s = Math.max(0, Math.floor((now() - t) / 1000));
+    if (s < 1) return 'just now';
+    if (s < 60) return s + 's ago';
+    return Math.floor(s / 60) + 'm ' + (s % 60) + 's ago';
+  };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const avg = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+  const stddev = (a) => {
+    const m = avg(a);
+    return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / a.length);
+  };
+
+  function step() {
+    if (!state.simulating) return;
+    const t = now();
+
+    if (!state.anomalyMode && Math.random() < 0.018) {
+      const severity = Math.random() < 0.35 ? 'alert' : 'anomaly';
+      state.anomalyMode = {
+        until: t + rand(800, 2400), severity,
+        alertType: severity === 'alert' ? ALERT_TYPES[Math.floor(Math.random() * ALERT_TYPES.length)] : null,
+        drop: severity === 'alert' ? rand(28, 45) : rand(10, 22),
+      };
+      if (severity === 'alert') triggerAlert(state.anomalyMode.alertType, t);
+    }
+    if (state.anomalyMode && t > state.anomalyMode.until) state.anomalyMode = null;
+
+    const target = state.anomalyMode ? 100 - state.anomalyMode.drop + rand(-3, 3) : 94 + rand(-2, 2.6);
+    state.score += (target - state.score) * 0.32;
+    state.score = Math.max(0, Math.min(100, state.score));
+    state.scoreHistory.push({ t, v: state.score });
+    while (state.scoreHistory.length > MAX_SCORE_POINTS) state.scoreHistory.shift();
+
+    state.framesTotal += FRAMES_PER_TICK;
+    state.ratePoints.push({ t, frames: FRAMES_PER_TICK });
+    while (state.ratePoints.length > 8) state.ratePoints.shift();
+
+    updateCsi();
+    pushCsiLog(t);
+
+    if (state.score < ANOM_THRESHOLD && Math.random() < 0.55) {
+      emitEvent({
+        t, name: 'anomaly_detected',
+        accent: state.anomalyMode?.severity === 'alert' ? 'danger' : 'warn',
+        v: 'score=' + state.score.toFixed(1) + ' z=' + rand(2.1, 4.7).toFixed(2),
+      });
+      state.anomalyWindow.push(t);
+    }
+
+    if (state.scoreHistory.length % 5 === 0) {
+      emitEvent({ t, name: 'consistency_score', accent: 'accent', v: state.score.toFixed(1) });
+    }
+
+    const cutoff = t - 5 * 60 * 1000;
+    state.anomalyWindow = state.anomalyWindow.filter(x => x > cutoff);
+
+    render();
+  }
+
+  function updateCsi() {
+    const t = now() / 1000;
+    const drift = state.anomalyMode ? rand(0.18, 0.42) : 0.04;
+    for (let i = 0; i < SUBCARRIERS; i++) {
+      const x = (i - SUBCARRIERS / 2) / (SUBCARRIERS / 2);
+      const base = 0.78 - 0.22 * x * x;
+      const noise = (Math.random() - 0.5) * drift;
+      const ripple = 0.06 * Math.sin(t * 1.4 + i * 0.18);
+      state.csi[i] = Math.max(0, Math.min(1, base + ripple + noise));
+    }
+    state.csiHistory.push(Float32Array.from(state.csi));
+    while (state.csiHistory.length > state.csiHistoryMax) state.csiHistory.shift();
+  }
+
+  // Compact stats over the current CSI frame for the log + status pills.
+  function frameStats(arr) {
+    let sum = 0, outliers = 0;
+    for (let s = 0; s < SUBCARRIERS; s++) {
+      sum += arr[s];
+      if (Math.abs(arr[s] - 0.6) > 0.32) outliers++;
+    }
+    const mean = sum / SUBCARRIERS;
+    let sq = 0;
+    for (let s = 0; s < SUBCARRIERS; s++) sq += (arr[s] - mean) * (arr[s] - mean);
+    return { mean, outliers, ripple: Math.sqrt(sq / SUBCARRIERS) };
+  }
+
+  function pushCsiLog(t) {
+    state.csiFrame++;
+    const st = frameStats(state.csi);
+    state.csiLog.unshift({
+      t, frame: state.csiFrame,
+      mean: st.mean, ripple: st.ripple, outliers: st.outliers,
+    });
+    while (state.csiLog.length > 200) state.csiLog.pop();
+  }
+
+  function emitEvent(e) {
+    state.events.unshift(e);
+    while (state.events.length > 80) state.events.pop();
+  }
+  function triggerAlert(type, t) {
+    state.alerts.unshift({ id: t, code: type.code, msg: type.msg, t });
+    while (state.alerts.length > 6) state.alerts.pop();
+    emitEvent({ t, name: 'integrity_alert', accent: 'danger', v: type.code });
+  }
+
+  function render() {
+    const v = state.score;
+    el('score-value').textContent = v.toFixed(1);
+    const ring = el('ring-fill');
+    const circ = 326.7;
+    ring.setAttribute('stroke-dashoffset', String(circ - circ * (v / 100)));
+
+    const stateEl = el('score-state');
+    const stateLabel = el('score-state-label');
+    stateEl.classList.remove('nominal', 'warn', 'alert');
+    if (v >= 85)      { stateEl.classList.add('nominal'); stateLabel.textContent = 'nominal';     ring.style.stroke = C.primary; }
+    else if (v >= 75) { stateEl.classList.add('warn');    stateLabel.textContent = 'degraded';    ring.style.stroke = C.warn; }
+    else              { stateEl.classList.add('alert');   stateLabel.textContent = 'compromised'; ring.style.stroke = C.danger; }
+
+    const last10s = state.scoreHistory.slice(-40).map(p => p.v);
+    const last1m  = state.scoreHistory.slice(-240).map(p => p.v);
+    el('avg-10s').textContent = last10s.length ? avg(last10s).toFixed(1) : '—';
+    el('min-1m').textContent  = last1m.length ? Math.min(...last1m).toFixed(1) : '—';
+    el('jitter').textContent  = last1m.length > 1 ? stddev(last1m).toFixed(2) : '—';
+
+    const recent = state.ratePoints.slice(-8);
+    const fps = recent.reduce((s, p) => s + p.frames, 0) / Math.max(1, recent.length) * (1000 / TICK_MS);
+    el('kpi-rate').textContent = isFinite(fps) ? Math.round(fps) : '—';
+
+    el('kpi-anom').textContent = state.anomalyWindow.length;
+    el('kpi-anom-delta').textContent = state.anomalyWindow.length === 0
+      ? 'below baseline'
+      : 'window: 5m · last ' + fmtAgo(state.anomalyWindow[state.anomalyWindow.length - 1]);
+
+    el('kpi-alert').textContent = state.alerts.length;
+    el('kpi-alert-delta').textContent = state.alerts.length === 0
+      ? 'last: —'
+      : 'last: ' + state.alerts[0].code;
+
+    el('last-update').textContent = 'updated ' + fmtTime(now());
+
+    renderEvents(); renderAlerts(); renderCsiLog();
+    drawScoreChart();
+    // CSI radar redraws continuously via rAF — no need to call here.
+  }
+
+  let lastCsiLogTopId = null;
+  function renderCsiLog() {
+    const list = el('csi-log-list');
+    if (!list) return;
+    const total = state.csiLog.length;
+    const flagged = state.csiLog.filter(r => r.outliers > 0).length;
+    const outliersSum = state.csiLog.reduce((s, r) => s + r.outliers, 0);
+    const ratePts = state.ratePoints.slice(-8);
+    const fps = ratePts.length
+      ? ratePts.reduce((s, p) => s + p.frames, 0) / ratePts.length * (1000 / TICK_MS)
+      : 0;
+    const rateEl = el('csi-log-rate');
+    if (rateEl) rateEl.textContent = (isFinite(fps) ? Math.round(fps) : '—') + ' fps';
+    const countEl = el('csi-log-count');
+    if (countEl) countEl.textContent = total + ' frames';
+    const footEl = el('csi-log-foot-stat');
+    if (footEl) footEl.textContent = outliersSum + ' outliers · ' + flagged + ' frames flagged';
+
+    const topId = state.csiLog[0]?.frame ?? null;
+    const isNewTop = topId !== lastCsiLogTopId;
+    lastCsiLogTopId = topId;
+
+    const frag = document.createDocumentFragment();
+    state.csiLog.slice(0, 60).forEach((r, i) => {
+      const row = document.createElement('div');
+      let cls = 'csi-log-row';
+      if (r.outliers >= 6)      cls += ' danger';
+      else if (r.outliers >= 1) cls += ' warn';
+      if (i === 0 && isNewTop)  cls += ' new';
+      row.className = cls;
+      row.innerHTML =
+        '<span class="t">' + fmtTime(r.t) + '</span>' +
+        '<span class="f">#' + String(r.frame).padStart(4, '0') + '</span>' +
+        '<span class="m">' + r.mean.toFixed(3) + '</span>' +
+        '<span class="r">' + r.ripple.toFixed(3) + '</span>' +
+        '<span class="o">' + r.outliers + '</span>';
+      frag.appendChild(row);
+    });
+    list.replaceChildren(frag);
+  }
+
+  function csiColor(v, isOutlier) {
+    const t = Math.max(0, Math.min(1, v));
+    if (isOutlier) return 'hsla(0, 72%, ' + (50 + t * 18) + '%, ' + (0.55 + t * 0.35) + ')';
+    // viridis-ish ramp: deep indigo -> teal -> bright cyan
+    const hue = 220 - t * 42;        // 220 -> 178
+    const sat = 35 + t * 55;         // 35 -> 90
+    const light = 12 + t * 50;       // 12 -> 62
+    const alpha = 0.45 + t * 0.5;
+    return 'hsla(' + hue + ', ' + sat + '%, ' + light + '%, ' + alpha + ')';
+  }
+
+  // Polar radar CSI visualization.
+  // 64 subcarriers radiate from a central origin as a closed polygon whose
+  // vertex distances encode |H(f)|. Outliers fire as red glowing pips on the
+  // polygon's perimeter. A slow sweep arm rotates beneath the live polygon to
+  // give the panel a clear "radar console" identity. Drawn on a 60fps rAF
+  // loop so the sweep + anomaly pulse animate smoothly even between data ticks.
+  function drawCsiChart() {
+    const cv = el('chart-csi');
+    if (!cv) return;
+    const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const outerR = Math.min(w, h) / 2 - 28;
+    const innerR = Math.max(14, outerR * 0.16);
+    const ringSpan = outerR - innerR;
+    const tNow = Date.now();
+
+    // ambient inner glow
+    const ambient = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR + 30);
+    ambient.addColorStop(0, 'hsla(185, 75%, 28%, 0.18)');
+    ambient.addColorStop(0.45, 'hsla(185, 70%, 20%, 0.08)');
+    ambient.addColorStop(1, 'hsla(185, 70%, 18%, 0)');
+    ctx.fillStyle = ambient;
+    ctx.fillRect(0, 0, w, h);
+
+    // amplitude rings (0.25 · 0.5 · 0.75 · 1.0)
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75, 1.0].forEach(p => {
+      const r = innerR + ringSpan * p;
+      ctx.strokeStyle = p === 1.0
+        ? 'hsla(185, 70%, 60%, 0.32)'
+        : 'hsla(185, 55%, 60%, 0.10)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    // inner hub ring
+    ctx.strokeStyle = 'hsla(185, 65%, 55%, 0.18)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // angular grid every 22.5° (matches 16 subcarrier groups)
+    ctx.strokeStyle = 'hsla(220, 15%, 70%, 0.05)';
+    for (let a = 0; a < 360; a += 22.5) {
+      const rad = (a - 90) * Math.PI / 180;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
+      ctx.lineTo(cx + Math.cos(rad) * outerR, cy + Math.sin(rad) * outerR);
+      ctx.stroke();
+    }
+
+    // subcarrier index ticks around the perimeter
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillStyle = 'hsl(215, 18%, 60%)';
+    [0, 8, 16, 24, 32, 40, 48, 56].forEach(sc => {
+      const ang = (sc / SUBCARRIERS) * Math.PI * 2 - Math.PI / 2;
+      const tx = cx + Math.cos(ang) * (outerR + 14);
+      const ty = cy + Math.sin(ang) * (outerR + 14);
+      const label = 'sc' + sc;
+      const tw = ctx.measureText(label).width;
+      ctx.fillText(label, tx - tw / 2, ty + 3);
+      // small tick into the ring
+      ctx.strokeStyle = 'hsla(185, 60%, 60%, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang) * outerR, cy + Math.sin(ang) * outerR);
+      ctx.lineTo(cx + Math.cos(ang) * (outerR + 5), cy + Math.sin(ang) * (outerR + 5));
+      ctx.stroke();
+    });
+
+    // amplitude axis labels on the upward radial
+    ctx.fillStyle = 'hsla(215, 15%, 55%, 0.7)';
+    ctx.font = '9px JetBrains Mono, monospace';
+    [0.5, 1.0].forEach(p => {
+      const r = innerR + ringSpan * p;
+      ctx.fillText(p.toFixed(1), cx + 4, cy - r + 3);
+    });
+
+    // sweep arm — clockwise rotation, ~5s/rev. Trailing cone fades out behind.
+    const sweepAngle = ((tNow / 5000) % 1) * Math.PI * 2 - Math.PI / 2;
+    const trailWidth = Math.PI * 0.6;
+    const trailGrad = ctx.createConicGradient
+      ? ctx.createConicGradient(sweepAngle, cx, cy)
+      : null;
+    if (trailGrad) {
+      // most browsers: conic gradient for the trail
+      trailGrad.addColorStop(0,                       'hsla(185, 95%, 60%, 0.0)');
+      trailGrad.addColorStop(0.001,                   'hsla(185, 95%, 65%, 0.28)');
+      trailGrad.addColorStop(trailWidth / (Math.PI * 2), 'hsla(185, 95%, 60%, 0)');
+      trailGrad.addColorStop(1,                       'hsla(185, 95%, 60%, 0)');
+      ctx.fillStyle = trailGrad;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, outerR, sweepAngle - trailWidth, sweepAngle, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // bright sweep arm itself
+    ctx.strokeStyle = 'hsla(185, 100%, 75%, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'hsla(185, 100%, 65%, 0.6)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sweepAngle) * outerR, cy + Math.sin(sweepAngle) * outerR);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // current frame polygon — the live |H(f)| trace
+    const cur = state.csi;
+    if (cur && cur.length === SUBCARRIERS) {
+      const xs = new Array(SUBCARRIERS);
+      const ys = new Array(SUBCARRIERS);
+      for (let s = 0; s < SUBCARRIERS; s++) {
+        const v = Math.max(0, Math.min(1, cur[s]));
+        const ang = (s / SUBCARRIERS) * Math.PI * 2 - Math.PI / 2;
+        const r = innerR + ringSpan * v;
+        xs[s] = cx + Math.cos(ang) * r;
+        ys[s] = cy + Math.sin(ang) * r;
+      }
+
+      // soft radial fill inside the polygon
+      const fillGrad = ctx.createRadialGradient(cx, cy, innerR * 0.6, cx, cy, outerR);
+      fillGrad.addColorStop(0, 'hsla(185, 100%, 60%, 0.04)');
+      fillGrad.addColorStop(0.6, 'hsla(185, 90%, 55%, 0.14)');
+      fillGrad.addColorStop(1, 'hsla(185, 90%, 60%, 0.30)');
+      ctx.fillStyle = fillGrad;
+      ctx.beginPath();
+      for (let s = 0; s < SUBCARRIERS; s++) {
+        if (s === 0) ctx.moveTo(xs[s], ys[s]); else ctx.lineTo(xs[s], ys[s]);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // glowing perimeter stroke
+      ctx.strokeStyle = 'hsl(185, 95%, 68%)';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'hsla(185, 100%, 60%, 0.85)';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      for (let s = 0; s < SUBCARRIERS; s++) {
+        if (s === 0) ctx.moveTo(xs[s], ys[s]); else ctx.lineTo(xs[s], ys[s]);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // vertex dots — small cyan pip per subcarrier
+      ctx.fillStyle = 'hsla(185, 100%, 80%, 0.55)';
+      for (let s = 0; s < SUBCARRIERS; s++) {
+        ctx.beginPath();
+        ctx.arc(xs[s], ys[s], 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // outlier subcarriers — red glowing pips
+      const outlierPulse = 0.6 + 0.4 * Math.sin(tNow / 220);
+      for (let s = 0; s < SUBCARRIERS; s++) {
+        const v = cur[s];
+        if (Math.abs(v - 0.6) > 0.32) {
+          ctx.fillStyle = 'hsl(0, 80%, 65%)';
+          ctx.shadowColor = 'hsla(0, 90%, 55%, 0.85)';
+          ctx.shadowBlur = 14 * outlierPulse + 4;
+          ctx.beginPath();
+          ctx.arc(xs[s], ys[s], 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          // radial "ping" line from inner ring out to the vertex
+          const ang = (s / SUBCARRIERS) * Math.PI * 2 - Math.PI / 2;
+          ctx.strokeStyle = 'hsla(0, 80%, 60%, 0.35)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(ang) * innerR, cy + Math.sin(ang) * innerR);
+          ctx.lineTo(xs[s], ys[s]);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    // centre hub
+    const hubGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+    hubGrad.addColorStop(0, 'hsla(185, 100%, 75%, 0.9)');
+    hubGrad.addColorStop(0.4, 'hsla(185, 90%, 50%, 0.25)');
+    hubGrad.addColorStop(1, 'hsla(185, 80%, 40%, 0)');
+    ctx.fillStyle = hubGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fill();
+    // hub centre dot
+    ctx.fillStyle = 'hsl(185, 100%, 80%)';
+    ctx.shadowColor = 'hsla(185, 100%, 60%, 0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // anomaly mode — pulsing red ring outside the radar
+    if (state.anomalyMode) {
+      const pulse = 0.5 + 0.5 * Math.sin(tNow / 200);
+      const alertHue = state.anomalyMode.severity === 'alert' ? 0 : 35;
+      const sat = state.anomalyMode.severity === 'alert' ? 80 : 85;
+      ctx.strokeStyle = 'hsla(' + alertHue + ', ' + sat + '%, 60%, ' + (0.35 + pulse * 0.45) + ')';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'hsla(' + alertHue + ', 95%, 55%, 0.6)';
+      ctx.shadowBlur = 14 + pulse * 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR + 6 + pulse * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // tiny corner labels for context
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.fillStyle = 'hsl(215, 15%, 50%)';
+    ctx.fillText('|H(f)| · 64 sc', 10, 16);
+    const lblR = 'live · ' + Math.round(1000 / TICK_MS * (state.simulating ? 1 : 0)) + 'Hz scan';
+    const lblW = ctx.measureText(lblR).width;
+    ctx.fillText(lblR, w - lblW - 10, 16);
+  }
+
+  let lastFeedTopId = null;
+  function renderEvents() {
+    const list = el('feed-list');
+    el('feed-count').textContent = state.events.length + ' events';
+    const frag = document.createDocumentFragment();
+    const topId = state.events[0]?.t ?? null;
+    const isNewTop = topId !== lastFeedTopId;
+    lastFeedTopId = topId;
+    state.events.slice(0, 60).forEach((e, i) => {
+      const li = document.createElement('li');
+      const accentClass = e.accent === 'danger' ? 'ac-danger' : e.accent === 'warn' ? 'ac-warn' : 'ac-accent';
+      li.className = 'ev' + (i === 0 && isNewTop ? ' new' : '') + (e.accent === 'danger' ? ' danger' : '');
+      li.innerHTML =
+        '<span class="t">' + fmtTime(e.t) + '</span>' +
+        '<span class="name"><span class="' + accentClass + '">' + e.name + '</span></span>' +
+        '<span class="v">' + e.v + '</span>';
+      frag.appendChild(li);
+    });
+    list.replaceChildren(frag);
+  }
+
+  function renderAlerts() {
+    const body = el('alerts-body');
+    el('alert-count').textContent = state.alerts.length + ' active';
+    if (state.alerts.length === 0) {
+      body.innerHTML =
+        '<div class="alert-empty"><div class="ic">' +
+        '<svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z"/><path d="m9 12 2 2 4-4"/></svg>' +
+        '</div><div>no integrity violations detected</div></div>';
+      return;
+    }
+    body.innerHTML = state.alerts.map(a =>
+      '<div class="alert-item">' +
+        '<div class="alert-ic">' +
+          '<svg viewBox="0 0 24 24"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' +
+        '</div>' +
+        '<div class="alert-body">' +
+          '<div class="h">' + a.code + '</div>' +
+          '<div class="d">' + a.msg + '</div>' +
+          '<div class="ts">' + fmtTime(a.t) + ' · ' + fmtAgo(a.t) + '</div>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(r.width * dpr);
+    canvas.height = Math.floor(r.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+
+  function drawScoreChart() {
+    const { ctx, w, h } = setupCanvas(el('chart-score'));
+    ctx.clearRect(0, 0, w, h);
+    const padL = 38, padR = 14, padT = 10, padB = 22;
+    const cw = w - padL - padR, ch = h - padT - padB;
+
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = C.axis;
+    [0, 25, 50, 75, 100].forEach(g => {
+      const y = padT + ch - (g / 100) * ch;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y); ctx.stroke();
+      ctx.fillText(String(g), 6, y + 3);
+    });
+
+    const yT = padT + ch - (ANOM_THRESHOLD / 100) * ch;
+    ctx.strokeStyle = C.threshold;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, yT); ctx.lineTo(padL + cw, yT); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const pts = state.scoreHistory;
+    if (pts.length < 2) return;
+
+    const grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+    grad.addColorStop(0, C.primarySoft);
+    grad.addColorStop(1, C.primaryFade);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = padL + (i / (MAX_SCORE_POINTS - 1)) * cw;
+      const y = padT + ch - (p.v / 100) * ch;
+      if (i === 0) ctx.moveTo(x, padT + ch);
+      ctx.lineTo(x, y);
+    });
+    const lastX = padL + ((pts.length - 1) / (MAX_SCORE_POINTS - 1)) * cw;
+    ctx.lineTo(lastX, padT + ch);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = C.primary; ctx.lineWidth = 1.6;
+    ctx.shadowColor = C.primaryGlow; ctx.shadowBlur = 6;
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = padL + (i / (MAX_SCORE_POINTS - 1)) * cw;
+      const y = padT + ch - (p.v / 100) * ch;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = C.danger;
+    pts.forEach((p, i) => {
+      if (p.v < ANOM_THRESHOLD) {
+        const x = padL + (i / (MAX_SCORE_POINTS - 1)) * cw;
+        const y = padT + ch - (p.v / 100) * ch;
+        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    ctx.fillStyle = C.axis;
+    ctx.fillText('-60s', padL, h - 6);
+    ctx.fillText('now', padL + cw - 20, h - 6);
+  }
+
+  el('sim-toggle').addEventListener('click', () => {
+    state.simulating = !state.simulating;
+    const b = el('sim-toggle');
+    b.classList.toggle('on', state.simulating);
+    b.setAttribute('aria-pressed', String(state.simulating));
+    el('sim-label').textContent = state.simulating ? 'simulating' : 'paused';
+  });
+  el('reset-btn').addEventListener('click', () => {
+    state.scoreHistory = []; state.events = []; state.alerts = [];
+    state.anomalyWindow = []; state.anomalyMode = null;
+    state.framesTotal = 0; state.csiHistory = []; state.score = 94.2;
+    state.csiLog = []; state.csiFrame = 0;
+    render();
+  });
+  let rzT;
+  window.addEventListener('resize', () => {
+    clearTimeout(rzT);
+    rzT = setTimeout(() => { drawScoreChart(); }, 80);
+  });
+
+  // seed history so the timeline isn't empty on load — and inject a visible
+  // anomaly partway through so the demo opens with a "detected" event on screen.
+  const DIP_START = 28, DIP_LEN = 14;  // ~3.5s anomaly, ending ~4.5s ago
+  for (let i = 0; i < 60; i++) {
+    const t = now() - (60 - i) * TICK_MS;
+    let v;
+    if (i >= DIP_START && i < DIP_START + DIP_LEN) {
+      const phase = (i - DIP_START) / (DIP_LEN - 1);
+      const dropDepth = Math.sin(phase * Math.PI);
+      v = 95 - dropDepth * 52 + (Math.random() - 0.5) * 3;
+      // make the seeded CSI frames look adversarial during the dip
+      const wasAnom = state.anomalyMode;
+      state.anomalyMode = { drop: 35, severity: 'alert', until: 0, alertType: null };
+      updateCsi();
+      state.anomalyMode = wasAnom;
+    } else {
+      v = 94 + (Math.random() - 0.5) * 4;
+      updateCsi();
+    }
+    state.scoreHistory.push({ t, v });
+    // also seed the per-frame CSI log for this tick
+    pushCsiLog(t);
+  }
+  state.score = state.scoreHistory[state.scoreHistory.length - 1].v;
+
+  // seed an active integrity alert + matching event-feed entries from the dip
+  const alertT = now() - (60 - (DIP_START + 4)) * TICK_MS;
+  const seededAlert = ALERT_TYPES[0]; // replay_attack
+  state.alerts.unshift({ id: alertT, code: seededAlert.code, msg: seededAlert.msg, t: alertT });
+  state.anomalyWindow.push(alertT - 800, alertT, alertT + 600, alertT + 1200);
+  state.events.unshift(
+    { t: alertT + 2200, name: 'consistency_score', accent: 'accent', v: '78.4' },
+    { t: alertT + 1800, name: 'consistency_score', accent: 'accent', v: '64.1' },
+    { t: alertT + 1200, name: 'anomaly_detected', accent: 'warn',   v: 'score=58.3 z=2.41' },
+    { t: alertT + 600,  name: 'anomaly_detected', accent: 'danger', v: 'score=46.7 z=3.62' },
+    { t: alertT,        name: 'integrity_alert',  accent: 'danger', v: seededAlert.code },
+    { t: alertT - 400,  name: 'anomaly_detected', accent: 'danger', v: 'score=43.1 z=4.18' },
+    { t: alertT - 800,  name: 'anomaly_detected', accent: 'warn',   v: 'score=61.5 z=2.18' },
+    { t: alertT - 1200, name: 'consistency_score', accent: 'accent', v: '88.2' },
+    { t: alertT - 1800, name: 'consistency_score', accent: 'accent', v: '93.6' },
+  );
+
+  render();
+  setInterval(step, TICK_MS);
+
+  // continuous radar redraw loop (sweep arm + anomaly pulse animate at 60fps)
+  function radarLoop() {
+    drawCsiChart();
+    requestAnimationFrame(radarLoop);
+  }
+  requestAnimationFrame(radarLoop);
+})();
+
+// Nav: copy config + scroll-spy active state
+(() => {
+  const cfg = {
+    anomaly_threshold: 75.0,
+    alert_min_score: 55.0,
+    window_ms: 60000,
+    emit_score_every: 5,
+    subcarriers: 64,
+    profile: 'learned',
+  };
+  const copyBtn = document.getElementById('copy-cfg');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const txt = JSON.stringify(cfg, null, 2);
+      try { await navigator.clipboard.writeText(txt); } catch (_) {}
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1400);
+    });
+  }
+
+  const navLinks = Array.from(document.querySelectorAll('.nav a[href^="#"]'));
+  const sections = navLinks
+    .map(a => document.getElementById(a.getAttribute('href').slice(1)))
+    .filter(Boolean);
+  const appbar = document.querySelector('.appbar');
+  const setActive = (id) => navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+  });
+
+  // Intercept anchor clicks so the scroll lands exactly at the top edge of
+  // each section, just below the sticky appbar — measured live for accuracy.
+  navLinks.forEach(a => {
+    a.addEventListener('click', (e) => {
+      const href = a.getAttribute('href') || '';
+      if (!href.startsWith('#') || href.length < 2) return;
+      const target = document.getElementById(href.slice(1));
+      if (!target) return;
+      e.preventDefault();
+      const barH = appbar ? appbar.getBoundingClientRect().height : 60;
+      const top = target.getBoundingClientRect().top + window.scrollY - barH - 4;
+      window.scrollTo({ top, behavior: 'smooth' });
+      setActive(target.id);
+      history.replaceState(null, '', href);
+    });
+  });
+
+  if (sections.length && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActive(visible.target.id);
+    }, { rootMargin: '-30% 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] });
+    sections.forEach(s => io.observe(s));
+  }
+})();
+</script>
+</body>
+</html>
