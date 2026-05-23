@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ghost Hunter — Field Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Special+Elite&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:220 25% 6%;
+  --bg-2:220 20% 8%;
+  --fg:210 20% 92%;
+  --card:220 20% 10%;
+  --card-2:220 20% 12%;
+  --primary:185 80% 50%;
+  --primary-soft:185 80% 50% / 0.18;
+  --accent:142 70% 50%;
+  --ghost:142 70% 50%;
+  --ghost-soft:142 70% 50% / 0.18;
+  --warn:35 85% 55%;
+  --bad:0 65% 50%;
+  --muted:215 15% 55%;
+  --border:220 15% 18%;
+  --radius:0.75rem;
+  --font:'Outfit',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --typewriter:'Special Elite',serif;
+}
+html,body{background:hsl(var(--bg));color:hsl(var(--fg));font-family:var(--font);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--card) / 0.5)}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.55)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4{font-family:var(--font);font-weight:500;letter-spacing:-0.02em}
+button{font-family:var(--font);cursor:pointer}
+.mono{font-family:var(--mono)}
+.tw{font-family:var(--typewriter)}
+
+/* ───────── App bar ───────── */
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--bg) / 0.92);backdrop-filter:blur(10px);border-bottom:1px solid hsl(var(--border) / 0.6);padding:0.75rem 1.25rem}
+.appbar-row{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem;cursor:pointer}
+.brand-mark{width:36px;height:36px;border-radius:0.5rem;background:hsl(var(--ghost-soft));display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 0 14px hsl(var(--ghost) / 0.35);position:relative;overflow:hidden}
+.brand-mark::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 60%, transparent 0, hsl(var(--ghost) / 0.15) 60%, transparent 100%);animation:halo 3s ease-in-out infinite}
+@keyframes halo{0%,100%{opacity:0.4}50%{opacity:1}}
+.brand-text{font-weight:500;color:hsl(var(--muted))}
+.brand-text b{color:hsl(var(--fg));font-weight:600}
+.brand-text .slash{color:hsl(var(--ghost));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--mono);font-size:0.6875rem;color:hsl(var(--muted) / 0.7);margin-left:0.5rem}
+.nav{display:flex;gap:0.2rem;flex-wrap:wrap}
+.nav a{padding:0.4rem 0.8rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted));font-weight:500;cursor:pointer;transition:all 0.18s}
+.nav a:hover{color:hsl(var(--fg));background:hsl(var(--card-2));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--card-2))}
+
+/* ───────── Layout ───────── */
+.wrap{max-width:1440px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+.page-section{display:none}
+.page-section.on{display:block}
+.row{display:grid;gap:1rem}
+
+/* ───────── Hero verdict bar ───────── */
+.verdict{
+  background:linear-gradient(135deg, hsl(220 25% 6%) 0%, hsl(200 25% 8%) 70%, hsl(220 25% 6%) 100%);
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  padding:1.25rem 1.5rem;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:1.5rem;
+  align-items:center;
+  margin-bottom:1rem;
+  position:relative;
+  overflow:hidden;
+}
+.verdict::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%, hsl(var(--ghost) / 0.15) 0%, transparent 50%);pointer-events:none;transition:opacity 1s}
+.verdict.calm::before{opacity:0.3}
+.verdict.stirring::before{opacity:0.7;background:radial-gradient(ellipse at 30% 50%, hsl(var(--primary) / 0.18) 0%, transparent 50%)}
+.verdict.presence::before{opacity:1;background:radial-gradient(ellipse at 30% 50%, hsl(var(--warn) / 0.22) 0%, transparent 55%)}
+.verdict.apparition::before{opacity:1;background:radial-gradient(ellipse at 30% 50%, hsl(var(--bad) / 0.28) 0%, transparent 60%);animation:flicker 0.8s ease-in-out infinite}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:0.7}}
+
+.verdict-ghost{
+  width:120px;height:120px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:visible;
+}
+.verdict-ghost::before,.verdict-ghost::after{
+  content:'';position:absolute;top:6px;left:50%;
+  width:18px;height:18px;border-radius:50%;
+  background:radial-gradient(circle,hsla(142,70%,60%,0.55) 0%,transparent 70%);
+  pointer-events:none;opacity:0;filter:blur(2px);
+}
+.verdict-ghost::before{animation:wisp 3.6s ease-out infinite;margin-left:-26px}
+.verdict-ghost::after{animation:wisp 3.6s ease-out infinite 1.8s;margin-left:8px}
+.verdict.presence   .verdict-ghost::before,.verdict.presence   .verdict-ghost::after{opacity:1}
+.verdict.apparition .verdict-ghost::before,.verdict.apparition .verdict-ghost::after{opacity:1;background:radial-gradient(circle,hsla(0,65%,65%,0.55) 0%,transparent 70%)}
+@keyframes wisp{
+  0%   {transform:translate(0,0)        scale(0.35);opacity:0}
+  20%  {opacity:0.9}
+  60%  {transform:translate(8px,-40px)  scale(2.0);opacity:0.5}
+  100% {transform:translate(-6px,-78px) scale(3.0);opacity:0}
+}
+.verdict-ghost svg{width:100%;height:100%;animation:bob 3.5s ease-in-out infinite;transition:filter 0.6s, opacity 0.6s}
+.verdict.calm     .verdict-ghost svg{opacity:0.35;filter:blur(1.5px) drop-shadow(0 0 10px hsl(var(--ghost) / 0.4))}
+.verdict.stirring .verdict-ghost svg{opacity:0.7;filter:drop-shadow(0 0 14px hsl(var(--primary) / 0.55))}
+.verdict.presence .verdict-ghost svg{opacity:0.95;filter:drop-shadow(0 0 18px hsl(var(--warn) / 0.7))}
+.verdict.apparition .verdict-ghost svg{opacity:1;filter:drop-shadow(0 0 22px hsl(var(--bad) / 0.85));animation:bob 1.4s ease-in-out infinite, shudder 0.18s linear infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes shudder{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.ghost-eye{transition:fill 0.4s}
+.verdict.calm .ghost-eye, .verdict.stirring .ghost-eye{fill:hsl(220 30% 20%)}
+.verdict.presence .ghost-eye{fill:hsl(var(--warn))}
+.verdict.apparition .ghost-eye{fill:hsl(var(--bad));filter:drop-shadow(0 0 4px hsl(var(--bad)))}
+
+.verdict-body{display:flex;flex-direction:column;gap:0.35rem;min-width:0;position:relative;z-index:1}
+.verdict-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.18em;color:hsl(var(--muted));font-weight:600}
+.verdict-state{
+  font-size:2.75rem;font-weight:700;letter-spacing:-0.03em;line-height:1;
+  font-family:var(--font);
+  background:linear-gradient(135deg, hsl(var(--ghost)) 0%, hsl(var(--primary)) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  transition:filter 0.4s;
+}
+.verdict.apparition .verdict-state{background:linear-gradient(135deg, hsl(var(--bad)) 0%, hsl(var(--warn)) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.verdict.presence .verdict-state{background:linear-gradient(135deg, hsl(var(--warn)) 0%, hsl(var(--ghost)) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.verdict-sub{font-size:0.95rem;color:hsl(var(--fg) / 0.85);font-family:var(--typewriter)}
+.verdict-sub .b{color:hsl(var(--ghost));font-weight:600}
+.verdict-meta{font-size:0.75rem;color:hsl(var(--muted));font-family:var(--mono);margin-top:0.25rem}
+
+.verdict-confidence{
+  display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;
+  position:relative;z-index:1;text-align:right;
+}
+.conf-ring{position:relative;width:110px;height:110px}
+.conf-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.conf-ring .bg{stroke:hsl(var(--card-2));stroke-width:10;fill:none}
+.conf-ring .fg{stroke:hsl(var(--primary));stroke-width:10;stroke-linecap:round;fill:none;transition:stroke-dasharray 0.6s ease, stroke 0.4s}
+.conf-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.conf-num{font-family:var(--mono);font-size:1.7rem;font-weight:700;line-height:1}
+.conf-lbl{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:hsl(var(--muted));margin-top:0.15rem}
+
+.hunt-controls{display:flex;gap:0.5rem;margin-top:0.55rem;justify-content:flex-end}
+
+@media (max-width: 820px){
+  .verdict{grid-template-columns:1fr;text-align:center}
+  .verdict-confidence{align-items:center;text-align:center}
+  .hunt-controls{justify-content:center}
+  .verdict-ghost{margin:0 auto}
+  .verdict-state{font-size:2rem}
+}
+
+/* ───────── Consensus strip ───────── */
+.consensus{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:0.6rem;
+  margin-bottom:1rem;
+}
+.consensus-cell{
+  background:hsl(var(--card));border:1px solid hsl(var(--border) / 0.6);
+  border-radius:0.6rem;padding:0.7rem 0.85rem;
+  display:flex;flex-direction:column;gap:0.15rem;
+  position:relative;overflow:hidden;
+}
+.consensus-cell .ic{position:absolute;right:0.6rem;top:0.55rem;font-size:1.05rem;opacity:0.45}
+.consensus-cell .lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted))}
+.consensus-cell .val{font-family:var(--mono);font-size:1.15rem;font-weight:700;line-height:1.2;margin-top:0.1rem}
+.consensus-cell .sub{font-size:0.7rem;color:hsl(var(--muted));margin-top:0.1rem}
+.consensus-cell.ok .val{color:hsl(var(--accent))}
+.consensus-cell.warn .val{color:hsl(var(--warn))}
+.consensus-cell.bad .val{color:hsl(var(--bad))}
+.consensus-cell.ghost .val{color:hsl(var(--ghost))}
+.consensus-cell.primary .val{color:hsl(var(--primary))}
+
+/* ───────── Card ───────── */
+.card{background:linear-gradient(180deg, hsl(var(--card-2)) 0%, hsl(var(--card)) 100%);border:1px solid hsl(var(--border) / 0.6);border-radius:var(--radius);padding:1rem 1.125rem;box-shadow:0 8px 32px -8px hsl(220 25% 2% / 0.8)}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap}
+.card-title{font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:0.5rem}
+.card-title .pip{width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary))}
+.card-sub{font-size:0.72rem;color:hsl(var(--muted))}
+
+/* ───────── Grids ───────── */
+.grid-radar{display:grid;gap:1rem;grid-template-columns:1.4fr 1fr}
+@media (max-width: 980px){.grid-radar{grid-template-columns:1fr}}
+.grid-3{display:grid;gap:1rem;grid-template-columns:repeat(3, 1fr)}
+@media (max-width: 980px){.grid-3{grid-template-columns:1fr}}
+.grid-2{display:grid;gap:1rem;grid-template-columns:repeat(2, 1fr)}
+@media (max-width: 720px){.grid-2{grid-template-columns:1fr}}
+
+/* ───────── Room radar ───────── */
+.radar-wrap{
+  background:radial-gradient(circle at 50% 50%, hsl(220 30% 4%) 0%, hsl(220 30% 2%) 100%);
+  border:1px solid hsl(var(--border));border-radius:var(--radius);
+  position:relative;aspect-ratio:1/1;overflow:hidden;
+}
+.radar-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.radar-legend{
+  position:absolute;left:0.7rem;top:0.7rem;
+  display:flex;flex-direction:column;gap:0.25rem;
+  font-family:var(--mono);font-size:0.65rem;color:hsl(var(--muted));
+  background:hsl(var(--bg) / 0.7);padding:0.4rem 0.55rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border) / 0.5);
+}
+.radar-legend .row{display:flex;align-items:center;gap:0.4rem}
+.radar-legend .sw{width:10px;height:10px;border-radius:50%}
+.radar-legend .sw.sensor{background:hsl(var(--primary));box-shadow:0 0 5px hsl(var(--primary))}
+.radar-legend .sw.blip{background:hsl(var(--ghost));box-shadow:0 0 5px hsl(var(--ghost))}
+.radar-legend .sw.crit{background:hsl(var(--bad));box-shadow:0 0 5px hsl(var(--bad))}
+.radar-bearing{
+  position:absolute;right:0.7rem;top:0.7rem;
+  font-family:var(--mono);font-size:0.7rem;color:hsl(var(--primary));
+  background:hsl(var(--bg) / 0.7);padding:0.35rem 0.6rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--primary) / 0.35);
+  letter-spacing:0.08em;
+}
+.radar-room-label{
+  position:absolute;bottom:0.7rem;left:50%;transform:translateX(-50%);
+  font-family:var(--typewriter);font-size:0.8rem;color:hsl(var(--muted));
+  letter-spacing:0.08em;
+}
+
+/* ───────── Field journal ───────── */
+.journal{
+  background:linear-gradient(180deg, hsl(35 25% 8%) 0%, hsl(35 20% 6%) 100%);
+  border:1px solid hsl(35 30% 20% / 0.5);border-radius:var(--radius);
+  padding:1rem 1.25rem;font-family:var(--typewriter);
+  background-image:repeating-linear-gradient(0deg, transparent 0, transparent 23px, hsl(var(--ghost) / 0.06) 23px, hsl(var(--ghost) / 0.06) 24px);
+}
+.journal-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem;padding-bottom:0.5rem;border-bottom:1px dashed hsl(35 30% 25% / 0.4)}
+.journal-h .t{font-size:1.05rem;color:hsl(35 30% 80%);letter-spacing:0.04em}
+.journal-h .s{font-size:0.7rem;color:hsl(35 15% 55%);font-family:var(--mono)}
+.journal-list{display:flex;flex-direction:column;gap:0.45rem;max-height:340px;overflow-y:auto;padding-right:0.3rem}
+.j-entry{
+  display:grid;grid-template-columns:auto 1fr;gap:0.6rem;
+  padding:0.35rem 0;line-height:1.45;font-size:0.92rem;color:hsl(35 25% 78%);
+  border-bottom:1px dotted hsl(35 30% 25% / 0.25);
+}
+.j-entry:last-child{border-bottom:none}
+.j-entry .ts{font-family:var(--mono);font-size:0.72rem;color:hsl(35 15% 50%);padding-top:0.18rem}
+.j-entry .txt strong{color:hsl(var(--ghost));font-weight:600}
+.j-entry.crit .txt{color:hsl(var(--bad))}
+.j-entry.crit .txt strong{color:hsl(var(--bad))}
+.j-entry.warn .txt{color:hsl(var(--warn))}
+.j-entry.warn .txt strong{color:hsl(var(--warn))}
+.j-entry.calm .txt{color:hsl(35 18% 65%)}
+.j-entry.shift .txt{color:hsl(var(--primary))}
+.j-entry.shift .txt strong{color:hsl(var(--primary))}
+
+/* ───────── Whisper / EVP ticker ───────── */
+.whisper-bar{
+  background:hsl(var(--bg-2));border:1px solid hsl(var(--ghost) / 0.4);
+  border-radius:0.6rem;padding:0.55rem 0.9rem;margin-top:0.7rem;
+  display:flex;align-items:center;gap:0.7rem;font-family:var(--typewriter);
+  font-size:0.9rem;color:hsl(var(--ghost));letter-spacing:0.05em;
+  overflow:hidden;position:relative;
+}
+.whisper-bar .ic{font-size:1.1rem;animation:pulse 1.6s ease-in-out infinite}
+.whisper-bar .txt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0.85}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* ───────── Charts ───────── */
+.chart-host{width:100%;height:220px;position:relative}
+.chart-host.tall{height:300px}
+.chart-host.small{height:170px}
+
+/* ───────── Oscilloscope ───────── */
+.osc-wrap{
+  background:radial-gradient(circle at 50% 50%, hsl(140 40% 5%) 0%, hsl(140 30% 3%) 100%);
+  border:1px solid hsl(140 30% 18%);
+  border-radius:0.55rem;padding:0.4rem;position:relative;height:220px;
+}
+.osc-wrap canvas{width:100%;height:100%;display:block}
+.osc-overlay{
+  position:absolute;left:0.6rem;top:0.5rem;
+  font-family:var(--mono);font-size:0.65rem;color:hsl(140 50% 60%);
+  letter-spacing:0.08em;
+}
+.osc-overlay .blink{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ───────── Compass / DoA ───────── */
+.compass-wrap{
+  width:100%;aspect-ratio:1/1;max-height:280px;
+  position:relative;margin:0 auto;
+}
+.compass-wrap canvas{width:100%;height:100%}
+
+/* ───────── Sensors page ───────── */
+.sensor-card{background:linear-gradient(180deg, hsl(var(--card-2)) 0%, hsl(var(--card)) 100%);border:1px solid hsl(var(--border) / 0.6);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;flex-direction:column;gap:0.55rem}
+.sensor-h{display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
+.sensor-name{font-size:0.95rem;font-weight:600}
+.sensor-meta{font-family:var(--mono);font-size:0.72rem;color:hsl(var(--muted));line-height:1.65;display:grid;grid-template-columns:1fr 1fr;gap:0 0.6rem}
+.sensor-meta .l{color:hsl(var(--muted) / 0.7);margin-right:0.4rem}
+.sensor-actions{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.3rem}
+
+.room-map{
+  background:radial-gradient(circle at 50% 50%, hsl(220 30% 4%), hsl(220 30% 2%));
+  border:1px solid hsl(var(--border));border-radius:var(--radius);
+  position:relative;aspect-ratio:16/10;
+}
+.room-map svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* ───────── Tables ───────── */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.55rem 0.6rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted));border-bottom:1px solid hsl(var(--border));background:hsl(var(--card-2) / 0.5)}
+tbody td{padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.4);font-family:var(--mono);font-size:0.75rem}
+tbody tr{cursor:pointer;transition:background 0.15s}
+tbody tr:hover{background:hsl(var(--card-2) / 0.7)}
+tbody tr.no-hover{cursor:default}
+tbody tr.no-hover:hover{background:transparent}
+
+/* ───────── Buttons ───────── */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--card-2));color:hsl(var(--fg));font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.18s;font-family:var(--font)}
+.btn:hover:not(:disabled){background:hsl(var(--card-2) / 0.6);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.32rem 0.65rem;font-size:0.74rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--bg));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 12px -4px hsl(var(--primary) / 0.45)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.88)}
+.btn.ghost-btn{background:hsl(var(--ghost));color:hsl(var(--bg));border-color:hsl(var(--ghost));font-weight:600;box-shadow:0 4px 12px -4px hsl(var(--ghost) / 0.55)}
+.btn.ghost-btn:hover:not(:disabled){background:hsl(var(--ghost) / 0.88)}
+.btn.warn{background:hsl(var(--warn) / 0.15);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.4)}
+.btn.warn:hover:not(:disabled){background:hsl(var(--warn) / 0.25)}
+.btn.danger{background:hsl(var(--bad) / 0.15);color:hsl(0 70% 70%);border-color:hsl(var(--bad) / 0.45)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--bad) / 0.25)}
+.btn.outline{background:transparent}
+.btn-row{display:flex;gap:0.5rem;flex-wrap:wrap}
+
+/* ───────── Inputs ───────── */
+input,textarea,select{background:hsl(var(--card-2));color:hsl(var(--fg));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.45rem 0.75rem;font-family:var(--font);font-size:0.8125rem;outline:none;transition:all 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--primary));box-shadow:0 0 0 2px hsl(var(--primary) / 0.25)}
+input::placeholder{color:hsl(var(--muted))}
+input[type=range]{accent-color:hsl(var(--primary));padding:0;width:100%;background:transparent}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary))}
+.input{width:100%;height:2.4rem}
+label.lbl{display:block;font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted));margin-bottom:0.35rem}
+.rng-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.68rem;color:hsl(var(--muted));margin-top:0.25rem}
+
+/* ───────── Badge ───────── */
+.badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.18rem 0.55rem;border-radius:9999px;font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;border:1px solid transparent}
+.badge.ok{background:hsl(var(--accent) / 0.13);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.3)}
+.badge.warn{background:hsl(var(--warn) / 0.13);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.3)}
+.badge.bad{background:hsl(var(--bad) / 0.13);color:hsl(0 70% 70%);border-color:hsl(var(--bad) / 0.3)}
+.badge.primary{background:hsl(var(--primary) / 0.13);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.badge.ghost{background:hsl(var(--ghost) / 0.13);color:hsl(var(--ghost));border-color:hsl(var(--ghost) / 0.3)}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ───────── Modal ───────── */
+.modal-bg{display:none;position:fixed;inset:0;z-index:200;background:hsl(var(--bg) / 0.78);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:3rem 1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);padding:1.5rem;max-width:600px;width:100%;box-shadow:0 16px 48px -16px hsl(220 25% 1% / 0.85)}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.modal-close{background:none;border:none;color:hsl(var(--muted));font-size:1.5rem;cursor:pointer;line-height:1;padding:0 0.25rem}
+.modal-close:hover{color:hsl(var(--fg))}
+
+/* ───────── Toast ───────── */
+.toast-host{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;display:flex;flex-direction:column;gap:0.5rem;max-width:340px}
+.toast{background:hsl(var(--card));border:1px solid hsl(var(--border));border-left:3px solid hsl(var(--primary));border-radius:0.5rem;padding:0.7rem 0.95rem;font-size:0.82rem;box-shadow:0 8px 24px -8px hsl(220 25% 1% / 0.7);animation:slidein 0.25s ease-out}
+.toast.ok{border-left-color:hsl(var(--accent))}
+.toast.warn{border-left-color:hsl(var(--warn))}
+.toast.err{border-left-color:hsl(var(--bad))}
+.toast.ghost{border-left-color:hsl(var(--ghost))}
+@keyframes slidein{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ───────── Section title ───────── */
+.section-title{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;margin:1.4rem 0 0.7rem}
+.section-title h2{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.14em;color:hsl(var(--muted));font-weight:700}
+.section-title .actions{display:flex;gap:0.4rem}
+
+/* Page heads */
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem;display:flex;align-items:center;gap:0.6rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted));margin-bottom:1.25rem;max-width:52rem;line-height:1.65}
+
+/* Toolbar */
+.toolbar{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.875rem}
+.toolbar .input{height:2.2rem;width:auto;min-width:180px}
+.toolbar .grow{flex:1}
+
+/* Cog metadata */
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.7rem;margin-top:0.5rem}
+.meta-cell{background:hsl(var(--card-2));border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;padding:0.65rem 0.85rem}
+.meta-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted));margin-bottom:0.2rem}
+.meta-val{font-family:var(--mono);font-size:0.88rem;color:hsl(var(--fg));font-weight:600}
+
+/* Footer */
+footer.appfoot{margin-top:2rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted));text-align:center;line-height:1.8}
+
+/* Code block */
+pre.codeblock{background:hsl(var(--bg-2));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.85rem;font-family:var(--mono);font-size:0.75rem;overflow-x:auto;color:hsl(var(--fg));line-height:1.55}
+
+/* Mini gauge */
+.mini-gauge{width:100%;height:120px;position:relative}
+.mini-gauge svg{width:100%;height:100%}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand" id="brand">
+      <div class="brand-mark">👻</div>
+      <span class="brand-text"><b>Ghost Hunter</b><span class="slash">/</span>Field Console<span class="brand-ver mono">v0.3.0</span></span>
+    </div>
+    <nav class="nav" id="main-nav">
+      <a data-page="hunt" class="active">Hunt</a>
+      <a data-page="evidence">Evidence</a>
+      <a data-page="baseline">Baseline</a>
+      <a data-page="sensors">Sensors</a>
+      <a data-page="tuning">Tuning</a>
+      <a data-page="about">About</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ═════════════════════════════════════════════════════
+       HUNT — Field Console
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section on" id="page-hunt">
+
+    <!-- Big top-line verdict -->
+    <div class="verdict calm" id="verdict">
+      <div class="verdict-ghost">
+        <svg viewBox="0 0 100 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="g-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="hsl(142 70% 75%)" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="hsl(142 70% 55%)" stop-opacity="0.6"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#g-body)" d="M50 8 C75 8 90 28 90 52 L90 100
+            L80 92 L70 102 L60 92 L50 102 L40 92 L30 102 L20 92 L10 100
+            L10 52 C10 28 25 8 50 8 Z"/>
+          <ellipse class="ghost-eye" cx="38" cy="48" rx="5" ry="7"/>
+          <ellipse class="ghost-eye" cx="62" cy="48" rx="5" ry="7"/>
+          <path d="M42 68 Q50 76 58 68" stroke="hsl(220 30% 18%)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="verdict-body">
+        <div class="verdict-label">Right now, the room is</div>
+        <div class="verdict-state" id="verdict-state">DORMANT</div>
+        <div class="verdict-sub" id="verdict-sub">No deviation from baseline. The hunter is watching but the room is quiet.</div>
+        <div class="verdict-meta" id="verdict-meta">baseline holding · 5 sensors agreeing · session 00:00:14</div>
+      </div>
+      <div class="verdict-confidence">
+        <div class="conf-ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="bg" cx="60" cy="60" r="52"/>
+            <circle class="fg" id="conf-fg" cx="60" cy="60" r="52" stroke-dasharray="0 327"/>
+          </svg>
+          <div class="conf-val">
+            <div class="conf-num" id="conf-num">12</div>
+            <div class="conf-lbl">presence</div>
+          </div>
+        </div>
+        <div class="hunt-controls">
+          <button class="btn ghost-btn sm" id="btn-toggle-hunt">⏸ Pause</button>
+          <button class="btn outline sm" id="btn-calibrate">⟳ Calibrate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick consensus / health strip -->
+    <div class="consensus">
+      <div class="consensus-cell ghost"><span class="ic">👁</span><div class="lbl">Sightings tonight</div><div class="val" id="cs-sight">0</div><div class="sub" id="cs-sight-sub">since session start</div></div>
+      <div class="consensus-cell primary"><span class="ic">📡</span><div class="lbl">Sensors agreeing</div><div class="val" id="cs-agree">— / —</div><div class="sub" id="cs-agree-sub">multi-radio consensus</div></div>
+      <div class="consensus-cell ok"><span class="ic">⏱</span><div class="lbl">Session length</div><div class="val mono" id="cs-session">00:00:00</div><div class="sub">live data</div></div>
+      <div class="consensus-cell warn"><span class="ic">📶</span><div class="lbl">CSI packets</div><div class="val" id="cs-pps">—</div><div class="sub">per second</div></div>
+      <div class="consensus-cell primary"><span class="ic">🧭</span><div class="lbl">Hot bearing</div><div class="val" id="cs-bearing">—</div><div class="sub" id="cs-bearing-sub">strongest energy</div></div>
+      <div class="consensus-cell ghost"><span class="ic">🌀</span><div class="lbl">Baseline age</div><div class="val" id="cs-base">—</div><div class="sub">since recalibration</div></div>
+    </div>
+
+    <!-- Radar + journal -->
+    <div class="grid-radar">
+
+      <!-- Room radar -->
+      <div class="card" style="padding:0.85rem">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip"></span> Room radar</div>
+            <div class="card-sub">live sonar sweep · ectoplasm lingers where it passed</div>
+          </div>
+          <button class="btn sm outline" id="btn-smoke">💨 smoke: on</button>
+        </div>
+        <div class="radar-wrap" id="radar-wrap">
+          <canvas id="radar" width="600" height="600"></canvas>
+          <div class="radar-legend">
+            <div class="row"><span class="sw sensor"></span> ESP32-S3 sensors</div>
+            <div class="row"><span class="sw blip"></span> disturbance</div>
+            <div class="row"><span class="sw crit"></span> strong return</div>
+          </div>
+          <div class="radar-bearing mono" id="radar-bearing">N · 0.0m</div>
+          <div class="radar-room-label">~ test chamber · 6m × 4m ~</div>
+        </div>
+      </div>
+
+      <!-- Field journal -->
+      <div>
+        <div class="journal">
+          <div class="journal-h">
+            <span class="t">Field journal</span>
+            <span class="s" id="journal-count">— entries</span>
+          </div>
+          <div class="journal-list" id="journal"></div>
+        </div>
+        <div class="whisper-bar" id="whisper">
+          <span class="ic">~</span>
+          <span class="txt" id="whisper-text">listening · listening · listening</span>
+        </div>
+        <div style="margin-top:0.7rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn sm outline" id="btn-mark">⚑ Bookmark this moment</button>
+          <button class="btn sm outline" id="btn-clear-journal">Clear log</button>
+          <button class="btn sm outline" id="btn-snapshot">📸 Snapshot</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary instrumentation -->
+    <div class="section-title">
+      <h2>Instrumentation</h2>
+      <div class="actions"><span class="badge primary"><span class="dot"></span>LIVE</span></div>
+    </div>
+
+    <div class="grid-3">
+
+      <!-- Phase-space attractor -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip" style="background:hsl(var(--ghost));box-shadow:0 0 6px hsl(var(--ghost))"></span> Phase-space orbit</div>
+            <div class="card-sub">tight loop = calm · scattered = something here</div>
+          </div>
+          <button class="btn sm outline" id="btn-attr-reset">⟲ trail</button>
+        </div>
+        <div class="chart-host"><canvas id="chart-attractor"></canvas></div>
+        <div style="font-family:var(--mono);font-size:0.7rem;color:hsl(var(--muted));margin-top:0.4rem" id="attr-meta">orbit radius σ = 0.18 · stable</div>
+      </div>
+
+      <!-- CSI oscilloscope (NOT a heatmap) -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip" style="background:hsl(140 70% 55%);box-shadow:0 0 6px hsl(140 70% 55%)"></span> CSI waveforms</div>
+            <div class="card-sub">8 subcarriers · oscilloscope trace</div>
+          </div>
+          <button class="btn sm outline" id="btn-osc-freeze">❘❘ freeze</button>
+        </div>
+        <div class="osc-wrap">
+          <div class="osc-overlay"><span id="osc-status">CH 6 · 2.437 GHz</span> <span class="blink">●</span> REC</div>
+          <canvas id="osc"></canvas>
+        </div>
+      </div>
+
+      <!-- Direction of arrival -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip" style="background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn))"></span> Direction of arrival</div>
+            <div class="card-sub">where the energy is coming from</div>
+          </div>
+        </div>
+        <div class="compass-wrap"><canvas id="compass"></canvas></div>
+        <div style="font-family:var(--mono);font-size:0.7rem;color:hsl(var(--muted));margin-top:0.4rem;text-align:center" id="compass-meta">bearing: — · spread: —°</div>
+      </div>
+    </div>
+
+    <!-- Deviation timeline -->
+    <div class="section-title">
+      <h2>Last 2 minutes of deviation</h2>
+    </div>
+    <div class="card">
+      <div class="chart-host small"><canvas id="chart-dev"></canvas></div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════
+       EVIDENCE
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section" id="page-evidence">
+    <h1 class="page">Evidence log</h1>
+    <p class="lede">Every <code>anomaly_detected</code> event the hunter has captured this session. Click any row to open the case file — replay the deviation, see which sensors agreed, mark it as confirmed or noise.</p>
+
+    <div class="card">
+      <div class="toolbar">
+        <input class="input" id="ev-search" placeholder="Search bearing, sensor, label…">
+        <select class="input" id="ev-sev">
+          <option value="all">All severity</option>
+          <option value="apparition">Apparition only</option>
+          <option value="presence">Presence+</option>
+          <option value="stirring">Stirring+</option>
+        </select>
+        <select class="input" id="ev-range">
+          <option value="15">Last 15 min</option>
+          <option value="60" selected>Last 1 h</option>
+          <option value="360">Last 6 h</option>
+          <option value="1440">Last 24 h</option>
+          <option value="0">All time</option>
+        </select>
+        <span class="grow"></span>
+        <span class="mono" id="ev-count" style="font-size:0.75rem;color:hsl(var(--muted))">—</span>
+        <button class="btn outline" id="btn-export">⤓ CSV</button>
+        <button class="btn danger" id="btn-clear-ev">Clear</button>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:1rem">
+        <div class="card" style="padding:0.85rem">
+          <div class="card-h" style="margin-bottom:0.4rem">
+            <div class="card-title" style="font-size:0.82rem">Sightings over time</div>
+            <div class="card-sub" id="density-sub">events / bucket</div>
+          </div>
+          <div class="chart-host small"><canvas id="chart-density"></canvas></div>
+        </div>
+        <div class="card" style="padding:0.85rem">
+          <div class="card-h" style="margin-bottom:0.4rem">
+            <div class="card-title" style="font-size:0.82rem">Severity wheel</div>
+            <div class="card-sub">visible events only</div>
+          </div>
+          <div class="chart-host small"><canvas id="chart-sev"></canvas></div>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Time</th><th>Bearing</th><th>Sensor lead</th><th>Confidence</th><th>Severity</th><th>Note</th></tr></thead>
+          <tbody id="ev-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════
+       BASELINE
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section" id="page-baseline">
+    <h1 class="page">Baseline</h1>
+    <p class="lede">The hunter learns the "calm" shape of the room as an <strong>attractor</strong> in CSI state-space. When live readings stop tracing that shape, the deviation score rises and the ghost meter wakes up.</p>
+
+    <div class="grid-3" style="margin-bottom:1rem">
+      <div class="consensus-cell ghost"><div class="lbl">Attractor dimension</div><div class="val" id="b-dim">3.42</div><div class="sub">fractal estimate</div></div>
+      <div class="consensus-cell primary"><div class="lbl">Last shift</div><div class="val" id="b-last">—</div><div class="sub" id="b-last-sub">baseline_shift</div></div>
+      <div class="consensus-cell ok"><div class="lbl">Stability (1h)</div><div class="val" id="b-stable">94%</div><div class="sub">attractor lock</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip" style="background:hsl(var(--ghost));box-shadow:0 0 6px hsl(var(--ghost))"></span> Calm-state attractor</div>
+            <div class="card-sub">the orbit the room traces when nothing's there</div>
+          </div>
+          <button class="btn sm outline" id="btn-base-rotate">⟳ rotate</button>
+        </div>
+        <div class="chart-host tall"><canvas id="chart-base-attr"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip"></span> Centroid drift</div>
+            <div class="card-sub">how far the room has drifted from initial baseline</div>
+          </div>
+        </div>
+        <div class="chart-host tall"><canvas id="chart-drift"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title"><span class="pip" style="background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn))"></span> Baseline shift history</div>
+          <div class="card-sub">every time the attractor was re-fit or jumped</div>
+        </div>
+        <button class="btn ghost-btn sm" id="btn-rebuild">⚙ Rebuild now</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>When</th><th>Reason</th><th>Δ centroid</th><th>New dim</th><th>Samples</th></tr></thead>
+          <tbody id="shift-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════
+       SENSORS
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section" id="page-sensors">
+    <h1 class="page">Sensors</h1>
+    <p class="lede">Paired ESP32-S3 radios. Each sensor's position on the floor plan matters — the more spread out, the better the direction-of-arrival estimate.</p>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title"><span class="pip"></span> Floor plan</div>
+          <div class="card-sub">drag sensors to update their position · click empty space to add</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn outline sm" id="btn-rescan">↻ Rescan</button>
+          <button class="btn ghost-btn sm" id="btn-add-sensor">+ Pair sensor</button>
+        </div>
+      </div>
+      <div class="room-map" id="room-map">
+        <svg viewBox="0 0 800 500" id="room-svg"></svg>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input class="input" id="sens-search" placeholder="Filter sensors…">
+    </div>
+    <div class="grid-3" id="sensor-grid"></div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════
+       TUNING
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section" id="page-tuning">
+    <h1 class="page">Tuning</h1>
+    <p class="lede">Crank sensitivity up to chase whispers; back it off to ignore the fridge. All changes apply live.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip"></span> Detection sensitivity</div>
+            <div class="card-sub">how far from baseline counts as "ghost"</div>
+          </div>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Trigger threshold (presence score)</label>
+          <input type="range" id="cfg-threshold" min="20" max="95" step="1" value="62">
+          <div class="rng-row"><span>20 jumpy</span><span id="cfg-threshold-now">62</span><span>95 only the loudest</span></div>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Smoothing window (samples)</label>
+          <input type="range" id="cfg-smooth" min="1" max="40" step="1" value="8">
+          <div class="rng-row"><span>1</span><span id="cfg-smooth-now">8</span><span>40</span></div>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Confirmation hits</label>
+          <input type="range" id="cfg-confirm" min="1" max="10" step="1" value="3">
+          <div class="rng-row"><span>1</span><span><span id="cfg-confirm-now">3</span> consecutive frames</span><span>10</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><span class="pip" style="background:hsl(var(--ghost));box-shadow:0 0 6px hsl(var(--ghost))"></span> Baseline &amp; attractor</div>
+            <div class="card-sub">how the calm-state model is built</div>
+          </div>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Baseline window (minutes)</label>
+          <input type="range" id="cfg-baseline" min="1" max="60" step="1" value="10">
+          <div class="rng-row"><span>1</span><span><span id="cfg-baseline-now">10</span> min</span><span>60</span></div>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Embedding dimension</label>
+          <select class="input" id="cfg-embed">
+            <option value="2">2 (fast)</option>
+            <option value="3" selected>3 (default)</option>
+            <option value="4">4</option>
+            <option value="5">5 (rich)</option>
+          </select>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Auto-recalibrate on drift</label>
+          <label style="display:flex;gap:0.5rem;align-items:center;font-size:0.85rem">
+            <input type="checkbox" id="cfg-autorecal" checked>
+            <span>Refit when a <code>baseline_shift</code> persists past confirmation</span>
+          </label>
+        </div>
+        <div class="modal-row">
+          <label class="lbl">Audio cue on detection</label>
+          <label style="display:flex;gap:0.5rem;align-items:center;font-size:0.85rem">
+            <input type="checkbox" id="cfg-audio">
+            <span>Soft chime when presence &gt; threshold</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Config preview</div>
+          <div class="card-sub">JSON pushed to the cog</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn outline sm" id="btn-cfg-copy">📋 Copy</button>
+          <button class="btn outline sm" id="btn-cfg-reset">↺ Reset</button>
+          <button class="btn ghost-btn sm" id="btn-cfg-save">💾 Save</button>
+        </div>
+      </div>
+      <pre class="codeblock" id="cfg-preview">{}</pre>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════
+       ABOUT
+       ═════════════════════════════════════════════════════ -->
+  <section class="page-section" id="page-about">
+    <h1 class="page">About this cog</h1>
+    <p class="lede">Ghost Hunter watches Wi-Fi channel-state information from ESP32-S3 sensors, learns the "shape" of an empty room as an attractor in state-space, and raises an alarm when the room's signature stops tracing that shape. Entertainment / research use only — don't make life decisions based on it.</p>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title" style="font-size:1.05rem"><span style="font-size:1.6rem">👻</span> Ghost Hunter</div>
+          <div class="card-sub">anomaly detection via attractor-based environmental baseline</div>
+        </div>
+        <span class="badge ghost">research</span>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-cell"><div class="meta-lbl">Version</div><div class="meta-val">v0.3.0</div></div>
+        <div class="meta-cell"><div class="meta-lbl">Size</div><div class="meta-val">22 KB</div></div>
+        <div class="meta-cell"><div class="meta-lbl">Difficulty</div><div class="meta-val">Medium</div></div>
+        <div class="meta-cell"><div class="meta-lbl">Hardware</div><div class="meta-val">ESP32-S3</div></div>
+        <div class="meta-cell"><div class="meta-lbl">Input</div><div class="meta-val">CSI raw</div></div>
+        <div class="meta-cell"><div class="meta-lbl">Category</div><div class="meta-val">Research</div></div>
+      </div>
+
+      <h4 style="margin:1.25rem 0 0.5rem;font-size:0.85rem">Emitted events</h4>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <span class="badge ghost mono">anomaly_detected</span>
+        <span class="badge primary mono">deviation_score</span>
+        <span class="badge warn mono">baseline_shift</span>
+      </div>
+
+      <h4 style="margin:1.25rem 0 0.5rem;font-size:0.85rem">How it decides there's a ghost</h4>
+      <ol style="font-size:0.85rem;line-height:1.7;padding-left:1.3rem;color:hsl(var(--fg) / 0.85);max-width:60rem">
+        <li>Sensors stream raw CSI (channel-state information) — basically how Wi-Fi sub-carriers reflect off everything in the room, dozens of times a second.</li>
+        <li>During calibration the cog watches the room "empty" for a few minutes and learns a low-dimensional manifold (the attractor) that the CSI orbits around.</li>
+        <li>Live CSI is continuously projected into the same space. The <strong>distance from the orbit</strong> becomes the deviation score.</li>
+        <li>If the score crosses your threshold for N consecutive frames, an <code>anomaly_detected</code> event fires. If multiple sensors agree on bearing, confidence goes up.</li>
+        <li>Slow drift (HVAC, sunlight, doors closed) re-shapes the orbit itself — that's a <code>baseline_shift</code>, not a ghost.</li>
+      </ol>
+
+      <h4 style="margin:1.25rem 0 0.5rem;font-size:0.85rem">Source</h4>
+      <div class="mono" style="font-size:0.75rem;color:hsl(var(--muted))">
+        <span style="color:hsl(var(--fg))">cognitum-one</span>/cogs/src/cogs/<span style="color:hsl(var(--ghost))">ghost-hunter</span>
+      </div>
+
+      <div class="btn-row" style="margin-top:1.25rem">
+        <button class="btn primary" id="btn-install">⬇ Install to fleet</button>
+        <button class="btn outline" id="btn-docs">📖 Docs</button>
+        <button class="btn outline" id="btn-source">⌥ Source</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: ghost-hunter@0.3.0</span> · <span class="mono" id="foot-uptime">uptime —</span></div>
+    <div style="margin-top:0.35rem">entertainment / research use · not for safety-critical decisions</div>
+  </footer>
+</div>
+
+<!-- ───────── Modals ───────── -->
+<div class="modal-bg" id="modal-detail">
+  <div class="modal">
+    <h3>Case file <button class="modal-close" data-close="modal-detail">×</button></h3>
+    <div class="modal-sub" id="md-id">—</div>
+    <div class="meta-grid" id="md-meta"></div>
+    <h4 style="margin:1rem 0 0.4rem;font-size:0.85rem">Sensor consensus at trigger</h4>
+    <div id="md-consensus" style="font-family:var(--mono);font-size:0.78rem;color:hsl(var(--fg) / 0.85);line-height:1.7;background:hsl(var(--bg-2));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.7rem 0.85rem"></div>
+    <h4 style="margin:1rem 0 0.4rem;font-size:0.85rem">Deviation ±15s around event</h4>
+    <div class="chart-host small"><canvas id="md-chart"></canvas></div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="modal-detail">Close</button>
+      <button class="btn warn" id="md-false">Mark false-positive</button>
+      <button class="btn ghost-btn" id="md-confirm">Confirm sighting</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-calibrate">
+  <div class="modal">
+    <h3>Re-calibrate baseline <button class="modal-close" data-close="modal-calibrate">×</button></h3>
+    <div class="modal-sub">The hunter will treat the next window as ambient and rebuild the attractor. Stop moving / talking / opening doors.</div>
+    <div class="modal-row">
+      <label class="lbl">Collection duration</label>
+      <select class="input" id="cal-dur">
+        <option value="30">30 seconds — quick</option>
+        <option value="120" selected>2 minutes — default</option>
+        <option value="300">5 minutes — thorough</option>
+        <option value="600">10 minutes — deep</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <label class="lbl">Note</label>
+      <input class="input" id="cal-note" placeholder="e.g. fresh empty-room reading">
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="modal-calibrate">Cancel</button>
+      <button class="btn ghost-btn" id="cal-start">Begin</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-sensor">
+  <div class="modal">
+    <h3>Pair an ESP32-S3 <button class="modal-close" data-close="modal-sensor">×</button></h3>
+    <div class="modal-sub">Hold BOOT for 3 seconds, then type the 6-digit code from the sensor's OLED.</div>
+    <div class="modal-row"><label class="lbl">Label</label><input class="input" id="sens-label" placeholder="e.g. living-room-north"></div>
+    <div class="modal-row"><label class="lbl">Pairing code</label><input class="input mono" id="sens-code" placeholder="000000" maxlength="6"></div>
+    <div class="modal-row"><label class="lbl">Channel</label>
+      <select class="input" id="sens-chan">
+        <option value="auto">Auto-pick best</option>
+        <option value="1">Ch 1 (2.412 GHz)</option>
+        <option value="6">Ch 6 (2.437 GHz)</option>
+        <option value="11">Ch 11 (2.462 GHz)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="modal-sensor">Cancel</button>
+      <button class="btn ghost-btn" id="sens-pair">Pair</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toast-host"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  Ghost Hunter Field Console
+// ════════════════════════════════════════════════════════════
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const TAU = Math.PI * 2;
+
+const C = {
+  primary:  'hsl(185, 80%, 55%)',
+  primary2: 'hsla(185, 80%, 50%, 0.18)',
+  ghost:    'hsl(142, 70%, 58%)',
+  ghost2:   'hsla(142, 70%, 55%, 0.20)',
+  accent:   'hsl(142, 70%, 55%)',
+  warn:     'hsl(35, 85%, 60%)',
+  bad:      'hsl(0, 65%, 60%)',
+  grid:     'hsl(220, 15%, 20%)',
+  text:     'hsl(215, 15%, 65%)',
+  muted:    'hsl(215, 15%, 42%)',
+};
+Chart.defaults.font.family = "'Outfit', sans-serif";
+Chart.defaults.color = C.text;
+Chart.defaults.borderColor = C.grid;
+
+// seeded prng so the data starts the same on reload
+let _s = 0xC057 ^ ((Date.now() / 60000) | 0);
+const rnd = () => { _s = (_s * 1664525 + 1013904223) >>> 0; return _s / 0xffffffff; };
+const rin = (a, b) => a + rnd() * (b - a);
+const pick = a => a[Math.floor(rnd() * a.length)];
+
+// ── State ───────────────────────────────────────────────────
+const ROOM = { w: 6.0, h: 4.0 };  // meters
+const STATE = {
+  hunting: true,
+  calibrating: false,
+  paused: false,
+  oscFrozen: false,
+  score: 14,
+  baselineAge: 423,
+  sessionStart: Date.now(),
+  pps: 0,
+  sensors: [],     // {id,label,online,x,y,rssi,channel,pps,uptime,lastSeen,contrib}
+  events: [],      // anomaly_detected: {id,ts,bearing,distance,sensorLead,confidence,severity,label,csi,agreement}
+  shifts: [],      // baseline shifts
+  journal: [],     // narrative entries
+  whispers: ['listening · listening · listening'],
+  whisperIdx: 0,
+  blips: [],       // active radar blips
+  smoke: [],       // ectoplasm particles on the radar
+  smokeOn: true,
+  lastRaf: 0,      // for dt
+  attrTrail: [],
+  devSeries: [],
+  driftSeries: [],
+  doaWedges: new Array(24).fill(0),
+  agreement: 0,
+  bearing: 0,
+  distance: 0,
+  oscBuf: null,
+  charts: {},
+  evFilter: { search: '', sev: 'all', range: 60 },
+  baseRot: 0,
+  config: {
+    threshold: 62, smooth: 8, confirm: 3,
+    baselineWin: 10, embedDim: 3, autorecal: true, audio: false,
+  },
+};
+
+const SENSOR_NAMES = ['north-window', 'east-wall', 'south-door', 'west-bookcase', 'ceiling-cam'];
+function makeSensors(){
+  const out = [];
+  // Distribute around perimeter of a 6m × 4m room
+  const positions = [
+    [0.7, 0.3], [0.92, 0.5], [0.5, 0.95], [0.08, 0.5], [0.5, 0.5],
+  ];
+  for (let i = 0; i < 5; i++){
+    out.push({
+      id: 'ESP-' + Math.floor(rnd() * 0xFFFF).toString(16).toUpperCase().padStart(4,'0'),
+      label: SENSOR_NAMES[i],
+      online: rnd() > 0.12,
+      x: positions[i][0] * ROOM.w,
+      y: positions[i][1] * ROOM.h,
+      rssi: -Math.floor(40 + rnd() * 35),
+      channel: pick([1, 6, 11]),
+      pps: Math.floor(80 + rnd() * 60),
+      uptime: Math.floor(rnd() * 86400 * 5),
+      lastSeen: Date.now() - Math.floor(rnd() * 4000),
+      contrib: 0.2 + rnd() * 0.8,
+    });
+  }
+  return out;
+}
+
+const SIGHTING_LABELS = [
+  'doorway flicker', 'cold spot', 'pacing footfalls', 'standing wave',
+  'silhouette · brief', 'figure at threshold', 'low whisper', 'EMF jolt',
+  'reflective body', 'unattributed motion', 'still presence',
+];
+const WHISPER_WORDS = [
+  '... hello? ...', '... cold ...', '... behind you ...', '... wait ...',
+  '... listen ...', '... here ...', '... go ...', '... down ...',
+  '... stay ...', '... look ...', '... no ...', '... soon ...',
+  '... mine ...', '... why ...', '... open ...',
+];
+const BEARING_NAMES = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const bearingName = deg => BEARING_NAMES[Math.round(((deg % 360 + 360) % 360) / 22.5) % 16];
+
+function makeEvents(n){
+  // Realistic: a handful of historical events spread across hours/days,
+  // weighted toward stirring (most events that cross threshold are mild).
+  const out = [];
+  const now = Date.now();
+  for (let i = 0; i < n; i++){
+    const ageMin = 30 + rnd() * 24 * 60 * 3;   // 30 min … 3 days back
+    // Most events are stirring; presence is uncommon; apparition is rare.
+    const roll = rnd();
+    const score = roll < 0.65 ? 56 + rnd() * 12       // stirring
+                : roll < 0.92 ? 70 + rnd() * 14       // presence
+                              : 86 + rnd() * 10;      // apparition
+    const sev   = score > 85 ? 'apparition' : score > 70 ? 'presence' : 'stirring';
+    out.push({
+      id: 'a-' + (now - Math.floor(ageMin * 60000)).toString(36),
+      ts: now - Math.floor(ageMin * 60000),
+      bearing: rnd() * 360, distance: 0.8 + rnd() * 3.2,
+      sensorLead: pick(STATE.sensors).label,
+      confidence: +score.toFixed(1),
+      severity: sev,
+      label: pick(SIGHTING_LABELS),
+      agreement: Math.max(1, Math.floor(score / 100 * STATE.sensors.length)),
+      csi: null,
+    });
+  }
+  return out.sort((a, b) => b.ts - a.ts);
+}
+function makeShifts(){
+  // A real attractor stays put — handful of shifts across days, mostly slow drift.
+  const out = [];
+  const now = Date.now();
+  const reasons = ['cold-start fit', 'auto-refit (slow drift)', 'manual recalibration', 'auto-refit (slow drift)'];
+  let ageH = 0.5 + rnd() * 3;
+  for (let i = 0; i < 4; i++){
+    out.push({
+      ts: now - Math.floor(ageH * 3600 * 1000),
+      reason: reasons[i],
+      delta: +rin(0.05, 0.35).toFixed(3),
+      dim:   +rin(2.9, 3.6).toFixed(2),
+      samples: Math.floor(rin(1500, 4500)),
+    });
+    ageH += 6 + rnd() * 18;
+  }
+  return out;
+}
+
+// ────────────────────────────────────────────────────────────
+//  Helpers
+// ────────────────────────────────────────────────────────────
+function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString([], {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function fmtAgo(ts){
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+function fmtDur(s){
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  return h + 'h ' + m + 'm';
+}
+function fmtHMS(s){
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), x = s % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(x).padStart(2,'0');
+}
+function toast(msg, kind){
+  const host = $('#toast-host');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || '');
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.25s'; }, 2800);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ────────────────────────────────────────────────────────────
+//  Navigation
+// ────────────────────────────────────────────────────────────
+$('#main-nav').addEventListener('click', e => {
+  const a = e.target.closest('a[data-page]');
+  if (!a) return;
+  navigate(a.dataset.page);
+});
+$('#brand').addEventListener('click', () => navigate('hunt'));
+
+function navigate(page){
+  $$('#main-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  $$('.page-section').forEach(s => s.classList.toggle('on', s.id === 'page-' + page));
+  if (page === 'evidence') { renderEvidence(); renderDensity(); renderSevWheel(); }
+  if (page === 'baseline') { renderBaselineCharts(); renderShifts(); }
+  if (page === 'sensors')  { renderSensors(); drawFloorPlan(); }
+  if (page === 'tuning')   { syncCfgPreview(); }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// Modals
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+$$('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
+function openModal(id){ $('#' + id).classList.add('show'); }
+function closeModal(id){ $('#' + id).classList.remove('show'); }
+
+// ────────────────────────────────────────────────────────────
+//  Verdict block — the most important UI element
+// ────────────────────────────────────────────────────────────
+function updateVerdict(){
+  const s = STATE.score;
+  let state = 'DORMANT', cls = 'calm', sub = '', stroke = C.accent;
+  if (s >= 80){
+    state = 'APPARITION'; cls = 'apparition'; stroke = C.bad;
+    sub = `<span class="b">${escapeHtml(bearingName(STATE.bearing))}</span> · something is strongly here, ${STATE.distance.toFixed(1)}m out.`;
+  } else if (s >= 60){
+    state = 'PRESENCE'; cls = 'presence'; stroke = C.warn;
+    sub = `Disturbance from <span class="b">${escapeHtml(bearingName(STATE.bearing))}</span>, ~${STATE.distance.toFixed(1)}m. Multiple sensors agree.`;
+  } else if (s >= 35){
+    state = 'STIRRING'; cls = 'stirring'; stroke = C.ghost;
+    sub = `Subtle drift from the calm orbit, leaning <span class="b">${escapeHtml(bearingName(STATE.bearing))}</span>. Watch closely.`;
+  } else {
+    state = 'DORMANT'; cls = 'calm'; stroke = C.primary;
+    sub = `Baseline holding. Nothing in the room is unaccounted for.`;
+  }
+  if (STATE.calibrating){
+    state = 'CALIBRATING'; cls = 'stirring';
+    sub = 'Learning the room\'s calm-state attractor. Hold still.';
+    stroke = C.ghost;
+  } else if (!STATE.hunting){
+    state = 'PAUSED'; cls = 'calm';
+    sub = 'Hunt paused. Resume to continue scanning.';
+  }
+  const v = $('#verdict');
+  v.classList.remove('calm','stirring','presence','apparition');
+  v.classList.add(cls);
+  $('#verdict-state').textContent = state;
+  $('#verdict-sub').innerHTML = sub;
+  $('#verdict-meta').textContent =
+    `baseline ${fmtDur(STATE.baselineAge)} old · ${STATE.agreement} of ${STATE.sensors.filter(x=>x.online).length} sensors agreeing · session ${fmtHMS(Math.floor((Date.now()-STATE.sessionStart)/1000))}`;
+
+  // Confidence ring
+  const r = 52, circ = TAU * r;
+  const frac = Math.max(0, Math.min(1, s / 100));
+  const dash = circ * frac;
+  const ring = $('#conf-fg');
+  ring.setAttribute('stroke-dasharray', dash + ' ' + (circ - dash));
+  ring.setAttribute('stroke', stroke);
+  $('#conf-num').textContent = Math.round(s);
+}
+
+// ────────────────────────────────────────────────────────────
+//  Ectoplasm smoke (radar particle layer)
+// ────────────────────────────────────────────────────────────
+function spawnSmoke(angle, r, intensity){
+  if (!STATE.smokeOn) return;
+  const n = Math.floor(2 + intensity * 7);
+  for (let i = 0; i < n; i++){
+    STATE.smoke.push({
+      angle: angle + (rnd() - 0.5) * 0.5,
+      r:     Math.max(0.05, Math.min(0.95, r + (rnd() - 0.5) * 0.12)),
+      vAng:  (rnd() - 0.5) * 0.0018,
+      vR:    (rnd() - 0.5) * 0.00015,
+      vY:    -0.012 - rnd() * 0.018,      // gentle upward drift (px/ms in screen-y)
+      vX:    (rnd() - 0.5) * 0.015,       // sideways wisp
+      age:   0,
+      maxAge: 2600 + rnd() * 2800,
+      size:  10 + rnd() * 20,
+      grow:  0.5 + rnd() * 1.1,
+      hue:   intensity > 0.7 ? (rnd() < 0.3 ? 0 : 142) : (142 + (rnd() - 0.5) * 18),
+      sat:   intensity > 0.7 ? 80 : 70,
+    });
+  }
+  if (STATE.smoke.length > 360) STATE.smoke.splice(0, STATE.smoke.length - 360);
+}
+function updateSmoke(dt, ctx, cx, cy, R){
+  if (!STATE.smokeOn){ STATE.smoke.length = 0; return; }
+  // No ambient smoke. Particles only appear at real events.
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = STATE.smoke.length - 1; i >= 0; i--){
+    const p = STATE.smoke[i];
+    p.age += dt;
+    if (p.age >= p.maxAge){ STATE.smoke.splice(i, 1); continue; }
+    p.angle += p.vAng * dt;
+    p.r     += p.vR   * dt;
+    const t = p.age / p.maxAge;
+    const alpha = Math.sin(t * Math.PI) * 0.32;   // ease in, ease out
+    const size  = p.size * (1 + t * p.grow);
+    const baseX = cx + Math.cos(p.angle) * R * p.r;
+    const baseY = cy + Math.sin(p.angle) * R * p.r;
+    const px = baseX + p.vX * p.age;
+    const py = baseY + p.vY * p.age;
+    // skip if drifted way off
+    if (px < -size || px > cx*2 + size || py < -size || py > cy*2 + size) continue;
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, size);
+    grad.addColorStop(0,    `hsla(${p.hue}, ${p.sat}%, 72%, ${alpha})`);
+    grad.addColorStop(0.45, `hsla(${p.hue}, ${p.sat}%, 58%, ${alpha * 0.4})`);
+    grad.addColorStop(1,    `hsla(${p.hue}, ${p.sat}%, 50%, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px, py, size, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ────────────────────────────────────────────────────────────
+//  Room radar (the headline)
+// ────────────────────────────────────────────────────────────
+let radarAngle = 0;
+let _radarLastT = 0;
+function drawRadar(){
+  const c = $('#radar');
+  const rect = c.getBoundingClientRect();
+  const W = c.width  = rect.width  * (window.devicePixelRatio || 1);
+  const H = c.height = rect.height * (window.devicePixelRatio || 1);
+  const ctx = c.getContext('2d');
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const w = rect.width, h = rect.height;
+  const cx = w / 2, cy = h / 2;
+  const R = Math.min(w, h) / 2 - 8;
+
+  // bg
+  ctx.fillStyle = '#04060a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid rings
+  ctx.strokeStyle = 'hsla(185, 80%, 55%, 0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++){
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * (i/4), 0, TAU);
+    ctx.stroke();
+  }
+  // Cross-hairs
+  ctx.strokeStyle = 'hsla(185, 80%, 55%, 0.18)';
+  ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  // 30° spokes
+  ctx.strokeStyle = 'hsla(185, 80%, 55%, 0.08)';
+  for (let a = 0; a < 360; a += 30){
+    const rad = a * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
+    ctx.stroke();
+  }
+  // Cardinal labels
+  ctx.font = '600 11px JetBrains Mono';
+  ctx.fillStyle = 'hsla(185, 80%, 55%, 0.55)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('N', cx, cy - R + 12);
+  ctx.fillText('E', cx + R - 12, cy);
+  ctx.fillText('S', cx, cy + R - 12);
+  ctx.fillText('W', cx - R + 12, cy);
+
+  // Ectoplasm smoke (under sweep, behind blips)
+  const _now = performance.now();
+  const _dt  = _radarLastT === 0 ? 16 : Math.min(60, _now - _radarLastT);
+  _radarLastT = _now;
+  updateSmoke(_dt, ctx, cx, cy, R);
+
+  // Sweep (rotating sector)
+  if (STATE.hunting && !STATE.paused){
+    radarAngle = (radarAngle + 0.018) % TAU;
+  }
+  const sweepGrad = ctx.createConicGradient ?
+      ctx.createConicGradient(radarAngle - Math.PI/2, cx, cy) :
+      null;
+  if (sweepGrad){
+    sweepGrad.addColorStop(0,    'hsla(185, 80%, 55%, 0.32)');
+    sweepGrad.addColorStop(0.08, 'hsla(185, 80%, 55%, 0.04)');
+    sweepGrad.addColorStop(1,    'hsla(185, 80%, 55%, 0)');
+    ctx.fillStyle = sweepGrad;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, 0, TAU); ctx.closePath();
+    ctx.fill();
+  }
+  // sweep line
+  ctx.strokeStyle = 'hsla(185, 80%, 70%, 0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(radarAngle - Math.PI/2) * R, cy + Math.sin(radarAngle - Math.PI/2) * R);
+  ctx.stroke();
+
+  // Sensors (centred in room) — map ROOM (m) to radar
+  // Treat radar centre as room centre, scale longest side to R
+  const scale = R / (Math.max(ROOM.w, ROOM.h) / 2 * 1.2);
+  STATE.sensors.forEach(s => {
+    const rx = cx + (s.x - ROOM.w/2) * scale;
+    const ry = cy + (s.y - ROOM.h/2) * scale;
+    ctx.beginPath();
+    ctx.arc(rx, ry, 4, 0, TAU);
+    ctx.fillStyle = s.online ? C.primary : 'hsl(220 20% 35%)';
+    ctx.fill();
+    if (s.online){
+      ctx.beginPath();
+      ctx.arc(rx, ry, 8, 0, TAU);
+      ctx.strokeStyle = 'hsla(185, 80%, 55%, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // Update + draw blips (with persistence)
+  const now = performance.now();
+  STATE.blips = STATE.blips.filter(b => now - b.t < 4500);
+  STATE.blips.forEach(b => {
+    const age = (now - b.t) / 4500;
+    const alpha = (1 - age) * 0.9;
+    const px = cx + Math.cos(b.angle) * R * b.r;
+    const py = cy + Math.sin(b.angle) * R * b.r;
+    // glow halo
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, 26);
+    const col = b.crit ? '0, 65%, 55%' : '142, 70%, 60%';
+    grad.addColorStop(0,   `hsla(${col}, ${alpha * 0.7})`);
+    grad.addColorStop(1,   `hsla(${col}, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(px, py, 26, 0, TAU); ctx.fill();
+    // core
+    ctx.fillStyle = `hsla(${col}, ${alpha})`;
+    ctx.beginPath(); ctx.arc(px, py, 4 + b.crit * 2, 0, TAU); ctx.fill();
+    // small ghost glyph for strong returns
+    if (b.crit && age < 0.35){
+      ctx.fillStyle = `hsla(0, 90%, 75%, ${alpha})`;
+      ctx.font = `${14 + (1-age)*4}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('👻', px, py - 14);
+    }
+  });
+
+  // Centre dot
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TAU);
+  ctx.fillStyle = 'hsl(185, 80%, 80%)'; ctx.fill();
+}
+
+// ────────────────────────────────────────────────────────────
+//  Oscilloscope — multi-trace CSI waveforms (not a heatmap, not bars)
+// ────────────────────────────────────────────────────────────
+const OSC_TRACES = 8;
+const OSC_LEN = 220;
+function ensureOscBuf(){
+  if (STATE.oscBuf) return;
+  STATE.oscBuf = new Array(OSC_TRACES);
+  for (let i = 0; i < OSC_TRACES; i++) STATE.oscBuf[i] = new Float32Array(OSC_LEN);
+}
+function drawOsc(){
+  ensureOscBuf();
+  if (!STATE.oscFrozen && STATE.hunting && !STATE.paused){
+    for (let i = 0; i < OSC_TRACES; i++){
+      // shift left
+      const buf = STATE.oscBuf[i];
+      buf.copyWithin(0, 1);
+      // synthesise: gentle sine + occasional spike scaled by score
+      const dev = STATE.score / 100;
+      const phase = performance.now() * 0.0018 + i * 0.6;
+      const v = Math.sin(phase) * (0.15 + dev * 0.45)
+              + Math.sin(phase * 2.3 + i) * 0.12 * dev
+              + (rnd() - 0.5) * (0.05 + dev * 0.35)
+              + (rnd() < 0.02 + dev * 0.18 ? (rnd() - 0.5) * (0.6 + dev) : 0);
+      buf[OSC_LEN - 1] = Math.max(-1, Math.min(1, v));
+    }
+  }
+  const c = $('#osc');
+  const rect = c.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  c.width = rect.width * dpr; c.height = rect.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  ctx.fillStyle = 'rgba(8,16,12,0.85)';
+  ctx.fillRect(0, 0, w, h);
+  // graticule
+  ctx.strokeStyle = 'hsla(140, 50%, 30%, 0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 8; i++){
+    ctx.beginPath(); ctx.moveTo(0, h * i / 8); ctx.lineTo(w, h * i / 8); ctx.stroke();
+  }
+  for (let i = 1; i < 10; i++){
+    ctx.beginPath(); ctx.moveTo(w * i / 10, 0); ctx.lineTo(w * i / 10, h); ctx.stroke();
+  }
+  // traces
+  const slot = h / OSC_TRACES;
+  for (let i = 0; i < OSC_TRACES; i++){
+    const buf = STATE.oscBuf[i];
+    const cy = slot * (i + 0.5);
+    const amp = slot * 0.42;
+    const hue = 140 + i * 6;
+    ctx.strokeStyle = `hsl(${hue}, 70%, 60%)`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let j = 0; j < OSC_LEN; j++){
+      const x = (j / (OSC_LEN - 1)) * w;
+      const y = cy - buf[j] * amp;
+      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // subcarrier label
+    ctx.fillStyle = `hsla(${hue}, 60%, 55%, 0.7)`;
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('SC' + (i*7+3), 4, cy);
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+//  Direction-of-arrival compass (polar)
+// ────────────────────────────────────────────────────────────
+function drawCompass(){
+  const c = $('#compass');
+  const rect = c.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  c.width = rect.width * dpr; c.height = rect.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  const cx = w/2, cy = h/2;
+  const R = Math.min(w,h)/2 - 18;
+
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(0,0,w,h);
+
+  // grid rings
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++){
+    ctx.beginPath(); ctx.arc(cx, cy, R * i / 3, 0, TAU); ctx.stroke();
+  }
+  // wedges
+  const wedges = STATE.doaWedges;
+  const N = wedges.length;
+  const max = Math.max(0.05, ...wedges);
+  for (let i = 0; i < N; i++){
+    const a0 = (i / N) * TAU - Math.PI/2;
+    const a1 = ((i+1) / N) * TAU - Math.PI/2;
+    const v = wedges[i] / max;
+    const rad = R * v;
+    if (rad < 1) continue;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    grad.addColorStop(0, 'hsla(35, 85%, 55%, 0.5)');
+    grad.addColorStop(1, 'hsla(142, 70%, 55%, 0.15)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, rad, a0, a1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'hsla(35, 85%, 60%, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  // cardinal labels
+  ctx.fillStyle = C.text;
+  ctx.font = '600 11px Outfit';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('N', cx, cy - R - 8);
+  ctx.fillText('E', cx + R + 8, cy);
+  ctx.fillText('S', cx, cy + R + 8);
+  ctx.fillText('W', cx - R - 8, cy);
+  // needle — only draw if we actually have meaningful directional energy
+  const total = wedges.reduce((a,b)=>a+b, 0);
+  const hasSignal = total > 0.15 && max > 0.08;
+  const peakI = wedges.indexOf(max);
+  const peakA = ((peakI + 0.5) / N) * TAU - Math.PI/2;
+  if (hasSignal){
+    ctx.strokeStyle = C.warn;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(peakA) * R * 0.95, cy + Math.sin(peakA) * R * 0.95);
+    ctx.stroke();
+    ctx.fillStyle = C.warn;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(peakA) * R * 0.95, cy + Math.sin(peakA) * R * 0.95, 4, 0, TAU);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#999';
+  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU); ctx.fill();
+
+  // meta
+  const spread = hasSignal ? Math.round((wedges.filter(w => w > max * 0.4).length / N) * 360) : 0;
+  $('#compass-meta').textContent = hasSignal
+    ? `bearing ${bearingName(((peakA + Math.PI/2) * 180 / Math.PI + 360) % 360)} (${Math.round(((peakA + Math.PI/2) * 180 / Math.PI + 360) % 360)}°) · spread ${spread}°`
+    : 'no directional energy';
+}
+
+// ────────────────────────────────────────────────────────────
+//  Attractor + deviation timeline + drift
+// ────────────────────────────────────────────────────────────
+function initAttrChart(){
+  STATE.charts.attr = new Chart($('#chart-attractor').getContext('2d'), {
+    type: 'scatter',
+    data: { datasets: [
+      { label: 'trail', data: [], backgroundColor: 'hsla(142, 70%, 55%, 0.65)', pointRadius: 2.3, showLine: true, borderColor: 'hsla(142, 70%, 55%, 0.18)', borderWidth: 1, tension: 0.4 },
+      { label: 'now',   data: [], backgroundColor: C.ghost, pointRadius: 7.5, borderColor: 'white', borderWidth: 1.5 },
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display:false }, tooltip:{ enabled:false } },
+      scales: {
+        x: { grid:{color:C.grid}, ticks:{color:C.muted}, min:-1.3, max:1.3 },
+        y: { grid:{color:C.grid}, ticks:{color:C.muted}, min:-1.3, max:1.3 },
+      },
+    },
+  });
+}
+function pushAttr(){
+  const t = (Date.now() - STATE.sessionStart) * 0.0009;
+  const w = 0.2 + STATE.score / 220;
+  const x = Math.sin(t) * 0.78 + (rnd() - 0.5) * w;
+  const y = Math.cos(t * 1.3) * 0.7 + Math.sin(t * 0.55) * 0.18 + (rnd() - 0.5) * w;
+  STATE.attrTrail.push({x, y});
+  if (STATE.attrTrail.length > 220) STATE.attrTrail.shift();
+}
+function renderAttr(){
+  if (!STATE.charts.attr) return;
+  STATE.charts.attr.data.datasets[0].data = STATE.attrTrail.slice(0, -1);
+  const last = STATE.attrTrail[STATE.attrTrail.length - 1];
+  STATE.charts.attr.data.datasets[1].data = last ? [last] : [];
+  STATE.charts.attr.update('none');
+  const sigma = +(STATE.score / 280 + 0.1).toFixed(2);
+  $('#attr-meta').textContent = 'orbit radius σ = ' + sigma + ' · ' + (STATE.score > 60 ? 'unstable' : 'stable');
+}
+
+function initDevChart(){
+  STATE.charts.dev = new Chart($('#chart-dev').getContext('2d'), {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label:'score', data:[], borderColor:C.ghost, backgroundColor:C.ghost2, fill:true, tension:0.32, pointRadius:0, borderWidth:2 },
+      { label:'threshold', data:[], borderColor:C.bad, borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      interaction:{intersect:false, mode:'index'},
+      plugins: { legend:{display:false}, tooltip:{ backgroundColor:'hsl(220 20% 8%)', borderColor:C.grid, borderWidth:1, titleColor:'#eee', bodyColor:'#ddd' } },
+      scales: {
+        x: { grid:{color:C.grid}, ticks:{color:C.muted, maxTicksLimit:6} },
+        y: { grid:{color:C.grid}, ticks:{color:C.muted}, min:0, max:100 },
+      },
+    },
+  });
+}
+function pushDev(){
+  const t = Date.now();
+  STATE.devSeries.push({t, v: STATE.score});
+  while (STATE.devSeries.length > 240) STATE.devSeries.shift();
+}
+function renderDev(){
+  if (!STATE.charts.dev) return;
+  const c = STATE.charts.dev;
+  const pts = STATE.devSeries.slice(-120);
+  c.data.labels = pts.map(p => fmtTime(p.t));
+  c.data.datasets[0].data = pts.map(p => p.v);
+  c.data.datasets[1].data = pts.map(() => STATE.config.threshold);
+  c.update('none');
+}
+
+function pushDrift(){
+  const last = STATE.driftSeries[STATE.driftSeries.length-1];
+  const base = last ? last.v : 0.1;
+  let next = base + (0.15 - base) * 0.04 + (rnd() - 0.5) * 0.025 + (STATE.score > 80 ? 0.02 : 0);
+  next = Math.max(0, Math.min(1, next));
+  STATE.driftSeries.push({t: Date.now(), v: next});
+  while (STATE.driftSeries.length > 120) STATE.driftSeries.shift();
+}
+
+// ────────────────────────────────────────────────────────────
+//  Journal + whisper + events
+// ────────────────────────────────────────────────────────────
+function pushJournal(text, cls){
+  STATE.journal.unshift({ ts: Date.now(), text, cls: cls || '' });
+  if (STATE.journal.length > 60) STATE.journal.pop();
+  renderJournal();
+}
+function renderJournal(){
+  const list = $('#journal');
+  if (STATE.journal.length === 0){
+    list.innerHTML = '<div style="color:hsl(35 15% 50%);font-style:italic;padding:0.6rem">No events yet. The night is young.</div>';
+  } else {
+    list.innerHTML = STATE.journal.slice(0, 20).map(e =>
+      `<div class="j-entry ${e.cls}"><span class="ts">${fmtTime(e.ts)}</span><span class="txt">${e.text}</span></div>`
+    ).join('');
+  }
+  $('#journal-count').textContent = STATE.journal.length + ' entr' + (STATE.journal.length === 1 ? 'y' : 'ies');
+}
+function rollWhisper(){
+  // Only "whisper" during an active spike near peak — otherwise listening.
+  if (STATE._spike && STATE.score > 55 && rnd() < 0.35){
+    STATE.whisperIdx = (STATE.whisperIdx + 1) % WHISPER_WORDS.length;
+    $('#whisper-text').textContent = WHISPER_WORDS[(STATE.whisperIdx + Math.floor(rnd() * 5)) % WHISPER_WORDS.length] + '  ·  ' +
+                                     WHISPER_WORDS[(STATE.whisperIdx + Math.floor(rnd() * 7)) % WHISPER_WORDS.length];
+  } else if (!STATE._spike && $('#whisper-text').textContent !== 'listening · listening · listening'){
+    $('#whisper-text').textContent = 'listening · listening · listening';
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+//  Simulation tick
+// ────────────────────────────────────────────────────────────
+function simTick(){
+  STATE.baselineAge++;
+  $('#foot-uptime').textContent = 'uptime ' + fmtHMS(Math.floor((Date.now() - STATE.sessionStart) / 1000));
+
+  if (STATE.hunting && !STATE.paused){
+    if (STATE.calibrating){
+      STATE.score = Math.max(2, STATE.score * 0.82 + rnd() * 2);
+    } else {
+      // ── Score = mean-revert to ~12 (calm) with tiny noise ──────
+      // 99% of the time we should be DORMANT. Real events are rare
+      // transient bumps, not a random walk that constantly crosses
+      // the threshold.
+      const calmMean = 12;
+      let n = STATE.score + (calmMean - STATE.score) * 0.18 + (rnd() - 0.5) * 2.2;
+
+      // ── Decide whether to start a new transient event ──────────
+      // ~0.4% per second ≈ one event every ~4 minutes on average.
+      // Most are small stirrings; only a fraction reach threshold.
+      if (!STATE._spike && STATE.score < 22 && rnd() < 0.004){
+        const magnitude = 18 + rnd() * 65;             // 18-83 added to calm baseline
+        STATE._spike = {
+          magnitude,
+          bearing: rnd() * 360,
+          distance: 0.8 + rnd() * 3.2,
+          age: 0,
+          peakAt: 2 + Math.floor(rnd() * 3),           // peak after 2-4s
+          duration: 5 + Math.floor(rnd() * 7),         // total event 5-11s
+          fired: false,
+          label: pick(SIGHTING_LABELS),
+        };
+      }
+
+      // ── Apply the current spike (bell-shaped envelope) ────────
+      if (STATE._spike){
+        const sp = STATE._spike;
+        sp.age++;
+        const phase = (sp.age - sp.peakAt);
+        const env = Math.exp(-(phase * phase) / (sp.duration * 0.6));
+        n += sp.magnitude * env;
+        STATE.bearing = sp.bearing;
+        STATE.distance = sp.distance;
+
+        // DoA energy concentrates around bearing during spike
+        const N = STATE.doaWedges.length;
+        const wi = Math.floor((((sp.bearing + 360) % 360) / 360) * N);
+        STATE.doaWedges[wi]          += env * 0.45;
+        STATE.doaWedges[(wi+1) % N]  += env * 0.18;
+        STATE.doaWedges[(wi-1+N)%N]  += env * 0.18;
+
+        // A small wisp at the bearing while score is rising
+        if (env > 0.25 && rnd() < 0.35){
+          const _a = (sp.bearing * Math.PI / 180) - Math.PI / 2 + (rnd() - 0.5) * 0.35;
+          const _r = Math.min(0.9, sp.distance / 3.8);
+          STATE.blips.push({ t: performance.now(), angle: _a, r: _r, crit: n > 80 ? 1 : 0 });
+          spawnSmoke(_a, _r, env * 0.6);
+        }
+
+        // Fire a single detection at peak, IF and only if it crosses threshold
+        if (!sp.fired && env > 0.85 && n > STATE.config.threshold){
+          sp.fired = true;
+          spawnDetection();
+        }
+        if (sp.age > sp.duration + 4) STATE._spike = null;
+      } else {
+        // Truly calm: no bearing, no DoA pulse
+        STATE.bearing = 0;
+        STATE.distance = 0;
+      }
+
+      n = Math.max(2, Math.min(100, n));
+      STATE.score = n;
+
+      // DoA always decays
+      for (let i = 0; i < STATE.doaWedges.length; i++) STATE.doaWedges[i] *= 0.84;
+
+      // Sensor agreement only matters when something is actually happening
+      const onSens = STATE.sensors.filter(s => s.online);
+      STATE.agreement = STATE._spike && STATE.score > 30
+        ? Math.max(1, Math.min(onSens.length, Math.round(onSens.length * (STATE.score / 100) * 0.95 + 1)))
+        : 0;
+
+      // Baseline shifts: very rare — ~0.04% / sec ≈ once every ~40 min
+      if (rnd() < 0.0004){
+        STATE.shifts.unshift({
+          ts: Date.now(),
+          reason: 'auto-refit (slow drift)',
+          delta: +rin(0.05, 0.25).toFixed(3),
+          dim:   +rin(2.9, 3.6).toFixed(2),
+          samples: Math.floor(rin(1200, 4200)),
+        });
+        pushJournal('<strong>Baseline shifted</strong> — slow environmental drift (HVAC, sunlight, door closed).', 'shift');
+        if ($('#page-baseline').classList.contains('on')) renderShifts();
+      }
+    }
+  } else {
+    STATE.score *= 0.96;
+  }
+
+  STATE.pps = 80 + Math.floor(rnd() * 40) + STATE.sensors.filter(s => s.online).length * 8;
+  pushDev(); pushAttr(); pushDrift();
+  rollWhisper();
+  updateConsensus();
+  updateVerdict();
+  $('#radar-bearing').textContent = STATE._spike
+    ? bearingName(STATE.bearing) + ' · ' + STATE.distance.toFixed(1) + 'm'
+    : '— · clear';
+  renderAttr(); renderDev();
+}
+
+function spawnDetection(){
+  const sev = STATE.score > 85 ? 'apparition' : STATE.score > 70 ? 'presence' : 'stirring';
+  const sensorLead = (STATE.sensors.find(s => s.online) || STATE.sensors[0]).label;
+  const ev = {
+    id: 'a-' + Date.now().toString(36),
+    ts: Date.now(),
+    bearing: STATE.bearing,
+    distance: +STATE.distance.toFixed(2),
+    sensorLead,
+    confidence: +STATE.score.toFixed(1),
+    severity: sev,
+    label: pick(SIGHTING_LABELS),
+    agreement: STATE.agreement,
+  };
+  STATE.events.unshift(ev);
+  if (STATE.events.length > 600) STATE.events.pop();
+
+  // Add a big radar blip + a heavy smoke burst at the contact point
+  const _evA = (ev.bearing * Math.PI / 180) - Math.PI / 2;
+  const _evR = Math.min(0.92, ev.distance / 3.5);
+  STATE.blips.push({ t: performance.now(), angle: _evA, r: _evR, crit: sev === 'apparition' ? 1 : 0 });
+  // Big plume: more particles, larger, and an extra pulse a beat later for that lingering wisp
+  spawnSmoke(_evA, _evR, sev === 'apparition' ? 1.0 : sev === 'presence' ? 0.75 : 0.5);
+  setTimeout(() => spawnSmoke(_evA, _evR, 0.45), 280);
+  setTimeout(() => spawnSmoke(_evA, _evR + 0.05, 0.3), 620);
+
+  // Journal entry — narrative
+  const tone = sev === 'apparition' ? `<strong>${ev.label.toUpperCase()}</strong> · ${bearingName(ev.bearing)} · ~${ev.distance.toFixed(1)}m. ${ev.agreement} sensors agreeing.`
+             : sev === 'presence'  ? `<strong>${ev.label}</strong>, ${bearingName(ev.bearing)} ~${ev.distance.toFixed(1)}m. ${ev.agreement} sensors picked it up.`
+             :                       `${ev.label}, off to the ${bearingName(ev.bearing).toLowerCase()}.`;
+  pushJournal(tone, sev === 'apparition' ? 'crit' : sev === 'presence' ? 'warn' : '');
+
+  if (STATE.config.audio) chime(sev);
+  toast(`${sev.toUpperCase()} · ${bearingName(ev.bearing)} · ${ev.label}`, sev === 'apparition' ? 'err' : sev === 'presence' ? 'warn' : 'ghost');
+  if ($('#page-evidence').classList.contains('on')){
+    renderEvidence(); renderDensity(); renderSevWheel();
+  }
+}
+
+function updateConsensus(){
+  const onSens = STATE.sensors.filter(s => s.online);
+  $('#cs-sight').textContent = STATE.events.length;
+  $('#cs-sight-sub').textContent = STATE.events.filter(e => e.severity === 'apparition').length + ' strong';
+  $('#cs-agree').textContent = STATE.agreement + ' / ' + onSens.length;
+  $('#cs-agree-sub').textContent = STATE.agreement >= onSens.length - 1 ? 'high consensus' : STATE.agreement >= onSens.length / 2 ? 'partial' : 'weak';
+  $('#cs-session').textContent = fmtHMS(Math.floor((Date.now() - STATE.sessionStart) / 1000));
+  $('#cs-pps').textContent = STATE.pps;
+  $('#cs-bearing').textContent = STATE.score > 30 ? bearingName(STATE.bearing) : '—';
+  $('#cs-bearing-sub').textContent = STATE.score > 30 ? Math.round(STATE.bearing) + '° · ' + STATE.distance.toFixed(1) + 'm' : 'no clear source';
+  $('#cs-base').textContent = fmtDur(STATE.baselineAge);
+}
+
+// ────────────────────────────────────────────────────────────
+//  Audio cue
+// ────────────────────────────────────────────────────────────
+let _ac = null;
+function chime(sev){
+  try {
+    if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _ac;
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = sev === 'apparition' ? 180 : sev === 'presence' ? 280 : 380;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.7);
+    osc.start(); osc.stop(ctx.currentTime + 0.75);
+  } catch (_) {}
+}
+
+// ────────────────────────────────────────────────────────────
+//  Render loop (animation frame for radar/osc/compass)
+// ────────────────────────────────────────────────────────────
+function rafLoop(){
+  drawRadar();
+  drawOsc();
+  drawCompass();
+  requestAnimationFrame(rafLoop);
+}
+
+// ────────────────────────────────────────────────────────────
+//  Hunt controls
+// ────────────────────────────────────────────────────────────
+$('#btn-toggle-hunt').addEventListener('click', () => {
+  STATE.hunting = !STATE.hunting;
+  STATE.calibrating = false;
+  const btn = $('#btn-toggle-hunt');
+  btn.textContent = STATE.hunting ? '⏸ Pause' : '▶ Resume';
+  btn.className = STATE.hunting ? 'btn ghost-btn sm' : 'btn primary sm';
+  toast(STATE.hunting ? 'Hunt resumed' : 'Hunt paused', STATE.hunting ? 'ok' : 'warn');
+  pushJournal(STATE.hunting ? 'Hunt resumed.' : 'Hunt paused.', 'calm');
+});
+$('#btn-calibrate').addEventListener('click', () => {
+  $('#cal-note').value = '';
+  $('#cal-dur').value = '120';
+  openModal('modal-calibrate');
+});
+$('#cal-start').addEventListener('click', () => {
+  const dur = +$('#cal-dur').value;
+  const note = $('#cal-note').value.trim();
+  closeModal('modal-calibrate');
+  STATE.calibrating = true;
+  pushJournal(`<strong>Calibration started</strong> — collecting ${dur}s of ambient CSI${note ? ': "' + escapeHtml(note) + '"' : ''}.`, 'shift');
+  toast('Calibrating for ' + dur + 's — hold still', 'warn');
+  setTimeout(() => {
+    STATE.calibrating = false;
+    STATE.baselineAge = 0;
+    STATE.shifts.unshift({
+      ts: Date.now(),
+      reason: note ? 'manual: ' + note : 'manual recalibration',
+      delta: +rin(0.4, 0.8).toFixed(3),
+      dim:   +rin(2.8, 3.8).toFixed(2),
+      samples: Math.floor(rin(1500, 6000)),
+    });
+    pushJournal('<strong>Baseline rebuilt.</strong> The room\'s new "calm" shape is locked in.', 'shift');
+    if ($('#page-baseline').classList.contains('on')){ renderShifts(); renderBaselineCharts(); }
+    toast('Baseline rebuilt — back to hunting', 'ok');
+  }, Math.min(8000, dur * 30));
+});
+$('#btn-snapshot').addEventListener('click', () => {
+  const snap = {
+    ts: new Date().toISOString(),
+    score: +STATE.score.toFixed(1),
+    bearing: bearingName(STATE.bearing) + ' (' + Math.round(STATE.bearing) + '°)',
+    distance: +STATE.distance.toFixed(2),
+    agreement: STATE.agreement + ' of ' + STATE.sensors.filter(s => s.online).length,
+    sensors: STATE.sensors.map(s => ({ id:s.id, label:s.label, online:s.online, rssi:s.rssi })),
+    config: STATE.config,
+  };
+  navigator.clipboard.writeText(JSON.stringify(snap, null, 2))
+    .then(() => toast('Snapshot copied to clipboard', 'ok'))
+    .catch(() => toast('Snapshot ready (clipboard blocked)', 'warn'));
+});
+$('#btn-mark').addEventListener('click', () => {
+  pushJournal('<strong>Bookmark</strong> placed by operator.', 'shift');
+  toast('Bookmarked this moment', 'ghost');
+});
+$('#btn-clear-journal').addEventListener('click', () => {
+  if (!confirm('Clear the field journal?')) return;
+  STATE.journal = [];
+  renderJournal();
+  toast('Journal cleared', 'warn');
+});
+$('#btn-attr-reset').addEventListener('click', () => { STATE.attrTrail = []; toast('Orbit trail cleared'); });
+$('#btn-osc-freeze').addEventListener('click', () => {
+  STATE.oscFrozen = !STATE.oscFrozen;
+  $('#btn-osc-freeze').textContent = STATE.oscFrozen ? '▶ run' : '❘❘ freeze';
+  toast(STATE.oscFrozen ? 'Oscilloscope frozen' : 'Oscilloscope running');
+});
+$('#btn-smoke').addEventListener('click', () => {
+  STATE.smokeOn = !STATE.smokeOn;
+  $('#btn-smoke').textContent = STATE.smokeOn ? '💨 smoke: on' : '💨 smoke: off';
+  toast('Ectoplasm overlay ' + (STATE.smokeOn ? 'enabled' : 'disabled'), STATE.smokeOn ? 'ghost' : 'warn');
+});
+
+// ────────────────────────────────────────────────────────────
+//  Evidence page
+// ────────────────────────────────────────────────────────────
+function visibleEvents(){
+  const q = STATE.evFilter.search.toLowerCase().trim();
+  const range = STATE.evFilter.range;
+  const cutoff = range > 0 ? Date.now() - range * 60 * 1000 : 0;
+  const order = ['calm','stirring','presence','apparition'];
+  return STATE.events.filter(e => {
+    if (e.ts < cutoff) return false;
+    if (STATE.evFilter.sev !== 'all'){
+      const need = STATE.evFilter.sev;
+      if (need === 'apparition' && e.severity !== 'apparition') return false;
+      if (need === 'presence'  && order.indexOf(e.severity) < order.indexOf('presence')) return false;
+      if (need === 'stirring'  && order.indexOf(e.severity) < order.indexOf('stirring')) return false;
+    }
+    if (q){
+      const hay = (e.sensorLead + ' ' + e.label + ' ' + bearingName(e.bearing) + ' ' + e.id).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function sevBadge(sev){
+  return sev === 'apparition' ? 'bad' : sev === 'presence' ? 'warn' : sev === 'stirring' ? 'ghost' : 'primary';
+}
+function renderEvidence(){
+  const list = visibleEvents();
+  $('#ev-count').textContent = list.length + ' of ' + STATE.events.length + ' shown';
+  const tbody = $('#ev-tbody');
+  if (list.length === 0){
+    tbody.innerHTML = '<tr class="no-hover"><td colspan="6" style="text-align:center;color:hsl(var(--muted));padding:1.5rem">No events match the filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.slice(0, 120).map(e => `
+    <tr data-id="${escapeHtml(e.id)}">
+      <td>${escapeHtml(new Date(e.ts).toLocaleString())}</td>
+      <td>${escapeHtml(bearingName(e.bearing))} · ${e.distance.toFixed(1)}m</td>
+      <td>${escapeHtml(e.sensorLead)} <span style="color:hsl(var(--muted))">(+${e.agreement - 1})</span></td>
+      <td>${e.confidence.toFixed(1)}</td>
+      <td><span class="badge ${sevBadge(e.severity)}">${escapeHtml(e.severity)}</span></td>
+      <td>${escapeHtml(e.label)}</td>
+    </tr>`).join('');
+  tbody.querySelectorAll('tr').forEach(tr => tr.addEventListener('click', () => openCaseFile(tr.dataset.id)));
+}
+function renderDensity(){
+  const list = visibleEvents();
+  const range = STATE.evFilter.range || 1440;
+  const bucketMin = Math.max(1, Math.floor(range / 30));
+  const buckets = Math.ceil(range / bucketMin);
+  const counts = new Array(buckets).fill(0);
+  const labels = new Array(buckets).fill('').map((_, i) => '-' + ((buckets - i) * bucketMin) + 'm');
+  const now = Date.now();
+  list.forEach(e => {
+    const ageMin = (now - e.ts) / 60000;
+    const idx = Math.floor((range - ageMin) / bucketMin);
+    if (idx >= 0 && idx < buckets) counts[idx]++;
+  });
+  if (STATE.charts.density) STATE.charts.density.destroy();
+  STATE.charts.density = new Chart($('#chart-density').getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      data: counts, borderColor: C.ghost, backgroundColor: C.ghost2,
+      fill: true, tension: 0.32, pointRadius: 0, borderWidth: 2,
+    }]},
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{display:false} },
+      scales: {
+        x:{grid:{color:C.grid}, ticks:{color:C.muted, maxTicksLimit:6}},
+        y:{grid:{color:C.grid}, ticks:{color:C.muted, precision:0}, beginAtZero:true},
+      },
+    },
+  });
+  $('#density-sub').textContent = list.length + ' events · ' + bucketMin + ' min buckets';
+}
+function renderSevWheel(){
+  const list = visibleEvents();
+  const counts = { calm:0, stirring:0, presence:0, apparition:0 };
+  list.forEach(e => counts[e.severity] = (counts[e.severity]||0) + 1);
+  const data = [counts.calm, counts.stirring, counts.presence, counts.apparition];
+  if (STATE.charts.sev) STATE.charts.sev.destroy();
+  STATE.charts.sev = new Chart($('#chart-sev').getContext('2d'), {
+    type: 'polarArea',
+    data: {
+      labels: ['calm','stirring','presence','apparition'],
+      datasets: [{
+        data,
+        backgroundColor: ['hsla(142,70%,55%,0.55)','hsla(185,80%,55%,0.55)','hsla(35,85%,55%,0.55)','hsla(0,65%,55%,0.55)'],
+        borderColor: [C.accent, C.ghost, C.warn, C.bad],
+        borderWidth: 1.5,
+      }],
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins: { legend:{ position:'right', labels:{ color:C.text, font:{size:11}, boxWidth:10 } } },
+      scales: { r:{ grid:{color:C.grid}, angleLines:{color:C.grid}, ticks:{color:C.muted, backdropColor:'transparent', font:{size:9}} } },
+    },
+  });
+}
+$('#ev-search').addEventListener('input', e => { STATE.evFilter.search = e.target.value; renderEvidence(); renderDensity(); renderSevWheel(); });
+$('#ev-sev').addEventListener('change', e => { STATE.evFilter.sev = e.target.value; renderEvidence(); renderDensity(); renderSevWheel(); });
+$('#ev-range').addEventListener('change', e => { STATE.evFilter.range = +e.target.value; renderEvidence(); renderDensity(); renderSevWheel(); });
+$('#btn-export').addEventListener('click', () => {
+  const list = visibleEvents();
+  const rows = [['id','ts','iso','bearing_deg','bearing_name','distance_m','sensor_lead','confidence','severity','agreement','label']];
+  list.forEach(e => rows.push([e.id, e.ts, new Date(e.ts).toISOString(),
+    e.bearing.toFixed(1), bearingName(e.bearing), e.distance, e.sensorLead, e.confidence, e.severity, e.agreement, e.label]));
+  const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ghost-hunter-events-' + Date.now() + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported ' + list.length + ' event' + (list.length === 1 ? '' : 's'), 'ok');
+});
+$('#btn-clear-ev').addEventListener('click', () => {
+  if (!confirm('Clear all ' + STATE.events.length + ' event records?')) return;
+  STATE.events = [];
+  renderEvidence(); renderDensity(); renderSevWheel();
+  toast('Event log cleared', 'warn');
+});
+
+function openCaseFile(id){
+  const e = STATE.events.find(x => x.id === id);
+  if (!e) return;
+  $('#md-id').textContent = e.id + ' · ' + new Date(e.ts).toLocaleString();
+  $('#md-meta').innerHTML = `
+    <div class="meta-cell"><div class="meta-lbl">Bearing</div><div class="meta-val">${bearingName(e.bearing)} ${Math.round(e.bearing)}°</div></div>
+    <div class="meta-cell"><div class="meta-lbl">Distance</div><div class="meta-val">${e.distance.toFixed(1)} m</div></div>
+    <div class="meta-cell"><div class="meta-lbl">Confidence</div><div class="meta-val">${e.confidence.toFixed(1)}</div></div>
+    <div class="meta-cell"><div class="meta-lbl">Severity</div><div class="meta-val">${escapeHtml(e.severity)}</div></div>
+    <div class="meta-cell"><div class="meta-lbl">Lead sensor</div><div class="meta-val">${escapeHtml(e.sensorLead)}</div></div>
+    <div class="meta-cell"><div class="meta-lbl">Label</div><div class="meta-val">${escapeHtml(e.label)}</div></div>
+  `;
+  const onSens = STATE.sensors.filter(s => s.online);
+  $('#md-consensus').innerHTML = onSens.map((s, i) => {
+    const agreed = i < e.agreement;
+    return `<div>${agreed ? '✓' : '·'} <span style="color:${agreed ? C.accent : C.muted}">${escapeHtml(s.label)}</span> <span style="color:hsl(var(--muted))">(${s.id})</span> ${agreed ? `<span style="color:${C.warn};margin-left:0.5rem">${(e.confidence - rnd() * 12).toFixed(1)}</span>` : '<span style="color:hsl(var(--muted));margin-left:0.5rem">—</span>'}</div>`;
+  }).join('');
+  // mini chart
+  if (STATE.charts.evDetail) STATE.charts.evDetail.destroy();
+  const labels = [], data = [];
+  for (let i = -15; i <= 15; i++){
+    labels.push(i + 's');
+    const base = 14 + rnd() * 6;
+    const spike = e.confidence * Math.exp(-Math.pow(i, 2) / 12);
+    data.push(Math.min(100, base + spike));
+  }
+  STATE.charts.evDetail = new Chart($('#md-chart').getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { data, borderColor: C.ghost, backgroundColor: C.ghost2, fill: true, tension: 0.32, pointRadius: 0, borderWidth: 2 },
+      { data: data.map(() => STATE.config.threshold), borderColor: C.bad, borderDash: [4,4], borderWidth: 1.5, pointRadius: 0 },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{grid:{color:C.grid},ticks:{color:C.muted,maxTicksLimit:6}}, y:{grid:{color:C.grid},ticks:{color:C.muted},min:0,max:100} },
+    },
+  });
+  openModal('modal-detail');
+}
+$('#md-false').addEventListener('click', () => { toast('Marked false-positive', 'warn'); closeModal('modal-detail'); });
+$('#md-confirm').addEventListener('click', () => { toast('Confirmed sighting · labelled in training set', 'ok'); closeModal('modal-detail'); });
+
+// ────────────────────────────────────────────────────────────
+//  Baseline page
+// ────────────────────────────────────────────────────────────
+function renderBaselineCharts(){
+  // Calm-state attractor (rotating 3D-feel)
+  const pts = [];
+  for (let i = 0; i < 600; i++){
+    const t = i * 0.07;
+    const x = Math.sin(t) * 0.78 + Math.cos(t * 0.7) * 0.18;
+    const y = Math.cos(t * 1.2) * 0.68 + Math.sin(t * 0.5) * 0.18;
+    const z = Math.sin(t * 0.4) * 0.5;
+    const rot = STATE.baseRot;
+    pts.push({ x: x * Math.cos(rot) + z * Math.sin(rot), y });
+  }
+  if (STATE.charts.baseAttr) STATE.charts.baseAttr.destroy();
+  STATE.charts.baseAttr = new Chart($('#chart-base-attr').getContext('2d'), {
+    type:'scatter',
+    data:{ datasets:[{ data:pts, showLine:true,
+      borderColor:'hsla(142,70%,58%,0.55)', backgroundColor:'hsla(142,70%,58%,0.7)',
+      pointRadius:1.2, borderWidth:1, tension:0.45 }]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{grid:{color:C.grid},ticks:{color:C.muted},min:-1.2,max:1.2}, y:{grid:{color:C.grid},ticks:{color:C.muted},min:-1.2,max:1.2} },
+    },
+  });
+
+  // Drift
+  let series = STATE.driftSeries.slice();
+  if (series.length < 30){
+    const now = Date.now();
+    for (let i = series.length; i < 80; i++){
+      series.push({ t: now - (80 - i) * 30000, v: 0.1 + 0.08 * Math.sin(i * 0.15) + rnd() * 0.05 });
+    }
+    STATE.driftSeries = series;
+  }
+  if (STATE.charts.drift) STATE.charts.drift.destroy();
+  STATE.charts.drift = new Chart($('#chart-drift').getContext('2d'), {
+    type:'line',
+    data: { labels: series.map(p => fmtTime(p.t)), datasets: [
+      { label:'drift', data: series.map(p => p.v), borderColor: C.primary, backgroundColor: C.primary2, fill: true, tension: 0.32, pointRadius: 0, borderWidth: 2 },
+      { label:'refit', data: series.map(() => 0.5), borderColor: C.warn, borderDash: [4,4], borderWidth: 1.5, pointRadius: 0 },
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{grid:{color:C.grid},ticks:{color:C.muted,maxTicksLimit:6}}, y:{grid:{color:C.grid},ticks:{color:C.muted},min:0,max:1} },
+    },
+  });
+}
+function renderShifts(){
+  const tbody = $('#shift-tbody');
+  if (STATE.shifts.length === 0){
+    tbody.innerHTML = '<tr class="no-hover"><td colspan="5" style="text-align:center;color:hsl(var(--muted));padding:1.25rem">No baseline shifts recorded.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = STATE.shifts.slice(0, 20).map(s => `
+    <tr class="no-hover">
+      <td>${escapeHtml(new Date(s.ts).toLocaleString())}</td>
+      <td>${escapeHtml(s.reason)}</td>
+      <td>${s.delta.toFixed(3)}</td>
+      <td>${s.dim.toFixed(2)}</td>
+      <td>${s.samples.toLocaleString()}</td>
+    </tr>
+  `).join('');
+  const last = STATE.shifts[0];
+  if (last){
+    $('#b-last').textContent = fmtAgo(last.ts);
+    $('#b-last-sub').textContent = last.reason;
+    $('#b-dim').textContent = last.dim.toFixed(2);
+  }
+}
+$('#btn-base-rotate').addEventListener('click', () => {
+  STATE.baseRot = (STATE.baseRot + Math.PI / 6) % TAU;
+  renderBaselineCharts();
+  toast('Attractor rotated ' + Math.round(STATE.baseRot * 180 / Math.PI) + '°');
+});
+$('#btn-rebuild').addEventListener('click', () => {
+  STATE.shifts.unshift({
+    ts: Date.now(), reason: 'manual rebuild',
+    delta: +rin(0.3, 0.7).toFixed(3), dim: +rin(2.6, 4.2).toFixed(2),
+    samples: Math.floor(rin(2000, 8000)),
+  });
+  STATE.baselineAge = 0;
+  pushJournal('<strong>Baseline manually rebuilt.</strong>', 'shift');
+  renderShifts(); renderBaselineCharts();
+  toast('Baseline rebuilt from current samples', 'ok');
+});
+
+// ────────────────────────────────────────────────────────────
+//  Sensors page + floor plan
+// ────────────────────────────────────────────────────────────
+function drawFloorPlan(){
+  const svg = $('#room-svg');
+  const W = 800, H = 500;
+  // room rect
+  let html = `
+    <rect x="40" y="40" width="${W-80}" height="${H-80}" fill="hsl(220 30% 6%)" stroke="hsl(var(--primary) / 0.4)" stroke-width="2" rx="6"/>
+    <line x1="40" y1="${H/2}" x2="${W-40}" y2="${H/2}" stroke="hsl(var(--border))" stroke-dasharray="4 4" opacity="0.4"/>
+    <line x1="${W/2}" y1="40" x2="${W/2}" y2="${H-40}" stroke="hsl(var(--border))" stroke-dasharray="4 4" opacity="0.4"/>
+    <text x="${W/2}" y="32" text-anchor="middle" fill="hsl(var(--muted))" font-family="JetBrains Mono" font-size="11">${ROOM.w}m × ${ROOM.h}m</text>
+    <text x="${W/2}" y="${H-15}" text-anchor="middle" fill="hsl(var(--muted))" font-family="Special Elite" font-size="13">— test chamber —</text>
+  `;
+  // sensors
+  STATE.sensors.forEach((s, i) => {
+    const sx = 40 + (s.x / ROOM.w) * (W - 80);
+    const sy = 40 + (s.y / ROOM.h) * (H - 80);
+    const col = s.online ? 'hsl(185 80% 55%)' : 'hsl(220 20% 35%)';
+    html += `
+      <g class="sensor-pin" data-i="${i}" style="cursor:grab">
+        <circle cx="${sx}" cy="${sy}" r="22" fill="${col}" fill-opacity="0.08" stroke="${col}" stroke-opacity="0.35"/>
+        <circle cx="${sx}" cy="${sy}" r="8" fill="${col}"/>
+        <text x="${sx}" y="${sy + 36}" text-anchor="middle" fill="hsl(var(--fg))" font-family="Outfit" font-size="11" font-weight="600">${escapeHtml(s.label)}</text>
+        <text x="${sx}" y="${sy + 49}" text-anchor="middle" fill="hsl(var(--muted))" font-family="JetBrains Mono" font-size="9">${escapeHtml(s.id)}</text>
+      </g>
+    `;
+  });
+  // last detection bearing arrow from room centre
+  if (STATE.events.length){
+    const cx = W/2, cy = H/2;
+    const ang = (STATE.events[0].bearing - 90) * Math.PI / 180;
+    const len = 120;
+    const ex = cx + Math.cos(ang) * len;
+    const ey = cy + Math.sin(ang) * len;
+    html += `
+      <line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="hsl(var(--warn))" stroke-width="2" stroke-dasharray="6 4"/>
+      <circle cx="${ex}" cy="${ey}" r="6" fill="hsl(var(--warn))"/>
+      <text x="${ex}" y="${ey - 12}" text-anchor="middle" fill="hsl(var(--warn))" font-family="JetBrains Mono" font-size="10">last sighting</text>
+    `;
+  }
+  svg.innerHTML = html;
+  // drag support
+  let drag = null;
+  svg.querySelectorAll('.sensor-pin').forEach(g => {
+    g.addEventListener('mousedown', e => {
+      drag = { i: +g.dataset.i, sx: e.clientX, sy: e.clientY };
+      g.style.cursor = 'grabbing';
+    });
+  });
+  svg.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const r = svg.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 800;
+    const y = ((e.clientY - r.top) / r.height) * 500;
+    const s = STATE.sensors[drag.i];
+    s.x = Math.max(0.1, Math.min(ROOM.w - 0.1, ((x - 40) / (800 - 80)) * ROOM.w));
+    s.y = Math.max(0.1, Math.min(ROOM.h - 0.1, ((y - 40) / (500 - 80)) * ROOM.h));
+    drawFloorPlan();
+  });
+  ['mouseup','mouseleave'].forEach(ev => svg.addEventListener(ev, () => { drag = null; }));
+}
+function renderSensors(){
+  const q = ($('#sens-search').value || '').toLowerCase().trim();
+  const list = STATE.sensors.filter(s => !q || (s.label + ' ' + s.id).toLowerCase().includes(q));
+  const grid = $('#sensor-grid');
+  if (list.length === 0){
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:hsl(var(--muted));padding:1.5rem">No sensors match the filter.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(s => `
+    <div class="sensor-card" data-id="${escapeHtml(s.id)}">
+      <div class="sensor-h">
+        <div>
+          <div class="sensor-name">${escapeHtml(s.label)}</div>
+          <div class="mono" style="font-size:0.7rem;color:hsl(var(--muted));margin-top:0.15rem">${escapeHtml(s.id)}</div>
+        </div>
+        <span class="badge ${s.online ? 'ok' : 'bad'}"><span class="dot"></span>${s.online ? 'online' : 'offline'}</span>
+      </div>
+      <div class="sensor-meta">
+        <div><span class="l">RSSI</span>${s.rssi} dBm</div>
+        <div><span class="l">Ch</span>${s.channel}</div>
+        <div><span class="l">CSI</span>${s.online ? s.pps + ' pps' : '—'}</div>
+        <div><span class="l">Up</span>${fmtDur(s.uptime)}</div>
+        <div><span class="l">Pos</span>(${s.x.toFixed(1)}, ${s.y.toFixed(1)})m</div>
+        <div><span class="l">Contrib</span>${(s.contrib*100).toFixed(0)}%</div>
+      </div>
+      <div class="sensor-actions">
+        <button class="btn sm outline" data-act="ping">Ping</button>
+        <button class="btn sm outline" data-act="toggle">${s.online ? 'Mark off' : 'Mark on'}</button>
+        <button class="btn sm warn" data-act="reboot">Reboot</button>
+        <button class="btn sm danger" data-act="unpair">Unpair</button>
+      </div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.sensor-card').forEach(card => {
+    card.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => sensorAction(card.dataset.id, btn.dataset.act));
+    });
+  });
+}
+function sensorAction(id, act){
+  const s = STATE.sensors.find(x => x.id === id);
+  if (!s) return;
+  if (act === 'ping')    { s.lastSeen = Date.now(); toast('Ping → ' + s.label + ' · 12 ms RTT', 'ok'); }
+  if (act === 'toggle')  { s.online = !s.online; toast(s.label + ' marked ' + (s.online ? 'online' : 'offline'), s.online ? 'ok' : 'warn'); }
+  if (act === 'reboot')  { s.online = false; toast(s.label + ' rebooting…', 'warn');
+    setTimeout(() => { s.online = true; s.lastSeen = Date.now(); renderSensors(); drawFloorPlan(); toast(s.label + ' back online', 'ok'); }, 2400); }
+  if (act === 'unpair')  { if (!confirm('Unpair ' + s.label + '?')) return;
+    STATE.sensors = STATE.sensors.filter(x => x.id !== id); toast(s.label + ' unpaired', 'warn'); }
+  renderSensors(); drawFloorPlan();
+}
+$('#sens-search').addEventListener('input', renderSensors);
+$('#btn-rescan').addEventListener('click', () => {
+  toast('Scanning 2.4 GHz for new beacons…');
+  setTimeout(() => toast('Scan complete · 0 new devices', 'ok'), 1300);
+});
+$('#btn-add-sensor').addEventListener('click', () => {
+  $('#sens-label').value = ''; $('#sens-code').value = ''; $('#sens-chan').value = 'auto';
+  openModal('modal-sensor');
+});
+$('#sens-pair').addEventListener('click', () => {
+  const label = $('#sens-label').value.trim() || ('sensor-' + (STATE.sensors.length + 1));
+  const code  = $('#sens-code').value.trim();
+  if (!/^\d{6}$/.test(code)) { toast('Pairing code must be 6 digits', 'err'); return; }
+  const chan = $('#sens-chan').value === 'auto' ? pick([1,6,11]) : +$('#sens-chan').value;
+  const sensor = {
+    id: 'ESP-' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4,'0'),
+    label, online: true,
+    rssi: -Math.floor(40 + Math.random() * 25),
+    channel: chan,
+    x: ROOM.w / 2, y: ROOM.h / 2,
+    pps: 80, uptime: 0, lastSeen: Date.now(), contrib: 0.5,
+  };
+  STATE.sensors.push(sensor);
+  closeModal('modal-sensor');
+  renderSensors(); drawFloorPlan();
+  pushJournal(`<strong>${escapeHtml(label)}</strong> paired (${sensor.id}) on ch ${chan}.`, 'calm');
+  toast('Paired ' + label + ' on ch ' + chan, 'ok');
+});
+
+// ────────────────────────────────────────────────────────────
+//  Tuning
+// ────────────────────────────────────────────────────────────
+[['cfg-threshold','threshold'],['cfg-smooth','smooth'],['cfg-confirm','confirm'],['cfg-baseline','baselineWin']].forEach(([id,k]) => {
+  const el = $('#' + id);
+  el.addEventListener('input', () => {
+    STATE.config[k] = +el.value;
+    $('#' + id + '-now').textContent = el.value;
+    syncCfgPreview();
+  });
+});
+$('#cfg-embed').addEventListener('change', e => { STATE.config.embedDim = +e.target.value; syncCfgPreview(); });
+$('#cfg-autorecal').addEventListener('change', e => { STATE.config.autorecal = e.target.checked; syncCfgPreview(); });
+$('#cfg-audio').addEventListener('change', e => {
+  STATE.config.audio = e.target.checked; syncCfgPreview();
+  if (e.target.checked) chime('stirring');
+});
+$('#btn-cfg-save').addEventListener('click', () => {
+  try { localStorage.setItem('ghost_hunter_config', JSON.stringify(STATE.config)); } catch(_){}
+  toast('Config saved · pushed to cog', 'ok');
+});
+$('#btn-cfg-reset').addEventListener('click', () => {
+  STATE.config = { threshold:62, smooth:8, confirm:3, baselineWin:10, embedDim:3, autorecal:true, audio:false };
+  applyCfgToUI(); syncCfgPreview();
+  toast('Restored defaults', 'warn');
+});
+$('#btn-cfg-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(JSON.stringify(STATE.config, null, 2))
+    .then(() => toast('JSON copied', 'ok'))
+    .catch(() => toast('Clipboard blocked', 'err'));
+});
+function applyCfgToUI(){
+  $('#cfg-threshold').value = STATE.config.threshold; $('#cfg-threshold-now').textContent = STATE.config.threshold;
+  $('#cfg-smooth').value    = STATE.config.smooth;    $('#cfg-smooth-now').textContent    = STATE.config.smooth;
+  $('#cfg-confirm').value   = STATE.config.confirm;   $('#cfg-confirm-now').textContent   = STATE.config.confirm;
+  $('#cfg-baseline').value  = STATE.config.baselineWin; $('#cfg-baseline-now').textContent = STATE.config.baselineWin;
+  $('#cfg-embed').value     = STATE.config.embedDim;
+  $('#cfg-autorecal').checked = STATE.config.autorecal;
+  $('#cfg-audio').checked   = STATE.config.audio;
+}
+function syncCfgPreview(){ $('#cfg-preview').textContent = JSON.stringify(STATE.config, null, 2); }
+
+// About
+$('#btn-install').addEventListener('click', () => toast('Already installed on this node', 'warn'));
+$('#btn-docs').addEventListener('click',    () => toast('Docs would open at /guide/ghost-hunter'));
+$('#btn-source').addEventListener('click',  () => toast('Source: cognitum-one/cogs/src/cogs/ghost-hunter'));
+
+// ────────────────────────────────────────────────────────────
+//  Init
+// ────────────────────────────────────────────────────────────
+(function init(){
+  STATE.sensors = makeSensors();
+  STATE.events  = makeEvents(3);     // a few historical events, not a haunted house
+  STATE.shifts  = makeShifts();
+  STATE.score   = 12;                 // start in calm
+  STATE.baselineAge = Math.floor(rin(900, 2400));
+
+  try { const r = localStorage.getItem('ghost_hunter_config'); if (r) STATE.config = { ...STATE.config, ...JSON.parse(r) }; } catch(_){}
+  applyCfgToUI(); syncCfgPreview();
+
+  initAttrChart(); initDevChart();
+  for (let i = 0; i < 80; i++) pushAttr();
+  // Seed deviation history in the calm 8-16 range — what an empty room looks like.
+  for (let i = 0; i < 60; i++) STATE.devSeries.push({ t: Date.now() - (60 - i) * 1000, v: 12 + Math.sin(i * 0.27) * 2.5 + (Math.random() - 0.5) * 2.6 });
+  renderAttr(); renderDev();
+
+  // Seed journal: matter-of-fact, the room is quiet.
+  const onCount = STATE.sensors.filter(s => s.online).length;
+  pushJournal(`Field console online. Watching ${onCount} sensor${onCount === 1 ? '' : 's'}.`, 'calm');
+  pushJournal(`Baseline attractor locked in ${Math.floor(STATE.baselineAge / 60)} minutes ago. Room reads calm.`, 'shift');
+
+  renderJournal();
+  updateConsensus();
+  updateVerdict();
+  drawRadar(); drawOsc(); drawCompass();
+
+  // Loops
+  setInterval(simTick, 1000);
+  requestAnimationFrame(rafLoop);
+})();
+</script>
+</body>
+</html>

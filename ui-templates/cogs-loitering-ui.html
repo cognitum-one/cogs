@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Loitering — Cognitum Cog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 30% 16%) 0%,hsl(220 25% 11%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.brand-badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;margin-left:0.5rem;
+  background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.25);
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav button{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;background:transparent;border:none;cursor:pointer;
+  font-family:var(--font-display);transition:all 0.2s;
+}
+.nav button:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav button.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2.section-title{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* KPI grid */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 65%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Grids */
+.grid{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.1);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.25)}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.active{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.3)}
+.badge.idle{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));display:inline-block;flex-shrink:0}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.pulse{animation:pulse 1.5s infinite ease-in-out}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.6rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.85)}
+
+/* Inputs */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.45rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary))}
+input[type=range]{accent-color:hsl(var(--primary));padding:0;width:100%}
+.input{width:100%;height:2.4rem}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+label.lbl{
+  display:block;font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.4rem;
+}
+
+/* Tabs / panels */
+.panel{display:none}
+.panel.on{display:block}
+
+/* Hero */
+.hero{
+  position:relative;border-radius:0.875rem;overflow:hidden;
+  margin-bottom:1.5rem;
+  border:1px solid hsl(var(--border) / 0.5);
+  background:var(--gradient-hero);
+  padding:1.75rem 2rem;
+  display:flex;gap:2rem;align-items:center;flex-wrap:wrap;
+}
+.hero-info{flex:1;min-width:280px}
+.hero .h-cat{
+  display:inline-block;font-size:0.6875rem;text-transform:uppercase;
+  letter-spacing:0.08em;color:hsl(var(--primary-foreground));
+  background:hsl(var(--primary) / 0.85);padding:0.2rem 0.55rem;
+  border-radius:9999px;font-weight:600;font-family:var(--font-mono);
+}
+.hero h2.h-name{font-size:1.5rem;font-weight:700;color:hsl(var(--foreground));margin:0.5rem 0 0.4rem}
+.hero .h-desc{font-size:0.875rem;color:hsl(var(--card-foreground));line-height:1.55;opacity:0.92;max-width:42rem}
+.hero-meta{display:flex;gap:1.25rem;margin-top:0.875rem;flex-wrap:wrap;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.hero-meta b{color:hsl(var(--foreground));font-weight:600}
+.hero-actions{display:flex;gap:0.5rem;flex-direction:column}
+
+/* Charts */
+.charts-grid{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.chart-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);padding:1rem 1.125rem;
+}
+.chart-host{width:100%;height:220px;margin-top:0.4rem}
+
+/* True heatmap: flush cells, continuous color ramp, axes outside */
+.heatmap-wrap{margin-top:0.6rem;overflow-x:auto;padding-bottom:0.4rem}
+.heatmap-inner{
+  display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr auto;
+  gap:0.4rem 0.6rem;min-width:720px;
+}
+.hm-canvas-host{
+  position:relative;border:1px solid hsl(var(--border));
+  border-radius:0.4rem;background:hsl(220 15% 9%);
+  overflow:hidden;
+}
+.hm-canvas-host canvas{display:block;width:100%;height:auto}
+.hm-yaxis{
+  display:flex;flex-direction:column;justify-content:space-around;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  padding:4px 0;
+}
+.hm-yaxis div{line-height:1;text-align:right}
+.hm-xaxis{
+  display:flex;justify-content:space-between;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  padding:0 4px;grid-column:2 / 3;
+}
+.hm-tooltip{
+  position:absolute;pointer-events:none;
+  background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.5);
+  border-radius:0.4rem;padding:0.35rem 0.55rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--foreground));white-space:nowrap;
+  box-shadow:0 4px 12px hsl(220 25% 2% / 0.6);z-index:10;
+  opacity:0;transition:opacity 0.12s;
+}
+.hm-tooltip.show{opacity:1}
+.heat-legend{
+  display:flex;gap:0.5rem;align-items:center;font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));margin-top:0.5rem;
+  font-family:var(--font-mono);grid-column:1 / -1;
+}
+.heat-legend .ramp{
+  flex:0 0 220px;height:10px;border-radius:2px;
+  background:linear-gradient(to right,
+    hsl(220 15% 18%) 0%,
+    hsl(220 75% 32%) 18%,
+    hsl(185 80% 42%) 42%,
+    hsl(142 70% 52%) 60%,
+    hsl(45 95% 58%) 80%,
+    hsl(8 85% 58%) 100%);
+}
+
+/* Zone cards */
+.zone-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1.125rem;
+  display:flex;flex-direction:column;gap:0.75rem;
+}
+.zone-h{display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem}
+.zone-name{font-size:1rem;font-weight:600;color:hsl(var(--foreground))}
+.zone-id{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.zone-stats{display:grid;gap:0.5rem;grid-template-columns:1fr 1fr;font-family:var(--font-mono);font-size:0.75rem}
+.zone-stat{padding:0.45rem 0.6rem;background:hsl(var(--secondary) / 0.5);border-radius:0.4rem}
+.zone-stat .l{color:hsl(var(--muted-foreground));font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:0.15rem}
+.zone-stat .v{color:hsl(var(--foreground));font-size:0.9375rem;font-weight:600}
+.zone-actions{display:flex;gap:0.4rem;margin-top:0.25rem}
+
+/* Occupancy ring (gauge) */
+.ring{position:relative;width:96px;height:96px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring .ring-bg{stroke:hsl(var(--secondary));fill:none;stroke-width:8}
+.ring .ring-fg{stroke:hsl(var(--primary));fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease}
+.ring.warn .ring-fg{stroke:hsl(var(--warn))}
+.ring.danger .ring-fg{stroke:hsl(var(--destructive))}
+.ring-label{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.ring-label .v{font-size:1.5rem;font-weight:700;color:hsl(var(--foreground));font-family:var(--font-display)}
+.ring-label .l{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))}
+
+/* Threshold sliders */
+.threshold-row{
+  display:grid;gap:0.75rem;
+  grid-template-columns:160px 1fr 80px 100px;
+  align-items:center;padding:0.625rem 0.75rem;
+  border-bottom:1px solid hsl(var(--border) / 0.3);
+}
+.threshold-row:last-child{border-bottom:none}
+.threshold-row .tname{font-size:0.875rem;font-weight:500}
+.threshold-row .tid{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.threshold-row .tval{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--primary));font-weight:600;text-align:right}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem;max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;display:flex;flex-direction:column;gap:0.5rem}
+.toast{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-left:4px solid hsl(var(--primary));border-radius:0.5rem;
+  padding:0.6rem 0.875rem;font-size:0.8125rem;color:hsl(var(--foreground));
+  min-width:240px;box-shadow:var(--shadow-card);
+  animation:slidein 0.25s ease-out;
+}
+.toast.ok{border-left-color:hsl(var(--accent))}
+.toast.warn{border-left-color:hsl(var(--warn))}
+.toast.err{border-left-color:hsl(var(--destructive))}
+@keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Live event feed */
+.event-feed{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;max-height:340px;overflow-y:auto}
+.event-row{
+  display:grid;grid-template-columns:90px 100px 1fr auto;gap:0.6rem;
+  padding:0.5rem 0.6rem;border:1px solid hsl(var(--border) / 0.3);
+  border-radius:0.4rem;background:hsl(var(--secondary) / 0.25);
+  font-family:var(--font-mono);font-size:0.75rem;align-items:center;
+}
+.event-row .ts{color:hsl(var(--muted-foreground))}
+.event-row.crit{border-color:hsl(var(--destructive) / 0.4);background:hsl(var(--destructive) / 0.08)}
+.event-row.warn{border-color:hsl(var(--warn) / 0.4);background:hsl(var(--warn) / 0.08)}
+
+/* Device cards */
+.device-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+}
+.device-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.5rem}
+.device-name{font-size:0.9375rem;font-weight:600}
+.device-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.device-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+.csi-spark{height:36px;width:100%;margin-top:0.5rem}
+
+/* Donut */
+.donut-wrap{display:flex;gap:1.25rem;align-items:center;flex-wrap:wrap}
+.donut-legend{display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem}
+.donut-legend .lr{display:flex;align-items:center;gap:0.5rem}
+.donut-legend .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+
+.uplot{font-family:var(--font-display)!important}
+.uplot,.u-wrap,.u-over,.u-under,.u-axis{color:hsl(var(--foreground))}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Loitering<span class="brand-ver mono">v1.0.0</span><span class="brand-badge">Security</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="live">Live</button>
+      <button data-tab="zones">Zones</button>
+      <button data-tab="alerts">Alerts</button>
+      <button data-tab="thresholds">Thresholds</button>
+      <button data-tab="devices">Devices</button>
+      <button data-tab="analytics">Analytics</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ─── OVERVIEW ─── -->
+  <div class="panel on" id="panel-overview">
+    <div class="hero">
+      <div class="hero-info">
+        <span class="h-cat">Security</span>
+        <h2 class="h-name">Loitering Detection</h2>
+        <p class="h-desc">Detects prolonged stationary presence in monitored zones, triggering alerts when configurable dwell time thresholds are exceeded. Runs on ESP32-S3 with CSI presence input — no cameras, no images, no PII.</p>
+        <div class="hero-meta">
+          <span><b>Source</b> cognitum-one/cogs/src/cogs/loitering</span>
+          <span><b>Hardware</b> ESP32-S3</span>
+          <span><b>Input</b> CSI presence</span>
+          <span><b>Size</b> 14 KB</span>
+          <span><b>Difficulty</b> Easy</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" id="btn-arm">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L4 7v5c0 5 3.4 9.4 8 10 4.6-.6 8-5 8-10V7l-8-5z"/></svg>
+          <span id="arm-label">Disarm</span>
+        </button>
+        <button class="btn outline" id="btn-test-alert">Test alert</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 3v18"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Monitored zones</div><div class="kpi-val" id="kpi-zones">—</div><div class="kpi-sub" id="kpi-zones-sub">active / total</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Active presences</div><div class="kpi-val" id="kpi-presences">—</div><div class="kpi-sub">across all zones</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Avg dwell time</div><div class="kpi-val" id="kpi-dwell">—</div><div class="kpi-sub">last 24h</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic danger"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Alerts today</div><div class="kpi-val" id="kpi-alerts">—</div><div class="kpi-sub" id="kpi-alerts-sub">vs yesterday</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M2 12h4l3-9 6 18 3-9h4"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">CSI sample rate</div><div class="kpi-val" id="kpi-csi">—</div><div class="kpi-sub">across fleet</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Active occupancy (last 30 min)</div>
+              <div class="card-sub" id="occ-sub">Stacked by zone · 1s tick</div>
+            </div>
+            <button class="btn sm outline" id="btn-pause-live">Pause</button>
+          </div>
+          <div id="chart-occupancy" class="chart-host"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Current zone occupancy</div>
+              <div class="card-sub">Ring gauges — % of threshold dwell</div>
+            </div>
+          </div>
+          <div id="ring-grid" style="display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0.5rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent loitering alerts</div>
+            <div class="card-sub" id="recent-sub">Last 10 detections</div>
+          </div>
+          <button class="btn sm outline" data-goto="alerts">View all &rarr;</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Time</th><th>Zone</th><th>Dwell</th><th>Threshold</th><th>Device</th><th>Status</th><th></th></tr></thead>
+            <tbody id="recent-alerts-tbody"><tr><td colspan="7" style="text-align:center;color:hsl(var(--muted-foreground))">loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── LIVE ─── -->
+  <div class="panel" id="panel-live">
+    <div class="section">
+      <h1 class="page">Live presence stream</h1>
+      <p class="lede">Real-time CSI presence and dwell counters from paired ESP32-S3 sensors. Events are emitted on the cog event bus as <code>loitering_detected</code> when the dwell threshold is crossed.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Dwell time per zone (live)</div>
+              <div class="card-sub" id="dwell-sub">Seconds since each zone became occupied</div>
+            </div>
+          </div>
+          <div id="chart-dwell" class="chart-host"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Event feed</div>
+              <div class="card-sub">Newest first · click to acknowledge</div>
+            </div>
+            <button class="btn sm outline" id="btn-clear-feed">Clear</button>
+          </div>
+          <div class="event-feed" id="event-feed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI signal heatmap (rolling 60s)</div>
+            <div class="card-sub">Per-device CSI variance — bright = motion, dim = stationary</div>
+          </div>
+        </div>
+        <div id="csi-grid" style="display:grid;grid-template-columns:120px repeat(60, 1fr);gap:2px;margin-top:0.6rem;font-family:var(--font-mono);font-size:0.625rem;align-items:center;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ZONES ─── -->
+  <div class="panel" id="panel-zones">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+        <div>
+          <h1 class="page">Zones</h1>
+          <p class="lede">Define monitored areas. Each zone maps to one or more CSI sensors and has its own dwell threshold.</p>
+        </div>
+        <button class="btn primary" id="btn-add-zone">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add zone
+        </button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="grid" id="zones-grid"></div>
+    </div>
+  </div>
+
+  <!-- ─── ALERTS ─── -->
+  <div class="panel" id="panel-alerts">
+    <div class="section">
+      <h1 class="page">Alerts</h1>
+      <p class="lede">Every <code>loitering_detected</code> event, with ack/dismiss/resolve actions.</p>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="card-h" style="gap:0.6rem">
+          <input class="input" id="alert-search" placeholder="Search by zone, device, or status…" style="max-width:280px;flex:1">
+          <select id="alert-filter" style="height:2.4rem">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="ack">Acknowledged</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select id="alert-time" style="height:2.4rem">
+            <option value="24">Last 24 hours</option>
+            <option value="168">Last 7 days</option>
+            <option value="720">Last 30 days</option>
+          </select>
+          <span style="flex:1"></span>
+          <button class="btn sm outline" id="btn-export">Export CSV</button>
+          <button class="btn sm danger" id="btn-clear-alerts">Clear all</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Time</th><th>Zone</th><th>Dwell</th><th>Threshold</th><th>Device</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="alerts-tbody"></tbody>
+          </table>
+        </div>
+        <div id="alerts-empty" style="display:none;padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.875rem">No alerts match the current filters.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Alert timeline</div>
+            <div class="card-sub">Detections per hour — last 24h</div>
+          </div>
+        </div>
+        <div id="chart-timeline" class="chart-host"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── THRESHOLDS ─── -->
+  <div class="panel" id="panel-thresholds">
+    <div class="section">
+      <h1 class="page">Thresholds</h1>
+      <p class="lede">Tune dwell-time thresholds per zone. Lower = more sensitive (more alerts). Higher = fewer but more confident detections.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Per-zone dwell thresholds</div>
+            <div class="card-sub">Slide to adjust — applies immediately</div>
+          </div>
+          <button class="btn sm outline" id="btn-reset-thresholds">Reset to defaults</button>
+        </div>
+        <div id="thresholds-list"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Global defaults</div>
+              <div class="card-sub">Applied to newly created zones</div>
+            </div>
+          </div>
+          <div class="modal-row">
+            <label class="lbl">Default dwell threshold</label>
+            <input type="range" min="10" max="600" step="5" id="def-dwell" value="120">
+            <div class="mono" style="font-size:0.75rem;color:hsl(var(--primary));margin-top:0.3rem"><span id="def-dwell-val">120</span> s</div>
+          </div>
+          <div class="modal-row">
+            <label class="lbl">CSI presence sensitivity</label>
+            <input type="range" min="1" max="10" step="1" id="def-sens" value="6">
+            <div class="mono" style="font-size:0.75rem;color:hsl(var(--primary));margin-top:0.3rem"><span id="def-sens-val">6</span> / 10</div>
+          </div>
+          <div class="modal-row">
+            <label class="lbl">Cooldown between alerts</label>
+            <input type="range" min="30" max="900" step="10" id="def-cooldown" value="180">
+            <div class="mono" style="font-size:0.75rem;color:hsl(var(--primary));margin-top:0.3rem"><span id="def-cooldown-val">180</span> s</div>
+          </div>
+          <button class="btn primary sm" id="btn-save-defaults">Save defaults</button>
+        </div>
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Threshold impact preview</div>
+              <div class="card-sub">Estimated alerts/day at each global threshold</div>
+            </div>
+          </div>
+          <div id="chart-threshold-impact" class="chart-host"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DEVICES ─── -->
+  <div class="panel" id="panel-devices">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+        <div>
+          <h1 class="page">Devices</h1>
+          <p class="lede">ESP32-S3 seeds reporting CSI presence into this cog. Each device feeds one zone.</p>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn outline" id="btn-rescan">Rescan</button>
+          <button class="btn primary" id="btn-pair">Pair new</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="grid" id="devices-grid"></div>
+    </div>
+  </div>
+
+  <!-- ─── ANALYTICS ─── -->
+  <div class="panel" id="panel-analytics">
+    <div class="section">
+      <h1 class="page">Analytics</h1>
+      <p class="lede">Patterns in loitering events: when, where, and how long. Histories are rolled in-process; persist to RVF index for cross-session retention.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Detection heatmap (last 26 weeks)</div>
+            <div class="card-sub" id="hm-sub">Each cell is one day · brighter = more detections</div>
+          </div>
+          <select id="hm-zone" style="height:2.4rem">
+            <option value="all">All zones</option>
+          </select>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-inner">
+            <div class="hm-yaxis" id="hm-yaxis"></div>
+            <div class="hm-canvas-host" id="hm-canvas-host">
+              <canvas id="hm-canvas"></canvas>
+              <div class="hm-tooltip" id="hm-tooltip"></div>
+            </div>
+            <div></div>
+            <div class="hm-xaxis" id="hm-xaxis"></div>
+            <div class="heat-legend">
+              <span>0</span>
+              <span class="ramp"></span>
+              <span id="hm-max-label">—</span>
+              <span style="margin-left:auto" id="hm-summary">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Dwell-time distribution</div>
+              <div class="card-sub">Histogram of all detections — 30s buckets</div>
+            </div>
+          </div>
+          <div id="chart-dwell-dist" class="chart-host"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Detections by zone</div>
+              <div class="card-sub">Last 14 days</div>
+            </div>
+          </div>
+          <div class="donut-wrap" style="margin-top:0.4rem">
+            <div style="position:relative;width:180px;height:180px;flex-shrink:0">
+              <svg id="donut-svg" viewBox="0 0 36 36" style="width:100%;height:100%;transform:rotate(-90deg)"></svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div style="font-size:1.5rem;font-weight:700;color:hsl(var(--foreground))" id="donut-total">0</div>
+                <div style="font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))">total</div>
+              </div>
+            </div>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Detections per day (14d trend)</div>
+            <div class="card-sub">All zones combined</div>
+          </div>
+        </div>
+        <div id="chart-daily" class="chart-host"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SETTINGS ─── -->
+  <div class="panel" id="panel-settings">
+    <div class="section">
+      <h1 class="page">Settings</h1>
+      <p class="lede">Cog-level configuration for the Loitering detector.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Notifications</div>
+              <div class="card-sub">How loitering events are surfaced</div>
+            </div>
+          </div>
+          <div class="modal-row"><label class="lbl"><input type="checkbox" id="cfg-notify-ui" checked> In-app toasts</label></div>
+          <div class="modal-row"><label class="lbl"><input type="checkbox" id="cfg-notify-webhook"> Webhook POST</label></div>
+          <div class="modal-row" id="cfg-webhook-row" style="display:none">
+            <label class="lbl">Webhook URL</label>
+            <input class="input" id="cfg-webhook" type="url" placeholder="https://example.com/hooks/loitering">
+          </div>
+          <div class="modal-row"><label class="lbl"><input type="checkbox" id="cfg-notify-mqtt"> MQTT publish</label></div>
+          <div class="modal-row" id="cfg-mqtt-row" style="display:none">
+            <label class="lbl">MQTT topic</label>
+            <input class="input" id="cfg-mqtt" type="text" placeholder="cognitum/loitering/events" value="cognitum/loitering/events">
+          </div>
+          <button class="btn primary sm" id="btn-save-notif">Save notifications</button>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Event schema</div>
+              <div class="card-sub">Emitted on the cog event bus</div>
+            </div>
+            <button class="btn sm outline" id="btn-copy-schema">Copy</button>
+          </div>
+          <pre style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.75rem 0.875rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--foreground));line-height:1.55;overflow:auto" id="schema-block">{
+  "event": "loitering_detected",
+  "fields": {
+    "zone_id":   "string",
+    "dwell_time":"integer (seconds)"
+  },
+  "hardware":  "ESP32-S3",
+  "input":     "CSI presence",
+  "version":   "1.0.0"
+}</pre>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Data retention</div>
+              <div class="card-sub">How long events are kept locally</div>
+            </div>
+          </div>
+          <div class="modal-row">
+            <label class="lbl">Retain events for</label>
+            <select id="cfg-retain" class="input">
+              <option value="1">1 day</option>
+              <option value="7" selected>7 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label class="lbl"><input type="checkbox" id="cfg-anon" checked> Strip device serial from exports</label>
+          </div>
+          <button class="btn primary sm" id="btn-save-retain">Save retention</button>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Danger zone</div>
+              <div class="card-sub">Irreversible operations</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <button class="btn danger sm" id="btn-purge">Purge event history</button>
+            <button class="btn danger sm" id="btn-uninstall">Uninstall cog</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: loitering</span> &middot; <span class="mono">v1.0.0</span> &middot; <span class="mono">14 KB</span> &middot; <span class="mono">Easy</span></div>
+    <div style="margin-top:0.4rem"><span class="mono">cognitum-one/cogs/src/cogs/loitering</span></div>
+  </footer>
+</div>
+
+<!-- ─── Modal: Add/Edit zone ─── -->
+<div class="modal-bg" id="zone-modal">
+  <div class="modal">
+    <h3 id="zm-title">Add zone</h3>
+    <p class="modal-sub">Configure a new monitored area.</p>
+    <div class="modal-row">
+      <label class="lbl">Zone name</label>
+      <input class="input" id="zm-name" placeholder="e.g. East lobby">
+    </div>
+    <div class="modal-row">
+      <label class="lbl">Zone id <span style="color:hsl(var(--muted-foreground));font-weight:400;text-transform:none">(snake_case)</span></label>
+      <input class="input mono" id="zm-id" placeholder="east_lobby">
+    </div>
+    <div class="modal-row">
+      <label class="lbl">Dwell threshold (s)</label>
+      <input type="range" min="10" max="600" step="5" id="zm-dwell" value="120">
+      <div class="mono" style="font-size:0.75rem;color:hsl(var(--primary));margin-top:0.3rem"><span id="zm-dwell-val">120</span> seconds</div>
+    </div>
+    <div class="modal-row">
+      <label class="lbl">Assigned device</label>
+      <select id="zm-device" class="input"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close-modal>Cancel</button>
+      <button class="btn primary" id="zm-save">Save zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toasts ─── -->
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+'use strict';
+
+// ── Utilities ────────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDuration = s => {
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  return r === 0 ? m + 'm' : m + 'm ' + r + 's';
+};
+const fmtTs = t => {
+  const d = new Date(t);
+  const pad = n => String(n).padStart(2, '0');
+  return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+};
+const fmtFullTs = t => {
+  const d = new Date(t);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+};
+const fmtRel = t => {
+  const diff = Math.floor((Date.now() - t) / 1000);
+  if (diff < 5) return 'just now';
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+};
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const choice = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function toast(msg, kind='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; }, 2700);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ── State ────────────────────────────────────────────────────────
+const STATE = {
+  armed: true,
+  paused: false,
+  zones: [
+    { id: 'east_lobby',   name: 'East lobby',     deviceId: 'esp-7a3f', threshold: 120, occupancy: 0, occSince: null },
+    { id: 'service_dock', name: 'Service dock',   deviceId: 'esp-c192', threshold: 180, occupancy: 0, occSince: null },
+    { id: 'rear_alley',   name: 'Rear alley',     deviceId: 'esp-b8d4', threshold: 60,  occupancy: 0, occSince: null },
+    { id: 'parking_a',    name: 'Parking row A',  deviceId: 'esp-44ee', threshold: 240, occupancy: 0, occSince: null },
+    { id: 'atm_vestibule',name: 'ATM vestibule',  deviceId: 'esp-09c1', threshold: 90,  occupancy: 0, occSince: null },
+  ],
+  devices: [
+    { id: 'esp-7a3f', name: 'esp32s3-7a3f', ip: '10.0.4.21', rssi: -54, fw: '1.4.2', online: true,  csiRate: 32 },
+    { id: 'esp-c192', name: 'esp32s3-c192', ip: '10.0.4.22', rssi: -61, fw: '1.4.2', online: true,  csiRate: 30 },
+    { id: 'esp-b8d4', name: 'esp32s3-b8d4', ip: '10.0.4.23', rssi: -70, fw: '1.4.1', online: true,  csiRate: 28 },
+    { id: 'esp-44ee', name: 'esp32s3-44ee', ip: '10.0.4.24', rssi: -58, fw: '1.4.2', online: true,  csiRate: 31 },
+    { id: 'esp-09c1', name: 'esp32s3-09c1', ip: '10.0.4.25', rssi: -77, fw: '1.4.0', online: false, csiRate: 0  },
+    { id: 'esp-2d4a', name: 'esp32s3-2d4a', ip: '10.0.4.26', rssi: -52, fw: '1.4.2', online: true,  csiRate: 32 },
+    { id: 'esp-f81b', name: 'esp32s3-f81b', ip: '10.0.4.27', rssi: -66, fw: '1.4.2', online: true,  csiRate: 30 },
+    { id: 'esp-3e7c', name: 'esp32s3-3e7c', ip: '10.0.4.28', rssi: -73, fw: '1.4.1', online: true,  csiRate: 29 },
+    { id: 'esp-a05d', name: 'esp32s3-a05d', ip: '10.0.4.29', rssi: -59, fw: '1.4.2', online: true,  csiRate: 31 },
+    { id: 'esp-6b22', name: 'esp32s3-6b22', ip: '10.0.4.30', rssi: -68, fw: '1.4.2', online: true,  csiRate: 30 },
+  ],
+  alerts: [],                 // {id, ts, zoneId, dwell, threshold, deviceId, status}
+  occupancyHistory: [],       // [{ts, perZone:{id:count}}]
+  dwellHistory: {},           // zoneId -> [{ts, dwell}]
+  csiHistory: {},             // deviceId -> [variance rolling 60]
+  alertCounts24h: new Array(24).fill(0),
+  heatmap: [],                // 7 x 24
+  dailyCounts: new Array(14).fill(0),
+  defaultDwell: 120,
+  defaultSens: 6,
+  defaultCooldown: 180,
+  webhook: '',
+  mqtt: 'cognitum/loitering/events',
+};
+
+// Seed alerts and heatmap with plausible history
+function seedHistory() {
+  const now = Date.now();
+  // Weekly heatmap: 26 weeks × 7 days, aligned so today is the last cell.
+  // Walk back from today (Sat) to find the Sunday 26 weeks ago.
+  STATE.heatmap = buildHeatmapData('all');
+  // Daily counts last 14 days
+  for (let i = 0; i < 14; i++) {
+    STATE.dailyCounts[i] = randInt(2, 18);
+  }
+  // 24h hourly counts (drive timeline)
+  for (let h = 0; h < 24; h++) {
+    STATE.alertCounts24h[h] = randInt(0, 6);
+  }
+  // Seed alerts (last 24h)
+  let count = 0;
+  for (let i = 0; i < 24; i++) {
+    const n = STATE.alertCounts24h[i];
+    for (let j = 0; j < n; j++) {
+      const z = choice(STATE.zones);
+      const ts = now - (24 - i) * 3600 * 1000 + randInt(0, 3600 * 1000);
+      const dwell = z.threshold + randInt(5, 180);
+      const status = i < 20 ? choice(['resolved', 'resolved', 'ack']) : choice(['active', 'active', 'ack']);
+      STATE.alerts.push({
+        id: 'alt-' + (++count),
+        ts, zoneId: z.id, dwell, threshold: z.threshold,
+        deviceId: z.deviceId, status,
+      });
+    }
+  }
+  STATE.alerts.sort((a, b) => b.ts - a.ts);
+  // Occupancy history (last 30 min @ 5s tick = 360 points).
+  // Per-zone realistic patterns: each zone has 1-3 presence "episodes" in the window.
+  STATE.occupancyHistory = [];
+  STATE.dwellHistory = {};
+  const N = 361;
+
+  // Pre-generate per-zone occupancy timeline (array of counts) and dwell timeline.
+  const zoneSeries = {};
+  STATE.zones.forEach((z, zi) => {
+    const occ = new Array(N).fill(0);
+    const dwl = new Array(N).fill(0);
+    // 2-4 presence episodes spread across the 30-minute window.
+    const episodes = randInt(2, 4);
+    for (let e = 0; e < episodes; e++) {
+      const start = randInt(10, N - 40);
+      const len = randInt(12, 60);  // 60s to 5min
+      const peak = randInt(1, 3);
+      for (let i = start; i < Math.min(N, start + len); i++) {
+        // Ramp up to peak, hold, then drop
+        const t = i - start;
+        const ramp = Math.min(1, t / 4);
+        const fall = Math.min(1, (start + len - i) / 4);
+        occ[i] = Math.max(occ[i], Math.round(peak * Math.min(ramp, fall)));
+      }
+    }
+    // Derive dwell: increases by 5s each step while occ>0, resets when occ==0.
+    let d = 0;
+    for (let i = 0; i < N; i++) {
+      if (occ[i] > 0) { d += 5; } else { d = 0; }
+      dwl[i] = d;
+    }
+    zoneSeries[z.id] = { occ, dwl };
+  });
+
+  for (let i = 0; i < N; i++) {
+    const ts = Math.floor((now - (N - 1 - i) * 5000) / 1000);
+    const perZone = {};
+    STATE.zones.forEach(z => perZone[z.id] = zoneSeries[z.id].occ[i]);
+    STATE.occupancyHistory.push({ ts, perZone });
+  }
+  STATE.zones.forEach(z => {
+    STATE.dwellHistory[z.id] = [];
+    for (let i = 0; i < N; i++) {
+      const ts = Math.floor((now - (N - 1 - i) * 5000) / 1000);
+      STATE.dwellHistory[z.id].push({ ts, dwell: zoneSeries[z.id].dwl[i] });
+    }
+  });
+  // CSI history (rolling 60)
+  STATE.devices.forEach(dev => {
+    STATE.csiHistory[dev.id] = [];
+    for (let i = 0; i < 60; i++) {
+      STATE.csiHistory[dev.id].push(dev.online ? rand(0.05, 0.95) : 0);
+    }
+  });
+  // Set live occupancy state to match end of seeded history.
+  STATE.zones.forEach(z => {
+    const dwl = STATE.dwellHistory[z.id];
+    const lastDwell = dwl[dwl.length - 1].dwell;
+    const lastOcc = STATE.occupancyHistory[STATE.occupancyHistory.length - 1].perZone[z.id];
+    z.occupancy = lastOcc;
+    z.occSince = (lastOcc > 0 && lastDwell > 0) ? (now - lastDwell * 1000) : null;
+  });
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────
+function switchTab(name) {
+  $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + name));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  if (name === 'analytics') requestAnimationFrame(renderAnalytics);
+  if (name === 'alerts') renderAlertsTable();
+  if (name === 'thresholds') renderThresholds();
+  if (name === 'devices') renderDevices();
+  if (name === 'zones') renderZones();
+  if (name === 'live') { renderEventFeed(); renderCsiGrid(); requestAnimationFrame(drawDwellChart); }
+  if (name === 'overview') renderOverview();
+}
+
+$('#nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+});
+document.addEventListener('click', e => {
+  const link = e.target.closest('[data-goto]');
+  if (link) { e.preventDefault(); switchTab(link.dataset.goto); }
+});
+
+// ── Overview ─────────────────────────────────────────────────────
+let occPlot = null, dwellPlot = null, timelinePlot = null, threshImpactPlot = null, dailyPlot = null, dwellDistPlot = null;
+const ZONE_COLORS = ['hsl(185 80% 55%)','hsl(142 70% 55%)','hsl(35 85% 60%)','hsl(280 70% 65%)','hsl(0 70% 65%)','hsl(220 80% 65%)'];
+
+function renderKpis() {
+  $('#kpi-zones').textContent = STATE.zones.filter(z => z.occupancy > 0).length;
+  $('#kpi-zones-sub').textContent = STATE.zones.filter(z => z.occupancy > 0).length + ' / ' + STATE.zones.length + ' occupied';
+  const presences = STATE.zones.reduce((n, z) => n + z.occupancy, 0);
+  $('#kpi-presences').textContent = presences;
+  // Avg dwell across active zones
+  const active = STATE.zones.filter(z => z.occSince);
+  const avg = active.length ? Math.round(active.reduce((s, z) => s + (Date.now() - z.occSince) / 1000, 0) / active.length) : 0;
+  $('#kpi-dwell').textContent = fmtDuration(avg);
+  const todayAlerts = STATE.alerts.filter(a => Date.now() - a.ts < 86400000).length;
+  const yesterdayAlerts = randInt(8, 24);
+  $('#kpi-alerts').textContent = todayAlerts;
+  const diff = todayAlerts - yesterdayAlerts;
+  $('#kpi-alerts-sub').textContent = (diff >= 0 ? '+' : '') + diff + ' vs yesterday';
+  const csiRate = STATE.devices.filter(d => d.online).reduce((s, d) => s + d.csiRate, 0);
+  $('#kpi-csi').textContent = csiRate + ' Hz';
+}
+
+function renderRings() {
+  const grid = $('#ring-grid');
+  const html = STATE.zones.map(z => {
+    const dwell = z.occSince ? Math.floor((Date.now() - z.occSince) / 1000) : 0;
+    const pct = z.threshold > 0 ? Math.min(1, dwell / z.threshold) : 0;
+    const cls = pct >= 1 ? 'danger' : pct >= 0.7 ? 'warn' : '';
+    const circ = 2 * Math.PI * 16;
+    const off = circ * (1 - pct);
+    return `
+      <div style="text-align:center">
+        <div class="ring ${cls}">
+          <svg viewBox="0 0 40 40">
+            <circle class="ring-bg" cx="20" cy="20" r="16"></circle>
+            <circle class="ring-fg" cx="20" cy="20" r="16" stroke-dasharray="${circ}" stroke-dashoffset="${off}"></circle>
+          </svg>
+          <div class="ring-label">
+            <div class="v">${Math.round(pct * 100)}%</div>
+            <div class="l">${dwell}s</div>
+          </div>
+        </div>
+        <div style="font-size:0.8125rem;font-weight:600;margin-top:0.5rem">${esc(z.name)}</div>
+        <div style="font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">thr ${z.threshold}s · occ ${z.occupancy}</div>
+      </div>`;
+  }).join('');
+  grid.innerHTML = html;
+}
+
+function renderRecentAlerts() {
+  const recent = STATE.alerts.slice(0, 10);
+  if (recent.length === 0) {
+    $('#recent-alerts-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:hsl(var(--muted-foreground))">no alerts</td></tr>';
+    return;
+  }
+  $('#recent-alerts-tbody').innerHTML = recent.map(a => {
+    const z = STATE.zones.find(x => x.id === a.zoneId);
+    const statusBadge = a.status === 'active' ? '<span class="badge active">active</span>'
+      : a.status === 'ack' ? '<span class="badge warn">ack</span>'
+      : '<span class="badge online">resolved</span>';
+    return `<tr>
+      <td title="${fmtFullTs(a.ts)}">${fmtRel(a.ts)}</td>
+      <td>${esc(z ? z.name : a.zoneId)}</td>
+      <td>${fmtDuration(a.dwell)}</td>
+      <td>${a.threshold}s</td>
+      <td>${esc(a.deviceId)}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn sm outline" data-quick-ack="${a.id}">${a.status === 'resolved' ? '↻' : '✓'}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOverview() {
+  renderKpis();
+  renderRings();
+  renderRecentAlerts();
+  drawOccupancyChart();
+}
+
+function drawOccupancyChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-occupancy');
+  const data = [
+    STATE.occupancyHistory.map(p => p.ts),
+    ...STATE.zones.map(z => STATE.occupancyHistory.map(p => p.perZone[z.id] || 0))
+  ];
+  const opts = chartOpts(host, [
+    { label: '', stroke: '' },
+    ...STATE.zones.map((z, i) => ({
+      label: z.name,
+      stroke: ZONE_COLORS[i % ZONE_COLORS.length],
+      width: 2,
+      fill: ZONE_COLORS[i % ZONE_COLORS.length].replace(')', ' / 0.18)').replace('hsl(', 'hsla('),
+      paths: uPlot.paths.stepped({ align: 1 }),
+    }))
+  ]);
+  host.innerHTML = '';
+  occPlot = new uPlot(opts, data, host);
+}
+
+function chartOpts(host, series, height) {
+  return {
+    width: host.clientWidth || 400,
+    height: height || 220,
+    scales: { x: { time: true } },
+    series,
+    legend: { show: true },
+    axes: [
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+    ],
+  };
+}
+
+// ── Live ─────────────────────────────────────────────────────────
+function drawDwellChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-dwell');
+  // Sample the dwell histories, all zones share same x axis
+  const xs = STATE.dwellHistory[STATE.zones[0].id].map(p => p.ts);
+  const data = [
+    xs,
+    ...STATE.zones.map(z => STATE.dwellHistory[z.id].map(p => p.dwell))
+  ];
+  const opts = chartOpts(host, [
+    { label: '' },
+    ...STATE.zones.map((z, i) => ({
+      label: z.name,
+      stroke: ZONE_COLORS[i % ZONE_COLORS.length],
+      width: 2,
+    }))
+  ]);
+  host.innerHTML = '';
+  dwellPlot = new uPlot(opts, data, host);
+}
+
+function renderEventFeed() {
+  const feed = $('#event-feed');
+  const last = STATE.alerts.slice(0, 12);
+  if (last.length === 0) {
+    feed.innerHTML = '<div style="padding:1rem;color:hsl(var(--muted-foreground));font-size:0.8125rem;text-align:center">No events yet.</div>';
+    return;
+  }
+  feed.innerHTML = last.map(a => {
+    const z = STATE.zones.find(x => x.id === a.zoneId);
+    const sev = a.dwell > a.threshold * 2 ? 'crit' : a.dwell > a.threshold * 1.2 ? 'warn' : '';
+    return `<div class="event-row ${sev}" data-event="${a.id}" title="click to acknowledge">
+      <span class="ts">${fmtTs(a.ts)}</span>
+      <span>${esc(a.zoneId)}</span>
+      <span>dwell=<b style="color:hsl(var(--foreground))">${fmtDuration(a.dwell)}</b> · thr=${a.threshold}s</span>
+      <span>${a.status === 'resolved' ? '<span class="badge online">resolved</span>' : a.status === 'ack' ? '<span class="badge warn">ack</span>' : '<span class="badge active">active</span>'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCsiGrid() {
+  const grid = $('#csi-grid');
+  let html = '';
+  STATE.devices.forEach(d => {
+    html += `<div style="text-align:right;padding-right:0.4rem;color:hsl(var(--muted-foreground));font-size:0.6875rem">${esc(d.name)}</div>`;
+    const hist = STATE.csiHistory[d.id] || [];
+    for (let i = 0; i < 60; i++) {
+      const v = hist[i] || 0;
+      const intensity = Math.min(1, v);
+      const bg = d.online
+        ? `hsl(185 80% ${30 + intensity * 35}% / ${0.25 + intensity * 0.7})`
+        : 'hsl(220 15% 15% / 0.3)';
+      html += `<div title="${esc(d.name)} t-${60-i}s · ${(v*100).toFixed(0)}%" style="height:14px;background:${bg};border-radius:2px"></div>`;
+    }
+  });
+  grid.innerHTML = html;
+}
+
+// ── Zones ────────────────────────────────────────────────────────
+function renderZones() {
+  const grid = $('#zones-grid');
+  if (STATE.zones.length === 0) {
+    grid.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:hsl(var(--muted-foreground))">No zones yet. Add one to start monitoring.</div>';
+    return;
+  }
+  grid.innerHTML = STATE.zones.map(z => {
+    const dwell = z.occSince ? Math.floor((Date.now() - z.occSince) / 1000) : 0;
+    const status = z.occupancy === 0 ? '<span class="badge idle">idle</span>'
+      : dwell >= z.threshold ? '<span class="badge active">loitering</span>'
+      : '<span class="badge primary">presence</span>';
+    const dev = STATE.devices.find(d => d.id === z.deviceId);
+    return `<div class="zone-card">
+      <div class="zone-h">
+        <div>
+          <div class="zone-name">${esc(z.name)}</div>
+          <div class="zone-id mono">${esc(z.id)}</div>
+        </div>
+        ${status}
+      </div>
+      <div class="zone-stats">
+        <div class="zone-stat"><span class="l">Occupancy</span><span class="v">${z.occupancy}</span></div>
+        <div class="zone-stat"><span class="l">Dwell</span><span class="v">${dwell}s</span></div>
+        <div class="zone-stat"><span class="l">Threshold</span><span class="v">${z.threshold}s</span></div>
+        <div class="zone-stat"><span class="l">Device</span><span class="v" style="font-size:0.75rem;font-family:var(--font-mono)">${esc(dev ? dev.name : z.deviceId)}</span></div>
+      </div>
+      <div class="zone-actions">
+        <button class="btn sm" data-edit-zone="${z.id}">Edit</button>
+        <button class="btn sm outline" data-test-zone="${z.id}">Simulate alert</button>
+        <button class="btn sm danger" data-del-zone="${z.id}">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Alerts ───────────────────────────────────────────────────────
+function renderAlertsTable() {
+  const search = ($('#alert-search')?.value || '').toLowerCase();
+  const filter = $('#alert-filter')?.value || 'all';
+  const hours = parseInt($('#alert-time')?.value || '24', 10);
+  const cutoff = Date.now() - hours * 3600 * 1000;
+  const rows = STATE.alerts.filter(a => {
+    if (a.ts < cutoff) return false;
+    if (filter !== 'all' && a.status !== filter) return false;
+    if (search) {
+      const z = STATE.zones.find(x => x.id === a.zoneId);
+      const hay = (a.zoneId + ' ' + (z ? z.name : '') + ' ' + a.deviceId + ' ' + a.status).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+  if (rows.length === 0) {
+    $('#alerts-tbody').innerHTML = '';
+    $('#alerts-empty').style.display = 'block';
+  } else {
+    $('#alerts-empty').style.display = 'none';
+    $('#alerts-tbody').innerHTML = rows.map(a => {
+      const z = STATE.zones.find(x => x.id === a.zoneId);
+      const statusBadge = a.status === 'active' ? '<span class="badge active">active</span>'
+        : a.status === 'ack' ? '<span class="badge warn">ack</span>'
+        : '<span class="badge online">resolved</span>';
+      const actions = a.status === 'resolved'
+        ? `<button class="btn sm outline" data-reopen-alert="${a.id}">Reopen</button>`
+        : a.status === 'ack'
+          ? `<button class="btn sm outline" data-resolve-alert="${a.id}">Resolve</button>`
+          : `<button class="btn sm outline" data-ack-alert="${a.id}">Ack</button> <button class="btn sm outline" data-resolve-alert="${a.id}">Resolve</button>`;
+      return `<tr>
+        <td title="${fmtFullTs(a.ts)}">${fmtRel(a.ts)}</td>
+        <td>${esc(z ? z.name : a.zoneId)}</td>
+        <td>${fmtDuration(a.dwell)}</td>
+        <td>${a.threshold}s</td>
+        <td>${esc(a.deviceId)}</td>
+        <td>${statusBadge}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  }
+  drawTimelineChart();
+}
+
+function drawTimelineChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-timeline');
+  if (!host || host.offsetParent === null) return;
+  const now = Math.floor(Date.now() / 1000);
+  const xs = [], ys = [];
+  for (let i = 23; i >= 0; i--) {
+    xs.push(now - i * 3600);
+    ys.push(STATE.alertCounts24h[23 - i]);
+  }
+  const opts = chartOpts(host, [
+    {},
+    { label: 'detections', stroke: 'hsl(0 70% 65%)', width: 2, fill: 'hsla(0, 70%, 55%, 0.18)' }
+  ]);
+  host.innerHTML = '';
+  timelinePlot = new uPlot(opts, [xs, ys], host);
+}
+
+// ── Thresholds ───────────────────────────────────────────────────
+function renderThresholds() {
+  const list = $('#thresholds-list');
+  list.innerHTML = STATE.zones.map(z => `
+    <div class="threshold-row" data-zone-row="${z.id}">
+      <div>
+        <div class="tname">${esc(z.name)}</div>
+        <div class="tid mono">${esc(z.id)}</div>
+      </div>
+      <input type="range" min="10" max="600" step="5" value="${z.threshold}" data-thresh="${z.id}">
+      <div class="tval mono"><span data-thresh-val="${z.id}">${z.threshold}</span> s</div>
+      <div style="text-align:right">
+        <button class="btn sm outline" data-test-zone="${z.id}">Test</button>
+      </div>
+    </div>`).join('');
+  drawThresholdImpactChart();
+}
+
+function drawThresholdImpactChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-threshold-impact');
+  if (!host) return;
+  // Simulated curve: lower threshold = more alerts (exponential decay)
+  const xs = [], ys = [];
+  for (let t = 10; t <= 600; t += 10) {
+    xs.push(t);
+    // Use a smooth decay shape
+    ys.push(Math.round(120 * Math.exp(-t / 180) + 4));
+  }
+  // We need a numeric x scale (not time)
+  const opts = {
+    width: host.clientWidth || 400,
+    height: 220,
+    scales: { x: { time: false } },
+    series: [
+      { label: 'threshold (s)' },
+      { label: 'estimated alerts / day', stroke: 'hsl(35 85% 60%)', width: 2, fill: 'hsla(35, 85%, 55%, 0.18)' }
+    ],
+    axes: [
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u, v) => v.map(x => x + 's') },
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+    ],
+  };
+  host.innerHTML = '';
+  threshImpactPlot = new uPlot(opts, [xs, ys], host);
+}
+
+// ── Devices ──────────────────────────────────────────────────────
+function renderDevices() {
+  const grid = $('#devices-grid');
+  grid.innerHTML = STATE.devices.map(d => {
+    const zone = STATE.zones.find(z => z.deviceId === d.id);
+    const status = d.online ? '<span class="badge online"><span class="dot up"></span> online</span>' : '<span class="badge offline"><span class="dot down"></span> offline</span>';
+    return `<div class="device-card">
+      <div class="device-h">
+        <div>
+          <div class="device-name">${esc(d.name)}</div>
+          <div class="device-meta mono"><span class="l">ip</span>${esc(d.ip)} · <span class="l">rssi</span>${d.rssi} dBm</div>
+        </div>
+        ${status}
+      </div>
+      <div class="device-meta">
+        <div><span class="l">firmware</span>${esc(d.fw)} &nbsp;·&nbsp; <span class="l">csi</span>${d.csiRate} Hz</div>
+        <div><span class="l">zone</span>${esc(zone ? zone.name : 'unassigned')}</div>
+      </div>
+      <canvas class="csi-spark" data-spark="${d.id}" width="280" height="36"></canvas>
+      <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
+        <button class="btn sm outline" data-restart-dev="${d.id}">Restart</button>
+        <button class="btn sm outline" data-locate-dev="${d.id}">Locate</button>
+        <button class="btn sm danger" data-remove-dev="${d.id}">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Draw sparkline canvases
+  STATE.devices.forEach(d => {
+    const c = document.querySelector(`canvas[data-spark="${d.id}"]`);
+    if (!c) return;
+    drawSparkline(c, STATE.csiHistory[d.id] || [], d.online);
+  });
+}
+
+function drawSparkline(canvas, data, online) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 280, h = canvas.clientHeight || 36;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  if (!data.length || !online) {
+    ctx.fillStyle = 'hsl(220, 15%, 25%)';
+    ctx.fillRect(0, h/2 - 1, w, 2);
+    return;
+  }
+  ctx.strokeStyle = 'hsl(185, 80%, 55%)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - (v * (h - 4)) - 2;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // Fill underneath
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fillStyle = 'hsla(185, 80%, 50%, 0.18)';
+  ctx.fill();
+}
+
+// ── Analytics ────────────────────────────────────────────────────
+function renderAnalytics() {
+  // Zone filter dropdown
+  const sel = $('#hm-zone');
+  sel.innerHTML = '<option value="all">All zones</option>' + STATE.zones.map(z => `<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
+  // Heatmap
+  renderHeatmap();
+  // Donut
+  renderDonut();
+  // Charts
+  drawDwellDistChart();
+  drawDailyChart();
+}
+
+// Continuous color ramp: viridis-ish (cold → warm).
+// Stops match the CSS gradient legend.
+const HEAT_STOPS = [
+  { t: 0.00, c: [33, 38, 48] },     // hsl(220 15% 18%) — very low
+  { t: 0.18, c: [22, 62, 130] },    // hsl(220 75% 32%) — dark blue
+  { t: 0.42, c: [22, 178, 200] },   // hsl(185 80% 42%) — cyan
+  { t: 0.60, c: [56, 211, 110] },   // hsl(142 70% 52%) — green
+  { t: 0.80, c: [248, 198, 36] },   // hsl(45 95% 58%) — yellow
+  { t: 1.00, c: [232, 87, 56] },    // hsl(8 85% 58%) — orange/red
+];
+function rampColor(t) {
+  if (t <= 0) return HEAT_STOPS[0].c;
+  if (t >= 1) return HEAT_STOPS[HEAT_STOPS.length - 1].c;
+  for (let i = 1; i < HEAT_STOPS.length; i++) {
+    if (t <= HEAT_STOPS[i].t) {
+      const a = HEAT_STOPS[i-1], b = HEAT_STOPS[i];
+      const f = (t - a.t) / (b.t - a.t);
+      return [
+        Math.round(a.c[0] + (b.c[0] - a.c[0]) * f),
+        Math.round(a.c[1] + (b.c[1] - a.c[1]) * f),
+        Math.round(a.c[2] + (b.c[2] - a.c[2]) * f),
+      ];
+    }
+  }
+  return HEAT_STOPS[HEAT_STOPS.length - 1].c;
+}
+
+function renderHeatmap() {
+  const canvas = $('#hm-canvas');
+  const host = $('#hm-canvas-host');
+  const data = STATE.heatmap; // [{date, count, future?}], 26 weeks × 7 days
+  const weeks = 26, days = 7;
+
+  // Find peak (ignore future cells)
+  let max = 1;
+  data.forEach(d => { if (!d.future && d.count > max) max = d.count; });
+
+  // Pick cell size from host width
+  const hostWidth = host.clientWidth || 700;
+  const cellW = Math.max(12, Math.floor(hostWidth / weeks));
+  const cellH = Math.max(14, Math.floor(cellW * 1.05));
+  const W = cellW * weeks;
+  const H = cellH * days;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw cells flush (no gap) — this is the heatmap surface
+  for (let w = 0; w < weeks; w++) {
+    for (let d = 0; d < days; d++) {
+      const cell = data[w * 7 + d];
+      const x = w * cellW;
+      const y = d * cellH;
+      if (!cell || cell.future) {
+        ctx.fillStyle = 'hsl(220 15% 9%)';
+        ctx.fillRect(x, y, cellW, cellH);
+        continue;
+      }
+      const t = cell.count / max;
+      const [r, g, b] = rampColor(t);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, cellW, cellH);
+    }
+  }
+
+  // Y-axis labels (day-of-week, full names)
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const yAxis = $('#hm-yaxis');
+  yAxis.style.height = H + 'px';
+  yAxis.innerHTML = dayNames.map((n, i) => {
+    const top = i * cellH + cellH / 2;
+    return `<div style="height:${cellH}px;display:flex;align-items:center;justify-content:flex-end">${n}</div>`;
+  }).join('');
+
+  // X-axis: month labels at week boundaries where month changes
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const xAxis = $('#hm-xaxis');
+  const labels = [];
+  let lastMonth = -1;
+  for (let w = 0; w < weeks; w++) {
+    const firstOfWeek = data[w * 7].date;
+    const m = firstOfWeek.getMonth();
+    if (m !== lastMonth) {
+      labels.push({ w, label: monthNames[m] });
+      lastMonth = m;
+    }
+  }
+  xAxis.style.width = W + 'px';
+  xAxis.style.position = 'relative';
+  xAxis.style.height = '14px';
+  xAxis.innerHTML = labels.map(l =>
+    `<span style="position:absolute;left:${l.w * cellW}px;top:0">${l.label}</span>`
+  ).join('');
+
+  // Tooltip handling
+  const tip = $('#hm-tooltip');
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const w = Math.floor(cx / cellW);
+    const d = Math.floor(cy / cellH);
+    if (w < 0 || w >= weeks || d < 0 || d >= days) { tip.classList.remove('show'); return; }
+    const cell = data[w * 7 + d];
+    if (!cell || cell.future) { tip.classList.remove('show'); return; }
+    const dateStr = cell.date.toISOString().slice(0, 10);
+    tip.textContent = dateStr + ' · ' + cell.count + ' detection' + (cell.count === 1 ? '' : 's');
+    tip.classList.add('show');
+    // Position tooltip near cursor but clamped
+    const tipW = tip.offsetWidth || 160;
+    let tx = cx + 12;
+    if (tx + tipW > W) tx = cx - tipW - 12;
+    let ty = cy - 8;
+    if (ty < 0) ty = cy + 18;
+    tip.style.left = tx + 'px';
+    tip.style.top = ty + 'px';
+  };
+  canvas.onmouseleave = () => tip.classList.remove('show');
+
+  // Summary + max label
+  const total = data.reduce((s, d) => s + (d.future ? 0 : d.count), 0);
+  const totalCells = data.filter(d => !d.future).length;
+  $('#hm-summary').textContent = total + ' detections · ' + totalCells + ' days · peak ' + max + '/day';
+  $('#hm-max-label').textContent = max + '+';
+}
+
+function renderDonut() {
+  const svg = $('#donut-svg');
+  const counts = STATE.zones.map(z => {
+    const c = STATE.alerts.filter(a => a.zoneId === z.id).length + randInt(2, 8);
+    return { zone: z, count: c };
+  });
+  const total = counts.reduce((s, c) => s + c.count, 0);
+  $('#donut-total').textContent = total;
+  let offset = 0;
+  let svgHtml = `<circle cx="18" cy="18" r="15.9155" fill="none" stroke="hsl(220 15% 15%)" stroke-width="3.6"></circle>`;
+  counts.forEach((c, i) => {
+    const pct = total > 0 ? (c.count / total) * 100 : 0;
+    svgHtml += `<circle cx="18" cy="18" r="15.9155" fill="none" stroke="${ZONE_COLORS[i % ZONE_COLORS.length]}" stroke-width="3.6" stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${-offset}"></circle>`;
+    offset += pct;
+  });
+  svg.innerHTML = svgHtml;
+  $('#donut-legend').innerHTML = counts.map((c, i) => `
+    <div class="lr">
+      <span class="sw" style="background:${ZONE_COLORS[i % ZONE_COLORS.length]}"></span>
+      <span>${esc(c.zone.name)}</span>
+      <span class="mono" style="margin-left:auto;color:hsl(var(--muted-foreground))">${c.count}</span>
+    </div>`).join('');
+}
+
+function drawDwellDistChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-dwell-dist');
+  // Histogram buckets every 30s up to 600s
+  const buckets = [];
+  for (let t = 0; t <= 600; t += 30) buckets.push(t);
+  const counts = new Array(buckets.length).fill(0);
+  STATE.alerts.forEach(a => {
+    const idx = Math.min(buckets.length - 1, Math.floor(a.dwell / 30));
+    counts[idx]++;
+  });
+  // Smooth a bit for the area chart
+  const smoothed = counts.map((v, i) => {
+    const a = counts[i-1] || 0, b = counts[i+1] || 0;
+    return (a * 0.25 + v * 0.5 + b * 0.25);
+  });
+  const opts = {
+    width: host.clientWidth || 400,
+    height: 220,
+    scales: { x: { time: false } },
+    series: [
+      { label: 'dwell (s)' },
+      { label: 'detections', stroke: 'hsl(280 70% 65%)', width: 2, fill: 'hsla(280, 70%, 65%, 0.22)' }
+    ],
+    axes: [
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' }, values: (u, v) => v.map(x => x + 's') },
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+    ],
+  };
+  host.innerHTML = '';
+  dwellDistPlot = new uPlot(opts, [buckets, smoothed], host);
+}
+
+function drawDailyChart() {
+  if (typeof uPlot === 'undefined') return;
+  const host = $('#chart-daily');
+  const now = Math.floor(Date.now() / 1000);
+  const xs = [], ys = [];
+  for (let i = 13; i >= 0; i--) {
+    xs.push(now - i * 86400);
+    ys.push(STATE.dailyCounts[13 - i]);
+  }
+  const opts = chartOpts(host, [
+    {},
+    { label: 'detections / day', stroke: 'hsl(142 70% 55%)', width: 2, fill: 'hsla(142, 70%, 55%, 0.22)' }
+  ]);
+  host.innerHTML = '';
+  dailyPlot = new uPlot(opts, [xs, ys], host);
+}
+
+// ── Modal: add/edit zone ─────────────────────────────────────────
+let editingZoneId = null;
+
+function openZoneModal(zoneId) {
+  editingZoneId = zoneId || null;
+  const z = zoneId ? STATE.zones.find(x => x.id === zoneId) : null;
+  $('#zm-title').textContent = z ? 'Edit zone' : 'Add zone';
+  $('#zm-name').value = z ? z.name : '';
+  $('#zm-id').value = z ? z.id : '';
+  $('#zm-id').disabled = !!z;
+  $('#zm-dwell').value = z ? z.threshold : STATE.defaultDwell;
+  $('#zm-dwell-val').textContent = z ? z.threshold : STATE.defaultDwell;
+  $('#zm-device').innerHTML = STATE.devices.map(d => `<option value="${d.id}" ${z && z.deviceId === d.id ? 'selected' : ''}>${esc(d.name)} (${d.ip})</option>`).join('');
+  $('#zone-modal').classList.add('show');
+}
+
+function closeZoneModal() { $('#zone-modal').classList.remove('show'); editingZoneId = null; }
+
+$('#zm-dwell').addEventListener('input', e => $('#zm-dwell-val').textContent = e.target.value);
+$('#zm-name').addEventListener('input', e => {
+  if (!editingZoneId) {
+    const id = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    $('#zm-id').value = id;
+  }
+});
+$('#zone-modal').addEventListener('click', e => {
+  if (e.target.id === 'zone-modal' || e.target.matches('[data-close-modal]')) closeZoneModal();
+});
+$('#zm-save').addEventListener('click', () => {
+  const name = $('#zm-name').value.trim();
+  const id = $('#zm-id').value.trim();
+  const threshold = parseInt($('#zm-dwell').value, 10);
+  const deviceId = $('#zm-device').value;
+  if (!name || !id) { toast('Name and id are required', 'err'); return; }
+  if (editingZoneId) {
+    const z = STATE.zones.find(x => x.id === editingZoneId);
+    z.name = name; z.threshold = threshold; z.deviceId = deviceId;
+    toast('Zone updated', 'ok');
+  } else {
+    if (STATE.zones.find(z => z.id === id)) { toast('Zone id already exists', 'err'); return; }
+    STATE.zones.push({ id, name, deviceId, threshold, occupancy: 0, occSince: null });
+    STATE.dwellHistory[id] = STATE.occupancyHistory.map(p => ({ ts: p.ts, dwell: 0 }));
+    STATE.occupancyHistory.forEach(p => p.perZone[id] = 0);
+    toast('Zone added', 'ok');
+  }
+  closeZoneModal();
+  renderZones(); renderOverview();
+});
+
+// ── Global click handlers (delegated) ────────────────────────────
+document.addEventListener('click', e => {
+  // Zone CRUD
+  if (e.target.matches('#btn-add-zone, #btn-add-zone *')) openZoneModal();
+  const editZ = e.target.closest('[data-edit-zone]');
+  if (editZ) openZoneModal(editZ.dataset.editZone);
+  const delZ = e.target.closest('[data-del-zone]');
+  if (delZ) {
+    const id = delZ.dataset.delZone;
+    const z = STATE.zones.find(x => x.id === id);
+    if (z && confirm(`Delete zone "${z.name}"?`)) {
+      STATE.zones = STATE.zones.filter(x => x.id !== id);
+      delete STATE.dwellHistory[id];
+      toast('Zone deleted', 'ok');
+      renderZones(); renderOverview();
+    }
+  }
+  const testZ = e.target.closest('[data-test-zone]');
+  if (testZ) simulateAlert(testZ.dataset.testZone);
+
+  // Alerts
+  const ack = e.target.closest('[data-ack-alert]');
+  if (ack) updateAlertStatus(ack.dataset.ackAlert, 'ack');
+  const res = e.target.closest('[data-resolve-alert]');
+  if (res) updateAlertStatus(res.dataset.resolveAlert, 'resolved');
+  const reop = e.target.closest('[data-reopen-alert]');
+  if (reop) updateAlertStatus(reop.dataset.reopenAlert, 'active');
+  const qa = e.target.closest('[data-quick-ack]');
+  if (qa) {
+    const a = STATE.alerts.find(x => x.id === qa.dataset.quickAck);
+    if (a) {
+      a.status = a.status === 'active' ? 'ack' : a.status === 'ack' ? 'resolved' : 'active';
+      renderRecentAlerts(); renderAlertsTable();
+    }
+  }
+
+  // Live event row click → ack
+  const ev = e.target.closest('[data-event]');
+  if (ev) {
+    const a = STATE.alerts.find(x => x.id === ev.dataset.event);
+    if (a && a.status === 'active') { a.status = 'ack'; toast('Acknowledged ' + a.zoneId, 'ok'); renderEventFeed(); renderRecentAlerts(); }
+  }
+
+  // Devices
+  const rd = e.target.closest('[data-restart-dev]');
+  if (rd) {
+    const d = STATE.devices.find(x => x.id === rd.dataset.restartDev);
+    if (d) {
+      d.online = false; renderDevices();
+      toast('Restarting ' + d.name + '…', 'warn');
+      setTimeout(() => { d.online = true; renderDevices(); toast(d.name + ' back online', 'ok'); }, 1800);
+    }
+  }
+  const ld = e.target.closest('[data-locate-dev]');
+  if (ld) {
+    const d = STATE.devices.find(x => x.id === ld.dataset.locateDev);
+    if (d) toast('Locator LED blinking on ' + d.name + ' for 10s', 'ok');
+  }
+  const remd = e.target.closest('[data-remove-dev]');
+  if (remd) {
+    const d = STATE.devices.find(x => x.id === remd.dataset.removeDev);
+    if (d && confirm(`Remove device "${d.name}"? Zones using it will be unassigned.`)) {
+      STATE.devices = STATE.devices.filter(x => x.id !== d.id);
+      STATE.zones.forEach(z => { if (z.deviceId === d.id) z.deviceId = ''; });
+      delete STATE.csiHistory[d.id];
+      toast('Device removed', 'ok');
+      renderDevices();
+    }
+  }
+});
+
+function updateAlertStatus(id, status) {
+  const a = STATE.alerts.find(x => x.id === id);
+  if (!a) return;
+  a.status = status;
+  toast('Alert ' + status, 'ok');
+  renderAlertsTable(); renderRecentAlerts(); renderEventFeed();
+}
+
+function simulateAlert(zoneId) {
+  const z = STATE.zones.find(x => x.id === zoneId);
+  if (!z) return;
+  const dwell = z.threshold + randInt(5, 60);
+  const a = {
+    id: 'alt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    ts: Date.now(),
+    zoneId: z.id, dwell, threshold: z.threshold,
+    deviceId: z.deviceId, status: 'active',
+  };
+  STATE.alerts.unshift(a);
+  STATE.alertCounts24h[23]++;
+  STATE.dailyCounts[13]++;
+  toast('Loitering detected — ' + z.name + ' (' + fmtDuration(dwell) + ')', 'warn');
+  renderOverview(); renderEventFeed(); renderAlertsTable();
+}
+
+// ── Threshold sliders ────────────────────────────────────────────
+document.addEventListener('input', e => {
+  const t = e.target.closest('[data-thresh]');
+  if (t) {
+    const id = t.dataset.thresh;
+    const v = parseInt(t.value, 10);
+    const z = STATE.zones.find(x => x.id === id);
+    if (z) z.threshold = v;
+    const vEl = document.querySelector(`[data-thresh-val="${CSS.escape(id)}"]`);
+    if (vEl) vEl.textContent = v;
+  }
+});
+
+// ── Settings ─────────────────────────────────────────────────────
+$('#def-dwell').addEventListener('input', e => { $('#def-dwell-val').textContent = e.target.value; STATE.defaultDwell = +e.target.value; });
+$('#def-sens').addEventListener('input', e => { $('#def-sens-val').textContent = e.target.value; STATE.defaultSens = +e.target.value; });
+$('#def-cooldown').addEventListener('input', e => { $('#def-cooldown-val').textContent = e.target.value; STATE.defaultCooldown = +e.target.value; });
+
+$('#btn-save-defaults').addEventListener('click', () => toast('Defaults saved', 'ok'));
+$('#btn-reset-thresholds').addEventListener('click', () => {
+  STATE.zones.forEach(z => z.threshold = STATE.defaultDwell);
+  renderThresholds();
+  toast('Thresholds reset to ' + STATE.defaultDwell + 's', 'ok');
+});
+
+$('#cfg-notify-webhook').addEventListener('change', e => $('#cfg-webhook-row').style.display = e.target.checked ? '' : 'none');
+$('#cfg-notify-mqtt').addEventListener('change', e => $('#cfg-mqtt-row').style.display = e.target.checked ? '' : 'none');
+$('#btn-save-notif').addEventListener('click', () => {
+  STATE.webhook = $('#cfg-webhook').value;
+  STATE.mqtt = $('#cfg-mqtt').value;
+  toast('Notification settings saved', 'ok');
+});
+$('#btn-save-retain').addEventListener('click', () => toast('Retention policy saved', 'ok'));
+$('#btn-copy-schema').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#schema-block').textContent); toast('Schema copied to clipboard', 'ok'); }
+  catch (_) { toast('Copy failed', 'err'); }
+});
+$('#btn-purge').addEventListener('click', () => {
+  if (!confirm('Purge all event history? This cannot be undone.')) return;
+  STATE.alerts = []; STATE.alertCounts24h.fill(0); STATE.dailyCounts.fill(0);
+  STATE.heatmap.forEach(r => r.fill(0));
+  toast('Event history purged', 'ok');
+  renderOverview(); renderAlertsTable(); renderEventFeed();
+});
+$('#btn-uninstall').addEventListener('click', () => {
+  if (confirm('Uninstall the Loitering cog? Demo only — no real action taken.')) toast('Uninstall scheduled (demo)', 'warn');
+});
+
+// ── Toolbar buttons ──────────────────────────────────────────────
+$('#btn-arm').addEventListener('click', () => {
+  STATE.armed = !STATE.armed;
+  $('#arm-label').textContent = STATE.armed ? 'Disarm' : 'Arm';
+  $('#btn-arm').classList.toggle('primary', STATE.armed);
+  $('#btn-arm').classList.toggle('danger', !STATE.armed);
+  toast(STATE.armed ? 'Detection armed' : 'Detection disarmed', STATE.armed ? 'ok' : 'warn');
+});
+$('#btn-test-alert').addEventListener('click', () => simulateAlert(choice(STATE.zones).id));
+$('#btn-pause-live').addEventListener('click', () => {
+  STATE.paused = !STATE.paused;
+  $('#btn-pause-live').textContent = STATE.paused ? 'Resume' : 'Pause';
+  toast(STATE.paused ? 'Live updates paused' : 'Live updates resumed', 'ok');
+});
+$('#btn-clear-feed').addEventListener('click', () => {
+  STATE.alerts = STATE.alerts.filter(a => Date.now() - a.ts > 60_000);
+  renderEventFeed();
+  toast('Recent feed cleared', 'ok');
+});
+$('#btn-rescan').addEventListener('click', () => {
+  toast('Rescanning network for ESP32-S3 seeds…', 'ok');
+  setTimeout(() => toast('Scan complete — no new devices', 'ok'), 1500);
+});
+$('#btn-pair').addEventListener('click', () => {
+  const id = 'esp-' + Math.random().toString(36).slice(2, 6);
+  const dev = { id, name: 'esp32s3-' + id.slice(4), ip: '10.0.4.' + randInt(30, 99), rssi: randInt(-80, -45), fw: '1.4.2', online: true, csiRate: 30 };
+  STATE.devices.push(dev);
+  STATE.csiHistory[dev.id] = new Array(60).fill(0).map(() => rand(0.05, 0.95));
+  toast('Paired ' + dev.name, 'ok');
+  renderDevices();
+});
+
+// Alerts toolbar
+$('#alert-search').addEventListener('input', () => renderAlertsTable());
+$('#alert-filter').addEventListener('change', () => renderAlertsTable());
+$('#alert-time').addEventListener('change', () => renderAlertsTable());
+$('#btn-export').addEventListener('click', () => {
+  const cutoff = Date.now() - parseInt($('#alert-time').value, 10) * 3600 * 1000;
+  const rows = STATE.alerts.filter(a => a.ts >= cutoff);
+  const header = 'timestamp,zone_id,dwell_time,threshold,device_id,status';
+  const lines = rows.map(a => [new Date(a.ts).toISOString(), a.zoneId, a.dwell, a.threshold, a.deviceId, a.status].join(','));
+  const csv = [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'loitering-alerts.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Exported ' + rows.length + ' rows', 'ok');
+});
+$('#btn-clear-alerts').addEventListener('click', () => {
+  if (!confirm('Clear all alerts in the current view?')) return;
+  const cutoff = Date.now() - parseInt($('#alert-time').value, 10) * 3600 * 1000;
+  STATE.alerts = STATE.alerts.filter(a => a.ts < cutoff);
+  toast('Cleared', 'ok');
+  renderAlertsTable(); renderOverview();
+});
+
+// Heatmap zone filter
+document.addEventListener('change', e => {
+  if (e.target.id === 'hm-zone') {
+    STATE.heatmap = buildHeatmapData(e.target.value);
+    renderHeatmap();
+  }
+});
+
+// Build 26-week × 7-day calendar of {date, count, future?}.
+// Grid is column-major: data[w*7 + d] where d=0 is Sunday.
+function buildHeatmapData(scope) {
+  const out = [];
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const dow = now.getDay(); // 0..6 (Sun..Sat)
+  // Last column should contain *today*. Start (first cell of grid) = today - (25 weeks + dow days)
+  const start = new Date(now);
+  start.setDate(start.getDate() - (25 * 7 + dow));
+  // Scale magnitudes: 'all' → larger, individual zone → smaller
+  const scale = scope === 'all' ? 1 : 0.4;
+  for (let w = 0; w < 26; w++) {
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start);
+      date.setDate(date.getDate() + w * 7 + d);
+      if (date > now) {
+        out.push({ date, count: 0, future: true });
+        continue;
+      }
+      // More activity on weekends + recency
+      const weekendBoost = (d === 0 || d === 6) ? 1.5 : 1;
+      const recency = 0.5 + (w / 26) * 0.8;
+      const noise = Math.random();
+      // Quiet days (~40%) → 0; otherwise 1..max
+      let count = 0;
+      if (noise > 0.4) {
+        count = Math.round((noise - 0.4) * 18 * weekendBoost * recency * scale);
+      }
+      out.push({ date, count });
+    }
+  }
+  return out;
+}
+
+// ── Live tick — only when armed and not paused ───────────────────
+function tick() {
+  if (!STATE.armed || STATE.paused) return;
+  const now = Date.now();
+  // Update CSI history
+  STATE.devices.forEach(d => {
+    const h = STATE.csiHistory[d.id];
+    if (!h) return;
+    h.shift();
+    h.push(d.online ? rand(0.05, 0.95) : 0);
+  });
+  // Update occupancy with realistic dynamics:
+  // - Empty zone: small chance someone arrives
+  // - Occupied zone: small chance of joining/leaving, larger chance of leaving as time grows
+  STATE.zones.forEach(z => {
+    const dwellSec = z.occSince ? (now - z.occSince) / 1000 : 0;
+    if (z.occupancy === 0) {
+      if (Math.random() < 0.04) { z.occupancy = 1; z.occSince = now; }
+    } else {
+      // Small chance another person joins (up to 3)
+      if (z.occupancy < 3 && Math.random() < 0.02) z.occupancy++;
+      // Chance to leave grows with dwell time
+      const leaveChance = 0.015 + Math.min(0.05, dwellSec / 3600);
+      if (Math.random() < leaveChance) {
+        z.occupancy--;
+        if (z.occupancy <= 0) { z.occupancy = 0; z.occSince = null; }
+      }
+    }
+    // Auto-fire alert when dwell exceeds threshold
+    if (z.occSince && (now - z.occSince) / 1000 >= z.threshold) {
+      const recent = STATE.alerts.find(a => a.zoneId === z.id && (now - a.ts) < STATE.defaultCooldown * 1000);
+      if (!recent) simulateAlert(z.id);
+    }
+  });
+  // Append to occupancy history
+  const perZone = {};
+  STATE.zones.forEach(z => perZone[z.id] = z.occupancy);
+  STATE.occupancyHistory.push({ ts: Math.floor(now / 1000), perZone });
+  if (STATE.occupancyHistory.length > 360) STATE.occupancyHistory.shift();
+  // Append to dwell history
+  STATE.zones.forEach(z => {
+    const arr = STATE.dwellHistory[z.id] || (STATE.dwellHistory[z.id] = []);
+    arr.push({ ts: Math.floor(now / 1000), dwell: z.occSince ? Math.floor((now - z.occSince) / 1000) : 0 });
+    if (arr.length > 360) arr.shift();
+  });
+
+  // Re-render whichever panel is active
+  const active = document.querySelector('.panel.on');
+  if (!active) return;
+  if (active.id === 'panel-overview') {
+    renderKpis(); renderRings(); renderRecentAlerts();
+    if (occPlot) {
+      const data = [
+        STATE.occupancyHistory.map(p => p.ts),
+        ...STATE.zones.map(z => STATE.occupancyHistory.map(p => p.perZone[z.id] || 0))
+      ];
+      occPlot.setData(data);
+    }
+  } else if (active.id === 'panel-live') {
+    renderEventFeed();
+    renderCsiGrid();
+    if (dwellPlot) {
+      const xs = STATE.dwellHistory[STATE.zones[0].id].map(p => p.ts);
+      const data = [xs, ...STATE.zones.map(z => (STATE.dwellHistory[z.id] || []).map(p => p.dwell))];
+      dwellPlot.setData(data);
+    }
+  }
+}
+
+// ── Resize handling for uPlot ────────────────────────────────────
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (occPlot) { const h = $('#chart-occupancy'); occPlot.setSize({ width: h.clientWidth, height: 220 }); }
+    if (dwellPlot) { const h = $('#chart-dwell'); dwellPlot.setSize({ width: h.clientWidth, height: 220 }); }
+    if (timelinePlot) { const h = $('#chart-timeline'); timelinePlot.setSize({ width: h.clientWidth, height: 220 }); }
+    if (threshImpactPlot) { const h = $('#chart-threshold-impact'); threshImpactPlot.setSize({ width: h.clientWidth, height: 220 }); }
+    if (dailyPlot) { const h = $('#chart-daily'); dailyPlot.setSize({ width: h.clientWidth, height: 220 }); }
+    if (dwellDistPlot) { const h = $('#chart-dwell-dist'); dwellDistPlot.setSize({ width: h.clientWidth, height: 220 }); }
+    // Redraw heatmap if Analytics is the active tab
+    const active = document.querySelector('.panel.on');
+    if (active && active.id === 'panel-analytics' && STATE.heatmap.length) renderHeatmap();
+  }, 120);
+});
+
+// ── Boot ─────────────────────────────────────────────────────────
+function boot() {
+  seedHistory();
+  renderOverview();
+  setInterval(tick, 1500);
+}
+
+if (typeof uPlot !== 'undefined') boot();
+else window.addEventListener('load', boot);
+</script>
+</body>
+</html>

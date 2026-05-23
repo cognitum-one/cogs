@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Meeting Room — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens (Cognitum design system) ─────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warn:35 85% 55%;
+  --info:220 80% 60%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(185 80% 50% / 0.18),hsl(142 70% 50% / 0.12)),hsl(var(--card));
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── App bar ─────────────────────────────────────────────────── */
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.brand-badge{display:inline-flex;align-items:center;gap:0.3rem;margin-left:0.6rem;padding:0.15rem 0.5rem;border-radius:9999px;background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));font-family:var(--font-mono);font-size:0.6875rem;border:1px solid hsl(var(--accent) / 0.25)}
+.brand-badge .pulse{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent));box-shadow:0 0 6px hsl(var(--accent));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav button{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-family:var(--font-display);font-weight:500;background:none;border:none;cursor:pointer;transition:all 0.2s}
+.nav button:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav button.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+.page-h{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.25rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));max-width:48rem}
+.panel{display:none}
+.panel.on{display:block;animation:fade 0.25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── Range toolbar ──────────────────────────────────────────── */
+.toolbar{display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:0.5rem;background:hsl(var(--secondary) / 0.6);border:1px solid hsl(var(--border))}
+.seg button{padding:0.3rem 0.7rem;border-radius:0.35rem;border:none;background:none;color:hsl(var(--muted-foreground));font-family:var(--font-display);font-size:0.75rem;font-weight:500;cursor:pointer;transition:all 0.15s}
+.seg button:hover{color:hsl(var(--foreground))}
+.seg button.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-weight:600;box-shadow:0 2px 6px -2px hsl(var(--primary) / 0.4)}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* ── KPI grid ───────────────────────────────────────────────── */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem;transition:all 0.2s}
+.kpi:hover{border-color:hsl(var(--primary) / 0.4);transform:translateY(-2px)}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.info{background:hsl(var(--info) / 0.12)}
+.kpi-ic.info svg{stroke:hsl(var(--info))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;display:flex;align-items:center;gap:0.3rem}
+.kpi-trend{display:inline-flex;align-items:center;gap:0.2rem;font-family:var(--font-mono);font-weight:600}
+.kpi-trend.up{color:hsl(var(--accent))}
+.kpi-trend.down{color:hsl(var(--destructive))}
+
+/* ── Grids ──────────────────────────────────────────────────── */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.row-2{display:grid;gap:0.875rem;grid-template-columns:1fr 1fr}
+@media (max-width:900px){.row-2{grid-template-columns:1fr}}
+.span-2{grid-column:span 2}
+@media (max-width:900px){.span-2{grid-column:auto}}
+
+/* ── Room cards ─────────────────────────────────────────────── */
+.room{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:0.75rem;position:relative;overflow:hidden;cursor:pointer;transition:all 0.2s}
+.room:hover{border-color:hsl(var(--primary) / 0.4);transform:translateY(-2px);box-shadow:0 6px 16px -6px hsl(var(--primary) / 0.25)}
+.room::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:hsl(var(--muted))}
+.room.state-empty::before{background:linear-gradient(90deg,hsl(215 15% 45%),hsl(215 15% 35%))}
+.room.state-occupied::before{background:linear-gradient(90deg,hsl(var(--warn)),hsl(35 85% 65%))}
+.room.state-meeting::before{background:linear-gradient(90deg,hsl(var(--accent)),hsl(142 70% 60%))}
+.room.state-noshow::before{background:linear-gradient(90deg,hsl(var(--destructive)),hsl(0 70% 60%))}
+.room-h{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem}
+.room-name{font-size:1rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2}
+.room-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem}
+.state-pill{display:inline-flex;align-items:center;gap:0.35rem;padding:0.2rem 0.55rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.04em}
+.state-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.state-empty .state-pill{background:hsl(215 15% 45% / 0.15);color:hsl(215 15% 70%);border:1px solid hsl(215 15% 45% / 0.3)}
+.state-occupied .state-pill{background:hsl(var(--warn) / 0.15);color:hsl(35 85% 70%);border:1px solid hsl(var(--warn) / 0.3)}
+.state-meeting .state-pill{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));border:1px solid hsl(var(--accent) / 0.3)}
+.state-meeting .state-pill .dot{animation:pulse 1.6s ease-in-out infinite}
+.state-noshow .state-pill{background:hsl(var(--destructive) / 0.15);color:hsl(0 70% 70%);border:1px solid hsl(var(--destructive) / 0.3)}
+.room-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;font-family:var(--font-mono);font-size:0.75rem;padding:0.5rem 0;border-top:1px dashed hsl(var(--border) / 0.4);border-bottom:1px dashed hsl(var(--border) / 0.4)}
+.room-stats .l{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:0.15rem}
+.room-stats .v{color:hsl(var(--foreground));font-weight:500;font-variant-numeric:tabular-nums}
+.room-cta{display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
+.spark-host{height:30px;width:100%}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.65rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:hsl(var(--muted-foreground))}
+.btn.ghost:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── Chart hosts ─────────────────────────────────────────────── */
+.chart-host{width:100%;height:240px;position:relative;margin-top:0.5rem}
+.chart-host svg{width:100%;height:100%;display:block;overflow:visible}
+.chart-host.futuristic{background:radial-gradient(ellipse at 50% 100%, hsl(185 80% 50% / 0.08), transparent 70%);border-radius:0.5rem;padding:0.25rem 0.4rem}
+.legend{display:flex;gap:0.875rem;flex-wrap:wrap;font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.5rem}
+.legend .swatch{display:inline-flex;align-items:center;gap:0.35rem}
+.legend .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tooltip{position:absolute;pointer-events:none;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.6rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--foreground));box-shadow:var(--shadow-card);opacity:0;transition:opacity 0.15s;white-space:nowrap;z-index:10}
+.tooltip.show{opacity:1}
+/* draw-in + pulse animations for futuristic charts */
+@keyframes drawIn{from{stroke-dashoffset:var(--len, 2000)}to{stroke-dashoffset:0}}
+@keyframes nodePulse{0%,100%{r:3;opacity:1}50%{r:6;opacity:0.4}}
+@keyframes ringPulse{0%{r:4;opacity:0.8}100%{r:18;opacity:0}}
+.fchart .grid-x,.fchart .grid-y{stroke:hsl(185 80% 50% / 0.08);stroke-dasharray:1 3}
+.fchart .axis-y,.fchart .axis-x{fill:hsl(var(--muted-foreground) / 0.85);font-size:0.625rem;font-family:var(--font-mono);letter-spacing:0.05em}
+.fchart .line-main{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:url(#fglow)}
+.fchart .line-draw{stroke-dasharray:var(--len, 2000);animation:drawIn 1.4s cubic-bezier(0.65,0,0.35,1) forwards}
+.fchart .node{fill:hsl(0 0% 100%);filter:url(#fglow)}
+.fchart .pulse-node{transform-origin:center;animation:nodePulse 1.8s ease-in-out infinite}
+.fchart .pulse-ring{fill:none;stroke:hsl(185 80% 60%);stroke-width:1.5;animation:ringPulse 1.8s ease-out infinite}
+
+/* ── Radar (polar) chart ────────────────────────────────────── */
+.radar-host{position:relative;width:100%;aspect-ratio:1/1;max-width:340px;margin:0.4rem auto 0}
+.radar-host svg{width:100%;height:100%;overflow:visible}
+.radar-ring{fill:none;stroke:hsl(185 80% 50% / 0.12);stroke-dasharray:2 3}
+.radar-axis{stroke:hsl(185 80% 50% / 0.18)}
+.radar-poly{fill:url(#radarGrad);stroke:hsl(185 80% 65%);stroke-width:1.8;filter:url(#fglow)}
+.radar-dot{fill:hsl(0 0% 100%);filter:url(#fglow);cursor:pointer}
+.radar-label{fill:hsl(var(--foreground));font-family:var(--font-mono);font-size:0.6875rem;font-weight:500}
+.radar-val{fill:hsl(var(--primary));font-family:var(--font-mono);font-size:0.625rem}
+
+/* ── True heatmap (canvas + colour ramp) ───────────────────── */
+.heat-wrap{position:relative;margin-top:0.5rem;background:hsl(220 25% 4%);border:1px solid hsl(var(--border) / 0.6);border-radius:0.5rem;padding:0.6rem 0.6rem 0.4rem 56px;box-shadow:inset 0 0 24px hsl(185 80% 50% / 0.06)}
+.heat-canvas{display:block;width:100%;height:200px;border-radius:4px;cursor:crosshair}
+.heat-ylabels{position:absolute;left:8px;top:0.6rem;bottom:1.6rem;display:flex;flex-direction:column;justify-content:space-around;font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));text-align:right;width:42px;pointer-events:none}
+.heat-xlabels{display:grid;grid-template-columns:repeat(24, 1fr);font-family:var(--font-mono);font-size:0.5625rem;color:hsl(var(--muted-foreground));margin-top:0.25rem}
+.heat-xlabels span{text-align:center}
+.heat-cursor{position:absolute;pointer-events:none;border-radius:50%;border:1.5px solid hsl(0 0% 100% / 0.85);box-shadow:0 0 8px hsl(0 0% 100% / 0.6),inset 0 0 4px hsl(0 0% 100% / 0.4);width:18px;height:18px;transform:translate(-50%,-50%);opacity:0;transition:opacity 0.12s}
+.heat-cursor.on{opacity:1}
+.hm-legend{display:flex;align-items:center;gap:0.5rem;margin-top:0.65rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);justify-content:flex-end}
+.hm-ramp{display:inline-block;width:200px;height:10px;border-radius:5px;background:linear-gradient(90deg,hsl(220 40% 8%),hsl(220 80% 30%),hsl(185 80% 50%),hsl(142 70% 55%),hsl(50 95% 60%),hsl(15 95% 60%),hsl(330 90% 65%));box-shadow:0 0 12px hsl(185 80% 50% / 0.35)}
+
+/* ── Donut centre ───────────────────────────────────────────── */
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:1.25rem;flex-wrap:wrap;margin-top:0.5rem}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-center .big{font-size:1.625rem;font-weight:600;color:hsl(var(--foreground));font-variant-numeric:tabular-nums}
+.donut-center .sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+.donut-host{position:relative;width:180px;height:180px;flex-shrink:0}
+.donut-key{display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem;min-width:160px}
+.donut-key .row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.25rem 0;border-bottom:1px dashed hsl(var(--border) / 0.4)}
+.donut-key .row:last-child{border-bottom:none}
+.donut-key .name{display:inline-flex;align-items:center;gap:0.45rem;color:hsl(var(--foreground))}
+.donut-key .sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+.donut-key .val{font-family:var(--font-mono);color:hsl(var(--muted-foreground))}
+
+/* ── Gauge ──────────────────────────────────────────────────── */
+.gauge-host{position:relative;width:100%;max-width:240px;margin:0.5rem auto 0;aspect-ratio:2/1}
+.gauge-host svg{width:100%;height:100%}
+.gauge-center{position:absolute;left:0;right:0;bottom:0;text-align:center}
+.gauge-center .big{font-size:2rem;font-weight:600;font-variant-numeric:tabular-nums}
+.gauge-center .lbl{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+
+/* ── Event stream ───────────────────────────────────────────── */
+.events{display:flex;flex-direction:column;gap:0.4rem;max-height:380px;overflow-y:auto;padding-right:0.25rem}
+.event{display:grid;grid-template-columns:14px 1fr auto;gap:0.6rem;align-items:flex-start;padding:0.55rem 0.7rem;background:hsl(var(--secondary) / 0.35);border:1px solid hsl(var(--border) / 0.4);border-radius:0.5rem;font-size:0.8125rem;animation:slideIn 0.25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:none}}
+.event .ed{width:8px;height:8px;border-radius:50%;margin-top:0.4rem}
+.event.t-room_state .ed{background:hsl(var(--primary))}
+.event.t-utilization .ed{background:hsl(var(--info))}
+.event.t-no_show .ed{background:hsl(var(--destructive))}
+.event.t-meeting_end .ed{background:hsl(var(--accent))}
+.event .ttl{font-weight:500;color:hsl(var(--foreground))}
+.event .typ{font-family:var(--font-mono);font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.event .ts{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));white-space:nowrap}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.5rem 0.6rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+
+/* ── Inputs ─────────────────────────────────────────────────── */
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.45rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input[type=checkbox],input[type=range]{accent-color:hsl(var(--primary))}
+.field{display:flex;flex-direction:column;gap:0.35rem}
+.field label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+.field .hint{font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.switch{position:relative;display:inline-block;width:38px;height:20px}
+.switch input{display:none}
+.slider{position:absolute;inset:0;background:hsl(var(--muted));border-radius:9999px;cursor:pointer;transition:0.2s}
+.slider::before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:hsl(var(--foreground));border-radius:50%;transition:0.2s}
+.switch input:checked + .slider{background:hsl(var(--primary))}
+.switch input:checked + .slider::before{transform:translateX(18px);background:hsl(var(--primary-foreground))}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-bg{display:none;position:fixed;inset:0;z-index:200;background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.5rem;max-width:640px;width:100%}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.3rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast-host{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:0.5rem;z-index:300;pointer-events:none}
+.toast{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.65rem 0.9rem;font-size:0.8125rem;color:hsl(var(--foreground));box-shadow:var(--shadow-card);display:flex;align-items:center;gap:0.5rem;animation:toastIn 0.25s ease;max-width:340px}
+.toast.ok{border-color:hsl(var(--accent) / 0.4)}
+.toast.warn{border-color:hsl(var(--warn) / 0.4)}
+.toast.err{border-color:hsl(var(--destructive) / 0.4)}
+.toast .dt{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.toast.ok .dt{background:hsl(var(--accent))}
+.toast.warn .dt{background:hsl(var(--warn))}
+.toast.err .dt{background:hsl(var(--destructive))}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+
+/* ── Hero strip ─────────────────────────────────────────────── */
+.hero{background:transparent;border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1.25rem 1.4rem;margin-bottom:1.25rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center}
+.hero-info .cat{display:inline-block;font-family:var(--font-mono);font-size:0.625rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--primary));background:hsl(var(--primary) / 0.15);padding:0.2rem 0.55rem;border-radius:9999px;margin-bottom:0.5rem;font-weight:600}
+.hero-info h1{font-size:1.4rem;font-weight:600;margin-bottom:0.2rem}
+.hero-info p{font-size:0.875rem;color:hsl(var(--muted-foreground));max-width:46rem}
+.hero-stats{display:flex;gap:1.5rem;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));align-items:center}
+.hero-stats .v{display:block;font-size:1.125rem;color:hsl(var(--foreground));font-weight:600;margin-top:0.1rem}
+
+/* ── Mini chart axis labels ─────────────────────────────────── */
+.axis-x,.axis-y{font-family:var(--font-mono);font-size:0.625rem;fill:hsl(var(--muted-foreground))}
+.gridline{stroke:hsl(var(--border) / 0.4);stroke-dasharray:2 3}
+
+/* ── Settings sections ──────────────────────────────────────── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem}
+@media (max-width:900px){.settings-grid{grid-template-columns:1fr}}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.6rem 0;border-bottom:1px dashed hsl(var(--border) / 0.4)}
+.set-row:last-child{border-bottom:none}
+.set-row .label{font-size:0.8125rem;color:hsl(var(--foreground))}
+.set-row .desc{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* ── Helpers ────────────────────────────────────────────────── */
+.flex{display:flex;align-items:center;gap:0.5rem}
+.flex-end{display:flex;align-items:center;gap:0.5rem;justify-content:flex-end}
+.muted{color:hsl(var(--muted-foreground))}
+.right{text-align:right}
+.center{text-align:center}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 13h2m4 0h2"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Meeting Room<span class="brand-ver mono" id="ver">v1.3.0</span></span>
+      <span class="brand-badge"><span class="pulse"></span>live</span>
+    </div>
+    <nav class="nav" id="mainnav">
+      <button data-tab="dashboard" class="active">Dashboard</button>
+      <button data-tab="live">Live Rooms</button>
+      <button data-tab="meetings">Meetings</button>
+      <button data-tab="analytics">Analytics</button>
+      <button data-tab="events">Event Stream</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ─── DASHBOARD ─────────────────────────────────────────── -->
+  <div class="panel on" data-panel="dashboard">
+
+    <div class="hero">
+      <div class="hero-info">
+        <span class="cat">Building · CSI Presence · ESP32-S3</span>
+        <h1>Meeting Room State &amp; Utilization</h1>
+        <p>Real-time presence detection across rooms with no-show inference, occupancy density, and meeting-length analytics.</p>
+      </div>
+      <div class="hero-stats">
+        <div><span>Sensors</span><span class="v" id="hs-sensors">6 / 6</span></div>
+        <div><span>Today</span><span class="v" id="hs-today">—</span></div>
+        <div><span>Last event</span><span class="v" id="hs-last">just now</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M12 2v4M5 7l3 3M19 7l-3 3M3 14h4m10 0h4M7 21l4-4m6 4l-4-4M12 14a3 3 0 100-6 3 3 0 000 6z"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Active meetings</div><div class="kpi-val" id="kpi-active">—</div><div class="kpi-sub"><span class="kpi-trend up" id="kpi-active-tr">▲ 0</span> vs avg</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Rooms occupied</div><div class="kpi-val" id="kpi-occ">—</div><div class="kpi-sub"><span id="kpi-occ-sub">of 6</span></div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Avg meeting</div><div class="kpi-val" id="kpi-avg">—</div><div class="kpi-sub">last 24 h</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">No-shows today</div><div class="kpi-val" id="kpi-ns">—</div><div class="kpi-sub" id="kpi-ns-sub">flag &gt; 5 min empty</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Utilization</div><div class="kpi-val" id="kpi-util">—</div><div class="kpi-sub">today, 09:00–18:00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Utilization over time</div>
+              <div class="card-sub">CSI-derived occupancy per 5-minute slot</div>
+            </div>
+            <div class="seg" data-seg="util-range">
+              <button data-val="1h">1H</button>
+              <button data-val="24h" class="on">24H</button>
+              <button data-val="7d">7D</button>
+              <button data-val="30d">30D</button>
+            </div>
+          </div>
+          <div class="chart-host futuristic" id="chart-util"></div>
+          <div class="legend">
+            <span class="swatch"><span class="sw" style="background:hsl(185 80% 60%)"></span>occupancy %</span>
+            <span class="swatch"><span class="sw" style="background:hsl(330 80% 65%)"></span>avg meetings</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Room state distribution</div>
+              <div class="card-sub">Current state across <span id="dn-total">6</span> rooms</div>
+            </div>
+            <button class="btn sm ghost" data-action="refresh-states"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Refresh</button>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut-host">
+              <svg viewBox="0 0 100 100" id="donut-svg"></svg>
+              <div class="donut-center"><span class="big" id="dn-big">—</span><span class="sub">in use</span></div>
+            </div>
+            <div class="donut-key" id="dn-key"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Occupancy heatmap</div>
+              <div class="card-sub">Last 7 days · darker = higher utilization</div>
+            </div>
+            <div class="seg" data-seg="heat-room">
+              <button data-val="all" class="on">All rooms</button>
+              <button data-val="single">Per-room</button>
+            </div>
+          </div>
+          <div class="heat-wrap">
+            <div class="heat-ylabels" id="heat-ylabels"></div>
+            <canvas class="heat-canvas" id="heat-canvas"></canvas>
+            <div class="heat-cursor" id="heat-cursor"></div>
+            <div class="heat-xlabels" id="heat-xlabels"></div>
+          </div>
+          <div class="hm-legend">
+            <span>low</span>
+            <span class="hm-ramp"></span>
+            <span>peak</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Today's utilization</div>
+              <div class="card-sub">9-5 working window</div>
+            </div>
+          </div>
+          <div class="gauge-host">
+            <svg viewBox="0 0 200 110" id="gauge-svg"></svg>
+            <div class="gauge-center"><div class="big" id="gauge-val">—</div><div class="lbl">in use</div></div>
+          </div>
+          <div style="margin-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.4);padding-top:0.875rem">
+            <div class="card-title" style="font-size:0.8125rem">No-show breakdown</div>
+            <div class="card-sub">Bookings released after 5 min empty</div>
+            <table style="margin-top:0.5rem">
+              <thead><tr><th>Room</th><th>Today</th><th>Week</th><th>Recovered</th></tr></thead>
+              <tbody id="ns-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+
+  <!-- ─── LIVE ROOMS ────────────────────────────────────────── -->
+  <div class="panel" data-panel="live">
+    <div class="page-h">
+      <div>
+        <h1 class="page">Live room status</h1>
+        <p class="lede">CSI presence detection updates every ~2 seconds from each ESP32-S3 sensor. Tap a room for full session detail.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" data-seg="live-filter">
+          <button data-val="all" class="on">All</button>
+          <button data-val="meeting">In-meeting</button>
+          <button data-val="occupied">Occupied</button>
+          <button data-val="empty">Empty</button>
+        </div>
+        <button class="btn outline sm" id="btn-simulate"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Simulate event</button>
+      </div>
+    </div>
+    <div class="grid-3" id="rooms-grid"></div>
+  </div>
+
+  <!-- ─── MEETINGS ──────────────────────────────────────────── -->
+  <div class="panel" data-panel="meetings">
+    <div class="page-h">
+      <div>
+        <h1 class="page">Recent meetings</h1>
+        <p class="lede">Completed sessions inferred from <code class="mono">meeting_end</code> events, with detected attendees and duration.</p>
+      </div>
+      <div class="toolbar">
+        <input id="search-meet" placeholder="Filter by room…" style="width:200px">
+        <button class="btn outline sm" id="btn-export"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0">
+      <div style="overflow-x:auto">
+        <table style="min-width:720px">
+          <thead><tr><th style="padding:0.75rem 1rem">Room</th><th>Start</th><th>Duration</th><th>Attendees</th><th>Outcome</th><th class="right" style="padding-right:1rem">Confidence</th></tr></thead>
+          <tbody id="meet-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ANALYTICS ─────────────────────────────────────────── -->
+  <div class="panel" data-panel="analytics">
+    <div class="page-h">
+      <div>
+        <h1 class="page">Analytics</h1>
+        <p class="lede">Trends derived from <code class="mono">room_state</code>, <code class="mono">utilization</code>, <code class="mono">meeting_end</code> and <code class="mono">no_show</code> events.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" data-seg="analytics-range">
+          <button data-val="7d" class="on">7D</button>
+          <button data-val="30d">30D</button>
+          <button data-val="90d">90D</button>
+        </div>
+        <button class="btn primary sm" id="btn-report"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Generate report</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row-2">
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">Utilization trend</div><div class="card-sub">Daily mean across all rooms · glow envelope</div></div></div>
+          <div class="chart-host futuristic" id="chart-trend"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">Meeting length distribution</div><div class="card-sub">Density wave of completed meetings</div></div></div>
+          <div class="chart-host futuristic" id="chart-dist"></div>
+          <div class="legend"><span class="swatch"><span class="sw" style="background:hsl(185 80% 60%)"></span>density</span><span class="swatch"><span class="sw" style="background:hsl(330 80% 65%)"></span>median <span class="mono" id="med-val">—</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row-2">
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">No-show rate</div><div class="card-sub">Released bookings ÷ scheduled bookings</div></div></div>
+          <div class="chart-host futuristic" id="chart-ns"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">Room utilization radar</div><div class="card-sub">All rooms · 7-day mean</div></div></div>
+          <div class="radar-host" id="radar-host"></div>
+          <div id="rank-list" style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.4rem;font-family:var(--font-mono);font-size:0.6875rem"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── EVENT STREAM ──────────────────────────────────────── -->
+  <div class="panel" data-panel="events">
+    <div class="page-h">
+      <div>
+        <h1 class="page">Event stream</h1>
+        <p class="lede">Tap to pause. Filter by event type. The first <span class="mono">200</span> events are retained in-memory.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" data-seg="ev-filter">
+          <button data-val="all" class="on">All</button>
+          <button data-val="room_state">room_state</button>
+          <button data-val="utilization">utilization</button>
+          <button data-val="no_show">no_show</button>
+          <button data-val="meeting_end">meeting_end</button>
+        </div>
+        <button class="btn sm" id="btn-pause"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause</button>
+        <button class="btn sm ghost" id="btn-clear">Clear</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="events" id="ev-list"></div>
+    </div>
+  </div>
+
+  <!-- ─── SETTINGS ──────────────────────────────────────────── -->
+  <div class="panel" data-panel="settings">
+    <div class="page-h">
+      <div>
+        <h1 class="page">Settings</h1>
+        <p class="lede">Detection sensitivity, no-show thresholds, and room metadata. Changes apply immediately to the local demo state.</p>
+      </div>
+      <button class="btn primary sm" id="btn-save"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save changes</button>
+    </div>
+
+    <div class="settings-grid">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Detection</div><div class="card-sub">CSI presence model parameters</div></div></div>
+        <div class="set-row">
+          <div><div class="label">CSI sensitivity</div><div class="desc">Trade false-positives against missed presence</div></div>
+          <div style="display:flex;align-items:center;gap:0.5rem;width:200px">
+            <input type="range" id="set-sens" min="0" max="100" value="65" style="flex:1">
+            <span class="mono" id="sens-val" style="width:30px;text-align:right">65</span>
+          </div>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Sampling rate</div><div class="desc">CSI frames per second per sensor</div></div>
+          <select id="set-rate" style="width:140px">
+            <option value="5">5 fps</option>
+            <option value="10" selected>10 fps</option>
+            <option value="20">20 fps</option>
+            <option value="40">40 fps</option>
+          </select>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Empty hold-down</div><div class="desc">Seconds of zero presence before state→empty</div></div>
+          <input type="number" id="set-hold" value="20" min="5" max="300" style="width:90px">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">No-show detection</div><div class="card-sub">When to flag a booking as unattended</div></div></div>
+        <div class="set-row">
+          <div><div class="label">Grace period</div><div class="desc">Minutes after booking start with no presence</div></div>
+          <input type="number" id="set-grace" value="5" min="1" max="30" style="width:90px">
+        </div>
+        <div class="set-row">
+          <div><div class="label">Auto-release</div><div class="desc">Free the room in calendar integration</div></div>
+          <label class="switch"><input type="checkbox" id="set-release" checked><span class="slider"></span></label>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Notify organiser</div><div class="desc">Send a no-show email summary</div></div>
+          <label class="switch"><input type="checkbox" id="set-notify"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="card span-2" style="grid-column:1/-1">
+        <div class="card-h"><div><div class="card-title">Rooms</div><div class="card-sub">Edit display name, capacity, and sensor binding</div></div></div>
+        <table>
+          <thead><tr><th>Name</th><th>Capacity</th><th>Sensor MAC</th><th>Floor</th><th>Status</th><th class="right">Actions</th></tr></thead>
+          <tbody id="rooms-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div>
+      <span class="mono">cog: meeting-room</span> ·
+      <span class="mono">v1.3.0</span> ·
+      <span class="mono">18 KB</span> ·
+      <a href="#" data-action="docs">docs</a> ·
+      <a href="#" data-action="api">/api/v1/meeting-room</a>
+    </div>
+    <div style="margin-top:0.4rem">events: <span class="mono">room_state</span> · <span class="mono">utilization</span> · <span class="mono">no_show</span> · <span class="mono">meeting_end</span></div>
+  </footer>
+</div>
+
+<!-- ─── Room detail modal ─────────────────────────────────── -->
+<div class="modal-bg" id="room-modal">
+  <div class="modal" style="max-width:720px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+      <div>
+        <h3 id="rm-name">Room</h3>
+        <div class="modal-sub" id="rm-sub"></div>
+      </div>
+      <button class="btn ghost sm" data-action="modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="row-2" style="margin-top:0.5rem">
+      <div>
+        <div class="card-sub" style="margin-bottom:0.3rem">Occupancy (24 h)</div>
+        <div class="chart-host futuristic" id="rm-chart" style="height:160px"></div>
+      </div>
+      <div>
+        <div class="card-sub" style="margin-bottom:0.3rem">Session summary</div>
+        <table>
+          <tbody id="rm-table"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-action="rm-mark-noshow">Mark as no-show</button>
+      <button class="btn outline" data-action="rm-end">End meeting</button>
+      <button class="btn primary" data-action="modal-close">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toasts"></div>
+
+<script>
+// ─── State / mock data ─────────────────────────────────────────
+const ROOMS = [
+  { id:'r-101', name:'Atrium A',     cap:8,  floor:1, mac:'A4:CF:12:31:09:11', state:'meeting',  since: 28, util7:[0.4,0.6,0.55,0.7,0.8,0.65,0.72] },
+  { id:'r-102', name:'Atrium B',     cap:4,  floor:1, mac:'A4:CF:12:31:09:12', state:'empty',    since: 12, util7:[0.2,0.3,0.4,0.3,0.5,0.4,0.35] },
+  { id:'r-201', name:'Forum',        cap:12, floor:2, mac:'A4:CF:12:31:09:13', state:'occupied', since: 4,  util7:[0.6,0.7,0.55,0.8,0.85,0.6,0.78] },
+  { id:'r-202', name:'Cascade',      cap:6,  floor:2, mac:'A4:CF:12:31:09:14', state:'meeting',  since: 47, util7:[0.5,0.4,0.6,0.7,0.65,0.5,0.6] },
+  { id:'r-301', name:'Lighthouse',   cap:10, floor:3, mac:'A4:CF:12:31:09:15', state:'noshow',   since: 7,  util7:[0.3,0.35,0.45,0.4,0.55,0.5,0.42] },
+  { id:'r-302', name:'Observatory',  cap:16, floor:3, mac:'A4:CF:12:31:09:16', state:'empty',    since: 95, util7:[0.7,0.8,0.75,0.85,0.9,0.7,0.82] },
+];
+const STATE_LABEL = { empty:'Empty', occupied:'Occupied', meeting:'In meeting', noshow:'No-show' };
+const STATE_COLOR = { empty:'hsl(215 15% 55%)', occupied:'hsl(35 85% 60%)', meeting:'hsl(142 70% 50%)', noshow:'hsl(0 65% 55%)' };
+const EVENT_COLOR = { room_state:'hsl(185 80% 50%)', utilization:'hsl(220 80% 60%)', no_show:'hsl(0 65% 55%)', meeting_end:'hsl(142 70% 50%)' };
+
+let liveFilter = 'all';
+let utilRange = '24h';
+let evFilter = 'all';
+let analyticsRange = '7d';
+let evPaused = false;
+let evs = [];
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtAgo = m => m < 1 ? 'just now' : m < 60 ? m + 'm ago' : Math.floor(m/60) + 'h ' + (m%60) + 'm ago';
+const fmtDur = m => m < 60 ? m + ' min' : Math.floor(m/60) + 'h ' + (m%60) + 'm';
+
+function toast(msg, kind='ok'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.innerHTML = '<span class="dt"></span>' + esc(msg);
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 2400);
+}
+
+// ─── Tabs ──────────────────────────────────────────────────────
+$$('#mainnav button').forEach(b => b.onclick = () => {
+  const t = b.dataset.tab;
+  $$('#mainnav button').forEach(x => x.classList.toggle('active', x === b));
+  $$('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === t));
+  if (t === 'analytics') renderAnalytics();
+  if (t === 'events') renderEvents();
+});
+
+// ─── Segmented controls (generic) ──────────────────────────────
+function bindSeg(name, cb){
+  const seg = document.querySelector('[data-seg="'+name+'"]');
+  if (!seg) return;
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+    seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    cb(b.dataset.val);
+  });
+}
+bindSeg('util-range', v => { utilRange = v; renderUtilChart(); });
+bindSeg('heat-room',  v => renderHeatmap(v));
+bindSeg('live-filter', v => { liveFilter = v; renderRooms(); });
+bindSeg('analytics-range', v => { analyticsRange = v; renderAnalytics(); });
+bindSeg('ev-filter', v => { evFilter = v; renderEvents(); });
+
+// ─── KPI dashboard ─────────────────────────────────────────────
+function renderKPIs(){
+  const meetings  = ROOMS.filter(r => r.state === 'meeting').length;
+  const occupied  = ROOMS.filter(r => r.state === 'meeting' || r.state === 'occupied').length;
+  const noshows   = ROOMS.filter(r => r.state === 'noshow').length;
+  $('#kpi-active').textContent = meetings;
+  $('#kpi-occ').textContent    = occupied;
+  $('#kpi-occ-sub').textContent= 'of ' + ROOMS.length + ' rooms';
+  $('#kpi-avg').textContent    = '42 min';
+  $('#kpi-ns').textContent     = noshows;
+  const util = Math.round(occupied / ROOMS.length * 100);
+  $('#kpi-util').textContent   = util + '%';
+  $('#hs-today').textContent   = util + '% used';
+  $('#kpi-active-tr').textContent = (meetings >= 2 ? '▲ +' : '▼ ') + (meetings - 1);
+  $('#kpi-active-tr').className = 'kpi-trend ' + (meetings >= 2 ? 'up' : 'down');
+  renderGauge(util);
+}
+
+// ─── Donut chart ───────────────────────────────────────────────
+function renderDonut(){
+  const counts = { meeting:0, occupied:0, empty:0, noshow:0 };
+  ROOMS.forEach(r => counts[r.state]++);
+  const total = ROOMS.length;
+  const order = ['meeting','occupied','noshow','empty'];
+  let acc = 0;
+  const svg = $('#donut-svg');
+  const R = 36, C = 2 * Math.PI * R;
+  const segs = order.map(k => {
+    const v = counts[k];
+    const len = (v / total) * C;
+    const dash = `${len} ${C - len}`;
+    const off = -acc;
+    acc += len;
+    return `<circle cx="50" cy="50" r="${R}" fill="none" stroke="${STATE_COLOR[k]}" stroke-width="14" stroke-dasharray="${dash}" stroke-dashoffset="${off}" transform="rotate(-90 50 50)" style="transition:stroke-dasharray 0.4s ease"/>`;
+  }).join('');
+  svg.innerHTML = `<circle cx="50" cy="50" r="${R}" fill="none" stroke="hsl(220 15% 18%)" stroke-width="14"/>` + segs;
+  const inUse = counts.meeting + counts.occupied;
+  $('#dn-big').textContent = Math.round(inUse / total * 100) + '%';
+  $('#dn-total').textContent = total;
+  $('#dn-key').innerHTML = order.map(k => `
+    <div class="row">
+      <span class="name"><span class="sw" style="background:${STATE_COLOR[k]}"></span>${STATE_LABEL[k]}</span>
+      <span class="val">${counts[k]} · ${Math.round(counts[k]/total*100)}%</span>
+    </div>`).join('');
+}
+
+// ─── Util line chart (no bars) ─────────────────────────────────
+function genSeries(n, base=0.5, vol=0.18){
+  const arr = []; let v = base;
+  for (let i = 0; i < n; i++){
+    v = Math.max(0, Math.min(1, v + (Math.random() - 0.5) * vol));
+    // shape: peak during working hours
+    const hod = (i % 24);
+    const peak = 0.85 * Math.exp(-Math.pow((hod - 13) / 4.2, 2));
+    arr.push(Math.min(1, v * 0.5 + peak * 0.8 + Math.random() * 0.06));
+  }
+  return arr;
+}
+
+function linePath(data, w, h, pad){
+  const xs = (i) => pad + i * (w - pad * 2) / (data.length - 1);
+  const ys = (v) => h - pad - v * (h - pad * 2);
+  return data.map((v, i) => (i === 0 ? 'M' : 'L') + xs(i).toFixed(1) + ',' + ys(v).toFixed(1)).join(' ');
+}
+function areaPath(data, w, h, pad){
+  const xs = (i) => pad + i * (w - pad * 2) / (data.length - 1);
+  const ys = (v) => h - pad - v * (h - pad * 2);
+  const top = data.map((v, i) => (i === 0 ? 'M' : 'L') + xs(i).toFixed(1) + ',' + ys(v).toFixed(1)).join(' ');
+  return top + ` L${xs(data.length-1).toFixed(1)},${(h-pad).toFixed(1)} L${xs(0).toFixed(1)},${(h-pad).toFixed(1)} Z`;
+}
+
+// Smooth Catmull-Rom → cubic-bezier path for organic curves
+function smoothPath(pts){
+  if (pts.length < 2) return '';
+  let d = `M ${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const t = 0.18;
+    const c1 = [p1[0] + (p2[0] - p0[0]) * t, p1[1] + (p2[1] - p0[1]) * t];
+    const c2 = [p2[0] - (p3[0] - p1[0]) * t, p2[1] - (p3[1] - p1[1]) * t];
+    d += ` C ${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
+function renderLineChart(host, dataA, dataB, opts={}){
+  const el = typeof host === 'string' ? $(host) : host;
+  const w = el.clientWidth || 600, h = el.clientHeight || 240, pad = 32;
+  const labels = opts.labels || dataA.map((_, i) => i);
+  const gid = opts.gid || 'p';
+  const xs = i => pad + i * (w - pad * 2) / Math.max(1, dataA.length - 1);
+  const ys = v => h - pad - v * (h - pad * 2);
+  const ptsA = dataA.map((v, i) => [xs(i), ys(v)]);
+  const ptsB = dataB ? dataB.map((v, i) => [xs(i), ys(v)]) : null;
+  const dA = smoothPath(ptsA);
+  const dB = ptsB ? smoothPath(ptsB) : null;
+  const areaA = dA + ` L ${xs(dataA.length - 1).toFixed(1)},${(h - pad).toFixed(1)} L ${xs(0).toFixed(1)},${(h - pad).toFixed(1)} Z`;
+  const areaB = dB ? dB + ` L ${xs(dataB.length - 1).toFixed(1)},${(h - pad).toFixed(1)} L ${xs(0).toFixed(1)},${(h - pad).toFixed(1)} Z` : null;
+
+  // approximate path length for draw-in animation
+  const lenA = ptsA.reduce((acc, p, i) => i ? acc + Math.hypot(p[0]-ptsA[i-1][0], p[1]-ptsA[i-1][1]) : 0, 0);
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="fchart">`;
+  svg += `<defs>
+    <filter id="fglow-${gid}" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="stroke-${gid}" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="hsl(185 80% 60%)"/>
+      <stop offset="55%" stop-color="hsl(280 80% 65%)"/>
+      <stop offset="100%" stop-color="hsl(330 80% 65%)"/>
+    </linearGradient>
+    <linearGradient id="area-${gid}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="hsl(185 80% 55%)" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="hsl(280 80% 55%)" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="hsl(330 80% 55%)" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="strokeB-${gid}" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="hsl(330 80% 65%)" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="hsl(280 80% 60%)" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>`;
+  // global glow shortcut id used by other helpers
+  svg = svg.replace('id="fglow-' + gid + '"', 'id="fglow-' + gid + '" data-glow="1"');
+
+  // gridlines + y labels
+  for (let i = 0; i <= 4; i++){
+    const y = pad + i * (h - pad * 2) / 4;
+    const v = (1 - i / 4);
+    svg += `<line class="grid-y" x1="${pad}" x2="${w-pad}" y1="${y}" y2="${y}"/>`;
+    svg += `<text class="axis-y" x="${pad-8}" y="${y+3}" text-anchor="end">${Math.round(v*100)}%</text>`;
+  }
+  // vertical sweep grid
+  for (let i = 0; i < dataA.length; i++){
+    if (i % Math.max(1, Math.ceil(dataA.length / 8)) !== 0) continue;
+    svg += `<line class="grid-x" x1="${xs(i)}" x2="${xs(i)}" y1="${pad}" y2="${h-pad}"/>`;
+  }
+
+  // optional secondary series (dashed bezier)
+  if (dB){
+    svg += `<path d="${areaB}" fill="hsl(142 70% 50% / 0.06)"/>`;
+    svg += `<path d="${dB}" fill="none" stroke="url(#strokeB-${gid})" stroke-width="1.5" stroke-dasharray="4 4" filter="url(#fglow-${gid})" opacity="0.85"/>`;
+  }
+
+  // primary series
+  svg += `<path d="${areaA}" fill="url(#area-${gid})"/>`;
+  svg += `<path d="${dA}" class="line-main line-draw" style="--len:${Math.ceil(lenA)}" stroke="url(#stroke-${gid})" filter="url(#fglow-${gid})"/>`;
+
+  // x labels (sparse)
+  const tickEvery = Math.ceil(labels.length / 8);
+  labels.forEach((lab, i) => {
+    if (i % tickEvery !== 0 && i !== labels.length - 1) return;
+    svg += `<text class="axis-x" x="${xs(i)}" y="${h-10}" text-anchor="middle">${lab}</text>`;
+  });
+
+  // subtle nodes along the line for hover
+  ptsA.forEach((p, i) => {
+    if (i % Math.max(1, Math.floor(ptsA.length / 14)) !== 0 && i !== ptsA.length - 1) return;
+    svg += `<circle class="node" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.2" data-tip="${esc(labels[i])}: ${Math.round(dataA[i]*100)}%"/>`;
+  });
+
+  // pulsing latest point
+  const last = ptsA[ptsA.length - 1];
+  svg += `<circle class="pulse-ring" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4"/>`;
+  svg += `<circle class="pulse-node" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="hsl(330 95% 70%)" filter="url(#fglow-${gid})"/>`;
+
+  svg += '</svg>';
+  el.innerHTML = svg;
+
+  // tooltip wiring
+  let tip = el.querySelector('.tooltip');
+  if (!tip){ tip = document.createElement('div'); tip.className = 'tooltip'; el.appendChild(tip); }
+  el.querySelectorAll('circle.node[data-tip]').forEach(c => {
+    c.addEventListener('mouseenter', () => {
+      tip.textContent = c.dataset.tip;
+      const rect = el.getBoundingClientRect();
+      const cx = parseFloat(c.getAttribute('cx')) * rect.width / w;
+      const cy = parseFloat(c.getAttribute('cy')) * rect.height / h;
+      tip.style.left = (cx + 10) + 'px';
+      tip.style.top  = (cy - 32) + 'px';
+      tip.classList.add('show');
+    });
+    c.addEventListener('mouseleave', () => tip.classList.remove('show'));
+  });
+}
+
+function renderUtilChart(){
+  const map = { '1h':12, '24h':24, '7d':28, '30d':30 };
+  const lbls = { '1h':'5m', '24h':'h', '7d':'d', '30d':'d' };
+  const n = map[utilRange];
+  const a = genSeries(n, 0.55, 0.12);
+  const b = genSeries(n, 0.4,  0.1);
+  let labels;
+  if (utilRange === '1h') labels = Array.from({length:n}, (_, i) => (i*5) + 'm');
+  else if (utilRange === '24h') labels = Array.from({length:n}, (_, i) => String(i).padStart(2,'0'));
+  else if (utilRange === '7d') labels = Array.from({length:n}, (_, i) => ['M','T','W','T','F','S','S'][i%7]);
+  else labels = Array.from({length:n}, (_, i) => 'd' + (i+1));
+  renderLineChart('#chart-util', a, b, { labels, gid:'util' });
+}
+
+// ─── True heatmap (canvas + radial blobs + colour ramp) ────────
+// Colour ramp: deep navy → blue → cyan → mint → yellow → orange → magenta
+function heatRamp(t){
+  t = Math.max(0, Math.min(1, t));
+  const stops = [
+    [0.00, [ 12,  16,  30]],
+    [0.15, [ 22,  40, 100]],
+    [0.32, [ 30, 110, 200]],
+    [0.50, [ 40, 210, 220]],
+    [0.65, [120, 240, 180]],
+    [0.80, [250, 220, 100]],
+    [0.92, [255, 130,  80]],
+    [1.00, [255, 100, 200]],
+  ];
+  for (let i = 0; i < stops.length - 1; i++){
+    if (t <= stops[i + 1][0]){
+      const f = (t - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      const a = stops[i][1], b = stops[i + 1][1];
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * f),
+        Math.round(a[1] + (b[1] - a[1]) * f),
+        Math.round(a[2] + (b[2] - a[2]) * f),
+      ];
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+
+let heatData = null;
+function genHeatData(mode){
+  const days = mode === 'all'
+    ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+    : ROOMS.slice(0, 7).map(r => r.name);
+  const grid = days.map((_, di) => {
+    return Array.from({length: 24}, (_, h) => {
+      const morning = 0.55 * Math.exp(-Math.pow((h - 10.5) / 2.4, 2));
+      const after   = 0.85 * Math.exp(-Math.pow((h - 14.5) / 3.0, 2));
+      const evening = 0.30 * Math.exp(-Math.pow((h - 17.5) / 1.8, 2));
+      let v = morning + after + evening;
+      if (mode === 'all' && (di === 5 || di === 6)) v *= 0.18;     // weekends quiet
+      if (mode !== 'all') v *= (0.6 + 0.5 * Math.sin(di * 1.3));   // per-room variance
+      v *= (0.78 + Math.random() * 0.32);
+      return Math.max(0, Math.min(1, v));
+    });
+  });
+  return { labels: days, grid };
+}
+
+function renderHeatmap(mode = 'all'){
+  const canvas = $('#heat-canvas');
+  if (!canvas) return;
+  heatData = genHeatData(mode);
+  const days = heatData.labels;
+  const grid = heatData.grid;
+
+  // y-axis labels
+  $('#heat-ylabels').innerHTML = days.map(d => `<span>${esc(d)}</span>`).join('');
+  // x-axis labels
+  let xl = '';
+  for (let h = 0; h < 24; h++) xl += `<span>${h % 3 === 0 ? String(h).padStart(2,'0') : ''}</span>`;
+  $('#heat-xlabels').innerHTML = xl;
+
+  // size canvas
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+  canvas.width  = Math.max(1, Math.round(cssW * dpr));
+  canvas.height = Math.max(1, Math.round(cssH * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = cssW, H = cssH;
+  const cellW = W / 24;
+  const cellH = H / days.length;
+
+  // Step 1: dark background
+  ctx.fillStyle = 'rgb(12,16,30)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Step 2: additive grayscale blobs (heat density)
+  ctx.globalCompositeOperation = 'lighter';
+  for (let di = 0; di < days.length; di++){
+    for (let hi = 0; hi < 24; hi++){
+      const v = grid[di][hi];
+      if (v < 0.02) continue;
+      const cx = (hi + 0.5) * cellW;
+      const cy = (di + 0.5) * cellH;
+      const radius = Math.max(cellW, cellH) * 1.6;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      const a = Math.min(1, v);
+      grad.addColorStop(0,   `rgba(255,255,255,${a})`);
+      grad.addColorStop(0.45,`rgba(255,255,255,${a * 0.35})`);
+      grad.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Step 3: apply colour ramp by re-reading pixels
+  const img = ctx.getImageData(0, 0, Math.round(W * dpr), Math.round(H * dpr));
+  const d = img.data;
+  // The image data is at dpr scale; iterate raw pixels
+  for (let i = 0; i < d.length; i += 4){
+    const lum = d[i] / 255; // R channel == drawn-in grayscale
+    const [r, g, b] = heatRamp(lum);
+    d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Step 4: subtle scanline shimmer for cyber feel
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.fillStyle = 'rgba(0, 200, 255, 0.04)';
+  for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  ctx.globalCompositeOperation = 'source-over';
+
+  // tooltip / cursor
+  canvas.onmousemove = e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const hi = Math.min(23, Math.max(0, Math.floor(x / cellW)));
+    const di = Math.min(days.length - 1, Math.max(0, Math.floor(y / cellH)));
+    const v = heatData.grid[di][hi];
+    const cur = $('#heat-cursor');
+    cur.classList.add('on');
+    cur.style.left = (rect.left - canvas.parentElement.getBoundingClientRect().left + (hi + 0.5) * cellW) + 'px';
+    cur.style.top  = (rect.top  - canvas.parentElement.getBoundingClientRect().top  + (di + 0.5) * cellH) + 'px';
+    canvas.title = `${days[di]} · ${String(hi).padStart(2,'0')}:00 — ${Math.round(v * 100)}%`;
+  };
+  canvas.onmouseleave = () => $('#heat-cursor').classList.remove('on');
+}
+
+// ─── Radar (polar) chart for room utilization ─────────────────
+function renderRadar(){
+  const host = $('#radar-host');
+  if (!host) return;
+  const w = host.clientWidth || 320, h = w;  // aspect 1:1
+  const cx = w / 2, cy = h / 2;
+  const r = Math.min(w, h) / 2 - 38;
+  const data = ROOMS.map(rm => ({
+    name: rm.name,
+    val: rm.util7.reduce((a, b) => a + b, 0) / rm.util7.length,
+  }));
+  const n = data.length;
+  const angle = i => -Math.PI / 2 + (i / n) * Math.PI * 2;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}">`;
+  svg += `<defs>
+    <filter id="rglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="hsl(185 80% 60%)" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="hsl(280 80% 60%)" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="hsl(330 80% 60%)" stop-opacity="0.05"/>
+    </radialGradient>
+    <linearGradient id="radarStroke" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="hsl(185 80% 65%)"/>
+      <stop offset="100%" stop-color="hsl(330 80% 65%)"/>
+    </linearGradient>
+  </defs>`;
+  // concentric rings
+  [0.25, 0.5, 0.75, 1].forEach(p => {
+    svg += `<circle class="radar-ring" cx="${cx}" cy="${cy}" r="${(r * p).toFixed(1)}"/>`;
+  });
+  // radial axes
+  data.forEach((_, i) => {
+    const a = angle(i);
+    const x2 = cx + r * Math.cos(a), y2 = cy + r * Math.sin(a);
+    svg += `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  });
+  // polygon
+  const pts = data.map((d, i) => {
+    const a = angle(i);
+    const rr = r * d.val;
+    return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+  });
+  const dStr = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') + ' Z';
+  svg += `<path d="${dStr}" fill="url(#radarGrad)" stroke="url(#radarStroke)" stroke-width="1.8" stroke-linejoin="round" filter="url(#rglow)"/>`;
+  // dots + labels
+  data.forEach((d, i) => {
+    const a = angle(i);
+    const rr = r * d.val;
+    const dx = cx + rr * Math.cos(a), dy = cy + rr * Math.sin(a);
+    svg += `<circle class="radar-dot" cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="3.6"><title>${esc(d.name)}: ${Math.round(d.val*100)}%</title></circle>`;
+    // label outside ring
+    const lx = cx + (r + 18) * Math.cos(a);
+    const ly = cy + (r + 18) * Math.sin(a);
+    const anchor = Math.cos(a) > 0.3 ? 'start' : Math.cos(a) < -0.3 ? 'end' : 'middle';
+    svg += `<text class="radar-label" x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="${anchor}">${esc(d.name)}</text>`;
+    svg += `<text class="radar-val" x="${lx.toFixed(1)}" y="${(ly+16).toFixed(1)}" text-anchor="${anchor}">${Math.round(d.val*100)}%</text>`;
+  });
+  svg += '</svg>';
+  host.innerHTML = svg;
+
+  // ranked numeric list under radar
+  const ranked = [...data].sort((a, b) => b.val - a.val);
+  $('#rank-list').innerHTML = ranked.map((d, i) => `
+    <div style="display:flex;justify-content:space-between;padding:0.25rem 0.5rem;background:hsl(var(--secondary) / 0.3);border-radius:0.3rem">
+      <span><span style="color:hsl(var(--muted-foreground))">#${i+1}</span>&nbsp;&nbsp;${esc(d.name)}</span>
+      <span style="color:hsl(var(--primary))">${Math.round(d.val * 100)}%</span>
+    </div>
+  `).join('');
+}
+
+// ─── Radial gauge ──────────────────────────────────────────────
+function renderGauge(pct){
+  const svg = $('#gauge-svg');
+  const cx = 100, cy = 100, r = 80;
+  const start = Math.PI, end = 0;
+  function arc(p){
+    const a = start + (end - start) * p;
+    return cx + r * Math.cos(a) + ',' + (cy + r * Math.sin(a));
+  }
+  const bg  = `M ${arc(0)} A ${r} ${r} 0 0 1 ${arc(1)}`;
+  const fg  = `M ${arc(0)} A ${r} ${r} 0 0 1 ${arc(pct/100)}`;
+  const color = pct < 30 ? 'hsl(215 15% 55%)' : pct < 60 ? 'hsl(35 85% 55%)' : pct < 85 ? 'hsl(142 70% 50%)' : 'hsl(0 65% 55%)';
+  svg.innerHTML = `
+    <path d="${bg}" stroke="hsl(220 15% 18%)" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <path d="${fg}" stroke="${color}" stroke-width="14" fill="none" stroke-linecap="round" style="transition:d 0.4s"/>
+    <text x="20" y="108" class="axis-y" text-anchor="middle">0</text>
+    <text x="180" y="108" class="axis-y" text-anchor="middle">100</text>
+  `;
+  $('#gauge-val').textContent = pct + '%';
+}
+
+// ─── Sparkline (per room) ─────────────────────────────────────
+function sparkline(data, color){
+  const w = 100, h = 30;
+  const max = Math.max(...data), min = Math.min(...data);
+  const span = (max - min) || 1;
+  const pts = data.map((v, i) => [(i / (data.length - 1)) * w, h - ((v - min) / span) * (h - 4) - 2]);
+  const d = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const area = d + ` L ${w},${h} L 0,${h} Z`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="spark-host">
+    <path d="${area}" fill="${color}" fill-opacity="0.15"/>
+    <path d="${d}" stroke="${color}" stroke-width="1.5" fill="none"/>
+  </svg>`;
+}
+
+// ─── Rooms grid ────────────────────────────────────────────────
+function renderRooms(){
+  const grid = $('#rooms-grid');
+  const list = liveFilter === 'all' ? ROOMS : ROOMS.filter(r => r.state === liveFilter);
+  grid.innerHTML = list.map(r => `
+    <div class="room state-${r.state}" data-id="${r.id}">
+      <div class="room-h">
+        <div>
+          <div class="room-name">${esc(r.name)}</div>
+          <div class="room-meta">Floor ${r.floor} · cap ${r.cap} · ${esc(r.mac)}</div>
+        </div>
+        <div class="state-pill"><span class="dot"></span>${STATE_LABEL[r.state]}</div>
+      </div>
+      <div class="room-stats">
+        <div><span class="l">since</span><span class="v">${fmtAgo(r.since)}</span></div>
+        <div><span class="l">today</span><span class="v">${Math.round(r.util7[6]*100)}%</span></div>
+        <div><span class="l">avg 7d</span><span class="v">${Math.round(r.util7.reduce((a,b)=>a+b,0)/r.util7.length*100)}%</span></div>
+      </div>
+      ${sparkline(r.util7, STATE_COLOR[r.state])}
+      <div class="room-cta">
+        <button class="btn sm outline" data-act="cycle" data-id="${r.id}">Cycle state</button>
+        <button class="btn sm primary" data-act="open" data-id="${r.id}">Details →</button>
+      </div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('button[data-act]').forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      const r = ROOMS.find(x => x.id === b.dataset.id);
+      if (b.dataset.act === 'cycle') cycleState(r);
+      else openRoom(r);
+    };
+  });
+  grid.querySelectorAll('.room').forEach(c => c.onclick = () => openRoom(ROOMS.find(r => r.id === c.dataset.id)));
+}
+
+function cycleState(r){
+  const order = ['empty','occupied','meeting','noshow'];
+  r.state = order[(order.indexOf(r.state) + 1) % order.length];
+  r.since = 0;
+  pushEvent({ type:'room_state', room:r.id, msg:`${r.name} → ${STATE_LABEL[r.state]}` });
+  renderRooms(); renderKPIs(); renderDonut(); renderNoshow();
+  toast(`${r.name} state set to ${STATE_LABEL[r.state]}`);
+}
+
+// ─── Room detail modal ────────────────────────────────────────
+let currentRoom = null;
+function openRoom(r){
+  currentRoom = r;
+  $('#rm-name').textContent = r.name;
+  $('#rm-sub').textContent = `Floor ${r.floor} · capacity ${r.cap} · sensor ${r.mac}`;
+  $('#rm-table').innerHTML = `
+    <tr><td>State</td><td>${STATE_LABEL[r.state]}</td></tr>
+    <tr><td>Since</td><td>${fmtAgo(r.since)}</td></tr>
+    <tr><td>Today utilisation</td><td>${Math.round(r.util7[6]*100)}%</td></tr>
+    <tr><td>7-day mean</td><td>${Math.round(r.util7.reduce((a,b)=>a+b,0)/r.util7.length*100)}%</td></tr>
+    <tr><td>Meetings (7d)</td><td>${Math.round(r.util7.reduce((a,b)=>a+b,0) * 8)}</td></tr>
+    <tr><td>No-shows (7d)</td><td>${Math.max(0, 4 - Math.round(r.util7[6]*4))}</td></tr>
+  `;
+  $('#room-modal').classList.add('show');
+  // chart inside modal
+  setTimeout(() => {
+    const series = genSeries(24, r.util7[6], 0.1);
+    const labels = Array.from({length:24}, (_, i) => String(i).padStart(2,'0'));
+    renderLineChart('#rm-chart', series, null, { labels, gid:'rm-'+r.id });
+  }, 30);
+}
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  if (act === 'modal-close') $('#room-modal').classList.remove('show');
+  else if (act === 'rm-mark-noshow' && currentRoom){
+    currentRoom.state = 'noshow'; currentRoom.since = 0;
+    pushEvent({ type:'no_show', room:currentRoom.id, msg:`${currentRoom.name} flagged as no-show` });
+    renderRooms(); renderKPIs(); renderDonut(); renderNoshow();
+    toast(currentRoom.name + ' marked as no-show', 'warn');
+    $('#room-modal').classList.remove('show');
+  }
+  else if (act === 'rm-end' && currentRoom){
+    currentRoom.state = 'empty'; currentRoom.since = 0;
+    pushEvent({ type:'meeting_end', room:currentRoom.id, msg:`Meeting ended in ${currentRoom.name}` });
+    renderRooms(); renderKPIs(); renderDonut();
+    toast('Meeting ended in ' + currentRoom.name);
+    $('#room-modal').classList.remove('show');
+  }
+  else if (act === 'docs' || act === 'api'){
+    e.preventDefault();
+    toast(act === 'docs' ? 'Docs link copied' : 'API endpoint copied', 'ok');
+  }
+  else if (act === 'refresh-states'){
+    ROOMS.forEach(r => r.since = (r.since + 1) % 120);
+    renderDonut(); renderKPIs();
+    toast('State snapshot refreshed');
+  }
+});
+$('#room-modal').addEventListener('click', e => { if (e.target.id === 'room-modal') $('#room-modal').classList.remove('show'); });
+
+// ─── Meetings table ────────────────────────────────────────────
+function genMeetings(){
+  const out = [];
+  const outcomes = ['Completed','Completed','Completed','Short','No-show','Completed'];
+  ROOMS.forEach(r => {
+    for (let i = 0; i < 3; i++){
+      const dur = 15 + Math.floor(Math.random() * 75);
+      const att = Math.min(r.cap, 2 + Math.floor(Math.random() * r.cap));
+      const conf = 75 + Math.floor(Math.random() * 22);
+      const startH = 9 + Math.floor(Math.random() * 9);
+      const startM = Math.floor(Math.random() * 60);
+      out.push({
+        room: r.name,
+        start: `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`,
+        dur, att, conf,
+        outcome: outcomes[Math.floor(Math.random() * outcomes.length)],
+      });
+    }
+  });
+  return out.sort((a, b) => b.start.localeCompare(a.start));
+}
+let meetings = genMeetings();
+function renderMeetings(filter=''){
+  const f = filter.toLowerCase();
+  const tb = $('#meet-tbody');
+  const list = meetings.filter(m => !f || m.room.toLowerCase().includes(f));
+  if (list.length === 0){ tb.innerHTML = '<tr><td colspan="6" class="center muted">no matches</td></tr>'; return; }
+  tb.innerHTML = list.map(m => {
+    const oc = m.outcome === 'No-show' ? 'hsl(0 70% 70%)' : m.outcome === 'Short' ? 'hsl(35 85% 70%)' : 'hsl(142 70% 65%)';
+    return `<tr>
+      <td style="padding-left:1rem;color:hsl(var(--foreground));font-family:var(--font-display);font-weight:500">${esc(m.room)}</td>
+      <td>${m.start}</td>
+      <td>${fmtDur(m.dur)}</td>
+      <td>${m.att}</td>
+      <td style="color:${oc}">${m.outcome}</td>
+      <td class="right" style="padding-right:1rem">${m.conf}%</td>
+    </tr>`;
+  }).join('');
+}
+$('#search-meet').oninput = e => renderMeetings(e.target.value);
+$('#btn-export').onclick = () => {
+  const csv = 'Room,Start,Duration (min),Attendees,Outcome,Confidence\n' +
+    meetings.map(m => [m.room, m.start, m.dur, m.att, m.outcome, m.conf].join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meetings.csv';
+  a.click();
+  toast('Exported ' + meetings.length + ' meetings to CSV');
+};
+
+// ─── No-show breakdown ────────────────────────────────────────
+function renderNoshow(){
+  const tb = $('#ns-tbody');
+  tb.innerHTML = ROOMS.map(r => {
+    const today = r.state === 'noshow' ? 1 : Math.floor(Math.random() * 2);
+    const week = Math.floor(2 + Math.random() * 5);
+    const rec = Math.floor(week * 0.7);
+    const recColor = rec / week > 0.5 ? 'hsl(142 70% 65%)' : 'hsl(35 85% 70%)';
+    return `<tr>
+      <td style="font-family:var(--font-display);color:hsl(var(--foreground))">${esc(r.name)}</td>
+      <td>${today}</td>
+      <td>${week}</td>
+      <td style="color:${recColor}">${rec}</td>
+    </tr>`;
+  }).join('');
+  $('#kpi-ns-sub').textContent = '5-min empty threshold';
+}
+
+// ─── Analytics panel ───────────────────────────────────────────
+function renderAnalytics(){
+  const map = { '7d':7, '30d':30, '90d':30 };
+  const n = map[analyticsRange] || 7;
+  const trend = genSeries(n, 0.6, 0.1);
+  const labels = Array.from({length:n}, (_, i) => analyticsRange === '7d' ? ['M','T','W','T','F','S','S'][i%7] : 'd' + (i+1));
+  renderLineChart('#chart-trend', trend, null, { labels, gid:'trend' });
+
+  // distribution: density curve, no bars
+  const buckets = 16;
+  const dist = Array.from({length:buckets}, (_, i) => Math.exp(-Math.pow((i - 6) / 3.2, 2)) * (0.7 + Math.random() * 0.3));
+  const distLabels = Array.from({length:buckets}, (_, i) => (i * 10) + 'm');
+  renderLineChart('#chart-dist', dist, null, { labels: distLabels, gid:'dist' });
+  $('#med-val').textContent = '42 min';
+
+  // no-show rate
+  const ns = Array.from({length:n}, () => 0.05 + Math.random() * 0.18);
+  renderLineChart('#chart-ns', ns, null, { labels, gid:'ns' });
+
+  renderRadar();
+}
+
+// ─── Event stream ──────────────────────────────────────────────
+function pushEvent(e){
+  e.ts = new Date();
+  evs.unshift(e);
+  if (evs.length > 200) evs.pop();
+  $('#hs-last').textContent = 'just now';
+  if (!evPaused) renderEvents();
+}
+function renderEvents(){
+  const el = $('#ev-list');
+  if (!el) return;
+  const list = evFilter === 'all' ? evs : evs.filter(e => e.type === evFilter);
+  if (list.length === 0){
+    el.innerHTML = '<div class="muted center" style="padding:1.5rem">no events yet — try "Simulate event" in Live Rooms</div>';
+    return;
+  }
+  el.innerHTML = list.map(e => {
+    const t = e.ts.toLocaleTimeString();
+    return `<div class="event t-${e.type}">
+      <span class="ed"></span>
+      <div><div class="ttl">${esc(e.msg)}</div><div class="typ">${e.type} · ${esc(e.room||'')}</div></div>
+      <div class="ts">${t}</div>
+    </div>`;
+  }).join('');
+}
+$('#btn-pause').onclick = () => {
+  evPaused = !evPaused;
+  const btn = $('#btn-pause');
+  btn.innerHTML = evPaused
+    ? '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Resume'
+    : '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause';
+  toast(evPaused ? 'Event stream paused' : 'Event stream resumed');
+};
+$('#btn-clear').onclick = () => { evs = []; renderEvents(); toast('Event log cleared'); };
+
+// ─── Live "simulate" button ────────────────────────────────────
+$('#btn-simulate').onclick = () => {
+  const r = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+  const types = ['room_state','utilization','no_show','meeting_end'];
+  const t = types[Math.floor(Math.random() * types.length)];
+  const msgs = {
+    room_state:  `${r.name} → ${STATE_LABEL[['empty','occupied','meeting'][Math.floor(Math.random()*3)]]}`,
+    utilization: `${r.name} utilization ${Math.round(Math.random()*100)}%`,
+    no_show:     `${r.name} flagged as no-show (5 min empty)`,
+    meeting_end: `Meeting ended in ${r.name}`,
+  };
+  pushEvent({ type:t, room:r.id, msg:msgs[t] });
+  toast('Simulated ' + t, 'ok');
+};
+
+// ─── Settings ──────────────────────────────────────────────────
+$('#set-sens').oninput = e => $('#sens-val').textContent = e.target.value;
+$('#btn-save').onclick = () => {
+  toast('Settings saved · sensitivity ' + $('#set-sens').value + ', grace ' + $('#set-grace').value + ' min', 'ok');
+};
+function renderRoomsTable(){
+  $('#rooms-tbody').innerHTML = ROOMS.map(r => `
+    <tr data-id="${r.id}">
+      <td><input value="${esc(r.name)}" data-f="name" style="width:140px"></td>
+      <td><input type="number" value="${r.cap}" min="1" max="50" data-f="cap" style="width:70px"></td>
+      <td><span style="color:hsl(var(--muted-foreground))">${esc(r.mac)}</span></td>
+      <td><input type="number" value="${r.floor}" min="0" max="20" data-f="floor" style="width:70px"></td>
+      <td><span class="state-pill" style="background:${STATE_COLOR[r.state]}22;color:${STATE_COLOR[r.state]};border:1px solid ${STATE_COLOR[r.state]}55"><span class="dot" style="background:${STATE_COLOR[r.state]}"></span>${STATE_LABEL[r.state]}</span></td>
+      <td class="right"><button class="btn sm ghost" data-act="reboot" data-id="${r.id}">Reboot sensor</button></td>
+    </tr>
+  `).join('');
+  $('#rooms-tbody').querySelectorAll('input').forEach(inp => {
+    inp.onchange = () => {
+      const tr = inp.closest('tr');
+      const r = ROOMS.find(x => x.id === tr.dataset.id);
+      r[inp.dataset.f] = inp.dataset.f === 'name' ? inp.value : Number(inp.value);
+      renderRooms(); renderNoshow();
+    };
+  });
+  $('#rooms-tbody').querySelectorAll('button[data-act="reboot"]').forEach(b => {
+    b.onclick = () => {
+      const r = ROOMS.find(x => x.id === b.dataset.id);
+      toast('Reboot sent to ' + r.mac, 'warn');
+    };
+  });
+}
+
+// ─── Reports ──────────────────────────────────────────────────
+$('#btn-report').onclick = () => {
+  toast('Generating 7-day utilization report (PDF)…', 'ok');
+  setTimeout(() => toast('Report ready · download started', 'ok'), 900);
+};
+
+// ─── Init + tick ──────────────────────────────────────────────
+function init(){
+  renderKPIs();
+  renderUtilChart();
+  renderDonut();
+  renderHeatmap('all');
+  renderRooms();
+  renderMeetings();
+  renderNoshow();
+  renderRoomsTable();
+  // Seed a few events
+  pushEvent({ type:'room_state', room:'r-101', msg:'Atrium A → In meeting' });
+  pushEvent({ type:'utilization', room:'r-201', msg:'Forum utilization 78%' });
+  pushEvent({ type:'no_show', room:'r-301', msg:'Lighthouse flagged as no-show' });
+  pushEvent({ type:'meeting_end', room:'r-202', msg:'Meeting ended in Cascade (52 min)' });
+}
+init();
+
+// passive tick: bump "since" counters and inject occasional events
+setInterval(() => {
+  ROOMS.forEach(r => r.since++);
+  $('#hs-last').textContent = 'just now';
+  // 18% chance to push an event each 6s
+  if (Math.random() < 0.18 && !evPaused){
+    const r = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+    const types = ['room_state','utilization','meeting_end'];
+    const t = types[Math.floor(Math.random() * types.length)];
+    pushEvent({ type:t, room:r.id, msg: t === 'utilization' ? `${r.name} utilization ${Math.round(Math.random()*100)}%` : t === 'meeting_end' ? `Meeting ended in ${r.name}` : `${r.name} → ${STATE_LABEL[['empty','occupied','meeting'][Math.floor(Math.random()*3)]]}` });
+  }
+}, 6000);
+
+// re-render charts on resize
+let rt;
+window.addEventListener('resize', () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => {
+    renderUtilChart();
+    renderKPIs();
+    renderHeatmap('all');
+    if ($('.panel[data-panel="analytics"]').classList.contains('on')) renderAnalytics();
+  }, 150);
+});
+</script>
+</body>
+</html>

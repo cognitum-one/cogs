@@ -1,0 +1,3285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Hyperbolic Space — cognitum / cogs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --warn:35 85% 60%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 18% 72%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --hyper:280 70% 60%;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(280 25% 10%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── App bar ─────────────────────────────────────────────── */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:-1px;
+  background:radial-gradient(circle at 50% 50%,hsl(var(--hyper) / 0.4),transparent 65%);
+  animation:brandpulse 3.4s ease-in-out infinite;
+}
+@keyframes brandpulse{0%,100%{opacity:0.3}50%{opacity:0.9}}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2;position:relative;z-index:1}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap;flex:1;justify-content:center}
+.nav a{
+  display:inline-flex;align-items:center;padding:0.42rem 0.78rem;border-radius:0.45rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.15s;cursor:pointer;
+  border:1px solid transparent;font-family:var(--font-display);
+}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary) / 0.6);text-decoration:none}
+.nav a.active{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.live-chip.top{
+  display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.7rem;
+  border-radius:9999px;font-size:0.6875rem;font-family:var(--font-mono);
+  background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.3);white-space:nowrap;
+}
+.live-chip.top .ldot{width:0.45rem;height:0.45rem;border-radius:50%;background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary));animation:pulse 1.4s ease-in-out infinite}
+@media(max-width:880px){
+  .nav{justify-content:flex-start;width:100%;order:3}
+  .live-chip.top{order:2}
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.65rem;font-weight:600;margin-bottom:0.35rem;letter-spacing:-0.02em}
+.lede{font-size:0.9375rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:56rem;line-height:1.6}
+
+/* breadcrumb */
+.crumb{display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.85rem;font-family:var(--font-mono)}
+.crumb a{color:hsl(var(--muted-foreground))}
+.crumb a:hover{color:hsl(var(--primary))}
+.crumb .sep{color:hsl(var(--muted-foreground) / 0.5)}
+.crumb .last{color:hsl(var(--foreground))}
+
+/* ── Cog hero header ───────────────────────────────────── */
+.hero{
+  position:relative;
+  margin-bottom:1.25rem;
+  background:transparent;
+  border:none;
+  padding:0.5rem 0 1rem;
+}
+.hero::before{ content:none; }
+.hero-row{display:flex;align-items:flex-start;gap:1.25rem;position:relative;z-index:1;flex-wrap:wrap}
+.hero-icon{
+  width:64px;height:64px;border-radius:0.75rem;flex-shrink:0;
+  background:linear-gradient(135deg,hsl(var(--primary) / 0.32),hsl(var(--primary) / 0.10));
+  border:1px solid hsl(var(--primary) / 0.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.1rem;line-height:1;
+}
+.hero-meta{flex:1;min-width:0}
+.hero-cat{
+  display:inline-block;font-size:0.6875rem;text-transform:uppercase;
+  letter-spacing:0.08em;color:hsl(var(--primary-foreground));
+  background:hsl(var(--primary) / 0.85);padding:0.18rem 0.55rem;
+  border-radius:9999px;font-weight:600;font-family:var(--font-mono);margin-bottom:0.5rem;
+}
+.hero-title{font-size:1.875rem;font-weight:700;color:hsl(var(--foreground));line-height:1.15;font-family:var(--font-display);margin-bottom:0.25rem}
+.hero-sub{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.6rem}
+.hero-desc{font-size:0.9375rem;color:hsl(var(--card-foreground));line-height:1.55;max-width:46rem;opacity:0.92}
+.hero-pills{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.85rem}
+.pill{
+  font-size:0.6875rem;font-family:var(--font-mono);
+  padding:0.22rem 0.55rem;border-radius:9999px;
+  background:hsl(var(--secondary) / 0.7);border:1px solid hsl(var(--border) / 0.8);
+  color:hsl(var(--muted-foreground));
+}
+.pill b{color:hsl(var(--foreground));font-weight:600;margin-right:0.25rem}
+.pill.live{color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.4);background:hsl(var(--primary) / 0.08)}
+.pill.live::before{content:"";display:inline-block;width:0.45rem;height:0.45rem;border-radius:50%;background:hsl(var(--primary));margin-right:0.4rem;box-shadow:0 0 6px hsl(var(--primary));animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.hero-cta{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem}
+
+/* ── Cards ─────────────────────────────────────────────── */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.875rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:1rem;font-weight:600;color:hsl(var(--foreground));letter-spacing:-0.01em}
+.card-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+
+/* ── KPI strip ─────────────────────────────────────────── */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:0.95rem 1.1rem;
+  display:flex;align-items:center;gap:0.85rem;
+  transition:border-color 0.2s,transform 0.2s;
+}
+.kpi:hover{border-color:hsl(var(--primary) / 0.4);transform:translateY(-1px)}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.ecto{background:hsl(var(--hyper) / 0.15)}
+.kpi-ic.ecto svg{stroke:hsl(var(--hyper))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.15)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(215 18% 78%);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem;font-family:var(--font-mono)}
+
+/* (Section tabs live in the top app-bar nav — see .nav rules.) */
+
+/* ── Panels ────────────────────────────────────────────── */
+.panel{display:none}
+.panel.on{display:block;animation:fadein 0.25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Grids ─────────────────────────────────────────────── */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-21{display:grid;gap:0.875rem;grid-template-columns:2fr 1fr}
+@media(max-width:900px){.grid-21{grid-template-columns:1fr}}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.32rem 0.62rem;font-size:0.75rem}
+.btn.xs{padding:0.22rem 0.5rem;font-size:0.6875rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:hsl(var(--muted-foreground))}
+.btn.ghost:hover:not(:disabled){background:hsl(var(--secondary) / 0.5);color:hsl(var(--foreground))}
+.btn.accent{background:hsl(var(--accent));color:hsl(var(--accent-foreground));border-color:hsl(var(--accent))}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.85)}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* segmented */
+.seg{display:inline-flex;background:hsl(var(--secondary) / 0.5);border:1px solid hsl(var(--border));border-radius:0.4rem;padding:2px}
+.seg button{
+  padding:0.3rem 0.65rem;border:none;background:transparent;
+  color:hsl(var(--muted-foreground));font-size:0.75rem;font-family:var(--font-display);font-weight:500;
+  border-radius:0.3rem;cursor:pointer;transition:all 0.15s;
+}
+.seg button.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.seg button:hover:not(.on){color:hsl(var(--foreground))}
+
+/* ── Inputs ───────────────────────────────────────────── */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input[type=range]{accent-color:hsl(var(--primary));width:100%;padding:0}
+.input{width:100%;height:2.4rem}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+/* ── Badges ───────────────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;font-family:var(--font-mono);
+}
+.badge.ok{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.bad{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.ecto{background:hsl(var(--hyper) / 0.12);color:hsl(var(--hyper));border-color:hsl(var(--hyper) / 0.3)}
+.badge.info{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+
+/* ── Tables ───────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.6rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  background:hsl(var(--secondary) / 0.3);
+  position:sticky;top:0;
+}
+tbody td{
+  padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.3)}
+
+/* ── Canvas/Chart wrappers ────────────────────────────── */
+.viz{
+  width:100%;background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.55rem;overflow:hidden;
+  position:relative;
+}
+.viz canvas, .viz svg{display:block;width:100%}
+.viz-legend{
+  display:flex;flex-wrap:wrap;gap:0.95rem;font-size:0.75rem;font-family:var(--font-mono);font-weight:500;
+  color:hsl(215 18% 78%);margin-top:0.7rem;
+}
+.viz-legend .lg{display:flex;align-items:center;gap:0.35rem}
+.viz-legend .sw{width:0.7rem;height:0.7rem;border-radius:50%;display:inline-block;border:1px solid hsl(220 25% 6%);box-shadow:0 0 8px 0 hsl(220 25% 6%) inset}
+.viz-toolbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.55rem 0.85rem;border-bottom:1px solid hsl(var(--primary) / 0.18);
+  background:linear-gradient(90deg,hsl(var(--primary) / 0.04),hsl(var(--secondary) / 0.3));
+  font-size:0.75rem;font-family:var(--font-mono);font-weight:500;
+  color:hsl(215 18% 78%);
+}
+.viz-toolbar .vt-actions{display:flex;gap:0.3rem;align-items:center}
+
+/* ── Event log ───────────────────────────────────────── */
+.event-feed{
+  max-height:420px;overflow-y:auto;padding-right:0.4rem;
+  display:flex;flex-direction:column;gap:0.45rem;
+}
+.evt{
+  display:grid;grid-template-columns:auto 1fr auto;gap:0.55rem;align-items:start;
+  padding:0.55rem 0.75rem;
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.4);
+  border-left:3px solid hsl(var(--muted-foreground) / 0.4);
+  border-radius:0.4rem;
+  font-size:0.75rem;
+}
+.evt.evt-embedding_updated{border-left-color:hsl(var(--primary))}
+.evt.evt-hierarchy_detected{border-left-color:hsl(var(--accent))}
+.evt.evt-curvature{border-left-color:hsl(var(--hyper))}
+.evt .ts{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));white-space:nowrap}
+.evt .msg{font-family:var(--font-mono);color:hsl(var(--foreground));word-break:break-word;line-height:1.5}
+.evt .msg b{color:hsl(var(--primary));font-weight:600}
+.evt.evt-hierarchy_detected .msg b{color:hsl(var(--accent))}
+.evt.evt-curvature .msg b{color:hsl(var(--hyper))}
+.evt .tag{font-family:var(--font-mono);font-size:0.625rem}
+
+/* ── Status dot/light ─────────────────────────────────── */
+.statlight{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.75rem;font-family:var(--font-mono)}
+.statlight .ld{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));box-shadow:none}
+.statlight.up .ld{background:hsl(142 70% 50%);box-shadow:0 0 8px hsl(142 70% 50% / 0.6)}
+.statlight.dn .ld{background:hsl(0 65% 50%)}
+.statlight.warn .ld{background:hsl(35 85% 55%);box-shadow:0 0 6px hsl(35 85% 55% / 0.5)}
+
+/* ── Toast ────────────────────────────────────────────── */
+.toast-stack{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:0.5rem;z-index:1000;max-width:340px}
+.toast{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-left:3px solid hsl(var(--primary));border-radius:0.5rem;
+  padding:0.65rem 0.85rem;font-size:0.8125rem;
+  box-shadow:var(--shadow-card);
+  animation:slideIn 0.25s ease;
+}
+.toast.ok{border-left-color:hsl(var(--accent))}
+.toast.bad{border-left-color:hsl(var(--destructive))}
+.toast.warn{border-left-color:hsl(var(--warn))}
+.toast .ti{font-weight:600;margin-bottom:0.15rem}
+.toast .tt{color:hsl(var(--muted-foreground));font-size:0.75rem;font-family:var(--font-mono)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── Modal ────────────────────────────────────────────── */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem;
+  max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{display:block;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* ── Pre / code ──────────────────────────────────────── */
+pre.logbox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 0.875rem;
+  font-family:var(--font-mono);font-size:0.7rem;
+  overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));
+  white-space:pre-wrap;word-break:break-word;
+}
+.copy-row{position:relative}
+.copy-btn{
+  position:absolute;top:0.4rem;right:0.4rem;
+  padding:0.2rem 0.5rem;border:1px solid hsl(var(--border));
+  border-radius:0.3rem;background:hsl(var(--secondary));
+  color:hsl(var(--foreground));font-family:var(--font-display);
+  font-size:0.6875rem;font-weight:500;cursor:pointer;opacity:0.8;
+  transition:all 0.2s;
+}
+.copy-btn:hover{opacity:1;border-color:hsl(var(--primary) / 0.5)}
+.copy-btn.copied{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.4)}
+
+/* ── Misc helpers ────────────────────────────────────── */
+.muted{color:hsl(var(--muted-foreground))}
+.fg{color:hsl(var(--foreground))}
+.mono{font-family:var(--font-mono)}
+.split{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.split.between{justify-content:space-between}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:0.4rem 1.1rem;font-size:0.8125rem}
+.kv .k{color:hsl(215 18% 72%);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.07em;font-weight:600}
+.kv .v{font-family:var(--font-mono);color:hsl(var(--foreground));font-size:0.8125rem;font-weight:500}
+.spark{display:inline-flex;align-items:center;gap:0.35rem;font-family:var(--font-mono);font-size:0.7rem}
+
+/* hierarchy/tree */
+.tree-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:880px){.tree-row{grid-template-columns:1fr}}
+.node-list{display:flex;flex-direction:column;gap:0.35rem;max-height:420px;overflow-y:auto}
+.node-item{
+  display:flex;align-items:center;justify-content:space-between;gap:0.5rem;
+  padding:0.45rem 0.65rem;border-radius:0.4rem;
+  background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.4);
+  cursor:pointer;font-size:0.75rem;font-family:var(--font-mono);
+  transition:all 0.15s;
+}
+.node-item:hover{border-color:hsl(var(--primary) / 0.5);background:hsl(var(--secondary) / 0.4)}
+.node-item.sel{border-color:hsl(var(--primary));background:hsl(var(--primary) / 0.08);box-shadow:0 0 0 1px hsl(var(--primary) / 0.4)}
+.node-item .lbl{display:flex;align-items:center;gap:0.4rem}
+.node-item .lbl .sw{width:0.6rem;height:0.6rem;border-radius:50%}
+.node-item .depth{color:hsl(var(--muted-foreground));font-size:0.65rem}
+
+/* config panel */
+.cfg-row{display:grid;grid-template-columns:1fr 1fr 100px;gap:0.6rem 1rem;align-items:center;padding:0.55rem 0;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row .ck{font-size:0.85rem;font-family:var(--font-display);font-weight:600;color:hsl(var(--foreground));margin-bottom:0.15rem}
+.cfg-row .cd{font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.5}
+.cfg-row .ci{display:flex;align-items:center;gap:0.4rem;justify-content:flex-end}
+.cfg-row .ci input[type=number]{width:5.5rem;text-align:right;font-family:var(--font-mono);font-size:0.75rem}
+.cfg-row .ci .unit{font-size:0.7rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.cfg-row .slider{display:flex;align-items:center;gap:0.5rem;width:100%}
+.cfg-row .slider .val{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--primary));min-width:3rem;text-align:right}
+
+/* deploy */
+.deploy-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem}
+@media(max-width:880px){.deploy-grid{grid-template-columns:1fr}}
+.seed-card{
+  display:flex;align-items:center;gap:0.7rem;
+  padding:0.7rem 0.85rem;
+  background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;cursor:pointer;transition:all 0.15s;
+}
+.seed-card:hover{border-color:hsl(var(--primary) / 0.5)}
+.seed-card.sel{border-color:hsl(var(--primary));background:hsl(var(--primary) / 0.06)}
+.seed-card input{accent-color:hsl(var(--primary))}
+.seed-card .sc-info{flex:1;min-width:0}
+.seed-card .sc-name{font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground))}
+.seed-card .sc-meta{font-size:0.7rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+
+/* footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* responsive */
+@media(max-width:680px){
+  .hero{padding:1.1rem}
+  .hero-title{font-size:1.5rem}
+  h1.page{font-size:1.35rem}
+  .grid-21{grid-template-columns:1fr}
+  .cfg-row{grid-template-columns:1fr;gap:0.3rem}
+  .cfg-row .ci{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- ───── App bar ───── -->
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c4 3 4 15 0 18"/><path d="M12 3c-4 3-4 15 0 18"/></svg>
+      </div>
+      <span class="brand-text"><b>Hyperbolic&nbsp;Space</b><span class="slash">/</span>cognitum<span class="brand-ver mono">v0.4.0</span></span>
+    </div>
+    <nav class="nav" id="topnav" role="tablist">
+      <a class="active" data-tab="overview" role="tab">Overview</a>
+      <a data-tab="poincare" role="tab">Poincaré disk</a>
+      <a data-tab="hierarchy" role="tab">Hierarchy</a>
+      <a data-tab="curvature" role="tab">Curvature</a>
+      <a data-tab="paths" role="tab">Motion paths</a>
+      <a data-tab="events" role="tab">Events</a>
+      <a data-tab="config" role="tab">Config</a>
+      <a data-tab="deploy" role="tab">Deploy</a>
+    </nav>
+    <span class="live-chip top"><span class="ldot"></span><span id="live-clock">00:00:00</span></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- crumb -->
+  <div class="crumb">
+    <a data-nav="catalog">Catalog</a>
+    <span class="sep">/</span>
+    <a data-nav="catalog" data-cat="research">Research</a>
+    <span class="sep">/</span>
+    <span class="last">hyperbolic-space</span>
+  </div>
+
+  <!-- ───── Hero ───── -->
+  <div class="hero">
+    <div class="hero-row">
+      <div class="hero-icon" aria-hidden="true">◔</div>
+      <div class="hero-meta">
+        <span class="hero-cat">Research</span>
+        <h1 class="hero-title">Hyperbolic Space</h1>
+        <div class="hero-sub">cognitum-one/cogs/src/cogs/hyperbolic-space · v0.4.0 · 28 KB · Hard</div>
+        <p class="hero-desc">Maps spatial relationships into hyperbolic (Poincaré ball) space for hierarchical embedding of room topology and motion paths. Captures structure that Euclidean coordinates flatten — corridors, doorways, nested zones, and the geodesic distance between every two points a seed has ever observed.</p>
+        <div class="hero-pills">
+          <span class="pill"><b>Hardware</b>ESP32-S3</span>
+          <span class="pill"><b>Input</b>CSI spatial</span>
+          <span class="pill"><b>Curvature</b>κ <span id="pill-kappa" class="mono">−1.00</span></span>
+          <span class="pill"><b>Dim</b><span id="pill-dim" class="mono">2</span></span>
+          <span class="pill live" id="pill-live">live · streaming</span>
+        </div>
+        <div class="hero-cta">
+          <button class="btn primary" id="btn-install"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Install</button>
+          <button class="btn outline" id="btn-deploy">Deploy to seed</button>
+          <button class="btn ghost" id="btn-docs"><svg viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M14 4v6h6"/></svg>Docs</button>
+          <button class="btn ghost" id="btn-source"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>Source</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── KPIs ───── -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Embedded nodes</div>
+          <div class="kpi-val" id="kpi-nodes">128</div>
+          <div class="kpi-sub" id="kpi-nodes-sub">in active manifold</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M3 12h18M12 3v18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Curvature κ</div>
+          <div class="kpi-val" id="kpi-kappa">−1.00</div>
+          <div class="kpi-sub">target: −1.00 ± 0.05</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic ecto"><svg viewBox="0 0 24 24"><path d="M3 12c2-4 6-7 9-7s7 3 9 7c-2 4-6 7-9 7s-7-3-9-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Avg distortion</div>
+          <div class="kpi-val" id="kpi-distort">0.018</div>
+          <div class="kpi-sub">δ-hyperbolicity</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Embed rate</div>
+          <div class="kpi-val" id="kpi-rate">12.4</div>
+          <div class="kpi-sub">updates / sec</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><polyline points="6 16 10 11 14 14 19 7"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Hierarchy depth</div>
+          <div class="kpi-val" id="kpi-depth">5</div>
+          <div class="kpi-sub" id="kpi-depth-sub">root · zones · rooms · cells · poses</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ OVERVIEW ═════ -->
+  <div class="panel on" id="panel-overview" role="tabpanel">
+    <div class="grid-21">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Live Poincaré snapshot</div>
+            <div class="card-sub">Current embedding of all observed seed-anchored points</div>
+          </div>
+          <div class="seg" id="seg-disk-mode">
+            <button class="on" data-m="density">Density</button>
+            <button data-m="hierarchy">Hierarchy</button>
+            <button data-m="motion">Motion</button>
+          </div>
+        </div>
+        <div class="viz">
+          <div class="viz-toolbar">
+            <span><span id="ov-disk-info">128 points · κ=−1.00</span></span>
+            <div class="vt-actions">
+              <button class="btn xs ghost" id="ov-disk-recenter">Recenter</button>
+              <button class="btn xs ghost" id="ov-disk-snap">Snapshot</button>
+            </div>
+          </div>
+          <canvas id="ov-disk" height="380" aria-label="Poincaré disk overview"></canvas>
+        </div>
+        <div class="viz-legend">
+          <span class="lg"><span class="sw" style="background:hsl(var(--primary))"></span>active anchor</span>
+          <span class="lg"><span class="sw" style="background:hsl(var(--accent))"></span>cluster centroid</span>
+          <span class="lg"><span class="sw" style="background:hsl(var(--hyper))"></span>outlier</span>
+          <span class="lg"><span class="sw" style="background:hsl(var(--warn))"></span>boundary</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.875rem">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">Manifold health</div>
+            <div class="card-sub">last sample · 12s ago</div>
+          </div>
+          <div class="kv">
+            <span class="k">Model</span><span class="v">Poincaré ball B²</span>
+            <span class="k">Loss</span><span class="v" id="hv-loss">0.0241</span>
+            <span class="k">Riemannian step</span><span class="v">η = 0.012</span>
+            <span class="k">Anchors</span><span class="v" id="hv-anchors">14 fixed</span>
+            <span class="k">Margin to ∂B</span><span class="v" id="hv-margin">0.034</span>
+            <span class="k">Stability</span><span class="v" id="hv-stab"><span class="statlight up"><span class="ld"></span>converged</span></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">Recent events</div>
+            <a class="btn xs ghost" id="ov-evt-all">All →</a>
+          </div>
+          <div class="event-feed" id="ov-events" style="max-height:240px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:0.875rem">
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">Curvature drift</div>
+          <div class="card-sub mono">last 60s · target κ = −1.00</div>
+        </div>
+        <div class="viz">
+          <canvas id="ov-curv" height="180" aria-label="Curvature drift chart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">Embed throughput</div>
+          <div class="card-sub mono">updates / sec — sliding window 60s</div>
+        </div>
+        <div class="viz">
+          <canvas id="ov-rate" height="180" aria-label="Embed throughput chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ POINCARÉ ═════ -->
+  <div class="panel" id="panel-poincare" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Poincaré ball — interactive</div>
+          <div class="card-sub">Drag to pan, scroll to zoom in conformal space</div>
+        </div>
+        <div class="split">
+          <div class="seg" id="seg-disk-color">
+            <button class="on" data-c="depth">Depth</button>
+            <button data-c="cluster">Cluster</button>
+            <button data-c="age">Age</button>
+            <button data-c="confidence">Confidence</button>
+          </div>
+          <button class="btn sm outline" id="disk-reset">Reset view</button>
+          <button class="btn sm outline" id="disk-pause">Pause</button>
+        </div>
+      </div>
+      <div class="viz">
+        <div class="viz-toolbar">
+          <span id="disk-info" class="mono">128 points · κ=−1.00 · zoom 1.0×</span>
+          <div class="vt-actions">
+            <label class="mono" style="display:flex;align-items:center;gap:0.35rem;font-size:0.7rem">
+              <input type="checkbox" id="disk-edges" checked> edges
+            </label>
+            <label class="mono" style="display:flex;align-items:center;gap:0.35rem;font-size:0.7rem">
+              <input type="checkbox" id="disk-labels"> labels
+            </label>
+            <label class="mono" style="display:flex;align-items:center;gap:0.35rem;font-size:0.7rem">
+              <input type="checkbox" id="disk-trails"> trails
+            </label>
+          </div>
+        </div>
+        <canvas id="big-disk" height="540" aria-label="Interactive Poincaré disk"></canvas>
+      </div>
+      <div class="viz-legend">
+        <span class="lg"><span class="sw" style="background:hsl(var(--primary))"></span>root / zone</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--accent))"></span>room</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--hyper))"></span>cell</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--warn))"></span>pose</span>
+        <span class="lg"><span class="sw" style="background:hsl(0 65% 60%)"></span>anomaly</span>
+        <span class="lg mono" style="margin-left:auto" id="disk-sel">no selection</span>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:0.875rem">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.5rem">Selected point</div>
+        <div class="kv" id="disk-detail">
+          <span class="k">Status</span><span class="v">Click a node on the disk</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.5rem">Geodesic ruler</div>
+        <p class="card-sub" style="margin-bottom:0.6rem">Pick two nodes; the disk draws the geodesic and reports hyperbolic distance.</p>
+        <div class="split">
+          <button class="btn sm" id="ruler-pickA">Pick A</button>
+          <span class="mono muted" id="ruler-a">—</span>
+          <button class="btn sm" id="ruler-pickB">Pick B</button>
+          <span class="mono muted" id="ruler-b">—</span>
+          <button class="btn sm outline" id="ruler-clear">Clear</button>
+        </div>
+        <div class="kv" style="margin-top:0.6rem">
+          <span class="k">d<sub>H</sub>(A,B)</span><span class="v" id="ruler-dist">—</span>
+          <span class="k">d<sub>E</sub>(A,B)</span><span class="v" id="ruler-deuc">—</span>
+          <span class="k">Path</span><span class="v" id="ruler-path">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ HIERARCHY ═════ -->
+  <div class="panel" id="panel-hierarchy" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Detected hierarchy</div>
+          <div class="card-sub">Root → zones → rooms → cells → poses</div>
+        </div>
+        <div class="split">
+          <button class="btn sm outline" id="hier-collapse">Collapse all</button>
+          <button class="btn sm outline" id="hier-expand">Expand all</button>
+          <button class="btn sm outline" id="hier-refit">Refit</button>
+        </div>
+      </div>
+      <div class="tree-row">
+        <div class="viz">
+          <div class="viz-toolbar">
+            <span class="mono">radial layout · <span id="hier-info">128 nodes</span></span>
+            <div class="vt-actions">
+              <div class="seg" id="seg-tree-layout">
+                <button class="on" data-l="radial">Radial</button>
+                <button data-l="tree">Tree</button>
+              </div>
+            </div>
+          </div>
+          <svg id="hier-svg" viewBox="0 0 600 460" preserveAspectRatio="xMidYMid meet" style="background:hsl(var(--background));height:460px"></svg>
+        </div>
+        <div>
+          <div class="card" style="padding:1rem;height:100%">
+            <div class="card-title" style="margin-bottom:0.4rem">Nodes</div>
+            <div class="card-sub" style="margin-bottom:0.6rem">Click to highlight on tree</div>
+            <input type="text" class="input" id="hier-search" placeholder="Search by id, label, room…" style="margin-bottom:0.6rem">
+            <div class="node-list" id="hier-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ CURVATURE ═════ -->
+  <div class="panel" id="panel-curvature" role="tabpanel">
+    <div class="grid-21">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Curvature trace</div>
+            <div class="card-sub mono" id="curv-info">window 5m · target κ=−1.00</div>
+          </div>
+          <div class="split">
+            <div class="seg" id="seg-curv-win">
+              <button data-w="60">1m</button>
+              <button class="on" data-w="300">5m</button>
+              <button data-w="900">15m</button>
+              <button data-w="3600">1h</button>
+            </div>
+            <button class="btn sm outline" id="curv-export">Export CSV</button>
+          </div>
+        </div>
+        <div class="viz">
+          <canvas id="curv-canvas" height="320" aria-label="Curvature time series"></canvas>
+        </div>
+        <div class="viz-legend">
+          <span class="lg"><span class="sw" style="background:hsl(var(--hyper))"></span>measured κ</span>
+          <span class="lg"><span class="sw" style="background:hsl(var(--primary))"></span>target κ = −1.00</span>
+          <span class="lg"><span class="sw" style="background:hsl(var(--warn) / 0.5)"></span>tolerance band</span>
+          <span class="lg"><span class="sw" style="background:hsl(0 65% 60%)"></span>recalibration events</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.875rem">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Distortion (δ-hyperbolicity)</div>
+          <div class="card-sub mono" style="margin-bottom:0.5rem">Per-triangle 4-point condition</div>
+          <div class="viz">
+            <canvas id="delta-canvas" height="160"></canvas>
+          </div>
+          <div class="kv" style="margin-top:0.6rem">
+            <span class="k">δ mean</span><span class="v" id="delta-mean">0.018</span>
+            <span class="k">δ p95</span><span class="v" id="delta-p95">0.052</span>
+            <span class="k">δ p99</span><span class="v" id="delta-p99">0.091</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.5rem">Recalibrate</div>
+          <p class="card-sub" style="margin-bottom:0.6rem">Re-fits κ from the last <span id="recal-pts" class="mono">512</span> embedded points.</p>
+          <div class="split">
+            <button class="btn primary sm" id="recal-now">Recalibrate now</button>
+            <button class="btn sm outline" id="recal-auto">Auto: <span id="recal-auto-state">ON</span></button>
+          </div>
+          <div class="mono muted" style="margin-top:0.55rem;font-size:0.7rem">Last fit: <span id="recal-when">42s ago</span> · Δκ = <span id="recal-dk">+0.003</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ PATHS ═════ -->
+  <div class="panel" id="panel-paths" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Motion paths in hyperbolic space</div>
+          <div class="card-sub">Geodesic traces of CSI-localized motion over the active session</div>
+        </div>
+        <div class="split">
+          <select class="input" id="paths-source" style="width:auto;height:2rem">
+            <option value="all">All seeds</option>
+            <option value="esp-7a">esp-7a · parlor</option>
+            <option value="esp-3b">esp-3b · hallway</option>
+            <option value="esp-9c">esp-9c · attic</option>
+            <option value="esp-4d">esp-4d · basement</option>
+          </select>
+          <button class="btn sm outline" id="paths-play"><span id="paths-play-l">Pause</span></button>
+          <button class="btn sm outline" id="paths-clear">Clear trails</button>
+        </div>
+      </div>
+      <div class="viz">
+        <div class="viz-toolbar">
+          <span id="paths-info" class="mono">3 active paths · 47 traces in window</span>
+          <div class="vt-actions">
+            <label class="mono" style="display:flex;align-items:center;gap:0.35rem;font-size:0.7rem">Speed
+              <input type="range" id="paths-speed" min="0.25" max="3" step="0.05" value="1" style="width:90px">
+              <span id="paths-speed-l">1.0×</span>
+            </label>
+          </div>
+        </div>
+        <canvas id="paths-canvas" height="460" aria-label="Motion paths on Poincaré disk"></canvas>
+      </div>
+      <div class="viz-legend">
+        <span class="lg"><span class="sw" style="background:hsl(var(--primary))"></span>esp-7a · parlor</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--accent))"></span>esp-3b · hallway</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--hyper))"></span>esp-9c · attic</span>
+        <span class="lg"><span class="sw" style="background:hsl(var(--warn))"></span>esp-4d · basement</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ EVENTS ═════ -->
+  <div class="panel" id="panel-events" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event stream</div>
+          <div class="card-sub mono" id="evt-info">stream open · 0 events</div>
+        </div>
+        <div class="split">
+          <div class="seg" id="seg-evt-filter">
+            <button class="on" data-f="all">All</button>
+            <button data-f="embedding_updated">embedding_updated</button>
+            <button data-f="hierarchy_detected">hierarchy_detected</button>
+            <button data-f="curvature">curvature</button>
+          </div>
+          <button class="btn sm outline" id="evt-pause"><span id="evt-pause-l">Pause</span></button>
+          <button class="btn sm outline" id="evt-clear">Clear</button>
+          <button class="btn sm outline" id="evt-export">Export JSONL</button>
+        </div>
+      </div>
+      <div class="event-feed" id="evt-feed" style="max-height:560px"></div>
+    </div>
+
+    <div class="grid-3" style="margin-top:0.875rem">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.4rem">embedding_updated</div>
+        <p class="card-sub" style="margin-bottom:0.5rem">Emitted when one or more points are re-embedded.</p>
+        <div class="copy-row">
+          <pre class="logbox" id="schema-emb">{
+  "ts": "2026-05-23T17:42:11Z",
+  "n_updated": 14,
+  "kappa": -1.003,
+  "loss": 0.0241,
+  "anchors": ["zone:attic", "room:parlor"]
+}</pre>
+          <button class="copy-btn" data-copy="schema-emb">copy</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.4rem">hierarchy_detected</div>
+        <p class="card-sub" style="margin-bottom:0.5rem">Emitted when a new sub-tree is admitted.</p>
+        <div class="copy-row">
+          <pre class="logbox" id="schema-hier">{
+  "ts": "2026-05-23T17:42:30Z",
+  "parent": "zone:attic",
+  "child": "room:rafters",
+  "depth": 3,
+  "support": 48
+}</pre>
+          <button class="copy-btn" data-copy="schema-hier">copy</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.4rem">curvature</div>
+        <p class="card-sub" style="margin-bottom:0.5rem">Periodic κ fit + tolerance check.</p>
+        <div class="copy-row">
+          <pre class="logbox" id="schema-curv">{
+  "ts": "2026-05-23T17:42:45Z",
+  "kappa": -0.997,
+  "delta_kappa": 0.003,
+  "delta_h": 0.018,
+  "within_tolerance": true
+}</pre>
+          <button class="copy-btn" data-copy="schema-curv">copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ CONFIG ═════ -->
+  <div class="panel" id="panel-config" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Cog configuration</div>
+          <div class="card-sub">Validated against the cog's JSON schema before applying</div>
+        </div>
+        <div class="split">
+          <button class="btn sm outline" id="cfg-reset">Reset defaults</button>
+          <button class="btn primary sm" id="cfg-apply">Apply</button>
+        </div>
+      </div>
+
+      <div id="cfg-rows"></div>
+
+      <div class="card-h" style="margin-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.4);padding-top:1rem">
+        <div class="card-title">Resulting manifest</div>
+        <button class="btn xs ghost" data-copy="cfg-out">copy</button>
+      </div>
+      <div class="copy-row">
+        <pre class="logbox" id="cfg-out"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════ DEPLOY ═════ -->
+  <div class="panel" id="panel-deploy" role="tabpanel">
+    <div class="grid-21">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Select seeds</div>
+            <div class="card-sub">ESP32-S3 nodes able to host hyperbolic-space v0.4.0</div>
+          </div>
+          <div class="split">
+            <button class="btn xs ghost" id="seed-all">Select all</button>
+            <button class="btn xs ghost" id="seed-none">None</button>
+          </div>
+        </div>
+        <div class="deploy-grid" id="seed-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.65rem">Deploy plan</div>
+        <div class="kv">
+          <span class="k">Cog</span><span class="v">hyperbolic-space @ v0.4.0</span>
+          <span class="k">Selected</span><span class="v" id="plan-count">0 seeds</span>
+          <span class="k">Total size</span><span class="v" id="plan-size">0 KB</span>
+          <span class="k">Curvature κ</span><span class="v mono" id="plan-kappa">−1.00</span>
+          <span class="k">Dim</span><span class="v mono" id="plan-dim">2</span>
+          <span class="k">Channel</span>
+          <span class="v">
+            <select id="plan-channel" style="width:auto;height:1.9rem">
+              <option value="stable" selected>stable</option>
+              <option value="beta">beta</option>
+              <option value="canary">canary</option>
+            </select>
+          </span>
+        </div>
+        <div style="margin-top:0.85rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn primary" id="deploy-go" disabled>Deploy</button>
+          <button class="btn outline" id="deploy-dry">Dry-run</button>
+        </div>
+        <div style="margin-top:0.85rem">
+          <div class="card-sub" style="margin-bottom:0.4rem">Recent deploys</div>
+          <div id="deploy-log" style="font-family:var(--font-mono);font-size:0.7rem;color:hsl(var(--muted-foreground));line-height:1.7">no deploys yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: hyperbolic-space@v0.4.0</span> · <span class="mono">arch: esp32-s3</span> · <a id="foot-source">view source</a> · <a id="foot-issues">report issue</a></div>
+    <div style="margin-top:0.4rem">cognitum-one · cogs registry · <span class="mono">build 2026.05.23</span></div>
+  </footer>
+</div>
+
+<!-- ───── Toast stack ───── -->
+<div class="toast-stack" id="toasts"></div>
+
+<!-- ───── Modal ───── -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal">
+    <h3 id="modal-title">Title</h3>
+    <p class="modal-sub" id="modal-sub">Subtitle</p>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn outline" id="modal-cancel">Cancel</button>
+      <button class="btn primary" id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+ *  Hyperbolic Space cog — UI (cognitum-one / cogs registry)
+ *  Single-file, deterministic-but-animated simulation. No external deps.
+ * ════════════════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+
+/* ── seedable RNG (mulberry32) so demo state is reproducible ── */
+function mulberry32(seed){
+  let s = seed >>> 0;
+  return function(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(0xC06504);
+
+/* ── Hyperbolic helpers (Poincaré ball, dim=2) ──────────────────── */
+function poincareDist(ax,ay,bx,by){
+  const dx = ax-bx, dy = ay-by;
+  const num = 2 * (dx*dx + dy*dy);
+  const den = (1 - (ax*ax + ay*ay)) * (1 - (bx*bx + by*by));
+  if (den <= 0) return Infinity;
+  return Math.acosh(1 + num / den);
+}
+function clipDisk(p,maxR=0.985){
+  const r = Math.hypot(p.x,p.y);
+  if (r > maxR){ p.x *= maxR/r; p.y *= maxR/r; }
+  return p;
+}
+/* Mobius translation: shift point p by -a (so a moves to origin) */
+function mobiusTrans(p,a){
+  const ax = -a.x, ay = -a.y;
+  const px = p.x, py = p.y;
+  // (p + a) / (1 + conj(a) p) in 2D
+  const num_x = px + ax + (ax*(px*px+py*py) - 2*py*ay*px) - 0;
+  // Use proper complex formula:
+  // n = (px + ax) + i(py + ay)
+  // d = (1 + ax*px + ay*py) + i(ax*py - ay*px)
+  const nx = px + ax;
+  const ny = py + ay;
+  const dx = 1 + ax*px + ay*py;
+  const dy = ax*py - ay*px;
+  const denom = dx*dx + dy*dy;
+  return { x: (nx*dx + ny*dy)/denom, y: (ny*dx - nx*dy)/denom };
+}
+/* Geodesic from a to b: arc orthogonal to unit circle (or straight line through origin) */
+function geodesicArc(a,b,n=24){
+  const pts = [];
+  const ax=a.x, ay=a.y, bx=b.x, by=b.y;
+  /* test colinear-with-origin */
+  const cross = ax*by - ay*bx;
+  if (Math.abs(cross) < 1e-6){
+    for (let i=0;i<=n;i++){ const t=i/n; pts.push({x:lerp(ax,bx,t), y:lerp(ay,by,t)}); }
+    return pts;
+  }
+  /* Inversive center: c such that |c|^2 = 1 + |a-c|^2 = 1 + |b-c|^2 and a,b on a circle orth. to unit circle. */
+  const na = ax*ax+ay*ay, nb = bx*bx+by*by;
+  const D = 2*(ax*by - ay*bx);
+  const cx = ( (na+1)*by - (nb+1)*ay ) / D;
+  const cy = ( (nb+1)*ax - (na+1)*bx ) / D;
+  const r = Math.sqrt(cx*cx + cy*cy - 1);
+  const aA = Math.atan2(ay-cy, ax-cx);
+  const aB = Math.atan2(by-cy, bx-cx);
+  let d = aB - aA;
+  while (d > Math.PI) d -= 2*Math.PI;
+  while (d < -Math.PI) d += 2*Math.PI;
+  for (let i=0;i<=n;i++){
+    const t = i/n, ang = aA + d*t;
+    pts.push({x: cx + r*Math.cos(ang), y: cy + r*Math.sin(ang)});
+  }
+  return pts;
+}
+
+/* ── Build a synthetic hyperbolic hierarchy ─────────────────────── */
+const CATS = {
+  zone:   { color: 'hsl(185 80% 55%)', label: 'zone',   depth: 1, radius: 0.18 },
+  room:   { color: 'hsl(142 70% 55%)', label: 'room',   depth: 2, radius: 0.36 },
+  cell:   { color: 'hsl(280 70% 65%)', label: 'cell',   depth: 3, radius: 0.58 },
+  pose:   { color: 'hsl(35 85% 60%)',  label: 'pose',   depth: 4, radius: 0.78 },
+  anom:   { color: 'hsl(0 70% 65%)',   label: 'anom',   depth: 5, radius: 0.86 }
+};
+const ZONE_NAMES = ['parlor','attic','basement','hallway','kitchen','stair'];
+const ROOM_NAMES = ['rafters','window','wardrobe','threshold','pantry','landing','cellar','furnace','vent','closet','foyer','study'];
+
+function buildGraph(){
+  const nodes = [];
+  const edges = [];
+  let id = 0;
+
+  /* root */
+  const root = { id: `n${id++}`, kind: 'root', label: 'root', x: 0, y: 0, depth: 0, parent: null, cluster: 0, age: 0, confidence: 1, mass: 4 };
+  nodes.push(root);
+
+  /* zones (6) — placed on small inner circle */
+  ZONE_NAMES.forEach((zn,i)=>{
+    const ang = (i / ZONE_NAMES.length) * Math.PI * 2 + 0.2;
+    const r = 0.22;
+    const z = { id: `n${id++}`, kind: 'zone', label: `zone:${zn}`, x: r*Math.cos(ang), y: r*Math.sin(ang),
+                depth: 1, parent: root.id, cluster: i, age: 60+rng()*120, confidence: 0.85 + rng()*0.13, mass: 3 };
+    nodes.push(z); edges.push([root.id,z.id]);
+
+    /* rooms 1–3 per zone */
+    const nRooms = 2 + Math.floor(rng()*2);
+    for (let j=0;j<nRooms;j++){
+      const aj = ang + (j - (nRooms-1)/2) * 0.5;
+      const rj = 0.45 + rng()*0.08;
+      const rn = ROOM_NAMES[(i*3 + j) % ROOM_NAMES.length];
+      const room = { id: `n${id++}`, kind: 'room', label: `${zn}/${rn}`, x: rj*Math.cos(aj), y: rj*Math.sin(aj),
+                     depth: 2, parent: z.id, cluster: i, age: 30+rng()*90, confidence: 0.75+rng()*0.2, mass: 2.4 };
+      nodes.push(room); edges.push([z.id,room.id]);
+
+      /* cells per room */
+      const nCells = 2 + Math.floor(rng()*3);
+      for (let k=0;k<nCells;k++){
+        const ak = aj + (k - (nCells-1)/2) * 0.22 + (rng()-0.5)*0.05;
+        const rk = 0.66 + rng()*0.08;
+        const cell = { id: `n${id++}`, kind: 'cell', label: `${zn}/${rn}/c${k+1}`, x: rk*Math.cos(ak), y: rk*Math.sin(ak),
+                       depth: 3, parent: room.id, cluster: i, age: 5+rng()*60, confidence: 0.6+rng()*0.3, mass: 1.7 };
+        nodes.push(cell); edges.push([room.id,cell.id]);
+
+        /* poses */
+        const nPoses = 1 + Math.floor(rng()*3);
+        for (let p=0;p<nPoses;p++){
+          const ap = ak + (rng()-0.5)*0.16;
+          const rp = 0.82 + rng()*0.08;
+          const pose = { id: `n${id++}`, kind: 'pose', label: `${zn}/${rn}/c${k+1}/p${p+1}`, x: rp*Math.cos(ap), y: rp*Math.sin(ap),
+                         depth: 4, parent: cell.id, cluster: i, age: rng()*30, confidence: 0.4+rng()*0.4, mass: 1.1 };
+          nodes.push(pose); edges.push([cell.id,pose.id]);
+        }
+      }
+    }
+  });
+
+  /* a few outliers near the disk boundary */
+  for (let i=0;i<5;i++){
+    const ang = rng()*Math.PI*2;
+    const r = 0.9 + rng()*0.06;
+    const a = { id: `n${id++}`, kind: 'anom', label: `outlier-${i+1}`, x: r*Math.cos(ang), y: r*Math.sin(ang),
+                depth: 5, parent: null, cluster: -1, age: rng()*15, confidence: 0.2+rng()*0.4, mass: 1.4 };
+    nodes.push(a);
+  }
+  return { nodes, edges };
+}
+
+const GRAPH = buildGraph();
+const NODES_BY_ID = Object.fromEntries(GRAPH.nodes.map(n=>[n.id,n]));
+
+/* ── Global simulated state ─────────────────────────────────────── */
+const STATE = {
+  startedAt: Date.now(),
+  phase: 0,
+  kappa: -1.00,
+  kappaTrace: [],            // {t, k}
+  rateTrace: [],             // {t, r}
+  deltaHist: [],             // distortion samples
+  events: [],
+  evtPaused: false,
+  pathsPaused: false,
+  pathsPlayLabel: 'Pause',
+  pathsSpeed: 1.0,
+  pathsTrails: [],           // arrays of {x,y,t,seed}
+  pathSeedFilter: 'all',
+  curvWindow: 300,
+  evtFilter: 'all',
+  selectedNode: null,
+  pickMode: null,            // 'A' | 'B' | null
+  rulerA: null, rulerB: null,
+  bigDiskOpts: { color: 'depth', edges: true, labels: false, trails: false, zoom: 1, panX: 0, panY: 0, paused: false },
+  ovDiskMode: 'density',
+  treeLayout: 'radial',
+  config: {
+    dim: 2,
+    kappa_target: -1.00,
+    learning_rate: 0.012,
+    margin_eps: 0.001,
+    anchor_count: 14,
+    distortion_alert: 0.10,
+    update_hz: 15,
+    embedding_buffer: 512,
+    use_hyperboloid_aux: true,
+    enable_riemannian_sgd: true
+  },
+  deploy: { selected: new Set(), log: [] }
+};
+
+const SEEDS = [
+  { id: 'esp-7a', label: 'esp-7a · parlor',   hw:'ESP32-S3', battery: 0.82, status:'online',  color:'hsl(var(--primary))' },
+  { id: 'esp-3b', label: 'esp-3b · hallway',  hw:'ESP32-S3', battery: 0.61, status:'online',  color:'hsl(var(--accent))' },
+  { id: 'esp-9c', label: 'esp-9c · attic',    hw:'ESP32-S3', battery: 0.94, status:'online',  color:'hsl(var(--hyper))' },
+  { id: 'esp-4d', label: 'esp-4d · basement', hw:'ESP32-S3', battery: 0.38, status:'warn',    color:'hsl(var(--warn))' },
+  { id: 'esp-2e', label: 'esp-2e · kitchen',  hw:'ESP32-S3', battery: 0.71, status:'online',  color:'hsl(220 70% 60%)' },
+  { id: 'esp-5f', label: 'esp-5f · stair',    hw:'ESP32-S3', battery: 0.55, status:'online',  color:'hsl(320 70% 60%)' },
+];
+
+/* ── Toast helpers ──────────────────────────────────────────────── */
+function toast(kind, title, sub){
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || '');
+  el.innerHTML = `<div class="ti">${title}</div>${sub?`<div class="tt">${sub}</div>`:''}`;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(12px)'; el.style.transition='all 0.2s'; }, 3200);
+  setTimeout(()=>el.remove(), 3600);
+}
+
+/* ── Modal ──────────────────────────────────────────────────────── */
+let modalOnOk = null;
+function openModal({title, sub, bodyHtml, okLabel='OK', cancelLabel='Cancel', onOk}){
+  $('#modal-title').textContent = title;
+  $('#modal-sub').textContent = sub || '';
+  $('#modal-body').innerHTML = bodyHtml || '';
+  $('#modal-ok').textContent = okLabel;
+  $('#modal-cancel').textContent = cancelLabel;
+  modalOnOk = onOk;
+  $('#modal-bg').classList.add('show');
+}
+function closeModal(){ $('#modal-bg').classList.remove('show'); modalOnOk = null; }
+$('#modal-cancel').addEventListener('click', closeModal);
+$('#modal-ok').addEventListener('click', ()=>{ const f = modalOnOk; closeModal(); if (f) f(); });
+$('#modal-bg').addEventListener('click', e=>{ if (e.target === $('#modal-bg')) closeModal(); });
+
+/* ── Navigation / Tabs (top nav doubles as the section tab strip) ── */
+function activateTab(name){
+  const navLinks = $$('#topnav a');
+  navLinks.forEach(a => a.classList.toggle('active', a.dataset.tab === name));
+  $$('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + name));
+  /* canvases need a frame to size correctly when revealed */
+  requestAnimationFrame(()=>{ resizeAll(); });
+  /* scroll body to top for clarity on small screens */
+  if (window.scrollY > 240) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+$$('#topnav a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  if (a.dataset.tab) activateTab(a.dataset.tab);
+}));
+$$('.crumb [data-nav]').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  toast('', 'Cogs catalog', 'Catalog navigation lives outside this single cog page.');
+}));
+
+/* ── HiDPI canvas helper ──────────────────────────────────────────
+ * Remembers the desired CSS dimensions in a WeakMap so subsequent
+ * fitCanvas() calls don't compound the dpr scaling (since assigning
+ * c.height also mutates the HTML attribute we'd otherwise re-read).
+ * Sets c.style.* explicitly so retina displays don't render the canvas
+ * at bitmap-pixel size. */
+const _canvasCSSH = new WeakMap();
+function fitCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  let cssH = _canvasCSSH.get(c);
+  if (cssH === undefined){
+    cssH = parseInt(c.getAttribute('height'), 10) || c.clientHeight || 280;
+    _canvasCSSH.set(c, cssH);
+  }
+  const cssW = c.parentElement.clientWidth || c.clientWidth || 600;
+  c.style.width = cssW + 'px';
+  c.style.height = cssH + 'px';
+  const bitW = Math.max(1, Math.floor(cssW * dpr));
+  const bitH = Math.max(1, Math.floor(cssH * dpr));
+  if (c.width !== bitW) c.width = bitW;
+  if (c.height !== bitH) c.height = bitH;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: cssW, h: cssH };
+}
+
+/* ── Disk drawer ────────────────────────────────────────────────── */
+function colorForNode(n, mode='depth'){
+  if (mode === 'depth'){
+    if (n.kind === 'root') return 'hsl(210 20% 92%)';
+    if (n.kind === 'zone') return 'hsl(185 80% 55%)';
+    if (n.kind === 'room') return 'hsl(142 70% 55%)';
+    if (n.kind === 'cell') return 'hsl(280 70% 65%)';
+    if (n.kind === 'pose') return 'hsl(35 85% 60%)';
+    if (n.kind === 'anom') return 'hsl(0 70% 65%)';
+  }
+  if (mode === 'cluster'){
+    const palette = ['hsl(185 80% 55%)','hsl(142 70% 55%)','hsl(280 70% 65%)','hsl(35 85% 60%)','hsl(220 70% 60%)','hsl(320 70% 60%)','hsl(0 70% 65%)'];
+    return palette[(n.cluster + 7) % palette.length];
+  }
+  if (mode === 'age'){
+    const t = clamp(n.age / 180, 0, 1);
+    const h = lerp(185, 320, t);
+    return `hsl(${h} 75% 60%)`;
+  }
+  if (mode === 'confidence'){
+    const t = clamp(n.confidence, 0, 1);
+    const h = lerp(0, 142, t);
+    return `hsl(${h} 70% 60%)`;
+  }
+  return 'hsl(var(--primary))';
+}
+
+function drawDisk(ctx, w, h, opts){
+  const cx = w/2, cy = h/2;
+  const baseR = Math.min(w,h) * 0.46;
+  const R = baseR * (opts.zoom || 1);
+  const panX = opts.panX || 0, panY = opts.panY || 0;
+  ctx.clearRect(0,0,w,h);
+
+  /* background grid in conformal disk */
+  ctx.save();
+  ctx.translate(cx+panX, cy+panY);
+  ctx.beginPath();
+  ctx.arc(0,0,R,0,Math.PI*2);
+  ctx.fillStyle = 'hsl(220 25% 5%)';
+  ctx.fill();
+
+  /* concentric hyperbolic rings (depth contours) */
+  for (let i=1;i<=6;i++){
+    const rr = (i/6) * R * 0.98;
+    ctx.beginPath();
+    ctx.arc(0,0,rr,0,Math.PI*2);
+    ctx.strokeStyle = `hsl(220 15% 22% / ${0.55 - i*0.06})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  /* radial lines */
+  for (let k=0;k<12;k++){
+    const a = (k/12) * Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(R*Math.cos(a)*0.98, R*Math.sin(a)*0.98);
+    ctx.strokeStyle = 'hsl(220 15% 22% / 0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  /* boundary */
+  ctx.beginPath();
+  ctx.arc(0,0,R,0,Math.PI*2);
+  ctx.strokeStyle = 'hsl(185 80% 55% / 0.75)';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  /* edges */
+  if (opts.edges !== false){
+    ctx.lineWidth = 1;
+    GRAPH.edges.forEach(([a,b])=>{
+      const A = NODES_BY_ID[a], B = NODES_BY_ID[b];
+      if (!A || !B) return;
+      const pts = geodesicArc(A,B, 18);
+      ctx.beginPath();
+      pts.forEach((p,i)=>{ const X = p.x*R, Y = p.y*R; if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y); });
+      const dA = A.depth, dB = B.depth, dmax = Math.max(dA,dB);
+      ctx.strokeStyle = `hsl(185 60% 50% / ${0.42 - dmax*0.05})`;
+      ctx.stroke();
+    });
+  }
+
+  /* trails */
+  if (opts.trails && STATE.pathsTrails.length){
+    STATE.pathsTrails.forEach(tr=>{
+      ctx.beginPath();
+      tr.pts.forEach((p,i)=>{ const X = p.x*R, Y = p.y*R; if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y); });
+      ctx.strokeStyle = tr.color + 'cc';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    });
+  }
+
+  const mode = opts.color || 'depth';
+
+  /* ── Mode-specific overlays (cluster hulls / centroids) ─── */
+  if (mode === 'cluster'){
+    const byCluster = {};
+    GRAPH.nodes.forEach(n => {
+      if (n.cluster < 0 || n.kind === 'root') return;
+      (byCluster[n.cluster] = byCluster[n.cluster] || []).push(n);
+    });
+    Object.entries(byCluster).forEach(([cidx, nodes]) => {
+      const cluster = Number(cidx);
+      const cc = colorForNode({ cluster }, 'cluster');
+      if (nodes.length < 3) return;
+      const pts = nodes.map(n => ({ x: n.x*R, y: n.y*R }));
+      const hull = convexHull2D(pts);
+      if (hull.length < 3) return;
+      /* expanded hull (offset outward from centroid) */
+      let hcx = 0, hcy = 0;
+      hull.forEach(p => { hcx += p.x; hcy += p.y; });
+      hcx /= hull.length; hcy /= hull.length;
+      const expanded = hull.map(p => {
+        const dx = p.x - hcx, dy = p.y - hcy;
+        const d = Math.hypot(dx, dy) || 1;
+        return { x: p.x + (dx/d)*8, y: p.y + (dy/d)*8 };
+      });
+      ctx.save();
+      ctx.beginPath();
+      expanded.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      ctx.closePath();
+      ctx.fillStyle = cc;
+      ctx.globalAlpha = 0.10;
+      ctx.fill();
+      ctx.globalAlpha = 0.65;
+      ctx.strokeStyle = cc;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5,4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      /* centroid */
+      ctx.shadowColor = cc;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(hcx, hcy, 12, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle = cc;
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(hcx, hcy, 3, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  /* ── Nodes (size/alpha/visibility driven by view mode) ─── */
+  const labelTodo = [];
+  GRAPH.nodes.forEach(n => {
+    if (n.kind === 'root') return;
+    const style = nodeViewStyle(n, mode);
+    if (style.hide) return;
+    const X = n.x*R, Y = n.y*R;
+    const isSel = STATE.selectedNode === n.id;
+    const isA = STATE.rulerA === n.id;
+    const isB = STATE.rulerB === n.id;
+    const baseR = (1 + n.mass*1.4) * style.radius + (isSel ? 3 : 0);
+    ctx.save();
+    ctx.globalAlpha = style.alpha;
+    /* halo for outliers + selected */
+    if (n.kind === 'anom' || isSel){
+      ctx.beginPath();
+      ctx.arc(X,Y, baseR+5, 0, Math.PI*2);
+      ctx.fillStyle = style.color;
+      ctx.globalAlpha = (n.kind === 'anom' ? 0.18 : 0.28) * style.alpha;
+      ctx.fill();
+      ctx.globalAlpha = style.alpha;
+    }
+    /* core */
+    ctx.shadowColor = style.color;
+    ctx.shadowBlur = isSel ? 8 : (mode === 'confidence' ? 4 : 2);
+    ctx.beginPath();
+    ctx.arc(X, Y, baseR, 0, Math.PI*2);
+    ctx.fillStyle = style.color;
+    ctx.fill();
+    ctx.restore();
+    if (isSel || isA || isB){
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(X, Y, baseR+3, 0, Math.PI*2);
+      ctx.strokeStyle = isA ? 'hsl(142 70% 60%)' : isB ? 'hsl(35 85% 65%)' : 'hsl(185 80% 70%)';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.restore();
+    }
+    /* collect label requests for collision-aware placement */
+    if (opts.labels){
+      const labelKind = (n.kind === 'zone') || isSel || isA || isB;
+      if (labelKind){
+        labelTodo.push({ X, Y, text: n.label, color: 'hsl(210 22% 94%)', accent: style.color, priority: isSel ? 0 : (n.kind === 'zone' ? 1 : 2) });
+      }
+    }
+  });
+
+  /* ── Root ───────────────────────────────────────────── */
+  ctx.save();
+  ctx.shadowColor = 'hsl(185 80% 60%)';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(0,0,4,0,Math.PI*2);
+  ctx.fillStyle = 'hsl(210 22% 96%)';
+  ctx.fill();
+  ctx.restore();
+
+  /* ruler */
+  if (STATE.rulerA && STATE.rulerB){
+    const A = NODES_BY_ID[STATE.rulerA], B = NODES_BY_ID[STATE.rulerB];
+    if (A && B){
+      const pts = geodesicArc(A,B, 36);
+      ctx.beginPath();
+      pts.forEach((p,i)=>{ const X = p.x*R, Y = p.y*R; if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y); });
+      ctx.strokeStyle = 'hsl(142 70% 60%)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4,3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  /* ── Collision-aware label placement (radial outward) ── */
+  if (labelTodo.length){
+    ctx.font = '600 11px "JetBrains Mono",monospace';
+    ctx.textBaseline = 'middle';
+    const placed = [];
+    /* draw highest priority first (selected > zones > rest) */
+    labelTodo.sort((a,b)=>a.priority - b.priority);
+    labelTodo.forEach(it => {
+      const text = it.text;
+      const tw = ctx.measureText(text).width;
+      const bw = tw + 12, bh = 16;
+      const ang0 = Math.atan2(it.Y, it.X);
+      const offsets = [16, 24, 34, 46, 60, 76, 94];
+      const angDeltas = [0, 0.12, -0.12, 0.25, -0.25, 0.4, -0.4, 0.6, -0.6];
+      let chosen = null;
+      outer:
+      for (const off of offsets){
+        for (const dA of angDeltas){
+          const ang = ang0 + dA;
+          const lx0 = it.X + Math.cos(ang)*off;
+          const ly0 = it.Y + Math.sin(ang)*off;
+          const cosA = Math.cos(ang);
+          const anchorEnd = cosA < -0.15;
+          const lx = anchorEnd ? lx0 - bw : (cosA > 0.15 ? lx0 : lx0 - bw/2);
+          const ly = ly0 - bh/2;
+          const rect = { x: lx, y: ly, w: bw, h: bh, ax: it.X, ay: it.Y };
+          let collides = false;
+          for (const p of placed){
+            if (!(rect.x + rect.w + 2 < p.x || p.x + p.w + 2 < rect.x ||
+                  rect.y + rect.h + 2 < p.y || p.y + p.h + 2 < rect.y)){ collides = true; break; }
+          }
+          if (!collides){ chosen = { rect, anchorEnd, ang }; break outer; }
+        }
+      }
+      if (!chosen) return;
+      const r = chosen.rect;
+      /* leader line from node edge to label */
+      ctx.save();
+      ctx.strokeStyle = it.accent;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(it.X, it.Y);
+      ctx.lineTo(r.x + r.w/2, r.y + r.h/2);
+      ctx.stroke();
+      ctx.restore();
+      /* backdrop pill */
+      ctx.save();
+      ctx.fillStyle = 'hsl(220 28% 8% / 0.92)';
+      ctx.strokeStyle = it.accent;
+      ctx.lineWidth = 1;
+      ctx.shadowColor = it.accent;
+      ctx.shadowBlur = 4;
+      roundRect(ctx, r.x, r.y, r.w, r.h, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = it.color;
+      ctx.textAlign = 'left';
+      ctx.fillText(text, r.x + 6, r.y + r.h/2);
+      ctx.restore();
+      placed.push(r);
+    });
+  }
+
+  ctx.restore();
+}
+
+/* ── Node view-mode style (data really differs across modes) ─── */
+function nodeViewStyle(n, mode){
+  if (mode === 'cluster'){
+    const orphan = n.cluster < 0;
+    return {
+      color: orphan ? 'hsl(0 65% 65%)' : colorForNode(n, 'cluster'),
+      alpha: orphan ? 0.35 : 1,
+      radius: n.kind === 'zone' ? 1.45 : (n.kind === 'room' ? 1.15 : 1),
+      hide: false
+    };
+  }
+  if (mode === 'age'){
+    const t = clamp(1 - n.age/90, 0, 1);  /* 0..90s window */
+    return {
+      color: colorForNode(n, 'age'),
+      alpha: 0.18 + t*0.82,
+      radius: 0.55 + t*0.95,
+      hide: false
+    };
+  }
+  if (mode === 'confidence'){
+    const c = n.confidence;
+    return {
+      color: colorForNode(n, 'confidence'),
+      alpha: 0.18 + c*0.82,
+      radius: 0.45 + c*1.2,
+      hide: c < 0.32 && n.kind !== 'zone' && n.kind !== 'root'
+    };
+  }
+  /* depth (default) */
+  return { color: colorForNode(n, 'depth'), alpha: 1, radius: 1, hide: false };
+}
+
+/* ── Convex hull (Andrew's monotone chain) for cluster overlay ── */
+function convexHull2D(pts){
+  if (pts.length < 3) return pts.slice();
+  const ps = pts.slice().sort((a,b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+  const cross = (O,A,B) => (A.x-O.x)*(B.y-O.y) - (A.y-O.y)*(B.x-O.x);
+  const lower = [];
+  for (const p of ps){
+    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = ps.length-1; i >= 0; i--){
+    const p = ps[i];
+    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+
+/* hit-test against rendered disk */
+function pickNodeAt(canvas, evt, panX=0, panY=0, zoom=1){
+  const rect = canvas.getBoundingClientRect();
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const x = evt.clientX - rect.left;
+  const y = evt.clientY - rect.top;
+  const cx = w/2 + panX, cy = h/2 + panY;
+  const R = Math.min(w,h) * 0.46 * zoom;
+  let best = null, bestDist = 1e9;
+  GRAPH.nodes.forEach(n=>{
+    if (n.kind === 'root') return;
+    const X = cx + n.x*R, Y = cy + n.y*R;
+    const dd = Math.hypot(X-x, Y-y);
+    const target = 4 + n.mass*1.4;
+    if (dd <= target+4 && dd < bestDist){ best = n; bestDist = dd; }
+  });
+  return best;
+}
+
+/* ── Overview disk ──────────────────────────────────────────────── */
+function paintOvDisk(){
+  const c = $('#ov-disk');
+  const { ctx, w, h } = fitCanvas(c);
+  const mode = STATE.ovDiskMode;
+  let colorMode = 'depth';
+  let opts = { color: colorMode, edges: true, labels: false, trails: false, zoom: 1 };
+  if (mode === 'hierarchy') opts.color = 'depth';
+  if (mode === 'density'){ opts.edges = false; opts.color = 'depth'; }
+  if (mode === 'motion'){ opts.trails = true; opts.edges = false; opts.color = 'cluster'; }
+  drawDisk(ctx,w,h,opts);
+  $('#ov-disk-info').textContent = `${GRAPH.nodes.length-1} points · κ=${STATE.kappa.toFixed(2)} · ${mode}`;
+}
+$('#ov-disk').addEventListener('click', e=>{
+  const n = pickNodeAt($('#ov-disk'), e);
+  if (n){
+    STATE.selectedNode = n.id;
+    toast('', n.label, `${n.kind} · depth ${n.depth} · conf ${(n.confidence*100).toFixed(0)}%`);
+    paintOvDisk();
+  }
+});
+$('#ov-disk-recenter').addEventListener('click', ()=>{ paintOvDisk(); toast('','View centered'); });
+$('#ov-disk-snap').addEventListener('click', ()=>{ snapshotCanvas($('#ov-disk'), 'overview-disk'); });
+$$('#seg-disk-mode button').forEach(b => b.addEventListener('click', ()=>{
+  $$('#seg-disk-mode button').forEach(x=>x.classList.toggle('on', x===b));
+  STATE.ovDiskMode = b.dataset.m;
+  paintOvDisk();
+}));
+
+/* ── HUD helpers ────────────────────────────────────────────────── */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+function hudFrame(ctx, x, y, w, h, color){
+  // background gradient panel
+  const bg = ctx.createLinearGradient(0, y, 0, y+h);
+  bg.addColorStop(0, 'hsl(220 28% 9%)');
+  bg.addColorStop(1, 'hsl(220 28% 5%)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(x, y, w, h);
+  // fine grid
+  ctx.strokeStyle = 'hsl(220 15% 22% / 0.45)';
+  ctx.lineWidth = 0.5;
+  for (let i=1;i<10;i++){
+    const gy = y + (i/10)*h;
+    ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x+w, gy); ctx.stroke();
+  }
+  for (let i=1;i<8;i++){
+    const gx = x + (i/8)*w;
+    ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y+h); ctx.stroke();
+  }
+  // outer frame
+  ctx.strokeStyle = 'hsl(185 60% 50% / 0.18)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+  // HUD corner brackets
+  const cb = 10;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, y+cb); ctx.lineTo(x, y); ctx.lineTo(x+cb, y);
+  ctx.moveTo(x+w-cb, y); ctx.lineTo(x+w, y); ctx.lineTo(x+w, y+cb);
+  ctx.moveTo(x, y+h-cb); ctx.lineTo(x, y+h); ctx.lineTo(x+cb, y+h);
+  ctx.moveTo(x+w-cb, y+h); ctx.lineTo(x+w, y+h); ctx.lineTo(x+w, y+h-cb);
+  ctx.stroke();
+}
+
+/* ── Futuristic time-series line chart ────────────────────────── */
+function drawLine(ctx, w, h, series, opts={}){
+  ctx.clearRect(0,0,w,h);
+  if (!series.length) return;
+  const pad = { l: 46, r: 16, t: 18, b: 28 };
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  const vmin = opts.yMin !== undefined ? opts.yMin : Math.min(...series.map(p=>p.v));
+  const vmax = opts.yMax !== undefined ? opts.yMax : Math.max(...series.map(p=>p.v));
+  const spanV = (vmax - vmin) || 1;
+  const tmax = opts.tMax || series[series.length-1].t;
+  const tmin = opts.tMin || (tmax - (opts.windowMs || (series[series.length-1].t - series[0].t) || 60000));
+  const spanT = (tmax - tmin) || 1;
+  const color = opts.color || 'hsl(185 80% 60%)';
+  const phase = (opts.phase || 0);
+
+  hudFrame(ctx, pad.l, pad.t, innerW, innerH, color);
+
+  // y axis labels
+  ctx.font = '500 10px "JetBrains Mono",monospace';
+  ctx.fillStyle = 'hsl(215 18% 65%)';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + (i/4)*innerH;
+    const v = vmax - (i/4)*spanV;
+    ctx.fillText(v.toFixed(opts.yPrecision !== undefined ? opts.yPrecision : 2), pad.l-6, y);
+  }
+  // x axis labels (relative seconds; "now" at right)
+  ctx.textAlign = 'center';
+  for (let i=0;i<=4;i++){
+    const x = pad.l + (i/4)*innerW;
+    const t = tmin + (i/4)*spanT;
+    const sec = Math.max(0, Math.round((tmax-t)/1000));
+    const lbl = sec === 0 ? 'now' : '−'+sec+'s';
+    ctx.fillText(lbl, x, h-10);
+  }
+
+  // tolerance band (drawn before line, behind everything)
+  if (opts.bandLo !== undefined && opts.bandHi !== undefined){
+    const yL = pad.t + (1 - (opts.bandLo - vmin)/spanV) * innerH;
+    const yH = pad.t + (1 - (opts.bandHi - vmin)/spanV) * innerH;
+    const yTop = Math.min(yL,yH), yBot = Math.max(yL,yH);
+    const bg = ctx.createLinearGradient(0, yTop, 0, yBot);
+    bg.addColorStop(0,   'hsla(35, 85%, 60%, 0.06)');
+    bg.addColorStop(0.5, 'hsla(35, 85%, 60%, 0.16)');
+    bg.addColorStop(1,   'hsla(35, 85%, 60%, 0.06)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(pad.l, yTop, innerW, yBot-yTop);
+    // dashed band borders
+    ctx.save();
+    ctx.strokeStyle = 'hsl(35 85% 65% / 0.5)';
+    ctx.setLineDash([3,4]);
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(pad.l, yTop); ctx.lineTo(pad.l+innerW, yTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l, yBot); ctx.lineTo(pad.l+innerW, yBot); ctx.stroke();
+    ctx.restore();
+  }
+
+  // target line — animated marching dashes
+  if (opts.target !== undefined){
+    const ty = pad.t + (1 - (opts.target - vmin)/spanV) * innerH;
+    ctx.save();
+    ctx.setLineDash([6,5]);
+    ctx.lineDashOffset = -((phase*32)%11);
+    ctx.beginPath();
+    ctx.moveTo(pad.l, ty); ctx.lineTo(pad.l+innerW, ty);
+    ctx.strokeStyle = opts.targetColor || 'hsl(185 80% 60% / 0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.font = '600 9px "JetBrains Mono",monospace';
+    ctx.fillStyle = opts.targetColor || 'hsl(185 80% 70%)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('target ' + opts.target.toFixed(2), pad.l+6, ty-2);
+    ctx.restore();
+  }
+
+  // Convert series to screen points
+  const pts = series.map(p => ({
+    x: pad.l + ((p.t - tmin)/spanT) * innerW,
+    y: pad.t + (1 - (p.v - vmin)/spanV) * innerH,
+    v: p.v, t: p.t
+  })).filter(p => p.x >= pad.l - 4 && p.x <= pad.l+innerW + 4);
+  if (!pts.length) return;
+
+  // Gradient fill under the curve
+  ctx.save();
+  const baseColor = color;
+  // hsl(...) without alpha; use globalAlpha for gradient stops
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pad.t+innerH);
+  for (let i=0;i<pts.length;i++){
+    if (i===0) ctx.lineTo(pts[i].x, pts[i].y);
+    else {
+      const prev = pts[i-1], curr = pts[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineTo(pts[pts.length-1].x, pad.t+innerH);
+  ctx.closePath();
+  const fg = ctx.createLinearGradient(0, pad.t, 0, pad.t+innerH);
+  fg.addColorStop(0, baseColor);
+  fg.addColorStop(1, baseColor);
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.30;
+  ctx.fill();
+  ctx.globalAlpha = 0.10;
+  ctx.fill();
+  ctx.restore();
+
+  // Soft outer glow stroke
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<pts.length;i++){
+    if (i===0) ctx.moveTo(pts[i].x, pts[i].y);
+    else {
+      const prev = pts[i-1], curr = pts[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.strokeStyle = baseColor;
+  ctx.globalAlpha = 0.22;
+  ctx.lineWidth = 6;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // Crisp main stroke with shadow glow
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<pts.length;i++){
+    if (i===0) ctx.moveTo(pts[i].x, pts[i].y);
+    else {
+      const prev = pts[i-1], curr = pts[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.strokeStyle = baseColor;
+  ctx.lineWidth = 1.9;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.shadowColor = baseColor;
+  ctx.shadowBlur = 8;
+  ctx.stroke();
+  ctx.restore();
+
+  // event markers (recalibration etc.)
+  if (opts.events){
+    opts.events.forEach(ev=>{
+      if (ev.t < tmin || ev.t > tmax) return;
+      const x = pad.l + ((ev.t - tmin)/spanT) * innerW;
+      const y = pad.t + (1 - (ev.v - vmin)/spanV) * innerH;
+      ctx.save();
+      const eColor = ev.color || 'hsl(0 70% 65%)';
+      ctx.strokeStyle = eColor;
+      ctx.shadowColor = eColor;
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1.3;
+      const r = 4 + Math.sin(phase*4 + (ev.t/600))*1.5;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = eColor;
+      ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  // Pulsing endpoint marker
+  const last = pts[pts.length-1];
+  const pulse = 0.5 + 0.5*Math.sin(phase*5);
+  ctx.save();
+  ctx.fillStyle = baseColor;
+  ctx.shadowColor = baseColor;
+  ctx.shadowBlur = 14 + 8*pulse;
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3 + 1.5*pulse, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.strokeStyle = baseColor;
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.7 - 0.55*pulse;
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 5 + 11*pulse, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Floating value badge
+  const fmt = (opts.yPrecision !== undefined ? opts.yPrecision : 2);
+  const badgeTxt = (opts.label ? opts.label + '  ' : '') + last.v.toFixed(fmt) + (opts.unit ? ' ' + opts.unit : '');
+  ctx.save();
+  ctx.font = '600 10.5px "JetBrains Mono",monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  const tw = ctx.measureText(badgeTxt).width;
+  const bw = tw + 16, bh = 18;
+  let bx = last.x + 12;
+  let by = last.y - 14;
+  if (bx + bw > pad.l + innerW - 4) bx = last.x - bw - 12;
+  by = clamp(by, pad.t + 4, pad.t + innerH - bh - 4);
+  ctx.fillStyle = 'hsl(220 28% 7% / 0.92)';
+  ctx.strokeStyle = baseColor;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = baseColor;
+  ctx.shadowBlur = 6;
+  roundRect(ctx, bx, by, bw, bh, 9);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = baseColor;
+  ctx.fillText(badgeTxt, bx + 8, by + bh/2);
+  ctx.restore();
+}
+
+/* ── Futuristic δ-hyperbolicity density chart ─────────────────── */
+function drawDeltaHist(ctx, w, h, phase=0){
+  ctx.clearRect(0,0,w,h);
+  const bins = 64;
+  const max = 0.2;
+  const counts = new Array(bins).fill(0);
+  STATE.deltaHist.forEach(v=>{
+    const b = clamp(Math.floor((v/max)*bins), 0, bins-1);
+    counts[b]++;
+  });
+  // smoothing pass (gaussian-ish 1-2-1)
+  const smooth = counts.map((_,i)=>{
+    const a = counts[i-1]||0, c = counts[i], d = counts[i+1]||0;
+    return a*0.25 + c*0.5 + d*0.25;
+  });
+  const peak = Math.max(1, ...smooth);
+  const pad = { l: 36, r: 14, t: 14, b: 26 };
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  const color = 'hsl(280 75% 68%)';
+
+  hudFrame(ctx, pad.l, pad.t, innerW, innerH, color);
+
+  // y axis labels
+  ctx.fillStyle = 'hsl(215 18% 65%)';
+  ctx.font = '500 10px "JetBrains Mono",monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  for (let i=0;i<=3;i++){
+    const y = pad.t + (i/3)*innerH;
+    const v = peak - (i/3)*peak;
+    ctx.fillText(Math.round(v), pad.l-6, y);
+  }
+
+  const points = smooth.map((c,i)=>({
+    x: pad.l + (i/(bins-1))*innerW,
+    y: pad.t + (1 - c/peak)*innerH,
+  }));
+
+  // gradient area fill
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t+innerH);
+  for (let i=0;i<points.length;i++){
+    if (i===0) ctx.lineTo(points[i].x, points[i].y);
+    else {
+      const prev = points[i-1], curr = points[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.lineTo(points[points.length-1].x, pad.t+innerH);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, pad.t, 0, pad.t+innerH);
+  g.addColorStop(0, 'hsla(280, 75%, 68%, 0.55)');
+  g.addColorStop(0.6, 'hsla(280, 75%, 68%, 0.18)');
+  g.addColorStop(1, 'hsla(280, 75%, 68%, 0.0)');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.restore();
+
+  // outer halo
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<points.length;i++){
+    if (i===0) ctx.moveTo(points[i].x, points[i].y);
+    else {
+      const prev = points[i-1], curr = points[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6;
+  ctx.globalAlpha = 0.22;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // crisp stroke
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<points.length;i++){
+    if (i===0) ctx.moveTo(points[i].x, points[i].y);
+    else {
+      const prev = points[i-1], curr = points[i];
+      const mx = (prev.x+curr.x)/2, my = (prev.y+curr.y)/2;
+      ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+    }
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.9;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // percentile markers (vertical glowing dashed lines)
+  const sorted = STATE.deltaHist.slice().sort((a,b)=>a-b);
+  if (sorted.length){
+    const mark = (q, mcol, label)=>{
+      const v = sorted[Math.floor(sorted.length*q)];
+      const x = pad.l + clamp(v/max, 0, 1) * innerW;
+      ctx.save();
+      ctx.strokeStyle = mcol;
+      ctx.shadowColor = mcol;
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3,3]);
+      ctx.lineDashOffset = -(phase*20)%6;
+      ctx.beginPath(); ctx.moveTo(x, pad.t+4); ctx.lineTo(x, pad.t+innerH-4); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = mcol;
+      ctx.font = '600 9px "JetBrains Mono",monospace';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(label + ' ' + v.toFixed(3), x+4, pad.t+6);
+      ctx.restore();
+    };
+    mark(0.5, 'hsl(185 80% 65%)', 'p50');
+    mark(0.95, 'hsl(35 85% 65%)', 'p95');
+    mark(0.99, 'hsl(0 70% 65%)', 'p99');
+  }
+
+  // x axis labels
+  ctx.fillStyle = 'hsl(215 18% 60%)';
+  ctx.font = '500 10px "JetBrains Mono",monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillText('0.00', pad.l, h-10);
+  ctx.fillText('0.10', pad.l+innerW*0.5, h-10);
+  ctx.fillText('0.20', pad.l+innerW, h-10);
+
+  // axis title
+  ctx.save();
+  ctx.translate(pad.l-26, pad.t+innerH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'hsl(215 18% 50%)';
+  ctx.font = '500 9px "JetBrains Mono",monospace';
+  ctx.fillText('density →', 0, 0);
+  ctx.restore();
+}
+
+/* ── Overview small charts ─────────────────────────────────────── */
+function paintOvCharts(){
+  const now = Date.now();
+  let c, R;
+  c = $('#ov-curv'); R = fitCanvas(c);
+  drawLine(R.ctx, R.w, R.h, STATE.kappaTrace.filter(p => p.t >= now-60000), {
+    color: 'hsl(280 75% 68%)',
+    yMin: -1.2, yMax: -0.8,
+    target: -1.0,
+    bandLo: -1.05, bandHi: -0.95,
+    yPrecision: 2,
+    tMin: now-60000, tMax: now,
+    phase: STATE.phase,
+    label: 'κ'
+  });
+  c = $('#ov-rate'); R = fitCanvas(c);
+  drawLine(R.ctx, R.w, R.h, STATE.rateTrace.filter(p => p.t >= now-60000), {
+    color: 'hsl(142 70% 60%)',
+    yMin: 0, yMax: 24,
+    yPrecision: 1,
+    tMin: now-60000, tMax: now,
+    phase: STATE.phase,
+    label: 'rate',
+    unit: 'Hz'
+  });
+}
+
+/* ── Curvature panel ────────────────────────────────────────────── */
+function paintCurvPanel(){
+  const c = $('#curv-canvas');
+  const R = fitCanvas(c);
+  const win = STATE.curvWindow;
+  const now = Date.now();
+  const cutoff = now - win*1000;
+  const series = STATE.kappaTrace.filter(p => p.t >= cutoff);
+  const events = STATE.events.filter(e => e.type === 'curvature' && e.tms >= cutoff && Math.abs(e.dk) > 0.02)
+    .map(e => ({ t: e.tms, v: e.k, color: 'hsl(0 70% 65%)' }));
+  drawLine(R.ctx, R.w, R.h, series.length?series:[{t:cutoff,v:-1},{t:now,v:-1}], {
+    color: 'hsl(280 75% 68%)',
+    yMin: -1.25, yMax: -0.75,
+    target: -1.0,
+    bandLo: -1.05, bandHi: -0.95,
+    yPrecision: 2,
+    tMin: cutoff, tMax: now,
+    events,
+    phase: STATE.phase,
+    label: 'κ'
+  });
+  $('#curv-info').textContent = `window ${formatWindow(win)} · target κ=−1.00 · ${series.length} samples`;
+
+  /* delta histogram */
+  const d = $('#delta-canvas');
+  const dR = fitCanvas(d);
+  drawDeltaHist(dR.ctx, dR.w, dR.h, STATE.phase);
+  const sorted = STATE.deltaHist.slice().sort((a,b)=>a-b);
+  if (sorted.length){
+    $('#delta-mean').textContent = (sorted.reduce((a,b)=>a+b,0)/sorted.length).toFixed(3);
+    $('#delta-p95').textContent = sorted[Math.floor(sorted.length*0.95)].toFixed(3);
+    $('#delta-p99').textContent = sorted[Math.floor(sorted.length*0.99)].toFixed(3);
+  }
+}
+function formatWindow(s){ if (s<60) return s+'s'; if (s<3600) return (s/60)+'m'; return (s/3600)+'h'; }
+$$('#seg-curv-win button').forEach(b => b.addEventListener('click', ()=>{
+  $$('#seg-curv-win button').forEach(x=>x.classList.toggle('on', x===b));
+  STATE.curvWindow = parseInt(b.dataset.w);
+  paintCurvPanel();
+}));
+$('#curv-export').addEventListener('click', ()=>{
+  const csv = ['t_iso,kappa', ...STATE.kappaTrace.map(p => `${new Date(p.t).toISOString()},${p.v.toFixed(5)}`)].join('\n');
+  downloadText('hyperbolic-space_kappa.csv', csv);
+  toast('ok', 'Exported', `${STATE.kappaTrace.length} samples`);
+});
+$('#recal-now').addEventListener('click', ()=>{
+  const target = STATE.config.kappa_target;
+  const drift = (rng()-0.5)*0.04;
+  const newK = target + drift;
+  const dk = newK - STATE.kappa;
+  STATE.kappa = newK;
+  pushEvent('curvature', { k: newK, dk, recal: true });
+  $('#recal-when').textContent = 'just now';
+  $('#recal-dk').textContent = (dk>=0?'+':'') + dk.toFixed(3);
+  toast('ok', 'Curvature recalibrated', `κ = ${newK.toFixed(3)} (Δ ${dk.toFixed(3)})`);
+  paintCurvPanel();
+});
+let recalAuto = true;
+$('#recal-auto').addEventListener('click', ()=>{
+  recalAuto = !recalAuto;
+  $('#recal-auto-state').textContent = recalAuto ? 'ON' : 'OFF';
+  toast('', `Auto-recalibration ${recalAuto?'enabled':'paused'}`);
+});
+
+/* ── Big disk (Poincaré panel) ──────────────────────────────────── */
+const bigDisk = $('#big-disk');
+function paintBigDisk(){
+  const { ctx, w, h } = fitCanvas(bigDisk);
+  drawDisk(ctx, w, h, {
+    color: STATE.bigDiskOpts.color,
+    edges: STATE.bigDiskOpts.edges,
+    labels: STATE.bigDiskOpts.labels,
+    trails: STATE.bigDiskOpts.trails,
+    zoom: STATE.bigDiskOpts.zoom,
+    panX: STATE.bigDiskOpts.panX,
+    panY: STATE.bigDiskOpts.panY
+  });
+  /* Count what's actually visible in the current mode */
+  const mode = STATE.bigDiskOpts.color;
+  let shown = 0, hidden = 0;
+  GRAPH.nodes.forEach(n => {
+    if (n.kind === 'root') return;
+    const s = nodeViewStyle(n, mode);
+    if (s.hide) hidden++; else shown++;
+  });
+  const modeDesc = {
+    depth:      'view: depth · hierarchy levels coloured root → pose',
+    cluster:    'view: cluster · convex hulls per zone + centroids',
+    age:        'view: age · brightness & size = recency (90s window)',
+    confidence: 'view: confidence · hides nodes below 0.32 confidence'
+  };
+  const desc = modeDesc[mode] || '';
+  $('#disk-info').textContent =
+    `${shown} shown` + (hidden ? ` · ${hidden} hidden` : '') +
+    ` · κ=${STATE.kappa.toFixed(2)} · zoom ${STATE.bigDiskOpts.zoom.toFixed(2)}× · ${desc}`;
+}
+/* pan */
+let dragState = null;
+bigDisk.addEventListener('mousedown', e=>{
+  dragState = { x0:e.clientX, y0:e.clientY, px:STATE.bigDiskOpts.panX, py:STATE.bigDiskOpts.panY, moved:false };
+});
+window.addEventListener('mousemove', e=>{
+  if (!dragState) return;
+  const dx = e.clientX - dragState.x0;
+  const dy = e.clientY - dragState.y0;
+  if (Math.abs(dx)+Math.abs(dy) > 3) dragState.moved = true;
+  if (!dragState.moved) return;
+  STATE.bigDiskOpts.panX = dragState.px + dx;
+  STATE.bigDiskOpts.panY = dragState.py + dy;
+  paintBigDisk();
+});
+window.addEventListener('mouseup', e=>{
+  if (!dragState) return;
+  if (!dragState.moved){
+    const n = pickNodeAt(bigDisk, e, STATE.bigDiskOpts.panX, STATE.bigDiskOpts.panY, STATE.bigDiskOpts.zoom);
+    if (n){
+      if (STATE.pickMode === 'A'){ STATE.rulerA = n.id; STATE.pickMode = null; updateRulerUI(); }
+      else if (STATE.pickMode === 'B'){ STATE.rulerB = n.id; STATE.pickMode = null; updateRulerUI(); }
+      else { STATE.selectedNode = n.id; renderDiskDetail(n); }
+      paintBigDisk();
+    }
+  }
+  dragState = null;
+});
+bigDisk.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const factor = Math.exp(-e.deltaY * 0.001);
+  STATE.bigDiskOpts.zoom = clamp(STATE.bigDiskOpts.zoom * factor, 0.4, 4);
+  paintBigDisk();
+},{ passive:false });
+
+$('#disk-reset').addEventListener('click', ()=>{
+  STATE.bigDiskOpts.zoom = 1; STATE.bigDiskOpts.panX = 0; STATE.bigDiskOpts.panY = 0;
+  paintBigDisk(); toast('','View reset');
+});
+$('#disk-pause').addEventListener('click', e=>{
+  STATE.bigDiskOpts.paused = !STATE.bigDiskOpts.paused;
+  e.currentTarget.textContent = STATE.bigDiskOpts.paused ? 'Resume' : 'Pause';
+});
+$$('#seg-disk-color button').forEach(b=>b.addEventListener('click', ()=>{
+  $$('#seg-disk-color button').forEach(x=>x.classList.toggle('on', x===b));
+  STATE.bigDiskOpts.color = b.dataset.c; paintBigDisk();
+}));
+$('#disk-edges').addEventListener('change', e=>{ STATE.bigDiskOpts.edges = e.target.checked; paintBigDisk(); });
+$('#disk-labels').addEventListener('change', e=>{ STATE.bigDiskOpts.labels = e.target.checked; paintBigDisk(); });
+$('#disk-trails').addEventListener('change', e=>{ STATE.bigDiskOpts.trails = e.target.checked; paintBigDisk(); });
+
+function renderDiskDetail(n){
+  if (!n){ $('#disk-detail').innerHTML = '<span class="k">Status</span><span class="v">Click a node on the disk</span>'; return; }
+  const parent = NODES_BY_ID[n.parent];
+  const r = Math.hypot(n.x, n.y).toFixed(3);
+  const dh = poincareDist(0,0,n.x,n.y).toFixed(3);
+  $('#disk-detail').innerHTML = `
+    <span class="k">ID</span><span class="v">${n.id}</span>
+    <span class="k">Label</span><span class="v">${n.label}</span>
+    <span class="k">Kind</span><span class="v">${n.kind} · depth ${n.depth}</span>
+    <span class="k">Parent</span><span class="v">${parent ? parent.label : '—'}</span>
+    <span class="k">Position</span><span class="v">(${n.x.toFixed(3)}, ${n.y.toFixed(3)})</span>
+    <span class="k">Euclidean r</span><span class="v">${r}</span>
+    <span class="k">d<sub>H</sub>(0,·)</span><span class="v">${dh}</span>
+    <span class="k">Confidence</span><span class="v">${(n.confidence*100).toFixed(0)}%</span>
+    <span class="k">Age</span><span class="v">${n.age.toFixed(1)}s</span>
+  `;
+  $('#disk-sel').textContent = `selected: ${n.label}`;
+}
+function updateRulerUI(){
+  const A = STATE.rulerA ? NODES_BY_ID[STATE.rulerA] : null;
+  const B = STATE.rulerB ? NODES_BY_ID[STATE.rulerB] : null;
+  $('#ruler-a').textContent = A ? A.label : '—';
+  $('#ruler-b').textContent = B ? B.label : '—';
+  if (A && B){
+    const dh = poincareDist(A.x,A.y,B.x,B.y);
+    const de = Math.hypot(A.x-B.x, A.y-B.y);
+    $('#ruler-dist').textContent = dh.toFixed(3);
+    $('#ruler-deuc').textContent = de.toFixed(3);
+    $('#ruler-path').textContent = `${A.label} → ${B.label}`;
+  } else {
+    $('#ruler-dist').textContent = '—'; $('#ruler-deuc').textContent = '—'; $('#ruler-path').textContent = '—';
+  }
+  paintBigDisk();
+}
+$('#ruler-pickA').addEventListener('click', ()=>{ STATE.pickMode = 'A'; toast('','Click a node to set A'); });
+$('#ruler-pickB').addEventListener('click', ()=>{ STATE.pickMode = 'B'; toast('','Click a node to set B'); });
+$('#ruler-clear').addEventListener('click', ()=>{ STATE.rulerA=null; STATE.rulerB=null; updateRulerUI(); });
+
+/* ── Hierarchy panel ────────────────────────────────────────────── */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function buildHierarchy(){
+  const list = $('#hier-list');
+  list.innerHTML = '';
+  const sorted = GRAPH.nodes.slice().sort((a,b)=> a.depth - b.depth || a.label.localeCompare(b.label));
+  sorted.forEach(n=>{
+    const el = document.createElement('div');
+    el.className = 'node-item';
+    el.dataset.id = n.id;
+    const color = colorForNode(n,'depth');
+    el.innerHTML = `<span class="lbl"><span class="sw" style="background:${color}"></span>${n.label || n.id}</span><span class="depth">d${n.depth}</span>`;
+    el.addEventListener('click', ()=>{
+      $$('#hier-list .node-item').forEach(x=>x.classList.toggle('sel', x===el));
+      STATE.selectedNode = n.id;
+      renderHierSvg();
+    });
+    list.appendChild(el);
+  });
+}
+function renderHierSvg(){
+  const svg = $('#hier-svg');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const W = 600, H = 460;
+  const cx = W/2, cy = H/2;
+
+  /* ── defs: glow filter, gradients ─────────────────────── */
+  const defs = document.createElementNS(SVG_NS,'defs');
+  defs.innerHTML = `
+    <filter id="hier-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="hier-bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="hsl(185 80% 50%)" stop-opacity="0.10"/>
+      <stop offset="60%" stop-color="hsl(220 25% 6%)" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="hsl(220 25% 6%)" stop-opacity="0.0"/>
+    </radialGradient>
+    <linearGradient id="hier-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="hsl(185 80% 60%)" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="hsl(280 70% 65%)" stop-opacity="0.5"/>
+    </linearGradient>`;
+  svg.appendChild(defs);
+
+  /* background glow */
+  const bg = document.createElementNS(SVG_NS,'rect');
+  bg.setAttribute('x','0'); bg.setAttribute('y','0');
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', 'url(#hier-bg)');
+  svg.appendChild(bg);
+
+  /* layout */
+  const layout = STATE.treeLayout;
+  const positions = {};
+
+  if (layout === 'radial'){
+    /* concentric rings for visual structure */
+    const ringR = [60, 130, 195, 235];
+    ringR.forEach(r=>{
+      const ring = document.createElementNS(SVG_NS,'circle');
+      ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+      ring.setAttribute('r', r); ring.setAttribute('fill','none');
+      ring.setAttribute('stroke','hsl(185 60% 50% / 0.12)');
+      ring.setAttribute('stroke-dasharray','2 4');
+      svg.appendChild(ring);
+    });
+
+    const byDepth = {};
+    GRAPH.nodes.forEach(n=>{ (byDepth[n.depth] = byDepth[n.depth]||[]).push(n); });
+    const depths = Object.keys(byDepth).sort((a,b)=>a-b);
+    const maxD = Math.max(...depths.map(Number));
+    depths.forEach(d => {
+      const dd = Number(d);
+      const arr = byDepth[d];
+      arr.sort((a,b)=>{
+        const pa = a.parent ? (positions[a.parent]||{ang:0}).ang||0 : 0;
+        const pb = b.parent ? (positions[b.parent]||{ang:0}).ang||0 : 0;
+        return pa - pb;
+      });
+      arr.forEach((n,i)=>{
+        if (dd === 0){ positions[n.id] = { x: cx, y: cy, ang: 0, depth: 0 }; return; }
+        const r = (dd / (maxD+0.5)) * (Math.min(W,H)/2 - 32);
+        const ang = (i / arr.length) * Math.PI * 2 + (dd*0.1);
+        positions[n.id] = { x: cx + r*Math.cos(ang), y: cy + r*Math.sin(ang), ang, depth: dd };
+      });
+    });
+  } else {
+    const root = GRAPH.nodes.find(n=>n.kind === 'root');
+    const children = id => GRAPH.edges.filter(e=>e[0]===id).map(e=>e[1]);
+    const maxDepth = Math.max(...GRAPH.nodes.map(n=>n.depth)) + 1;
+    const order = [];
+    function walk(id, depth){
+      order.push({id,depth});
+      const kids = children(id);
+      kids.forEach(k=>walk(k,depth+1));
+    }
+    if (root) walk(root.id, 0);
+    const leafIndex = {};
+    let leaf = 0;
+    order.forEach(o=>{
+      const kids = children(o.id);
+      if (kids.length === 0){ leafIndex[o.id] = leaf++; }
+    });
+    function avgKid(id){
+      const kids = children(id);
+      if (kids.length === 0) return leafIndex[id];
+      return kids.reduce((s,k)=>s+avgKid(k),0)/kids.length;
+    }
+    const leafTotal = Math.max(1, leaf);
+    function lay(id, depth){
+      const x = 40 + (depth/maxDepth) * (W-80);
+      const y = 40 + (avgKid(id)/Math.max(1,leafTotal-1)) * (H-80);
+      positions[id] = { x, y, depth };
+      children(id).forEach(k=>lay(k,depth+1));
+    }
+    if (root) lay(root.id, 0);
+    GRAPH.nodes.filter(n=>n.kind === 'anom' && !positions[n.id]).forEach((n,i)=>{
+      positions[n.id] = { x: W-30, y: 40 + i*22, depth: maxDepth };
+    });
+  }
+
+  /* ── edges (subtle gradient strokes) ────────────────── */
+  const edgeGroup = document.createElementNS(SVG_NS,'g');
+  edgeGroup.setAttribute('stroke-linecap','round');
+  GRAPH.edges.forEach(([a,b])=>{
+    const A = positions[a], B = positions[b];
+    if (!A || !B) return;
+    const line = document.createElementNS(SVG_NS,'path');
+    const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+    const d = `M ${A.x} ${A.y} C ${mx} ${A.y}, ${mx} ${B.y}, ${B.x} ${B.y}`;
+    line.setAttribute('d', d);
+    line.setAttribute('stroke', 'url(#hier-edge)');
+    line.setAttribute('stroke-width', '1.2');
+    line.setAttribute('stroke-opacity', '0.55');
+    line.setAttribute('fill','none');
+    edgeGroup.appendChild(line);
+  });
+  svg.appendChild(edgeGroup);
+
+  /* ── nodes (glow on selected, larger readable text) ── */
+  const KIND_COLOR = {
+    root: 'hsl(210 25% 95%)',
+    zone: 'hsl(185 80% 60%)',
+    room: 'hsl(142 70% 60%)',
+    cell: 'hsl(280 75% 68%)',
+    pose: 'hsl(35 85% 65%)',
+    anom: 'hsl(0 75% 68%)',
+  };
+  /* Pass 1: draw nodes only, collect label todos */
+  const labelTodos = [];
+  GRAPH.nodes.forEach(n=>{
+    const p = positions[n.id]; if (!p) return;
+    const isSel = STATE.selectedNode === n.id;
+    const fill = KIND_COLOR[n.kind] || 'hsl(185 80% 60%)';
+    const g = document.createElementNS(SVG_NS,'g');
+    g.style.cursor = 'pointer';
+
+    if (n.kind === 'root' || n.kind === 'zone' || isSel || n.kind === 'anom'){
+      const halo = document.createElementNS(SVG_NS,'circle');
+      halo.setAttribute('cx', p.x); halo.setAttribute('cy', p.y);
+      halo.setAttribute('r', (n.kind === 'root' ? 14 : (isSel ? 13 : 10)));
+      halo.setAttribute('fill', fill);
+      halo.setAttribute('opacity', isSel ? '0.32' : '0.18');
+      halo.setAttribute('filter','url(#hier-glow)');
+      g.appendChild(halo);
+    }
+
+    const circle = document.createElementNS(SVG_NS,'circle');
+    const baseR = n.kind === 'root' ? 7 : (n.kind === 'zone' ? 6 : n.kind === 'room' ? 5 : n.kind === 'cell' ? 4 : n.kind === 'anom' ? 5 : 3.5);
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y);
+    circle.setAttribute('r', isSel ? baseR + 1.5 : baseR);
+    circle.setAttribute('fill', fill);
+    circle.setAttribute('stroke', isSel ? 'hsl(185 80% 80%)' : 'hsl(220 25% 6%)');
+    circle.setAttribute('stroke-width', isSel ? '1.6' : '1');
+    g.appendChild(circle);
+
+    g.addEventListener('click', ()=>{
+      STATE.selectedNode = n.id;
+      $$('#hier-list .node-item').forEach(x=>{
+        const isMatch = x.dataset.id === n.id;
+        x.classList.toggle('sel', isMatch);
+        if (isMatch) x.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+      renderHierSvg();
+    });
+    svg.appendChild(g);
+
+    /* defer label — we collision-place them after all dots are drawn */
+    const wantLabel = n.kind === 'root' || n.kind === 'zone' || isSel;
+    if (wantLabel){
+      const short = (n.label || n.id).replace(/^zone:/,'');
+      labelTodos.push({ p, baseR, text: short, fill, isSel, priority: isSel ? 0 : (n.kind === 'root' ? 0 : 1) });
+    }
+  });
+
+  /* Pass 2: collision-aware label placement, radial outward from canvas center */
+  const labelLayer = document.createElementNS(SVG_NS,'g');
+  const placedBoxes = [];
+  const rectsOverlap = (a,b) =>
+    !(a.x + a.w + 4 < b.x || b.x + b.w + 4 < a.x ||
+      a.y + a.h + 4 < b.y || b.y + b.h + 4 < a.y);
+
+  labelTodos.sort((a,b)=>a.priority - b.priority);
+  labelTodos.forEach(item => {
+    const { p, baseR, text, fill, isSel } = item;
+    const fontSize = isSel ? 12 : 11;
+    /* approximate width — JetBrains Mono ~6.8 px per char at 11px */
+    const charW = fontSize * 0.62;
+    const approxW = text.length * charW;
+    const bw = approxW + 12, bh = fontSize + 6;
+
+    /* radial direction outward from canvas center; if node is the root
+     * (at canvas center), default to placing label below the dot */
+    const dx0 = p.x - cx, dy0 = p.y - cy;
+    const len0 = Math.hypot(dx0, dy0) || 1;
+    const ux = dx0 / len0, uy = dy0 / len0;
+    const isCenter = len0 < 2;
+
+    /* try increasing radial offsets and small angular jiggles */
+    let chosen = null;
+    const offsets = [baseR + 10, baseR + 22, baseR + 36, baseR + 52, baseR + 70];
+    const jiggles = [0, 0.18, -0.18, 0.36, -0.36, 0.55, -0.55];
+    outer:
+    for (const off of offsets){
+      for (const j of jiggles){
+        const ang = isCenter ? (Math.PI/2 + j) : (Math.atan2(uy, ux) + j);
+        const lx0 = p.x + Math.cos(ang) * off;
+        const ly0 = p.y + Math.sin(ang) * off;
+        const cosA = Math.cos(ang);
+        /* anchor based on direction so labels grow outward */
+        const lx = cosA < -0.2 ? lx0 - bw : (cosA > 0.2 ? lx0 : lx0 - bw/2);
+        const ly = ly0 - bh/2;
+        if (lx < 4 || ly < 4 || lx + bw > W - 4 || ly + bh > H - 28) continue;
+        const rect = { x: lx, y: ly, w: bw, h: bh };
+        if (!placedBoxes.some(b => rectsOverlap(rect, b))){
+          chosen = rect;
+          break outer;
+        }
+      }
+    }
+    if (!chosen) return;
+
+    /* leader line from node to label */
+    const leader = document.createElementNS(SVG_NS,'line');
+    leader.setAttribute('x1', p.x); leader.setAttribute('y1', p.y);
+    leader.setAttribute('x2', chosen.x + chosen.w/2); leader.setAttribute('y2', chosen.y + chosen.h/2);
+    leader.setAttribute('stroke', fill);
+    leader.setAttribute('stroke-opacity', '0.45');
+    leader.setAttribute('stroke-width', '0.8');
+    labelLayer.appendChild(leader);
+
+    /* backdrop pill */
+    const bg = document.createElementNS(SVG_NS,'rect');
+    bg.setAttribute('x', chosen.x); bg.setAttribute('y', chosen.y);
+    bg.setAttribute('width', chosen.w); bg.setAttribute('height', chosen.h);
+    bg.setAttribute('rx', '5');
+    bg.setAttribute('fill', 'hsl(220 28% 8% / 0.92)');
+    bg.setAttribute('stroke', fill);
+    bg.setAttribute('stroke-opacity', isSel ? '0.85' : '0.45');
+    bg.setAttribute('stroke-width', '1');
+    labelLayer.appendChild(bg);
+
+    const t = document.createElementNS(SVG_NS,'text');
+    t.setAttribute('x', chosen.x + 6);
+    t.setAttribute('y', chosen.y + chosen.h/2 + fontSize/3);
+    t.setAttribute('fill', isSel ? fill : 'hsl(210 22% 94%)');
+    t.setAttribute('font-family',"'JetBrains Mono',monospace");
+    t.setAttribute('font-size', fontSize);
+    t.setAttribute('font-weight', '600');
+    t.textContent = text;
+    labelLayer.appendChild(t);
+    placedBoxes.push(chosen);
+  });
+  svg.appendChild(labelLayer);
+
+  /* legend */
+  const legend = document.createElementNS(SVG_NS,'g');
+  legend.setAttribute('transform', `translate(12, ${H-22})`);
+  const items = [
+    { c: KIND_COLOR.zone, l: 'zone' },
+    { c: KIND_COLOR.room, l: 'room' },
+    { c: KIND_COLOR.cell, l: 'cell' },
+    { c: KIND_COLOR.pose, l: 'pose' },
+    { c: KIND_COLOR.anom, l: 'outlier' },
+  ];
+  let off = 0;
+  items.forEach(it=>{
+    const dot = document.createElementNS(SVG_NS,'circle');
+    dot.setAttribute('cx', off + 4); dot.setAttribute('cy', 6); dot.setAttribute('r', 4);
+    dot.setAttribute('fill', it.c);
+    legend.appendChild(dot);
+    const t = document.createElementNS(SVG_NS,'text');
+    t.setAttribute('x', off + 12); t.setAttribute('y', 10);
+    t.setAttribute('fill','hsl(215 18% 70%)');
+    t.setAttribute('font-family',"'JetBrains Mono',monospace");
+    t.setAttribute('font-size','10');
+    t.textContent = it.l;
+    legend.appendChild(t);
+    off += 12 + it.l.length*6.5 + 8;
+  });
+  svg.appendChild(legend);
+
+  $('#hier-info').textContent = `${GRAPH.nodes.length} nodes · depth ${Math.max(...GRAPH.nodes.map(n=>n.depth))}`;
+}
+$$('#seg-tree-layout button').forEach(b => b.addEventListener('click', ()=>{
+  $$('#seg-tree-layout button').forEach(x=>x.classList.toggle('on', x===b));
+  STATE.treeLayout = b.dataset.l; renderHierSvg();
+}));
+$('#hier-collapse').addEventListener('click', ()=>{ toast('','Collapsed leaf nodes'); /* purely visual */ STATE.treeLayout='radial'; $$('#seg-tree-layout button').forEach(x=>x.classList.toggle('on', x.dataset.l==='radial')); renderHierSvg(); });
+$('#hier-expand').addEventListener('click', ()=>{ toast('','Expanded all'); renderHierSvg(); });
+$('#hier-refit').addEventListener('click', ()=>{ renderHierSvg(); toast('ok','Refitted'); });
+$('#hier-search').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase().trim();
+  $$('#hier-list .node-item').forEach(it=>{
+    const txt = (it.querySelector('.lbl').textContent || '').toLowerCase();
+    it.style.display = (!q || txt.includes(q)) ? '' : 'none';
+  });
+});
+
+/* ── Paths panel ────────────────────────────────────────────────── */
+function seedColor(seed){
+  const s = SEEDS.find(x=>x.id===seed); return s ? s.color : 'hsl(var(--primary))';
+}
+/* Spawn a trail. When a seed filter is active, weight spawn toward
+ * that seed so the canvas has visible content immediately. */
+function spawnPathTrail(forceSeed){
+  let seed;
+  if (forceSeed){
+    seed = SEEDS.find(s => s.id === forceSeed) || SEEDS[Math.floor(rng()*4)];
+  } else if (STATE.pathSeedFilter !== 'all'){
+    /* 75% chance to spawn for the filtered seed, 25% other */
+    seed = (rng() < 0.75)
+      ? (SEEDS.find(s => s.id === STATE.pathSeedFilter) || SEEDS[Math.floor(rng()*4)])
+      : SEEDS[Math.floor(rng()*4)];
+  } else {
+    seed = SEEDS[Math.floor(rng()*4)];
+  }
+  const start = GRAPH.nodes.filter(n=>n.kind === 'room' || n.kind === 'cell')[Math.floor(rng()*40) % 30];
+  const end   = GRAPH.nodes.filter(n=>n.kind === 'cell' || n.kind === 'pose')[Math.floor(rng()*50) % 40];
+  if (!start || !end) return;
+  const pts = geodesicArc({x:start.x,y:start.y},{x:end.x,y:end.y}, 32);
+  STATE.pathsTrails.push({ seed: seed.id, color: seed.color, pts, age: 0, ttl: 90 });
+  if (STATE.pathsTrails.length > 22) STATE.pathsTrails.shift();
+}
+function paintPaths(){
+  const c = $('#paths-canvas');
+  const { ctx, w, h } = fitCanvas(c);
+  /* base disk (dim, lets trails pop) */
+  drawDisk(ctx, w, h, { edges: false, labels: false, trails: false, color: 'depth' });
+  const cx = w/2, cy = h/2;
+  const R = Math.min(w,h) * 0.46;
+  const phase = STATE.phase || 0;
+  const filtered = STATE.pathSeedFilter !== 'all';
+
+  STATE.pathsTrails.forEach(tr => {
+    if (filtered && tr.seed !== STATE.pathSeedFilter) return;
+    /* opacity floor so trails are always clearly visible */
+    const ageNorm = clamp(tr.age / tr.ttl, 0, 1);
+    const alpha = 0.45 + 0.55 * (1 - ageNorm);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    /* halo pass — broad soft glow under the line */
+    ctx.beginPath();
+    tr.pts.forEach((p,i)=>{
+      const X = cx + p.x*R, Y = cy + p.y*R;
+      if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    });
+    ctx.strokeStyle = tr.color;
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = alpha * 0.22;
+    ctx.stroke();
+
+    /* main bright stroke with shadow glow */
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    tr.pts.forEach((p,i)=>{
+      const X = cx + p.x*R, Y = cy + p.y*R;
+      if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    });
+    ctx.shadowColor = tr.color;
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    /* head dot with pulsing ring */
+    const head = tr.pts[tr.pts.length-1];
+    const hx = cx + head.x*R, hy = cy + head.y*R;
+    const pulse = 0.5 + 0.5*Math.sin(phase*4 + tr.age*0.2);
+    ctx.beginPath();
+    ctx.arc(hx, hy, 4 + 1.2*pulse, 0, Math.PI*2);
+    ctx.fillStyle = tr.color;
+    ctx.shadowColor = tr.color;
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    /* expanding outer ring */
+    ctx.globalAlpha = alpha * (0.7 - 0.55*pulse);
+    ctx.beginPath();
+    ctx.arc(hx, hy, 6 + 10*pulse, 0, Math.PI*2);
+    ctx.strokeStyle = tr.color;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    /* tail dot (origin) */
+    const tail = tr.pts[0];
+    ctx.globalAlpha = alpha * 0.6;
+    ctx.beginPath();
+    ctx.arc(cx + tail.x*R, cy + tail.y*R, 2.2, 0, Math.PI*2);
+    ctx.fillStyle = tr.color;
+    ctx.fill();
+    ctx.restore();
+  });
+
+  const visible = STATE.pathsTrails.filter(t => !filtered || t.seed === STATE.pathSeedFilter);
+  $('#paths-info').textContent = `${visible.length} visible paths · ${STATE.pathsTrails.length} traces in window${filtered ? ' · filter: ' + STATE.pathSeedFilter : ''}`;
+}
+$('#paths-source').addEventListener('change', e=>{
+  STATE.pathSeedFilter = e.target.value;
+  /* immediately seed several trails so the canvas isn't sparse */
+  if (STATE.pathSeedFilter !== 'all'){
+    for (let i = 0; i < 8; i++) spawnPathTrail(STATE.pathSeedFilter);
+  }
+  paintPaths();
+});
+$('#paths-play').addEventListener('click', e=>{
+  STATE.pathsPaused = !STATE.pathsPaused;
+  e.currentTarget.querySelector('#paths-play-l').textContent = STATE.pathsPaused ? 'Resume' : 'Pause';
+});
+$('#paths-clear').addEventListener('click', ()=>{ STATE.pathsTrails = []; paintPaths(); toast('','Trails cleared'); });
+$('#paths-speed').addEventListener('input', e=>{
+  STATE.pathsSpeed = parseFloat(e.target.value);
+  $('#paths-speed-l').textContent = STATE.pathsSpeed.toFixed(2)+'×';
+});
+
+/* ── Events panel ───────────────────────────────────────────────── */
+function pushEvent(type, payload){
+  const ev = { type, tms: Date.now(), ...payload };
+  ev.t = new Date(ev.tms).toISOString().slice(11,19);
+  STATE.events.unshift(ev);
+  if (STATE.events.length > 300) STATE.events.pop();
+  renderEvents();
+  renderOvEvents();
+  $('#evt-info').textContent = `stream open · ${STATE.events.length} events`;
+}
+function fmtEventMsg(e){
+  if (e.type === 'embedding_updated'){
+    return `<span class="tag muted">embedding_updated</span> &nbsp; n=<b>${e.n}</b> · loss=<b>${e.loss.toFixed(4)}</b> · κ=<b>${e.k.toFixed(3)}</b>`;
+  }
+  if (e.type === 'hierarchy_detected'){
+    return `<span class="tag muted">hierarchy_detected</span> &nbsp; <b>${e.parent}</b> → <b>${e.child}</b> · depth <b>${e.depth}</b> · support <b>${e.support}</b>`;
+  }
+  if (e.type === 'curvature'){
+    const ok = Math.abs(e.k - STATE.config.kappa_target) < 0.05;
+    return `<span class="tag muted">curvature</span> &nbsp; κ=<b>${e.k.toFixed(3)}</b> · Δκ=<b>${(e.dk>=0?'+':'')+e.dk.toFixed(3)}</b> · ${ok?'within tolerance':'<span style="color:hsl(0 65% 65%)">drift</span>'}${e.recal?' · <i>recal</i>':''}`;
+  }
+  return e.type;
+}
+function renderEvents(){
+  const feed = $('#evt-feed');
+  const filter = STATE.evtFilter;
+  const filtered = filter === 'all' ? STATE.events : STATE.events.filter(e=>e.type===filter);
+  /* preserve user scroll: only autoscroll-to-top when they're already
+   * near the top (so reading older history doesn't jerk them around) */
+  const wasAtTop = feed.scrollTop < 24;
+  feed.innerHTML = filtered.slice(0,200).map(e=>`
+    <div class="evt evt-${e.type}">
+      <div class="ts">${e.t}</div>
+      <div class="msg">${fmtEventMsg(e)}</div>
+      <div class="tag muted">${e.type==='embedding_updated'?'EMB':e.type==='hierarchy_detected'?'HIER':'KAPPA'}</div>
+    </div>
+  `).join('') || '<div class="muted mono" style="padding:0.5rem">no events match filter</div>';
+  if (wasAtTop) feed.scrollTop = 0;
+}
+function renderOvEvents(){
+  const feed = $('#ov-events');
+  if (!feed) return;
+  feed.innerHTML = STATE.events.slice(0,8).map(e=>`
+    <div class="evt evt-${e.type}">
+      <div class="ts">${e.t}</div>
+      <div class="msg">${fmtEventMsg(e)}</div>
+      <div></div>
+    </div>
+  `).join('') || '<div class="muted mono" style="padding:0.5rem">awaiting events…</div>';
+}
+$$('#seg-evt-filter button').forEach(b=>b.addEventListener('click', ()=>{
+  $$('#seg-evt-filter button').forEach(x=>x.classList.toggle('on', x===b));
+  STATE.evtFilter = b.dataset.f; renderEvents();
+}));
+$('#evt-pause').addEventListener('click', e=>{
+  STATE.evtPaused = !STATE.evtPaused;
+  e.currentTarget.querySelector('#evt-pause-l').textContent = STATE.evtPaused ? 'Resume' : 'Pause';
+});
+$('#evt-clear').addEventListener('click', ()=>{
+  STATE.events = []; renderEvents(); renderOvEvents(); toast('','Event log cleared');
+});
+$('#evt-export').addEventListener('click', ()=>{
+  const jsonl = STATE.events.map(e => JSON.stringify({ ts:new Date(e.tms).toISOString(), type:e.type, ...e })).join('\n');
+  downloadText('hyperbolic-space_events.jsonl', jsonl);
+  toast('ok','Exported', `${STATE.events.length} events`);
+});
+$('#ov-evt-all').addEventListener('click', e=>{ e.preventDefault(); activateTab('events'); });
+
+/* ── Copy buttons ───────────────────────────────────────────────── */
+$$('button.copy-btn,button[data-copy]').forEach(btn => btn.addEventListener('click', async ()=>{
+  const id = btn.dataset.copy; if (!id) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.innerText;
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.classList.add('copied'); const orig = btn.textContent; btn.textContent = 'copied';
+    setTimeout(()=>{ btn.classList.remove('copied'); btn.textContent = orig; }, 1200);
+  } catch(_){ toast('warn','Clipboard unavailable','Select and copy manually.'); }
+}));
+
+/* ── Config panel ───────────────────────────────────────────────── */
+const CFG_DEFAULTS = JSON.parse(JSON.stringify(STATE.config));
+const CFG_SCHEMA = [
+  { k:'dim', label:'Manifold dim', desc:'Poincaré ball dimensionality. 2 for radar-style plots, 3 enables vertical splits.', type:'select', opts:['2','3'], unit:'D' },
+  { k:'kappa_target', label:'Target κ', desc:'Target sectional curvature. −1.0 is canonical hyperbolic.', type:'range', min:-2, max:-0.5, step:0.01, unit:'' },
+  { k:'learning_rate', label:'Riemannian η', desc:'SGD step size on the manifold.', type:'range', min:0.001, max:0.1, step:0.001, unit:'' },
+  { k:'margin_eps', label:'Boundary ε', desc:'Minimum margin to ∂B; points are projected back if they cross.', type:'range', min:0.0001, max:0.05, step:0.0001, unit:'' },
+  { k:'anchor_count', label:'Anchors', desc:'Fixed anchor points used to stabilize gauge.', type:'number', min:4, max:64, step:1, unit:'pts' },
+  { k:'distortion_alert', label:'δ-alert', desc:'Alert when 4-point δ-hyperbolicity exceeds this value.', type:'range', min:0.01, max:0.5, step:0.01, unit:'' },
+  { k:'update_hz', label:'Update Hz', desc:'Re-embed pass frequency. Higher = lower lag, more CPU.', type:'number', min:1, max:60, step:1, unit:'Hz' },
+  { k:'embedding_buffer', label:'Buffer', desc:'Number of recent points kept for batch refits.', type:'number', min:64, max:4096, step:64, unit:'pts' },
+  { k:'use_hyperboloid_aux', label:'Hyperboloid aux', desc:'Use a parallel Lorentz-model representation for stability.', type:'bool' },
+  { k:'enable_riemannian_sgd', label:'Riemannian SGD', desc:'Use exponential map updates instead of Euclidean projection.', type:'bool' },
+];
+function renderCfg(){
+  const rows = $('#cfg-rows');
+  rows.innerHTML = '';
+  CFG_SCHEMA.forEach(field => {
+    const v = STATE.config[field.k];
+    const row = document.createElement('div');
+    row.className = 'cfg-row';
+    let inputHtml = '';
+    if (field.type === 'select'){
+      inputHtml = `<select data-k="${field.k}">${field.opts.map(o=>`<option value="${o}"${String(v)===o?' selected':''}>${o}</option>`).join('')}</select><span class="unit">${field.unit||''}</span>`;
+    } else if (field.type === 'range'){
+      inputHtml = `<div class="slider" style="width:100%"><input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${v}" data-k="${field.k}"><span class="val">${Number(v).toFixed( (field.step+'').split('.')[1]?.length || 0 )}</span></div>`;
+    } else if (field.type === 'number'){
+      inputHtml = `<input type="number" min="${field.min}" max="${field.max}" step="${field.step}" value="${v}" data-k="${field.k}"><span class="unit">${field.unit||''}</span>`;
+    } else if (field.type === 'bool'){
+      inputHtml = `<label class="mono" style="display:flex;align-items:center;gap:0.4rem;justify-content:flex-end;font-size:0.75rem;color:hsl(var(--foreground))"><input type="checkbox" data-k="${field.k}" ${v?'checked':''}> ${v?'enabled':'disabled'}</label>`;
+    }
+    row.innerHTML = `
+      <div><div class="ck">${field.label}</div><div class="cd">${field.desc}</div></div>
+      <div></div>
+      <div class="ci">${inputHtml}</div>`;
+    rows.appendChild(row);
+  });
+  /* wire inputs */
+  rows.querySelectorAll('[data-k]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const k = e.target.dataset.k;
+      const f = CFG_SCHEMA.find(x=>x.k===k);
+      let val;
+      if (f.type === 'bool') val = e.target.checked;
+      else if (f.type === 'select') val = (k==='dim') ? parseInt(e.target.value) : e.target.value;
+      else if (f.type === 'number') val = Number(e.target.value);
+      else if (f.type === 'range') {
+        val = Number(e.target.value);
+        const valEl = e.target.parentElement.querySelector('.val');
+        if (valEl) valEl.textContent = val.toFixed((f.step+'').split('.')[1]?.length || 0);
+      }
+      STATE.config[k] = val;
+      /* bool label sync */
+      if (f.type === 'bool'){
+        const lbl = e.target.parentElement;
+        lbl.lastChild.textContent = ' ' + (val?'enabled':'disabled');
+      }
+      renderCfgOut();
+      /* live updates for kappa target / dim */
+      if (k === 'kappa_target') { $('#pill-kappa').textContent = val.toFixed(2); $('#plan-kappa').textContent = val.toFixed(2); }
+      if (k === 'dim') { $('#pill-dim').textContent = val; $('#plan-dim').textContent = val; }
+    });
+  });
+  renderCfgOut();
+}
+function renderCfgOut(){
+  const manifest = {
+    cog: 'hyperbolic-space',
+    version: '0.4.0',
+    config: STATE.config
+  };
+  $('#cfg-out').textContent = JSON.stringify(manifest, null, 2);
+}
+$('#cfg-reset').addEventListener('click', ()=>{
+  openModal({
+    title:'Reset configuration?',
+    sub:'All fields will return to the cog\'s shipped defaults.',
+    bodyHtml:'',
+    okLabel:'Reset',
+    onOk: ()=>{
+      Object.assign(STATE.config, JSON.parse(JSON.stringify(CFG_DEFAULTS)));
+      renderCfg();
+      $('#pill-kappa').textContent = STATE.config.kappa_target.toFixed(2);
+      $('#pill-dim').textContent = STATE.config.dim;
+      toast('ok','Config reset to defaults');
+    }
+  });
+});
+$('#cfg-apply').addEventListener('click', ()=>{
+  /* simulated validation */
+  const issues = [];
+  if (STATE.config.dim === 3 && STATE.config.kappa_target > -0.8) issues.push('3D requires κ ≤ −0.8 for stable embedding.');
+  if (STATE.config.update_hz > 30 && STATE.config.embedding_buffer < 256) issues.push('High update Hz needs ≥256 buffer.');
+  if (issues.length){
+    toast('warn','Validation warnings', issues.join(' '));
+  } else {
+    toast('ok','Configuration applied', `κ_target=${STATE.config.kappa_target.toFixed(2)} · dim=${STATE.config.dim}`);
+    pushEvent('curvature', { k: STATE.config.kappa_target + (rng()-0.5)*0.02, dk: 0, recal: false });
+  }
+});
+
+/* ── Deploy panel ───────────────────────────────────────────────── */
+function renderSeeds(){
+  const g = $('#seed-grid');
+  g.innerHTML = SEEDS.map(s=>`
+    <label class="seed-card ${STATE.deploy.selected.has(s.id)?'sel':''}" data-seed="${s.id}">
+      <input type="checkbox" ${STATE.deploy.selected.has(s.id)?'checked':''} ${s.status==='offline'?'disabled':''}>
+      <div class="sc-info">
+        <div class="sc-name">${s.label}</div>
+        <div class="sc-meta">${s.hw} · battery ${(s.battery*100|0)}% · <span class="statlight ${s.status==='online'?'up':s.status==='warn'?'warn':'dn'}"><span class="ld"></span>${s.status}</span></div>
+      </div>
+    </label>
+  `).join('');
+  g.querySelectorAll('.seed-card').forEach(card=>{
+    const cb = card.querySelector('input');
+    card.addEventListener('click', e=>{
+      if (e.target !== cb) cb.checked = !cb.checked;
+      const id = card.dataset.seed;
+      if (cb.checked) STATE.deploy.selected.add(id); else STATE.deploy.selected.delete(id);
+      card.classList.toggle('sel', cb.checked);
+      updateDeployPlan();
+    });
+  });
+  updateDeployPlan();
+}
+function updateDeployPlan(){
+  const n = STATE.deploy.selected.size;
+  $('#plan-count').textContent = `${n} seed${n===1?'':'s'}`;
+  $('#plan-size').textContent = `${(n * 28)} KB`;
+  $('#plan-kappa').textContent = STATE.config.kappa_target.toFixed(2);
+  $('#plan-dim').textContent = STATE.config.dim;
+  $('#deploy-go').disabled = n === 0;
+}
+$('#seed-all').addEventListener('click', ()=>{
+  SEEDS.forEach(s=>{ if (s.status !== 'offline') STATE.deploy.selected.add(s.id); });
+  renderSeeds();
+});
+$('#seed-none').addEventListener('click', ()=>{ STATE.deploy.selected.clear(); renderSeeds(); });
+$('#deploy-dry').addEventListener('click', ()=>{
+  if (STATE.deploy.selected.size === 0){ toast('warn','No seeds selected'); return; }
+  toast('ok','Dry-run OK', `Would deploy hyperbolic-space@v0.4.0 to ${STATE.deploy.selected.size} seed(s). No firmware written.`);
+  const t = new Date().toLocaleTimeString();
+  STATE.deploy.log.unshift(`[${t}] dry-run · ${STATE.deploy.selected.size} seed(s) · ${$('#plan-channel').value}`);
+  renderDeployLog();
+});
+$('#deploy-go').addEventListener('click', ()=>{
+  const seeds = Array.from(STATE.deploy.selected);
+  if (!seeds.length) return;
+  openModal({
+    title: 'Deploy hyperbolic-space?',
+    sub: `${seeds.length} seed(s) — channel ${$('#plan-channel').value}. Existing manifold state will be migrated, not reset.`,
+    bodyHtml: `<pre class="logbox" style="max-height:140px">${seeds.map(s=>'  '+s).join('\n')}</pre>`,
+    okLabel: 'Deploy',
+    onOk: ()=>{
+      const t = new Date().toLocaleTimeString();
+      STATE.deploy.log.unshift(`[${t}] DEPLOY · ${seeds.length} seed(s) · channel=${$('#plan-channel').value} · ok`);
+      renderDeployLog();
+      toast('ok','Deploy queued', `${seeds.length} seed(s) · ${$('#plan-channel').value} channel.`);
+      pushEvent('embedding_updated', { n: 14, loss: 0.0241, k: STATE.kappa });
+    }
+  });
+});
+function renderDeployLog(){
+  const log = STATE.deploy.log;
+  if (!log.length){ $('#deploy-log').textContent = 'no deploys yet'; return; }
+  $('#deploy-log').innerHTML = log.slice(0,8).map(l=>`<div>${l.replace(/</g,'&lt;')}</div>`).join('');
+}
+
+/* ── Hero buttons ───────────────────────────────────────────────── */
+$('#btn-install').addEventListener('click', ()=>{
+  activateTab('deploy');
+  toast('ok','Switched to Deploy', 'Select seed(s) to install hyperbolic-space.');
+});
+$('#btn-deploy').addEventListener('click', ()=>{
+  activateTab('deploy');
+});
+$('#btn-docs').addEventListener('click', ()=>{
+  openModal({
+    title:'Hyperbolic Space — quick reference',
+    sub:'v0.4.0 · spatial hierarchical embedding cog',
+    bodyHtml: `
+      <pre class="logbox" style="max-height:280px">Hyperbolic Space (cog: hyperbolic-space)
+─────────────────────────────────────────
+Embeds CSI-derived spatial points into a Poincaré ball
+B^d so that hierarchical structure (zones ⊃ rooms ⊃
+cells ⊃ poses) is encoded by hyperbolic distance.
+
+Why hyperbolic?
+  Tree-like data lives badly in Euclidean R^d — distance
+  between deep cousins blows up. In B^d with κ=−1 the
+  metric grows exponentially toward ∂B, matching the
+  branching factor of room topology.
+
+Events:
+  embedding_updated   — fired after each re-embed pass
+  hierarchy_detected  — admitted sub-tree (parent→child)
+  curvature           — periodic κ + δ-hyperbolicity check
+
+Hardware:
+  ESP32-S3 with the CSI spatial input cog feeding it.
+
+Source:
+  cognitum-one/cogs/src/cogs/hyperbolic-space</pre>`,
+    okLabel:'Close',
+    cancelLabel:'Source',
+    onOk: ()=>{}
+  });
+});
+$('#btn-source').addEventListener('click', ()=>{
+  toast('','Source path copied','cognitum-one/cogs/src/cogs/hyperbolic-space');
+  try { navigator.clipboard.writeText('cognitum-one/cogs/src/cogs/hyperbolic-space'); } catch(_){}
+});
+$('#foot-source').addEventListener('click', e=>{ e.preventDefault(); $('#btn-source').click(); });
+$('#foot-issues').addEventListener('click', e=>{ e.preventDefault(); toast('','Issue tracker is offline in this build'); });
+
+/* ── Misc helpers ───────────────────────────────────────────────── */
+function downloadText(filename, text){
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function snapshotCanvas(c, name){
+  c.toBlob(b=>{
+    if (!b){ toast('warn','Snapshot failed'); return; }
+    const url = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${name}_${Date.now()}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    toast('ok','Snapshot saved', a.download);
+  });
+}
+
+/* ── Live clock + simulation loop ───────────────────────────────── */
+function tickClock(){
+  const t = Date.now() - STATE.startedAt;
+  const sec = Math.floor(t/1000);
+  const hh = String(Math.floor(sec/3600)).padStart(2,'0');
+  const mm = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+  const ss = String(sec%60).padStart(2,'0');
+  $('#live-clock').textContent = `${hh}:${mm}:${ss}`;
+}
+
+let simTick = 0;
+function simulate(){
+  simTick++;
+  const now = Date.now();
+
+  /* drift kappa towards target with noise */
+  const target = STATE.config.kappa_target;
+  STATE.kappa += (target - STATE.kappa) * 0.06 + (rng()-0.5)*0.012;
+  STATE.kappaTrace.push({ t: now, v: STATE.kappa });
+  if (STATE.kappaTrace.length > 1800) STATE.kappaTrace.shift();
+
+  /* embed rate */
+  const rate = STATE.config.update_hz * (0.85 + rng()*0.3);
+  STATE.rateTrace.push({ t: now, v: rate });
+  if (STATE.rateTrace.length > 1800) STATE.rateTrace.shift();
+
+  /* nudge node positions slightly (especially poses) */
+  GRAPH.nodes.forEach(n=>{
+    if (n.kind === 'pose' || n.kind === 'cell'){
+      n.x += (rng()-0.5)*0.002;
+      n.y += (rng()-0.5)*0.002;
+      clipDisk(n);
+    } else if (n.kind === 'anom'){
+      const a = Math.atan2(n.y, n.x) + (rng()-0.5)*0.04;
+      const r = Math.hypot(n.x,n.y) + (rng()-0.5)*0.005;
+      n.x = clamp(r,0.85,0.97)*Math.cos(a);
+      n.y = clamp(r,0.85,0.97)*Math.sin(a);
+    }
+    n.age = Math.min(300, n.age + 0.5);
+  });
+
+  /* delta hist */
+  if (simTick % 4 === 0){
+    STATE.deltaHist.push(Math.max(0, 0.018 + (rng()-0.4)*0.05));
+    if (STATE.deltaHist.length > 600) STATE.deltaHist.shift();
+  }
+
+  /* events */
+  if (!STATE.evtPaused){
+    if (simTick % 3 === 0){
+      pushEvent('embedding_updated', { n: 4+Math.floor(rng()*18), loss: 0.02 + rng()*0.01, k: STATE.kappa });
+    }
+    if (simTick % 22 === 0){
+      const zones = GRAPH.nodes.filter(n=>n.kind==='zone');
+      const rooms = GRAPH.nodes.filter(n=>n.kind==='room');
+      const z = zones[Math.floor(rng()*zones.length)];
+      const r = rooms[Math.floor(rng()*rooms.length)];
+      pushEvent('hierarchy_detected', { parent: z.label, child: r.label, depth: 2+Math.floor(rng()*3), support: 12+Math.floor(rng()*80) });
+    }
+    if (simTick % 12 === 0){
+      const dk = (rng()-0.5)*0.06;
+      pushEvent('curvature', { k: STATE.kappa, dk });
+    }
+  }
+
+  /* auto recalibration */
+  if (recalAuto && simTick % 80 === 0){
+    const dk = (target - STATE.kappa);
+    STATE.kappa += dk * 0.5;
+    $('#recal-when').textContent = 'just now';
+    $('#recal-dk').textContent = (dk>=0?'+':'') + (dk*0.5).toFixed(3);
+    pushEvent('curvature', { k: STATE.kappa, dk: dk*0.5, recal: true });
+  }
+
+  /* paths */
+  if (!STATE.pathsPaused){
+    if (simTick % Math.max(2, Math.floor(8/STATE.pathsSpeed)) === 0) spawnPathTrail();
+    STATE.pathsTrails.forEach(t => t.age += STATE.pathsSpeed);
+    STATE.pathsTrails = STATE.pathsTrails.filter(t => t.age < t.ttl);
+  }
+
+  /* KPI updates */
+  $('#kpi-nodes').textContent = GRAPH.nodes.length - 1;
+  $('#kpi-nodes-sub').textContent = `${GRAPH.nodes.filter(n=>n.kind==='zone').length} zones · ${GRAPH.nodes.filter(n=>n.kind==='room').length} rooms`;
+  $('#kpi-kappa').textContent = STATE.kappa.toFixed(2);
+  $('#pill-kappa').textContent = STATE.kappa.toFixed(2);
+  const dMean = STATE.deltaHist.length ? STATE.deltaHist.slice(-50).reduce((a,b)=>a+b,0) / Math.min(50, STATE.deltaHist.length) : 0.018;
+  $('#kpi-distort').textContent = dMean.toFixed(3);
+  $('#kpi-rate').textContent = rate.toFixed(1);
+  $('#kpi-depth').textContent = Math.max(...GRAPH.nodes.map(n=>n.depth));
+  $('#hv-loss').textContent = (0.024 + (rng()-0.5)*0.002).toFixed(4);
+  const minMargin = GRAPH.nodes.reduce((m,n)=> Math.min(m, 1-Math.hypot(n.x,n.y)), 1);
+  $('#hv-margin').textContent = minMargin.toFixed(3);
+
+  /* Heavy-but-slow repaints (disks, hierarchy nudges).
+   * Live charts are repainted at 60fps by renderLoop(); we don't
+   * duplicate that work here. */
+  const active = document.querySelector('.panel.on')?.id || '';
+  if (!STATE.bigDiskOpts.paused){
+    if (active === 'panel-overview') paintOvDisk();
+    else if (active === 'panel-poincare') paintBigDisk();
+  }
+}
+
+/* ── Resize handling ───────────────────────────────────────────── */
+function resizeAll(){
+  const active = document.querySelector('.panel.on')?.id || '';
+  if (active === 'panel-overview'){ paintOvDisk(); paintOvCharts(); }
+  if (active === 'panel-poincare'){ paintBigDisk(); }
+  if (active === 'panel-curvature'){ paintCurvPanel(); }
+  if (active === 'panel-paths'){ paintPaths(); }
+  if (active === 'panel-hierarchy'){ renderHierSvg(); }
+}
+window.addEventListener('resize', resizeAll);
+
+/* ── Boot ──────────────────────────────────────────────────────── */
+function boot(){
+  /* seed traces */
+  const now = Date.now();
+  for (let i=0;i<240;i++){
+    const t = now - (240-i)*1000;
+    const k = -1 + Math.sin(i*0.08)*0.04 + (Math.random()-0.5)*0.015;
+    STATE.kappaTrace.push({ t, v: k });
+    STATE.rateTrace.push({ t, v: 12 + Math.sin(i*0.12)*2 + (Math.random()-0.5)*1.6 });
+  }
+  for (let i=0;i<400;i++){
+    STATE.deltaHist.push(Math.max(0.005, 0.018 + (Math.random()-0.5)*0.05));
+  }
+  for (let i=0;i<25;i++){
+    const ago = Math.floor(Math.random()*120);
+    const tms = now - ago*1000;
+    const types = ['embedding_updated','hierarchy_detected','curvature'];
+    const ty = types[Math.floor(Math.random()*types.length)];
+    if (ty === 'embedding_updated') STATE.events.push({ type:ty, tms, t:new Date(tms).toISOString().slice(11,19), n: 4+Math.floor(Math.random()*16), loss: 0.022+Math.random()*0.01, k: -1+Math.random()*0.04 });
+    if (ty === 'hierarchy_detected') STATE.events.push({ type:ty, tms, t:new Date(tms).toISOString().slice(11,19), parent:'zone:attic', child:'room:rafters', depth:3, support:20+Math.floor(Math.random()*60) });
+    if (ty === 'curvature') STATE.events.push({ type:ty, tms, t:new Date(tms).toISOString().slice(11,19), k: -1+(Math.random()-0.5)*0.06, dk: (Math.random()-0.5)*0.04 });
+  }
+  STATE.events.sort((a,b)=>b.tms - a.tms);
+
+  /* initial trails */
+  for (let i=0;i<6;i++) spawnPathTrail();
+
+  /* render statics */
+  renderCfg();
+  buildHierarchy();
+  renderHierSvg();
+  renderSeeds();
+  renderEvents();
+  renderOvEvents();
+  paintOvDisk();
+  paintOvCharts();
+  paintBigDisk();
+  paintCurvPanel();
+  paintPaths();
+
+  /* clocks/sim */
+  tickClock();
+  setInterval(tickClock, 1000);
+  setInterval(simulate, 500);
+
+  /* 60fps animation loop — drives marching dashes, pulsing endpoints,
+   * and smooth left-scroll of time-series charts. Data still ticks
+   * at 2 Hz via simulate(); rAF only handles visual repaint. */
+  let _lastRender = 0;
+  function renderLoop(ts){
+    STATE.phase = (ts || performance.now()) / 1000;
+    // throttle to ~40fps to keep cost low on retina
+    if (ts - _lastRender > 24){
+      _lastRender = ts;
+      const active = document.querySelector('.panel.on')?.id || '';
+      if (!STATE.bigDiskOpts.paused){
+        if (active === 'panel-overview') paintOvCharts();
+        else if (active === 'panel-curvature') paintCurvPanel();
+        else if (active === 'panel-paths') paintPaths();
+        else if (active === 'panel-poincare' && !STATE.bigDiskOpts.paused) paintBigDisk();
+      }
+    }
+    requestAnimationFrame(renderLoop);
+  }
+  requestAnimationFrame(renderLoop);
+}
+boot();
+</script>
+</body>
+</html>

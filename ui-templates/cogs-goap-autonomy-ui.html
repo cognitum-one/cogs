@@ -1,0 +1,3651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GOAP Autonomy · Cognitum</title>
+<style>
+  :root {
+    --bg-0: #07090d;
+    --bg-1: #0b1118;
+    --bg-2: #111a25;
+    --bg-3: #18222f;
+    --line: #1f2c3d;
+    --line-2: #2a3a51;
+    --text: #d6e3f0;
+    --text-dim: #8aa0b8;
+    --text-mute: #5c7088;
+    --accent: #5ef3c8;        /* phosphor mint */
+    --accent-2: #36b8ff;      /* spectral blue */
+    --accent-3: #b681ff;      /* cognitum violet */
+    --warn: #ffb547;
+    --crit: #ff5d7a;
+    --ok: #5ef3c8;
+    --grid: rgba(94, 243, 200, 0.07);
+    --glow: 0 0 18px rgba(94, 243, 200, 0.25);
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(54, 184, 255, 0.06), transparent 60%),
+      radial-gradient(1000px 500px at -10% 110%, rgba(182, 129, 255, 0.07), transparent 60%),
+      var(--bg-0);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  a { color: var(--accent-2); text-decoration: none; }
+
+  /* === SHELL === */
+  .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  /* === SIDENAV === */
+  .sidenav {
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    border-right: 1px solid var(--line);
+    padding: 18px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 8px 16px; border-bottom: 1px solid var(--line); margin-bottom: 14px;
+  }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background:
+      radial-gradient(circle at 30% 30%, var(--accent) 0%, transparent 55%),
+      linear-gradient(135deg, var(--accent-3), var(--accent-2));
+    box-shadow: var(--glow);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: "";
+    position: absolute; inset: 6px;
+    border-radius: 50%;
+    background: var(--bg-0);
+    box-shadow: inset 0 0 0 2px rgba(94, 243, 200, 0.6);
+  }
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-text b { font-size: 14px; letter-spacing: 0.5px; }
+  .brand-text span { font-size: 10px; color: var(--text-mute); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .nav-group-title {
+    font-size: 10px; color: var(--text-mute); letter-spacing: 1.8px; text-transform: uppercase;
+    padding: 14px 8px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; margin-bottom: 2px;
+    border-radius: 6px; cursor: pointer; color: var(--text-dim);
+    font-size: 12.5px;
+    transition: background 0.12s, color 0.12s;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover { background: var(--bg-2); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(94,243,200,0.10), rgba(94,243,200,0.02));
+    color: var(--accent); border-color: rgba(94, 243, 200, 0.2);
+  }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-mute); }
+  .nav-item.active .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .nav-item .badge {
+    margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 10px;
+    background: var(--bg-3); color: var(--text-dim);
+  }
+  .nav-item.active .badge { background: rgba(94,243,200,0.15); color: var(--accent); }
+
+  /* === MAIN === */
+  main { padding: 18px 24px 60px; min-width: 0; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding-bottom: 14px; margin-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .breadcrumb { color: var(--text-mute); font-size: 12px; }
+  .breadcrumb span { color: var(--text-dim); }
+  .breadcrumb b { color: var(--text); }
+  .topbar-spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-dim);
+  }
+  .pill .ledpulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 8px var(--ok);
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+  .iconbtn {
+    background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-dim);
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .iconbtn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* === COG HEADER CARD === */
+  .cog-hero {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 18px;
+    background: linear-gradient(135deg, rgba(54,184,255,0.04), rgba(182,129,255,0.03));
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    position: relative; overflow: hidden;
+  }
+  .cog-hero::before {
+    content: ""; position: absolute; right: -120px; top: -100px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(94,243,200,0.10), transparent 60%);
+    pointer-events: none;
+  }
+  .cog-glyph {
+    width: 64px; height: 64px; border-radius: 14px;
+    background:
+      conic-gradient(from 0deg, var(--accent-2), var(--accent-3), var(--accent), var(--accent-2));
+    position: relative;
+    box-shadow: 0 0 22px rgba(94, 243, 200, 0.25);
+  }
+  .cog-glyph::before {
+    content: ""; position: absolute; inset: 4px; border-radius: 11px;
+    background: var(--bg-1);
+  }
+  .cog-glyph::after {
+    content: "◎";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: var(--accent);
+    text-shadow: 0 0 12px var(--accent);
+  }
+  .cog-meta h1 {
+    margin: 0; font-size: 22px; letter-spacing: 0.2px; display: flex; align-items: center; gap: 10px;
+  }
+  .cog-meta h1 .ver {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent); background: rgba(94,243,200,0.10);
+    padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
+  }
+  .cog-meta h1 .tag {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--accent-3); background: rgba(182,129,255,0.10);
+    padding: 2px 8px; border-radius: 4px; letter-spacing: 1.5px;
+  }
+  .cog-meta .sub { color: var(--text-dim); margin-top: 4px; }
+  .cog-meta .specs {
+    display: flex; gap: 18px; margin-top: 10px; font-family: var(--mono);
+    font-size: 11px; color: var(--text-mute);
+  }
+  .cog-meta .specs b { color: var(--text-dim); font-weight: 500; }
+
+  .cog-actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; min-width: 140px; }
+  .btn {
+    background: var(--bg-3); color: var(--text);
+    border: 1px solid var(--line-2);
+    padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    transition: all 0.12s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #062018; border: none; font-weight: 600;
+    box-shadow: 0 4px 18px rgba(94, 243, 200, 0.25);
+  }
+  .btn-primary:hover { color: #062018; filter: brightness(1.1); }
+  .btn-ghost { background: transparent; }
+  .btn-warn { color: var(--warn); border-color: rgba(255, 181, 71, 0.3); }
+  .btn-warn:hover { background: rgba(255, 181, 71, 0.08); color: var(--warn); border-color: var(--warn); }
+  .btn-crit { color: var(--crit); border-color: rgba(255, 93, 122, 0.3); }
+  .btn-crit:hover { background: rgba(255, 93, 122, 0.08); color: var(--crit); border-color: var(--crit); }
+
+  /* === GRID LAYOUT === */
+  .grid { display: grid; gap: 14px; }
+  .g-2 { grid-template-columns: 1fr 1fr; }
+  .g-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g-12-8 { grid-template-columns: 5fr 3fr; }
+  .g-8-4 { grid-template-columns: 2fr 1fr; }
+
+  .card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .card-head h3 {
+    margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .card-head .spacer { flex: 1; }
+  .chip {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.8px;
+    padding: 2px 8px; border-radius: 4px;
+    background: var(--bg-3); color: var(--text-dim);
+    border: 1px solid var(--line-2);
+  }
+  .chip.ok { color: var(--ok); border-color: rgba(94,243,200,0.3); background: rgba(94,243,200,0.06); }
+  .chip.warn { color: var(--warn); border-color: rgba(255,181,71,0.3); background: rgba(255,181,71,0.06); }
+  .chip.crit { color: var(--crit); border-color: rgba(255,93,122,0.3); background: rgba(255,93,122,0.06); }
+  .chip.info { color: var(--accent-2); border-color: rgba(54,184,255,0.3); background: rgba(54,184,255,0.06); }
+  .chip.violet { color: var(--accent-3); border-color: rgba(182,129,255,0.3); background: rgba(182,129,255,0.06); }
+
+  /* === STAT TILES === */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  .stat {
+    background: var(--bg-1); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px;
+    position: relative; overflow: hidden;
+  }
+  .stat .label { font-size: 11px; color: var(--text-mute); letter-spacing: 1px; text-transform: uppercase; }
+  .stat .val { font-family: var(--mono); font-size: 24px; margin-top: 4px; color: var(--text); }
+  .stat .sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .stat .accent { color: var(--accent); }
+  .stat .miniline { position: absolute; right: 12px; top: 12px; width: 70px; height: 28px; opacity: 0.9; }
+
+  /* === EVENT LOG === */
+  .log {
+    font-family: var(--mono); font-size: 11.5px;
+    max-height: 280px; overflow-y: auto;
+    padding-right: 6px;
+  }
+  .log-row { display: grid; grid-template-columns: 70px 110px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+  .log-row:last-child { border-bottom: none; }
+  .log-row .t { color: var(--text-mute); }
+  .log-row .ev { color: var(--accent-2); }
+  .log-row .ev.goal_set { color: var(--accent-3); }
+  .log-row .ev.plan_generated { color: var(--accent-2); }
+  .log-row .ev.action_executed { color: var(--accent); }
+  .log-row .ev.goal_achieved { color: var(--warn); }
+  .log-row .msg { color: var(--text-dim); }
+
+  /* === GOAL LIST === */
+  .goal {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+    padding: 10px 12px; background: var(--bg-2);
+    border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;
+    cursor: pointer; transition: all 0.12s;
+  }
+  .goal:hover { border-color: var(--accent); }
+  .goal.active { border-color: var(--accent); background: linear-gradient(90deg, rgba(94,243,200,0.06), transparent); }
+  .goal .name { font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .goal .name .icon {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-mute);
+  }
+  .goal.active .name .icon { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .goal .desc { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+  .goal .pri {
+    font-family: var(--mono); font-size: 10px; padding: 2px 6px;
+    border-radius: 3px; background: var(--bg-3); color: var(--text-dim);
+  }
+  .goal .util {
+    font-family: var(--mono); font-size: 13px; color: var(--accent); min-width: 50px; text-align: right;
+  }
+
+  /* === ACTION PLAN === */
+  .plan-step {
+    display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-2); border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 6px;
+    transition: all 0.18s;
+  }
+  .plan-step.done { opacity: 0.55; }
+  .plan-step.current { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(94, 243, 200, 0.2); }
+  .plan-step .num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg-3); color: var(--text-dim);
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line-2);
+  }
+  .plan-step.done .num { background: var(--accent); color: #062018; border-color: var(--accent); }
+  .plan-step.current .num { background: var(--accent-2); color: #021620; border-color: var(--accent-2); }
+  .plan-step .action { font-size: 12.5px; }
+  .plan-step .cost { font-family: var(--mono); font-size: 10.5px; color: var(--text-mute); }
+
+  /* === FORM === */
+  .field { margin-bottom: 10px; }
+  .field label { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-mute); display: block; margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    color: var(--text); padding: 7px 10px; border-radius: 6px;
+    font-family: var(--mono); font-size: 12px;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .slider-row { display: grid; grid-template-columns: 1fr 60px; gap: 10px; align-items: center; }
+  .slider-row input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    background: var(--bg-3); border: 1px solid var(--line);
+    height: 6px; border-radius: 3px; padding: 0;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg-1);
+    cursor: pointer; box-shadow: 0 0 6px var(--accent);
+  }
+  .slider-row .val { font-family: var(--mono); color: var(--accent); font-size: 12px; text-align: right; }
+
+  /* === TABS === */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .tab {
+    padding: 8px 12px; cursor: pointer; font-size: 12px;
+    color: var(--text-mute); border-bottom: 2px solid transparent;
+    transition: all 0.12s;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--accent); border-color: var(--accent); }
+
+  /* === CANVAS / SVG === */
+  svg.chart, canvas.chart { width: 100%; display: block; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+
+  /* === MODAL === */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(3, 6, 10, 0.7);
+    display: none; align-items: center; justify-content: center; z-index: 50;
+    backdrop-filter: blur(4px);
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg-1); border: 1px solid var(--line-2);
+    border-radius: var(--radius); padding: 20px 24px;
+    width: 420px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal h2 { margin: 0 0 12px; font-size: 16px; color: var(--accent); }
+  .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+  /* === toast === */
+  .toast-wrap { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+  .toast {
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    padding: 10px 14px; border-radius: 8px; min-width: 240px;
+    font-size: 12.5px; color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    border-left: 3px solid var(--accent);
+    animation: slidein 0.25s ease;
+  }
+  .toast.warn { border-left-color: var(--warn); }
+  .toast.crit { border-left-color: var(--crit); }
+  .toast.info { border-left-color: var(--accent-2); }
+  @keyframes slidein { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-0); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--line-2); }
+
+  /* small */
+  small { color: var(--text-mute); }
+  hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
+
+  @media (max-width: 1100px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .g-2, .g-3, .g-12-8, .g-8-4 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidenav { position: relative; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- SIDENAV: Cognitum field unit -->
+  <aside class="sidenav">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <b>Cognitum</b>
+        <span>field unit · console</span>
+      </div>
+    </div>
+
+    <div class="nav-group-title">Mission</div>
+    <div class="nav-item" data-route="overview"><span class="dot"></span>Overview</div>
+    <div class="nav-item" data-route="hunts"><span class="dot"></span>Missions<span class="badge">3</span></div>
+    <div class="nav-item" data-route="map"><span class="dot"></span>Site Map</div>
+
+    <div class="nav-group-title">Sensors</div>
+    <div class="nav-item" data-route="emf"><span class="dot"></span>RF Field</div>
+    <div class="nav-item" data-route="csi"><span class="dot"></span>CSI Stream</div>
+    <div class="nav-item" data-route="audio"><span class="dot"></span>Audio</div>
+    <div class="nav-item" data-route="thermal"><span class="dot"></span>Thermal</div>
+
+    <div class="nav-group-title">Cogs</div>
+    <div class="nav-item active" data-route="goap"><span class="dot"></span>GOAP Autonomy<span class="badge">AI</span></div>
+    <div class="nav-item" data-route="anomaly"><span class="dot"></span>Anomaly Detect</div>
+    <div class="nav-item" data-route="motion"><span class="dot"></span>Motion Classify</div>
+    <div class="nav-item" data-route="speech"><span class="dot"></span>Speech Synth</div>
+
+    <div class="nav-group-title">System</div>
+    <div class="nav-item" data-route="evidence"><span class="dot"></span>Evidence Vault</div>
+    <div class="nav-item" data-route="devices"><span class="dot"></span>Devices</div>
+    <div class="nav-item" data-route="settings"><span class="dot"></span>Settings</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="breadcrumb" id="breadcrumb">
+        <span>Cogs</span> &nbsp;/&nbsp; <b>GOAP Autonomy</b>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="pill"><span class="ledpulse"></span> ESP32-S3 · linked</div>
+      <div class="pill" id="latencyPill">latency 12 ms</div>
+      <button class="iconbtn" id="btnRefresh" title="Refresh">⟳</button>
+      <button class="iconbtn" id="btnHelp" title="Help">?</button>
+    </div>
+
+    <!-- ============ VIEW: GOAP ============ -->
+    <section class="view" data-view="goap">
+
+    <!-- COG HERO -->
+    <div class="cog-hero">
+      <div class="cog-glyph"></div>
+      <div class="cog-meta">
+        <h1>
+          GOAP Autonomy
+          <span class="ver">v0.5.0</span>
+          <span class="tag">AI · 30 KB · HARD</span>
+        </h1>
+        <div class="sub">Goal-Oriented Action Planning for autonomous decisions on the field unit. Plans evolve from live CSI environmental state.</div>
+        <div class="specs">
+          <span>Target&nbsp;<b>ESP32-S3</b></span>
+          <span>Input&nbsp;<b>CSI state</b></span>
+          <span>Source&nbsp;<b>cognitum-one / cogs / goap-autonomy</b></span>
+          <span>Footprint&nbsp;<b>30&nbsp;KB</b></span>
+        </div>
+      </div>
+      <div class="cog-actions">
+        <button class="btn btn-primary" id="btnInstall">Install on Unit</button>
+        <button class="btn" id="btnStart">Start Planner</button>
+        <button class="btn" id="btnStop">Pause</button>
+        <button class="btn btn-ghost" id="btnDetails">Details</button>
+      </div>
+    </div>
+
+    <!-- STAT TILES -->
+    <div class="stats">
+      <div class="stat">
+        <div class="label">Active Goal</div>
+        <div class="val accent" id="statGoal">Investigate</div>
+        <div class="sub" id="statGoalDesc">priority 7 · utility 0.82</div>
+        <svg class="miniline" viewBox="0 0 70 28" id="miniGoal"></svg>
+      </div>
+      <div class="stat">
+        <div class="label">Plan Depth</div>
+        <div class="val"><span id="statDepth">6</span> <small style="font-size:12px;color:var(--text-mute)">steps</small></div>
+        <div class="sub" id="statCost">total cost 14.2</div>
+        <svg class="miniline" viewBox="0 0 70 28" id="miniDepth"></svg>
+      </div>
+      <div class="stat">
+        <div class="label">Tick Rate</div>
+        <div class="val"><span id="statTick">10</span> <small style="font-size:12px;color:var(--text-mute)">Hz</small></div>
+        <div class="sub" id="statCpu">cpu 18% · ram 24 KB</div>
+        <svg class="miniline" viewBox="0 0 70 28" id="miniTick"></svg>
+      </div>
+      <div class="stat">
+        <div class="label">Goals Achieved</div>
+        <div class="val accent" id="statAchieved">37</div>
+        <div class="sub">since boot · <span id="statAch24" style="color:var(--accent-2)">+5 today</span></div>
+        <svg class="miniline" viewBox="0 0 70 28" id="miniAch"></svg>
+      </div>
+    </div>
+
+    <!-- ROW: ACTION PLAN GRAPH + GOAL UTILITY RADIAL -->
+    <div class="grid g-12-8" style="margin-bottom: 14px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>Plan Graph · Active</h3>
+          <span class="chip info" id="planTarget">→ Investigate</span>
+          <div class="spacer"></div>
+          <span class="chip" id="planAlgo">A* · f=g+h</span>
+          <button class="btn btn-ghost" id="btnReplan" style="padding: 4px 10px; font-size: 11px;">Replan</button>
+        </div>
+        <svg class="chart" id="planGraph" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Executed</span>
+          <span><i style="background:var(--accent-2)"></i>Current</span>
+          <span><i style="background:var(--text-mute)"></i>Pending</span>
+          <span><i style="background:var(--accent-3)"></i>Goal Node</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Goal Utility</h3>
+          <div class="spacer"></div>
+          <span class="chip violet">radial</span>
+        </div>
+        <svg class="chart" id="utilityRadar" viewBox="0 0 320 320"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Current Utility</span>
+          <span><i style="background:var(--accent-3)"></i>10-min Avg</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW: CSI STATE + GOAL STACK -->
+    <div class="grid g-8-4" style="margin-bottom: 14px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>CSI Environmental State</h3>
+          <span class="chip ok" id="csiQuality">SNR 28 dB</span>
+          <div class="spacer"></div>
+          <div class="tabs" style="border: none; margin: 0;">
+            <div class="tab active" data-csitab="amp">Amplitude</div>
+            <div class="tab" data-csitab="phase">Phase</div>
+            <div class="tab" data-csitab="doppler">Doppler</div>
+          </div>
+        </div>
+        <canvas class="chart" id="csiChart" height="220"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Subcarrier 0–10</span>
+          <span><i style="background:var(--accent-2)"></i>Subcarrier 11–20</span>
+          <span><i style="background:var(--accent-3)"></i>Subcarrier 21–30</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Goal Stack</h3>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost" id="btnAddGoal" style="padding:4px 10px; font-size:11px;">+ Add</button>
+        </div>
+        <div id="goalList"></div>
+      </div>
+    </div>
+
+    <!-- ROW: PLAN STEPS + STATE HISTORY -->
+    <div class="grid g-2" style="margin-bottom: 14px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>Action Sequence</h3>
+          <div class="spacer"></div>
+          <span class="chip" id="planProgress">step 3 / 6</span>
+          <button class="btn btn-ghost" id="btnStepNext" style="padding:4px 10px; font-size:11px;">Step ▸</button>
+        </div>
+        <div id="planSteps"></div>
+        <hr/>
+        <div style="display: flex; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-mute);">
+          <span>cost so far <b style="color: var(--text-dim);" id="costSoFar">6.4</b></span>
+          <span>cost remaining <b style="color: var(--text-dim);" id="costRem">7.8</b></span>
+          <span>est. completion <b style="color: var(--accent);" id="etaTxt">~24 s</b></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Planner Performance</h3>
+          <div class="spacer"></div>
+          <span class="chip info">last 60 s</span>
+        </div>
+        <svg class="chart" id="perfChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Plan latency (ms)</span>
+          <span><i style="background:var(--accent-2)"></i>Goal utility</span>
+          <span><i style="background:var(--accent-3)"></i>State entropy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW: EVENTS + TUNING -->
+    <div class="grid g-8-4">
+      <div class="card">
+        <div class="card-head">
+          <h3>Event Stream</h3>
+          <div class="spacer"></div>
+          <select id="evFilter" class="iconbtn" style="width:auto;padding:4px 8px;color:var(--text-dim);font-size:11px;">
+            <option value="all">all events</option>
+            <option value="goal_set">goal_set</option>
+            <option value="plan_generated">plan_generated</option>
+            <option value="action_executed">action_executed</option>
+            <option value="goal_achieved">goal_achieved</option>
+          </select>
+          <button class="btn btn-ghost" id="btnClearLog" style="padding:4px 10px; font-size:11px;">Clear</button>
+        </div>
+        <div class="log" id="eventLog"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Planner Tuning</h3>
+          <div class="spacer"></div>
+          <span class="chip" id="tuneSaved">unsaved</span>
+        </div>
+
+        <div class="field">
+          <label>Tick rate (Hz)</label>
+          <div class="slider-row">
+            <input type="range" min="1" max="30" value="10" id="rangeTick">
+            <div class="val" id="rangeTickVal">10</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Heuristic weight</label>
+          <div class="slider-row">
+            <input type="range" min="0" max="100" value="55" id="rangeHeur">
+            <div class="val" id="rangeHeurVal">0.55</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Max plan depth</label>
+          <div class="slider-row">
+            <input type="range" min="3" max="20" value="8" id="rangeDepth">
+            <div class="val" id="rangeDepthVal">8</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Exploration / exploitation</label>
+          <div class="slider-row">
+            <input type="range" min="0" max="100" value="30" id="rangeExpl">
+            <div class="val" id="rangeExplVal">0.30</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-primary" id="btnApplyTune" style="flex:1;">Apply</button>
+          <button class="btn" id="btnResetTune">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    </section>
+    <!-- /VIEW: GOAP -->
+
+    <!-- ============ VIEW: OVERVIEW ============ -->
+    <section class="view" data-view="overview" hidden>
+      <div class="cog-hero">
+        <div class="cog-glyph"></div>
+        <div class="cog-meta">
+          <h1>Field Unit Overview <span class="ver">online</span></h1>
+          <div class="sub">Live status of the Cognitum field unit and its loaded cogs.</div>
+          <div class="specs">
+            <span>Unit&nbsp;<b>field-unit-01</b></span>
+            <span>Uptime&nbsp;<b id="ovUptime">02:14:08</b></span>
+            <span>Battery&nbsp;<b id="ovBatt">78%</b></span>
+            <span>Signal&nbsp;<b>-52 dBm</b></span>
+          </div>
+        </div>
+        <div class="cog-actions">
+          <button class="btn btn-primary" id="btnOvScan">Start Hunt</button>
+          <button class="btn" id="btnOvDiag">Run Diagnostics</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="label">Cogs Loaded</div><div class="val accent">4</div><div class="sub">of 12 available</div></div>
+        <div class="stat"><div class="label">Anomalies</div><div class="val">17</div><div class="sub">last 24 h</div></div>
+        <div class="stat"><div class="label">Evidence</div><div class="val">52</div><div class="sub">items captured</div></div>
+        <div class="stat"><div class="label">Tick Rate</div><div class="val">10 <small style="font-size:12px;color:var(--text-mute)">Hz</small></div><div class="sub">nominal</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Loaded Cogs</h3></div>
+        <div id="overviewCogs"></div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: HUNTS ============ -->
+    <section class="view" data-view="hunts" hidden>
+      <div class="stats">
+        <div class="stat"><div class="label">Active</div><div class="val accent" id="mxActive">2</div><div class="sub">missions running</div></div>
+        <div class="stat"><div class="label">Completed Today</div><div class="val" id="mxDone">5</div><div class="sub" id="mxDoneSub">+1 from yesterday</div></div>
+        <div class="stat"><div class="label">Total Events</div><div class="val" id="mxEvents">42</div><div class="sub">across all missions</div></div>
+        <div class="stat"><div class="label">Avg Duration</div><div class="val" id="mxAvg">38 <small style="font-size:12px;color:var(--text-mute)">min</small></div><div class="sub">last 7 days</div></div>
+      </div>
+
+      <div class="grid g-8-4" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head">
+            <h3>Missions</h3>
+            <div class="spacer"></div>
+            <div class="tabs" style="border:none; margin:0;">
+              <div class="tab active" data-mxfilter="all">All</div>
+              <div class="tab" data-mxfilter="active">Active</div>
+              <div class="tab" data-mxfilter="review">Review</div>
+              <div class="tab" data-mxfilter="archived">Archived</div>
+            </div>
+            <button class="btn btn-primary" id="btnNewHunt" style="padding:6px 12px;font-size:11px;">+ New Mission</button>
+          </div>
+          <div id="huntsList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Events / hour</h3><div class="spacer"></div><span class="chip info">last 24 h</span></div>
+          <svg class="chart" id="mxThroughput" viewBox="0 0 300 160" preserveAspectRatio="none"></svg>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Events</span><span><i style="background:var(--accent-3)"></i>Anomalies</span></div>
+          <hr/>
+          <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--text-mute);">
+            <span>peak hour <b style="color:var(--text-dim);" id="mxPeak">21:00</b></span>
+            <span>uptime <b style="color:var(--accent);" id="mxUptime">94%</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected mission detail -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-head">
+          <h3 id="mxDetailName">Mission Detail</h3>
+          <span class="chip ok" id="mxDetailState">active</span>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost" id="btnMxResume" style="padding:4px 10px;font-size:11px;">Resume</button>
+          <button class="btn btn-ghost" id="btnMxPause"  style="padding:4px 10px;font-size:11px;">Pause</button>
+          <button class="btn btn-ghost" id="btnMxArchive" style="padding:4px 10px;font-size:11px;">Archive</button>
+        </div>
+
+        <div class="grid g-3" style="gap:14px; margin-bottom:14px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Brief</div>
+            <table style="width:100%; font-size:12px; border-collapse:collapse;">
+              <tr><td style="color:var(--text-mute); padding:4px 0;">ID</td><td id="mxId">—</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Location</td><td id="mxLoc">—</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Started</td><td id="mxStart">—</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Operator</td><td id="mxOp">Nick R.</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Unit</td><td id="mxUnit">field-unit-01</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Events</td><td id="mxEv">—</td></tr>
+            </table>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Progress</div>
+            <svg class="chart" id="mxProgress" viewBox="0 0 220 130"></svg>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Goals</div>
+            <div id="mxGoals"></div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Timeline (last hour)</div>
+        <svg class="chart" id="mxTimeline" viewBox="0 0 720 90"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>action</span>
+          <span><i style="background:var(--accent-3)"></i>anomaly</span>
+          <span><i style="background:var(--warn)"></i>goal</span>
+          <span><i style="background:var(--crit)"></i>alert</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Mission Log</h3><div class="spacer"></div><span class="chip" id="mxLogCount">0 entries</span></div>
+        <div class="log" id="mxEventLog"></div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: SITE MAP ============ -->
+    <section class="view" data-view="map" hidden>
+      <div class="stats">
+        <div class="stat"><div class="label">Coverage</div><div class="val accent" id="smCoverage">62%</div><div class="sub">explored area</div></div>
+        <div class="stat"><div class="label">Hotspots</div><div class="val" id="smHot">3</div><div class="sub" id="smHotSub">2 anomaly · 1 thermal</div></div>
+        <div class="stat"><div class="label">Markers</div><div class="val" id="smMarkers">0</div><div class="sub">user dropped</div></div>
+        <div class="stat"><div class="label">Unit Speed</div><div class="val" id="smSpeed">0.42 <small style="font-size:12px;color:var(--text-mute)">m/s</small></div><div class="sub" id="smHeading">heading 47°</div></div>
+      </div>
+
+      <div class="grid g-8-4" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head">
+            <h3>Site Map · <span id="smFloorName" style="color:var(--accent);">Ground Floor</span></h3>
+            <div class="spacer"></div>
+            <div class="tabs" style="border:none; margin:0;">
+              <div class="tab" data-floor="b1">B1</div>
+              <div class="tab active" data-floor="g">G</div>
+              <div class="tab" data-floor="1">1F</div>
+              <div class="tab" data-floor="2">2F</div>
+            </div>
+            <button class="btn btn-ghost" id="btnMapClear" style="padding:4px 10px;font-size:11px;">Clear</button>
+            <button class="btn btn-ghost" id="btnMapCenter" style="padding:4px 10px;font-size:11px;">Center Unit</button>
+          </div>
+          <svg class="chart" id="siteMap" viewBox="0 0 800 480" style="cursor: crosshair;"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>Field unit</span>
+            <span><i style="background:var(--accent-3)"></i>Anomaly</span>
+            <span><i style="background:var(--warn)"></i>Thermal drop</span>
+            <span><i style="background:var(--accent-2)"></i>Interest pin</span>
+            <span><i style="background:var(--text-mute)"></i>Unit trail</span>
+            <span style="color:var(--text-mute); margin-left:auto;">click map to drop marker</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Layers</h3></div>
+          <div id="smLayers" style="display:flex; flex-direction:column; gap:4px;">
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--accent);"></span>Walls &amp; rooms</div></div>
+              <div class="pri">on</div><div class="util"><input type="checkbox" data-layer="walls" checked></div>
+            </label>
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--accent-3);"></span>Anomaly heat</div></div>
+              <div class="pri">on</div><div class="util"><input type="checkbox" data-layer="heat" checked></div>
+            </label>
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--text-mute);"></span>Unit trail</div></div>
+              <div class="pri">on</div><div class="util"><input type="checkbox" data-layer="trail" checked></div>
+            </label>
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--accent-2);"></span>Sensor cone</div></div>
+              <div class="pri">on</div><div class="util"><input type="checkbox" data-layer="cone" checked></div>
+            </label>
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--accent);"></span>Markers</div></div>
+              <div class="pri">on</div><div class="util"><input type="checkbox" data-layer="markers" checked></div>
+            </label>
+            <label class="goal" style="cursor:pointer;">
+              <div><div class="name"><span class="icon" style="background:var(--warn);"></span>Grid</div></div>
+              <div class="pri">off</div><div class="util"><input type="checkbox" data-layer="grid"></div>
+            </label>
+          </div>
+
+          <hr/>
+          <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Marker Tool</div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn smTool" data-tool="anom"     style="flex:1;padding:6px;font-size:11px;color:var(--accent-3); border-color:var(--accent-3);">Anomaly</button>
+            <button class="btn smTool" data-tool="thermal"  style="flex:1;padding:6px;font-size:11px;">Thermal</button>
+            <button class="btn smTool" data-tool="interest" style="flex:1;padding:6px;font-size:11px;">Interest</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="card">
+          <div class="card-head"><h3>Hotspots</h3><div class="spacer"></div><span class="chip violet" id="smHotChip">3 ranked</span></div>
+          <div id="smHotList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Location Events</h3><div class="spacer"></div><span class="chip">last 5 min</span></div>
+          <div class="log" id="smEventLog"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: SENSOR (RF/CSI/AUDIO/THERMAL) ============ -->
+    <section class="view" data-view="sensor" hidden>
+
+      <!-- compact stat header -->
+      <div class="stats">
+        <div class="stat"><div class="label">Mean</div><div class="val accent" id="sensorMean">—</div><div class="sub" id="sensorMeanSub">rolling 80 samples</div></div>
+        <div class="stat"><div class="label">Peak</div><div class="val" id="sensorPeak">—</div><div class="sub" id="sensorPeakSub">last 60 s</div></div>
+        <div class="stat"><div class="label">Variance</div><div class="val" id="sensorVar">—</div><div class="sub">σ²</div></div>
+        <div class="stat"><div class="label">Sample Rate</div><div class="val" id="sensorRate">100 <small style="font-size:12px;color:var(--text-mute)">Hz</small></div><div class="sub">nominal</div></div>
+      </div>
+
+      <!-- main chart + side panel -->
+      <div class="grid g-8-4" style="margin-bottom: 14px;">
+        <div class="card">
+          <div class="card-head">
+            <h3 id="sensorTitle">Sensor</h3>
+            <span class="chip ok" id="sensorState">streaming</span>
+            <div class="spacer"></div>
+            <button class="btn btn-ghost" id="btnSensorPause" style="padding:4px 10px; font-size: 11px;">Pause</button>
+            <button class="btn btn-ghost" id="btnSensorClear" style="padding:4px 10px; font-size: 11px;">Reset</button>
+          </div>
+          <canvas class="chart" id="sensorChart" height="160"></canvas>
+          <div class="legend" id="sensorLegend"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Sensor Info</h3>
+            <div class="spacer"></div>
+            <span class="chip info" id="sensorChip">—</span>
+          </div>
+          <table style="width:100%; font-size: 12px; border-collapse: collapse;">
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Driver</td><td id="sensorDriver">—</td></tr>
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Channel</td><td id="sensorChan">—</td></tr>
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Resolution</td><td id="sensorRes">—</td></tr>
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Range</td><td id="sensorRange">—</td></tr>
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Calibrated</td><td id="sensorCal">—</td></tr>
+            <tr><td style="color:var(--text-mute); padding: 4px 0;">Last error</td><td style="color: var(--text-dim);" id="sensorErr">—</td></tr>
+          </table>
+          <hr/>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" id="btnSensorCal" style="flex:1;">Calibrate</button>
+            <button class="btn btn-ghost" id="btnSensorSnap" style="flex:1;">Snapshot</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- polar signal map + thresholds -->
+      <div class="grid g-8-4">
+        <div class="card">
+          <div class="card-head">
+            <h3 id="polarTitle">Directional Response</h3>
+            <div class="spacer"></div>
+            <span class="chip violet" id="polarChip">360° · live</span>
+          </div>
+          <svg class="chart" id="sensorPolar" viewBox="0 0 520 240"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>Current</span>
+            <span><i style="background:var(--accent-3)"></i>10 s peak hold</span>
+            <span><i style="background:var(--text-mute)"></i>Noise floor</span>
+            <span style="color:var(--text-mute);margin-left:auto;" id="polarReadout">peak — at —°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Thresholds</h3><div class="spacer"></div><span class="chip" id="thrSaved">unsaved</span></div>
+          <div class="field">
+            <label>Alert (upper)</label>
+            <div class="slider-row">
+              <input type="range" min="50" max="100" value="80" id="thrUpper">
+              <div class="val" id="thrUpperVal">0.80</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Quiet (lower)</label>
+            <div class="slider-row">
+              <input type="range" min="0" max="50" value="15" id="thrLower">
+              <div class="val" id="thrLowerVal">0.15</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Smoothing</label>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="30" id="thrSmooth">
+              <div class="val" id="thrSmoothVal">0.30</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button class="btn btn-primary" id="btnThrApply" style="flex:1;">Apply</button>
+            <button class="btn" id="btnThrReset">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- peaks log -->
+      <div class="card" style="margin-top:14px;">
+        <div class="card-head">
+          <h3>Recent Peaks</h3>
+          <div class="spacer"></div>
+          <span class="chip" id="sensorPeakCount">0 peaks</span>
+        </div>
+        <div class="log" id="sensorPeakLog"></div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: ANOMALY DETECT ============ -->
+    <section class="view" data-view="anomaly" hidden>
+      <div class="cog-hero">
+        <div class="cog-glyph"></div>
+        <div class="cog-meta">
+          <h1>Anomaly Detect <span class="ver">v0.3.1</span><span class="tag">AI · 22 KB</span></h1>
+          <div class="sub">Statistical outlier detector across CSI / RF / audio. Combines z-score, EWMA residual, and isolation-forest scoring.</div>
+          <div class="specs">
+            <span>Target&nbsp;<b>ESP32-S3</b></span>
+            <span>Inputs&nbsp;<b>multi-sensor</b></span>
+            <span>Footprint&nbsp;<b>22&nbsp;KB</b></span>
+            <span>Latency&nbsp;<b>~6&nbsp;ms</b></span>
+          </div>
+        </div>
+        <div class="cog-actions">
+          <button class="btn btn-primary" id="btnAnomInstall">Install</button>
+          <button class="btn" id="btnAnomToggle">Pause</button>
+          <button class="btn btn-ghost" id="btnAnomReset">Reset Model</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="label">Detections</div><div class="val accent" id="anomCount">128</div><div class="sub">since boot</div></div>
+        <div class="stat"><div class="label">Score Now</div><div class="val" id="anomScore">0.31</div><div class="sub">threshold <span id="anomThrShow">0.65</span></div></div>
+        <div class="stat"><div class="label">False Positive</div><div class="val" id="anomFP">2.4 <small style="font-size:12px;color:var(--text-mute)">%</small></div><div class="sub">est. last hour</div></div>
+        <div class="stat"><div class="label">Model</div><div class="val accent" id="anomModel">EWMA</div><div class="sub">window 64</div></div>
+      </div>
+
+      <div class="grid g-12-8" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head">
+            <h3>Anomaly Score · live</h3>
+            <div class="spacer"></div>
+            <span class="chip info">last 60 s</span>
+          </div>
+          <svg class="chart" id="anomChart" viewBox="0 0 400 180" preserveAspectRatio="none"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>Score</span>
+            <span><i style="background:var(--crit)"></i>Threshold</span>
+            <span><i style="background:var(--accent-3)"></i>EWMA mean</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Detector Tuning</h3></div>
+          <div class="field">
+            <label>Sensitivity</label>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="65" id="anomSens">
+              <div class="val" id="anomSensVal">0.65</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Window size</label>
+            <div class="slider-row">
+              <input type="range" min="16" max="256" value="64" id="anomWin">
+              <div class="val" id="anomWinVal">64</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <select id="anomModelSel">
+              <option>EWMA</option>
+              <option>Z-Score</option>
+              <option>IsolationForest</option>
+              <option>OneClassSVM</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Active inputs</label>
+            <div id="anomInputs" style="display:flex; flex-wrap:wrap; gap:6px;">
+              <span class="chip ok" data-anomin="csi">csi</span>
+              <span class="chip ok" data-anomin="rf">rf</span>
+              <span class="chip" data-anomin="audio">audio</span>
+              <span class="chip" data-anomin="thermal">thermal</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnAnomApply" style="width:100%; margin-top:6px;">Apply</button>
+        </div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="card">
+          <div class="card-head"><h3>Recent Detections</h3><div class="spacer"></div><span class="chip violet" id="anomTopType">top: rf</span></div>
+          <div class="log" id="anomLog"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Score Distribution</h3><div class="spacer"></div><span class="chip">last 5 min</span></div>
+          <svg class="chart" id="anomDist" viewBox="0 0 400 180"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>Normal samples</span>
+            <span><i style="background:var(--crit)"></i>Above threshold</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: MOTION CLASSIFY ============ -->
+    <section class="view" data-view="motion" hidden>
+      <div class="cog-hero">
+        <div class="cog-glyph"></div>
+        <div class="cog-meta">
+          <h1>Motion Classify <span class="ver">v0.4.0</span><span class="tag">AI · 18 KB</span></h1>
+          <div class="sub">Classifies motion patterns from CSI Doppler bins using a small recurrent classifier.</div>
+          <div class="specs">
+            <span>Target&nbsp;<b>ESP32-S3</b></span>
+            <span>Input&nbsp;<b>CSI doppler</b></span>
+            <span>Footprint&nbsp;<b>18&nbsp;KB</b></span>
+            <span>Classes&nbsp;<b>6</b></span>
+          </div>
+        </div>
+        <div class="cog-actions">
+          <button class="btn btn-primary" id="btnMoInstall">Install</button>
+          <button class="btn" id="btnMoToggle">Pause</button>
+          <button class="btn btn-ghost" id="btnMoRecord">Record Sample</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="label">Top Class</div><div class="val accent" id="moTopClass">walking</div><div class="sub" id="moTopConf">conf 0.82</div></div>
+        <div class="stat"><div class="label">Avg Confidence</div><div class="val" id="moAvgConf">0.74</div><div class="sub">rolling 30 s</div></div>
+        <div class="stat"><div class="label">Inferences</div><div class="val" id="moInf">3,412</div><div class="sub">since boot</div></div>
+        <div class="stat"><div class="label">Latency</div><div class="val" id="moLat">4.1 <small style="font-size:12px;color:var(--text-mute)">ms</small></div><div class="sub">per inference</div></div>
+      </div>
+
+      <div class="grid g-12-8" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head"><h3>Class Probabilities · live</h3><div class="spacer"></div><span class="chip info">softmax</span></div>
+          <svg class="chart" id="moDonut" viewBox="0 0 400 220"></svg>
+          <div class="legend" id="moLegend"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Confidence Over Time</h3></div>
+          <svg class="chart" id="moConfChart" viewBox="0 0 320 160" preserveAspectRatio="none"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>Top class confidence</span>
+            <span><i style="background:var(--text-mute)"></i>Decision boundary</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="card">
+          <div class="card-head"><h3>Recent Classifications</h3></div>
+          <div class="log" id="moLog"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Class Library</h3><div class="spacer"></div><span class="chip">6 classes</span></div>
+          <div id="moClassLib"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: SPEECH SYNTH ============ -->
+    <section class="view" data-view="speech" hidden>
+      <div class="cog-hero">
+        <div class="cog-glyph"></div>
+        <div class="cog-meta">
+          <h1>Speech Synth <span class="ver">v0.2.7</span><span class="tag">AUDIO · 41 KB</span></h1>
+          <div class="sub">Low-bitrate spectral speech synthesis over I2S. Formant-based with parametric prosody control.</div>
+          <div class="specs">
+            <span>Target&nbsp;<b>ESP32-S3</b></span>
+            <span>Output&nbsp;<b>I2S audio</b></span>
+            <span>Footprint&nbsp;<b>41&nbsp;KB</b></span>
+            <span>Sample rate&nbsp;<b>16 kHz</b></span>
+          </div>
+        </div>
+        <div class="cog-actions">
+          <button class="btn btn-primary" id="btnSpInstall">Install</button>
+          <button class="btn" id="btnSpStop">Stop</button>
+          <button class="btn btn-ghost" id="btnSpFlush">Flush Queue</button>
+        </div>
+      </div>
+
+      <div class="grid g-12-8" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head"><h3>Synthesize</h3><div class="spacer"></div><span class="chip info" id="spState">idle</span></div>
+          <div class="field">
+            <label>Phrase</label>
+            <input type="text" id="spPhrase" value="Field unit one online" />
+          </div>
+          <div class="grid g-2" style="gap:10px;">
+            <div class="field">
+              <label>Pitch</label>
+              <div class="slider-row">
+                <input type="range" min="60" max="280" value="140" id="spPitch">
+                <div class="val" id="spPitchVal">140 Hz</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Rate</label>
+              <div class="slider-row">
+                <input type="range" min="50" max="200" value="100" id="spRate">
+                <div class="val" id="spRateVal">1.00×</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Gain</label>
+              <div class="slider-row">
+                <input type="range" min="0" max="100" value="70" id="spGain">
+                <div class="val" id="spGainVal">-6 dB</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Voice</label>
+              <select id="spVoice">
+                <option>formant-male</option>
+                <option>formant-female</option>
+                <option>formant-flat</option>
+                <option>lpc-narrow</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <button class="btn btn-primary" id="btnSpSpeak" style="flex:1;">▶ Speak</button>
+            <button class="btn" id="btnSpEnqueue">+ Queue</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Waveform</h3><div class="spacer"></div><span class="chip violet" id="spWavInfo">silence</span></div>
+          <canvas class="chart" id="spWaveform" height="120"></canvas>
+          <hr/>
+          <div style="display:flex; justify-content:space-between; font-family: var(--mono); font-size:11px; color:var(--text-mute);">
+            <span>buffer <b style="color:var(--text-dim);" id="spBuf">0 / 4096</b></span>
+            <span>underruns <b style="color:var(--text-dim);" id="spUnder">0</b></span>
+            <span>load <b style="color:var(--accent);" id="spLoad">8%</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="card">
+          <div class="card-head"><h3>Queue</h3><div class="spacer"></div><button class="btn btn-ghost" id="btnSpClearQ" style="padding:4px 10px;font-size:11px;">Clear</button></div>
+          <div id="spQueueList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Recently Uttered</h3></div>
+          <div class="log" id="spLog"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: EVIDENCE VAULT ============ -->
+    <section class="view" data-view="evidence" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h3>Evidence Vault</h3>
+          <div class="spacer"></div>
+          <select id="evidenceFilter" class="iconbtn" style="width:auto;padding:4px 8px;color:var(--text-dim);font-size:11px;">
+            <option value="all">all types</option>
+            <option value="rf">rf</option>
+            <option value="audio">audio</option>
+            <option value="thermal">thermal</option>
+            <option value="csi">csi</option>
+          </select>
+        </div>
+        <div id="evidenceList"></div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: DEVICES ============ -->
+    <section class="view" data-view="devices" hidden>
+      <div class="stats">
+        <div class="stat"><div class="label">Online</div><div class="val accent" id="devOnline">2</div><div class="sub">of 3 total</div></div>
+        <div class="stat"><div class="label">Mesh Health</div><div class="val" id="devHealth">94%</div><div class="sub">last hour</div></div>
+        <div class="stat"><div class="label">Pkts / s</div><div class="val" id="devPkt">412</div><div class="sub">across mesh</div></div>
+        <div class="stat"><div class="label">Firmware</div><div class="val" id="devFw">0.5.0</div><div class="sub">unified</div></div>
+      </div>
+
+      <div class="grid g-8-4" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head">
+            <h3>Field Units</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-ghost" id="btnDeviceScan" style="padding:4px 10px;font-size:11px;">Scan</button>
+            <button class="btn btn-ghost" id="btnDeviceAdd"  style="padding:4px 10px;font-size:11px;">+ Pair</button>
+          </div>
+          <div id="deviceList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Mesh Topology</h3><div class="spacer"></div><span class="chip info">live</span></div>
+          <svg class="chart" id="meshTopo" viewBox="0 0 260 220"></svg>
+          <div class="legend"><span><i style="background:var(--accent)"></i>linked</span><span><i style="background:var(--text-mute)"></i>offline</span><span><i style="background:var(--accent-3)"></i>gateway</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3 id="devDetailName">Field Unit Detail</h3>
+          <div class="spacer"></div>
+          <span class="chip ok" id="devDetailState">linked</span>
+          <button class="btn btn-ghost" id="btnDevReboot" style="padding:4px 10px; font-size:11px;">Reboot</button>
+          <button class="btn btn-ghost" id="btnDevOTA"    style="padding:4px 10px; font-size:11px;">OTA Update</button>
+          <button class="btn btn-ghost" id="btnDevLog"    style="padding:4px 10px; font-size:11px;">Live Log</button>
+        </div>
+        <div class="grid g-3" style="gap:14px;">
+          <!-- gauges -->
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Resources</div>
+            <svg class="chart" id="devGauges" viewBox="0 0 240 140"></svg>
+          </div>
+          <!-- spec table -->
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Hardware</div>
+            <table style="width:100%; font-size:12px; border-collapse: collapse;">
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Chip</td><td id="dvChip">ESP32-S3</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Cores</td><td id="dvCore">2 × 240 MHz</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">PSRAM</td><td id="dvPS">8 MB</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Flash</td><td id="dvFl">16 MB</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Firmware</td><td id="dvFw2">cognitum 0.5.0</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">MAC</td><td><code id="dvMac" style="color:var(--accent-2);">7c:9e:bd:42:11:a0</code></td></tr>
+            </table>
+          </div>
+          <!-- link metrics -->
+          <div>
+            <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Link</div>
+            <table style="width:100%; font-size:12px; border-collapse: collapse;">
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Signal</td><td id="dvSig">-52 dBm</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Battery</td><td id="dvBatt">78%</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Uptime</td><td id="dvUp">02:14:08</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Latency</td><td id="dvLat">12 ms</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Loss</td><td id="dvLoss">0.2%</td></tr>
+              <tr><td style="color:var(--text-mute); padding:4px 0;">Last seen</td><td id="dvSeen">now</td></tr>
+            </table>
+          </div>
+        </div>
+        <hr/>
+        <div style="font-size:11px;color:var(--text-mute);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">CPU · Memory · RTT (60 s)</div>
+        <svg class="chart" id="devPerf" viewBox="0 0 720 140" preserveAspectRatio="none"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>CPU %</span>
+          <span><i style="background:var(--accent-2)"></i>RAM %</span>
+          <span><i style="background:var(--accent-3)"></i>RTT ms</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-head"><h3>Installed Cogs · <span id="devCogsFor" style="color:var(--accent);">field-unit-01</span></h3></div>
+        <div id="devCogList"></div>
+      </div>
+    </section>
+
+    <!-- ============ VIEW: SETTINGS ============ -->
+    <section class="view" data-view="settings" hidden>
+      <div class="card">
+        <div class="card-head"><h3>Settings</h3><div class="spacer"></div><span class="chip" id="settingsSaved">unsaved</span></div>
+        <div class="field">
+          <label>Operator name</label>
+          <input type="text" id="setOperator" value="Nick R." />
+        </div>
+        <div class="field">
+          <label>Default field unit</label>
+          <select id="setUnit"><option>field-unit-01</option><option>field-unit-02</option></select>
+        </div>
+        <div class="field">
+          <label>Telemetry endpoint</label>
+          <input type="text" id="setEndpoint" value="mqtt://cognitum.local:1883" />
+        </div>
+        <div class="field">
+          <label>Theme accent</label>
+          <select id="setAccent">
+            <option value="#5ef3c8">phosphor mint</option>
+            <option value="#36b8ff">spectral blue</option>
+            <option value="#b681ff">cognitum violet</option>
+            <option value="#ffb547">amber warn</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn btn-primary" id="btnSettingsSave">Save</button>
+          <button class="btn" id="btnSettingsReset">Reset</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL: Install -->
+<div class="modal-bg" id="modalInstall">
+  <div class="modal">
+    <h2>Install GOAP Autonomy</h2>
+    <p style="color: var(--text-dim); font-size: 12.5px;">
+      Push <b>goap-autonomy v0.5.0</b> (30&nbsp;KB) to the linked field unit. The cog will be
+      bound to the CSI stream and start in <b>idle</b> state.
+    </p>
+    <div class="field">
+      <label>Target Unit</label>
+      <select>
+        <option>field-unit-01 · ESP32-S3 (online)</option>
+        <option>field-unit-02 · ESP32-S3 (online)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Auto-start on boot</label>
+      <select>
+        <option>yes</option>
+        <option>no</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btnInstallCancel">Cancel</button>
+      <button class="btn btn-primary" id="btnInstallConfirm">Install &amp; Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Goal -->
+<div class="modal-bg" id="modalGoal">
+  <div class="modal">
+    <h2>New Goal</h2>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="goalName" placeholder="Patrol perimeter" />
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <input type="text" id="goalDesc" placeholder="Sweep perimeter for anomalies" />
+    </div>
+    <div class="field">
+      <label>Priority</label>
+      <div class="slider-row">
+        <input type="range" min="1" max="10" value="5" id="goalPri">
+        <div class="val" id="goalPriVal">5</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btnGoalCancel">Cancel</button>
+      <button class="btn btn-primary" id="btnGoalConfirm">Add Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Details -->
+<div class="modal-bg" id="modalDetails">
+  <div class="modal" style="width: 520px;">
+    <h2>Cog Details</h2>
+    <table style="width:100%; border-collapse: collapse; font-size: 12.5px;">
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Name</td><td>GOAP Autonomy</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Version</td><td>v0.5.0</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Category</td><td>AI · Planning</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Difficulty</td><td>Hard</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Footprint</td><td>30 KB</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Target</td><td>ESP32-S3</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Input</td><td>CSI state</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Events</td><td>goal_set · plan_generated · action_executed · goal_achieved</td></tr>
+      <tr><td style="color:var(--text-mute); padding: 6px 0;">Source</td><td><code style="color:var(--accent-2)">cognitum-one/cogs/src/cogs/goap-autonomy</code></td></tr>
+    </table>
+    <p style="color: var(--text-dim); font-size: 12.5px; margin-top: 10px;">
+      Implements Goal-Oriented Action Planning for autonomous decision-making based on
+      environmental state from CSI. The planner runs A* over an action graph, with
+      heuristic cost shaped by current CSI features.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="btnDetailsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ==========================================================
+   STATE
+   ========================================================== */
+const State = {
+  running: true,
+  installed: false,
+  tickHz: 10,
+  heuristic: 0.55,
+  maxDepth: 8,
+  exploration: 0.30,
+
+  achieved: 37,
+  ach24: 5,
+  planDepth: 6,
+  planStep: 3,
+  totalCost: 14.2,
+
+  goals: [
+    { id: "investigate",  name: "Investigate",  desc: "Probe high-anomaly region",      pri: 7, util: 0.82, active: true  },
+    { id: "patrol",       name: "Patrol",       desc: "Sweep perimeter for anomalies",  pri: 4, util: 0.41, active: false },
+    { id: "recharge",     name: "Recharge",     desc: "Return to dock when battery low",pri: 9, util: 0.18, active: false },
+    { id: "record",       name: "Record",       desc: "Capture audio in hotspot",       pri: 5, util: 0.55, active: false },
+    { id: "lockon",       name: "Lock On",      desc: "Track persistent thermal sig",   pri: 6, util: 0.63, active: false },
+  ],
+
+  planSteps: [
+    { name: "scan_csi",         cost: 1.0, done: true  },
+    { name: "classify_field",   cost: 1.8, done: true  },
+    { name: "approach_anomaly", cost: 3.6, done: true  },
+    { name: "stabilize_pose",   cost: 2.2, done: false, current: true },
+    { name: "capture_evidence", cost: 4.1, done: false },
+    { name: "report_findings",  cost: 1.5, done: false },
+  ],
+
+  events: [],     // { t, ev, msg }
+  csiSeries: [],  // [[c0..c30], ...]  rolling 60 windows
+  perfSeries: [], // { lat, util, ent }
+  tickSeries: [], // small history
+};
+
+/* event names per spec */
+const EVENTS = ["goal_set", "plan_generated", "action_executed", "goal_achieved"];
+
+/* ==========================================================
+   ROUTER + VIEW DATA
+   ========================================================== */
+const RouteInfo = {
+  overview:  { crumb: "Mission / Overview",        view: "overview" },
+  hunts:     { crumb: "Mission / Active Hunts",    view: "hunts" },
+  map:       { crumb: "Mission / Site Map",        view: "map" },
+  emf:       { crumb: "Sensors / RF Field",        view: "sensor", title: "RF Field", unit: "dBm", bands: ["2.4 GHz","5 GHz","Sub-GHz"],
+               info: { driver: "wifi-promisc", chan: "auto-scan", res: "10-bit", range: "-100 → -20 dBm", cal: "yes · 3 d ago" } },
+  csi:       { crumb: "Sensors / CSI Stream",      view: "sensor", title: "CSI Stream", unit: "dB", bands: ["Sub 0-10","Sub 11-20","Sub 21-30"],
+               info: { driver: "esp32-csi", chan: "ch6 · 20 MHz", res: "30 subcarriers", range: "complex I/Q", cal: "n/a (relative)" } },
+  audio:     { crumb: "Sensors / Audio",           view: "sensor", title: "Audio", unit: "dB SPL", bands: ["Low","Mid","High"],
+               info: { driver: "i2s-mems", chan: "I2S0 · 16 kHz", res: "24-bit", range: "30 → 110 dB SPL", cal: "yes · today" } },
+  thermal:   { crumb: "Sensors / Thermal",         view: "sensor", title: "Thermal", unit: "°C", bands: ["Min","Mean","Max"],
+               info: { driver: "mlx90640", chan: "I2C @ 8 Hz", res: "24×32 px", range: "-40 → 300 °C", cal: "yes · 1 d ago" } },
+  goap:      { crumb: "Cogs / GOAP Autonomy",      view: "goap" },
+  anomaly:   { crumb: "Cogs / Anomaly Detect",     view: "anomaly" },
+  motion:    { crumb: "Cogs / Motion Classify",    view: "motion" },
+  speech:    { crumb: "Cogs / Speech Synth",       view: "speech" },
+  evidence:  { crumb: "System / Evidence Vault",   view: "evidence" },
+  devices:   { crumb: "System / Devices",          view: "devices" },
+  settings:  { crumb: "System / Settings",         view: "settings" },
+};
+
+let currentRoute = "goap";
+
+function goRoute(routeKey) {
+  const info = RouteInfo[routeKey] || RouteInfo.goap;
+  currentRoute = routeKey;
+
+  // hide all views, show the matching one
+  document.querySelectorAll(".view").forEach(v => v.hidden = (v.dataset.view !== info.view));
+
+  // breadcrumb
+  const [base, leaf] = info.crumb.split(" / ");
+  $("breadcrumb").innerHTML = `<span>${base}</span> &nbsp;/&nbsp; <b>${leaf}</b>`;
+
+  // populate
+  if (info.view === "overview") renderOverview();
+  else if (info.view === "hunts") renderHunts();
+  else if (info.view === "map") renderSiteMap();
+  else if (info.view === "sensor") renderSensor(info);
+  else if (info.view === "anomaly") renderAnomaly();
+  else if (info.view === "motion") renderMotion();
+  else if (info.view === "speech") renderSpeech();
+  else if (info.view === "evidence") renderEvidence();
+  else if (info.view === "devices") renderDevices();
+  else if (info.view === "settings") { /* static */ }
+  else if (info.view === "goap") { drawCSI(); drawPerf(); drawUtilityRadar(); drawPlanGraph(); }
+}
+
+/* ===== Overview ===== */
+function renderOverview() {
+  const cogs = [
+    { name: "GOAP Autonomy",  ver: "v0.5.0", state: "running",  util: 0.82, kind: "ok"   },
+    { name: "Anomaly Detect", ver: "v0.3.1", state: "running",  util: 0.61, kind: "ok"   },
+    { name: "Motion Classify",ver: "v0.4.0", state: "idle",     util: 0.22, kind: "info" },
+    { name: "Speech Synth",   ver: "v0.2.7", state: "stopped",  util: 0.00, kind: "warn" },
+  ];
+  $("overviewCogs").innerHTML = cogs.map(c => `
+    <div class="goal">
+      <div>
+        <div class="name"><span class="icon" style="background:var(--accent)"></span>${c.name} <span class="chip ${c.kind}" style="margin-left:8px;">${c.state}</span></div>
+        <div class="desc">${c.ver}</div>
+      </div>
+      <div class="pri">u ${c.util.toFixed(2)}</div>
+      <div class="util">${c.state === "running" ? "▶" : c.state === "idle" ? "⏸" : "■"}</div>
+    </div>
+  `).join("");
+}
+
+/* ===== Missions ===== */
+const Hunts = [
+  { id: 1, name: "Warehouse 4 · East Wing",        loc: "Bay 4, sector E", start: "21:14", status: "active",   events: 12, progress: 0.62, op: "Nick R.",  unit: "field-unit-01", goals: [["Patrol perimeter", 1], ["Scan anomaly cluster", 0.4], ["Capture evidence", 0]] },
+  { id: 2, name: "Perimeter Sweep · Sector C",     loc: "Outer ring C",    start: "20:02", status: "active",   events: 7,  progress: 0.34, op: "Nick R.",  unit: "field-unit-02", goals: [["Sweep perimeter", 0.7], ["Lock on anomaly", 0]] },
+  { id: 3, name: "Substation 7 · Equipment Room",  loc: "Substation 7-A",  start: "19:30", status: "review",   events: 23, progress: 1.0,  op: "Op. 2",    unit: "field-unit-01", goals: [["Initial sweep", 1], ["Investigate hotspots", 1], ["Report findings", 1]] },
+  { id: 4, name: "Loading Dock · Night Shift",     loc: "Dock 2",          start: "18:45", status: "archived", events: 9,  progress: 1.0,  op: "Op. 2",    unit: "field-unit-02", goals: [["Patrol", 1], ["Stand down", 1]] },
+];
+let HuntFilter = "all";
+let MxSel = 1;
+const MxThroughput = []; // 24h hourly counts
+for (let i = 0; i < 24; i++) MxThroughput.push({ ev: Math.round(rand(2, 18) + 6 * Math.exp(-Math.pow((i - 21)/3, 2))), an: Math.round(rand(0, 5) + 3 * Math.exp(-Math.pow((i - 21)/2, 2))) });
+const MxTimelines = {}; // per-mission timeline events {t (0..1), kind}
+const MxLogs = {};
+
+function seedTimeline(id) {
+  if (MxTimelines[id]) return;
+  const evs = [];
+  const log = [];
+  const kinds = ["action","action","action","anomaly","goal","alert"];
+  for (let i = 0; i < 30; i++) {
+    const t = i / 30 + rand(-0.01, 0.01);
+    const k = kinds[Math.floor(Math.random() * kinds.length)];
+    evs.push({ t: clamp(t, 0, 1), k });
+    log.push({ t: new Date(Date.now() - (30 - i) * 60000).toTimeString().slice(0, 8), k, msg: k === "action" ? `executed action_${i}` : k === "anomaly" ? `score 0.${70 + Math.floor(Math.random()*30)}` : k === "goal" ? "sub-goal reached" : "threshold exceeded" });
+  }
+  MxTimelines[id] = evs;
+  MxLogs[id] = log.reverse();
+}
+Hunts.forEach(h => seedTimeline(h.id));
+
+function renderHunts() {
+  // tabs
+  document.querySelectorAll("[data-mxfilter]").forEach(t => {
+    t.classList.toggle("active", t.dataset.mxfilter === HuntFilter);
+    t.onclick = () => { HuntFilter = t.dataset.mxfilter; renderHunts(); };
+  });
+
+  const visible = Hunts.filter(h => HuntFilter === "all" || h.status === HuntFilter);
+  $("huntsList").innerHTML = visible.map(h => `
+    <div class="goal ${h.id === MxSel ? 'active' : ''}" data-hunt="${h.id}">
+      <div>
+        <div class="name"><span class="icon" style="background:${h.status==='active'?'var(--accent)':h.status==='review'?'var(--accent-3)':'var(--text-mute)'}"></span>${h.name}</div>
+        <div class="desc">${h.loc} · started ${h.start} · ${h.events} events · ${h.unit}</div>
+      </div>
+      <div class="pri">${Math.round(h.progress * 100)}%</div>
+      <div class="util" style="color:${h.status==='active'?'var(--accent)':h.status==='review'?'var(--accent-3)':'var(--text-mute)'}">${h.status}</div>
+    </div>
+  `).join("") || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no missions in this filter</div>`;
+  $("huntsList").querySelectorAll("[data-hunt]").forEach(el => {
+    el.addEventListener("click", () => {
+      MxSel = +el.dataset.hunt;
+      renderHunts();
+    });
+  });
+
+  // header stats
+  $("mxActive").textContent = Hunts.filter(h => h.status === "active").length;
+  $("mxDone").textContent   = Hunts.filter(h => h.status === "review" || h.status === "archived").length;
+  $("mxEvents").textContent = Hunts.reduce((a, b) => a + b.events, 0);
+
+  drawMxThroughput();
+  renderMxDetail();
+}
+function drawMxThroughput() {
+  const svg = $("mxThroughput"); const W = 300, H = 160;
+  let html = "";
+  for (let gy = 0; gy < H; gy += 32) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)"/>`;
+  const maxV = Math.max(...MxThroughput.map(d => d.ev));
+  const evPts = MxThroughput.map((d, i) => {
+    const x = (i / (MxThroughput.length - 1)) * W;
+    const y = H - (d.ev / maxV) * (H - 16) - 8;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const anPts = MxThroughput.map((d, i) => {
+    const x = (i / (MxThroughput.length - 1)) * W;
+    const y = H - (d.an / maxV) * (H - 16) - 8;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="0,${H} ${evPts} ${W},${H}" fill="var(--accent)" fill-opacity="0.10" stroke="none"/>`;
+  html += `<polyline points="${evPts}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>`;
+  html += `<polyline points="${anPts}" fill="none" stroke="var(--accent-3)" stroke-width="1.4" stroke-dasharray="3 3"/>`;
+  // peak marker
+  const peakI = MxThroughput.indexOf(MxThroughput.reduce((a, b) => a.ev > b.ev ? a : b));
+  const px = (peakI / (MxThroughput.length - 1)) * W;
+  const py = H - (MxThroughput[peakI].ev / maxV) * (H - 16) - 8;
+  html += `<circle cx="${px}" cy="${py}" r="3" fill="var(--warn)"/>`;
+  svg.innerHTML = html;
+  $("mxPeak").textContent = `${String(peakI).padStart(2, "0")}:00`;
+}
+function renderMxDetail() {
+  const m = Hunts.find(h => h.id === MxSel) || Hunts[0];
+  $("mxDetailName").textContent = `Detail · ${m.name}`;
+  $("mxDetailState").textContent = m.status;
+  $("mxDetailState").className = "chip " + (m.status === "active" ? "ok" : m.status === "review" ? "violet" : "");
+  $("mxId").innerHTML = `<code style="color:var(--accent-2);">M-${String(m.id).padStart(4,'0')}</code>`;
+  $("mxLoc").textContent  = m.loc;
+  $("mxStart").textContent= m.start;
+  $("mxOp").textContent   = m.op;
+  $("mxUnit").textContent = m.unit;
+  $("mxEv").textContent   = m.events + " events";
+  drawMxProgress(m);
+  $("mxGoals").innerHTML = m.goals.map(([name, p]) => `
+    <div style="margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;">
+        <span>${name}</span>
+        <span style="font-family:var(--mono); color:${p === 1 ? 'var(--accent)' : 'var(--text-dim)'};">${Math.round(p*100)}%</span>
+      </div>
+      <div style="height:4px; background:var(--bg-3); border-radius:2px; overflow:hidden;">
+        <div style="height:100%; width:${p*100}%; background:linear-gradient(90deg, var(--accent), var(--accent-2));"></div>
+      </div>
+    </div>
+  `).join("");
+  drawMxTimeline(m);
+  renderMxLog(m);
+}
+function drawMxProgress(m) {
+  const svg = $("mxProgress");
+  const cx = 110, cy = 60, R = 44, r = 30;
+  const c = 2 * Math.PI * R;
+  const off = c * (1 - m.progress);
+  let html = `
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--bg-3)" stroke-width="8"/>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--accent)" stroke-width="8"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}"
+      transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>
+    <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="16" fill="var(--accent)" font-family="var(--mono)" font-weight="600">${Math.round(m.progress * 100)}%</text>
+    <text x="${cx}" y="${cy + 22}" text-anchor="middle" font-size="9" fill="var(--text-mute)" font-family="var(--mono)" letter-spacing="1">COMPLETE</text>
+    <text x="${cx}" y="${cy + 115}" text-anchor="middle" font-size="10" fill="var(--text-dim)" font-family="var(--mono)">${m.goals.filter(g => g[1] === 1).length} / ${m.goals.length} goals</text>
+  `;
+  svg.innerHTML = html;
+}
+function drawMxTimeline(m) {
+  const svg = $("mxTimeline"); const W = 720, H = 90;
+  const evs = MxTimelines[m.id] || [];
+  let html = "";
+  // axis
+  html += `<line x1="20" y1="${H/2}" x2="${W-20}" y2="${H/2}" stroke="var(--line-2)" stroke-width="1.5"/>`;
+  // ticks every 10 min
+  for (let i = 0; i <= 6; i++) {
+    const x = 20 + (i / 6) * (W - 40);
+    html += `<line x1="${x}" y1="${H/2 - 4}" x2="${x}" y2="${H/2 + 4}" stroke="var(--text-mute)"/>`;
+    html += `<text x="${x}" y="${H - 6}" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">-${60 - i * 10}m</text>`;
+  }
+  // now label
+  html += `<text x="${W - 20}" y="${H/2 - 12}" font-size="9" fill="var(--accent)" text-anchor="end" font-family="var(--mono)">NOW</text>`;
+  // events
+  evs.forEach(e => {
+    const x = 20 + e.t * (W - 40);
+    const colors = { action: "var(--accent)", anomaly: "var(--accent-3)", goal: "var(--warn)", alert: "var(--crit)" };
+    const color = colors[e.k] || "var(--accent)";
+    html += `<line x1="${x}" y1="${H/2 - 16}" x2="${x}" y2="${H/2 + 16}" stroke="${color}" stroke-width="2" opacity="0.6"/>`;
+    html += `<circle cx="${x}" cy="${H/2}" r="3" fill="${color}"/>`;
+  });
+  svg.innerHTML = html;
+}
+function renderMxLog(m) {
+  const log = MxLogs[m.id] || [];
+  $("mxLogCount").textContent = `${log.length} entries`;
+  $("mxEventLog").innerHTML = log.slice(0, 20).map(e => {
+    const colors = { action: "var(--accent)", anomaly: "var(--accent-3)", goal: "var(--warn)", alert: "var(--crit)" };
+    return `<div class="log-row"><span class="t">${e.t}</span><span class="ev" style="color:${colors[e.k]}">${e.k}</span><span class="msg">${e.msg}</span></div>`;
+  }).join("") || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no entries</div>`;
+}
+
+/* ===== Site Map ===== */
+const MapState = {
+  floor: "g",
+  pings: [],
+  tool: "anom",
+  trail: [],
+  unit: { x: 400, y: 250, vx: 0.8, vy: 0.4, heading: 47 },
+  layers: { walls: true, heat: true, trail: true, cone: true, markers: true, grid: false },
+  events: [],
+};
+const MapHotspots = {
+  g:  [{ x: 160, y: 160, k: "anom",    s: 0.82, label: "East corridor" }, { x: 460, y: 320, k: "thermal", s: 0.74, label: "Server rack 12" }, { x: 660, y: 150, k: "anom",    s: 0.61, label: "Window bay 3" }],
+  b1: [{ x: 200, y: 200, k: "thermal", s: 0.91, label: "Cooling line"   }, { x: 540, y: 280, k: "anom",    s: 0.55, label: "Pump room"     }],
+  "1":[{ x: 320, y: 240, k: "anom",    s: 0.66, label: "Stairwell A"    }, { x: 580, y: 200, k: "anom",    s: 0.49, label: "Office 14"     }, { x: 220, y: 360, k: "thermal", s: 0.43, label: "Vent shaft"    }, { x: 700, y: 320, k: "anom", s: 0.71, label: "Storage 2" }],
+  "2":[{ x: 400, y: 240, k: "thermal", s: 0.58, label: "Roof access"    }],
+};
+const FLOOR_NAMES = { b1: "Basement", g: "Ground Floor", "1": "First Floor", "2": "Second Floor" };
+
+function renderSiteMap() {
+  // layer toggles
+  document.querySelectorAll("#smLayers input[data-layer]").forEach(cb => {
+    cb.checked = MapState.layers[cb.dataset.layer];
+    cb.onchange = () => { MapState.layers[cb.dataset.layer] = cb.checked; drawSiteMap(); };
+  });
+  // floor tabs
+  document.querySelectorAll("[data-floor]").forEach(t => {
+    t.classList.toggle("active", t.dataset.floor === MapState.floor);
+    t.onclick = () => {
+      MapState.floor = t.dataset.floor;
+      MapState.trail = [];
+      $("smFloorName").textContent = FLOOR_NAMES[MapState.floor];
+      renderSiteMap();
+    };
+  });
+  // tool buttons
+  document.querySelectorAll(".smTool").forEach(b => {
+    const sel = b.dataset.tool === MapState.tool;
+    const color = b.dataset.tool === "anom" ? "var(--accent-3)" : b.dataset.tool === "thermal" ? "var(--warn)" : "var(--accent-2)";
+    b.style.color = sel ? color : "var(--text-dim)";
+    b.style.borderColor = sel ? color : "var(--line-2)";
+    b.onclick = () => { MapState.tool = b.dataset.tool; renderSiteMap(); };
+  });
+
+  drawSiteMap();
+  renderHotList();
+  renderMapLog();
+
+  $("siteMap").onclick = e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 800;
+    const y = ((e.clientY - r.top) / r.height) * 480;
+    MapState.pings.push({ x, y, t: Date.now(), kind: MapState.tool });
+    MapState.events.unshift({ t: nowStr(), kind: "marker", msg: `${MapState.tool} marker @ (${Math.round(x)}, ${Math.round(y)})` });
+    if (MapState.events.length > 30) MapState.events.pop();
+    drawSiteMap();
+    renderMapLog();
+    $("smMarkers").textContent = MapState.pings.length;
+    toast(`${MapState.tool} marker dropped`, "info");
+  };
+}
+function drawSiteMap() {
+  const svg = $("siteMap"); if (!svg) return;
+  const W = 800, H = 480;
+  let html = "";
+
+  // optional fine grid
+  if (MapState.layers.grid) {
+    for (let gx = 0; gx <= W; gx += 20) html += `<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="var(--grid)" stroke-width="1"/>`;
+    for (let gy = 0; gy <= H; gy += 20) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)" stroke-width="1"/>`;
+  } else {
+    // coarse grid always
+    for (let gx = 0; gx <= W; gx += 80) html += `<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="var(--grid)" stroke-width="1" opacity="0.5"/>`;
+    for (let gy = 0; gy <= H; gy += 80) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)" stroke-width="1" opacity="0.5"/>`;
+  }
+
+  // walls (per floor)
+  if (MapState.layers.walls) {
+    const wallSet = {
+      g:  [["rect", 60, 60, 680, 360], ["line",320,60,320,220], ["line",320,260,320,420], ["line",520,60,520,200], ["line",520,260,740,260]],
+      b1: [["rect", 60, 60, 680, 360], ["line",260,60,260,360], ["line",520,200,740,200]],
+      "1":[["rect", 60, 60, 680, 360], ["line",280,60,280,220], ["line",280,260,280,420], ["line",480,60,480,420], ["line",480,260,740,260]],
+      "2":[["rect", 60, 60, 680, 360], ["line",400,60,400,420]],
+    };
+    const walls = wallSet[MapState.floor] || wallSet.g;
+    walls.forEach(w => {
+      if (w[0] === "rect") html += `<rect x="${w[1]}" y="${w[2]}" width="${w[3]}" height="${w[4]}" fill="none" stroke="var(--line-2)" stroke-width="2"/>`;
+      else                 html += `<line x1="${w[1]}" y1="${w[2]}" x2="${w[3]}" y2="${w[4]}" stroke="var(--line-2)" stroke-width="2"/>`;
+    });
+    // floor label
+    html += `<text x="${W - 20}" y="50" font-size="11" fill="var(--text-mute)" text-anchor="end" font-family="var(--mono)" letter-spacing="2">${(FLOOR_NAMES[MapState.floor] || "").toUpperCase()}</text>`;
+  }
+
+  // sensor cone
+  if (MapState.layers.cone) {
+    const u = MapState.unit;
+    const ang = u.heading * Math.PI / 180;
+    const conew = 0.7;
+    const L = 110;
+    const x1 = u.x + Math.cos(ang - conew) * L, y1 = u.y + Math.sin(ang - conew) * L;
+    const x2 = u.x + Math.cos(ang + conew) * L, y2 = u.y + Math.sin(ang + conew) * L;
+    html += `<path d="M${u.x} ${u.y} L ${x1} ${y1} A ${L} ${L} 0 0 1 ${x2} ${y2} Z" fill="var(--accent)" fill-opacity="0.07" stroke="var(--accent)" stroke-width="1" stroke-opacity="0.4"/>`;
+  }
+
+  // anomaly heat
+  if (MapState.layers.heat) {
+    const hotspots = MapHotspots[MapState.floor] || [];
+    hotspots.forEach(h => {
+      const color = h.k === "thermal" ? "var(--warn)" : "var(--accent-3)";
+      const baseR = 12 + h.s * 18;
+      html += `<circle cx="${h.x}" cy="${h.y}" r="${baseR * 2}" fill="${color}" fill-opacity="0.06"/>`;
+      html += `<circle cx="${h.x}" cy="${h.y}" r="${baseR}" fill="${color}" fill-opacity="0.22" stroke="${color}" stroke-width="1.5"/>`;
+      html += `<circle cx="${h.x}" cy="${h.y}" r="${baseR + 4}" fill="none" stroke="${color}" stroke-opacity="0.5" stroke-width="1"><animate attributeName="r" from="${baseR}" to="${baseR + 18}" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.7" to="0" dur="2s" repeatCount="indefinite"/></circle>`;
+      html += `<text x="${h.x}" y="${h.y - baseR - 6}" font-size="9" fill="${color}" text-anchor="middle" font-family="var(--mono)">${h.label}</text>`;
+    });
+  }
+
+  // trail
+  if (MapState.layers.trail && MapState.trail.length > 1) {
+    const d = MapState.trail.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(" ");
+    html += `<path d="${d}" fill="none" stroke="var(--text-mute)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>`;
+  }
+
+  // markers
+  if (MapState.layers.markers) {
+    MapState.pings.forEach(p => {
+      const color = p.kind === "thermal" ? "var(--warn)" : p.kind === "interest" ? "var(--accent-2)" : "var(--accent-3)";
+      html += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${color}" stroke="var(--bg-0)" stroke-width="1.5"/>`;
+      html += `<circle cx="${p.x}" cy="${p.y}" r="9" fill="none" stroke="${color}" stroke-opacity="0.6" stroke-width="1"/>`;
+    });
+  }
+
+  // field unit
+  const u = MapState.unit;
+  const head = u.heading * Math.PI / 180;
+  html += `<circle cx="${u.x}" cy="${u.y}" r="9" fill="var(--accent)" stroke="var(--bg-0)" stroke-width="2"/>`;
+  // heading indicator
+  html += `<line x1="${u.x}" y1="${u.y}" x2="${u.x + Math.cos(head) * 18}" y2="${u.y + Math.sin(head) * 18}" stroke="var(--accent)" stroke-width="2"/>`;
+  html += `<circle cx="${u.x}" cy="${u.y}" r="16" fill="none" stroke="var(--accent)" stroke-opacity="0.6" stroke-width="1.5"><animate attributeName="r" from="9" to="22" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.8" to="0" dur="1.6s" repeatCount="indefinite"/></circle>`;
+  html += `<text x="${u.x}" y="${u.y - 14}" font-size="10" fill="var(--accent)" text-anchor="middle" font-family="var(--mono)">UNIT-01</text>`;
+
+  // compass / scale
+  html += `<g transform="translate(${W - 70}, ${H - 60})">
+    <circle cx="0" cy="0" r="22" fill="var(--bg-2)" stroke="var(--line-2)" stroke-width="1"/>
+    <text x="0" y="-12" font-size="9" fill="var(--accent)" text-anchor="middle" font-family="var(--mono)">N</text>
+    <text x="0" y="20" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">S</text>
+    <text x="-15" y="4" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">W</text>
+    <text x="15" y="4" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">E</text>
+    <line x1="0" y1="0" x2="0" y2="-14" stroke="var(--accent)" stroke-width="2"/>
+  </g>`;
+  html += `<g transform="translate(20, ${H - 30})">
+    <line x1="0" y1="0" x2="80" y2="0" stroke="var(--text-dim)" stroke-width="2"/>
+    <line x1="0" y1="-4" x2="0" y2="4" stroke="var(--text-dim)" stroke-width="2"/>
+    <line x1="80" y1="-4" x2="80" y2="4" stroke="var(--text-dim)" stroke-width="2"/>
+    <text x="40" y="-8" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">2 m</text>
+  </g>`;
+
+  svg.innerHTML = html;
+
+  const hot = MapHotspots[MapState.floor] || [];
+  $("smHot").textContent = hot.length;
+  $("smHotSub").textContent = `${hot.filter(h => h.k === 'anom').length} anomaly · ${hot.filter(h => h.k === 'thermal').length} thermal`;
+  $("smHotChip").textContent = `${hot.length} ranked`;
+  $("smMarkers").textContent = MapState.pings.length;
+  $("smHeading").textContent = `heading ${Math.round(u.heading)}°`;
+  $("smSpeed").innerHTML = `${(Math.hypot(u.vx, u.vy) / 2).toFixed(2)} <small style="font-size:12px;color:var(--text-mute)">m/s</small>`;
+}
+function renderHotList() {
+  const hot = (MapHotspots[MapState.floor] || []).slice().sort((a, b) => b.s - a.s);
+  $("smHotList").innerHTML = hot.map((h, i) => {
+    const color = h.k === "thermal" ? "var(--warn)" : "var(--accent-3)";
+    return `<div class="goal">
+      <div>
+        <div class="name"><span class="icon" style="background:${color}"></span>${h.label}</div>
+        <div class="desc">type ${h.k} · floor ${MapState.floor.toUpperCase()}</div>
+      </div>
+      <div class="pri">#${i + 1}</div>
+      <div class="util" style="color:${color}">${(h.s * 100).toFixed(0)}%</div>
+    </div>`;
+  }).join("") || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no hotspots on this floor</div>`;
+}
+function renderMapLog() {
+  $("smEventLog").innerHTML = MapState.events.slice(0, 12).map(e =>
+    `<div class="log-row"><span class="t">${e.t}</span><span class="ev">${e.kind}</span><span class="msg">${e.msg}</span></div>`
+  ).join("") || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no recent events</div>`;
+}
+function tickMap() {
+  // move unit along a wandering path bounded inside walls (60..740, 60..420)
+  const u = MapState.unit;
+  // gentle steering
+  u.heading += rand(-8, 8);
+  if (u.heading < 0) u.heading += 360;
+  if (u.heading >= 360) u.heading -= 360;
+  const head = u.heading * Math.PI / 180;
+  u.vx = Math.cos(head) * 1.6;
+  u.vy = Math.sin(head) * 1.6;
+  u.x += u.vx; u.y += u.vy;
+  if (u.x < 80)  { u.x = 80;  u.heading = (180 - u.heading + 360) % 360; }
+  if (u.x > 720) { u.x = 720; u.heading = (180 - u.heading + 360) % 360; }
+  if (u.y < 80)  { u.y = 80;  u.heading = (360 - u.heading) % 360; }
+  if (u.y > 400) { u.y = 400; u.heading = (360 - u.heading) % 360; }
+  MapState.trail.push({ x: u.x, y: u.y });
+  if (MapState.trail.length > 80) MapState.trail.shift();
+
+  // occasionally generate location events
+  if (Math.random() < 0.05) {
+    const hot = MapHotspots[MapState.floor] || [];
+    if (hot.length) {
+      const h = hot[Math.floor(Math.random() * hot.length)];
+      const dist = Math.hypot(h.x - u.x, h.y - u.y);
+      if (dist < 80) {
+        MapState.events.unshift({ t: nowStr(), kind: "proximity", msg: `near ${h.label} (${Math.round(dist)} px)` });
+        if (MapState.events.length > 30) MapState.events.pop();
+        renderMapLog();
+      }
+    }
+  }
+
+  // coverage grows slowly
+  if (MapState.trail.length > 0) {
+    const cov = clamp(40 + MapState.trail.length * 0.4, 0, 99);
+    $("smCoverage").textContent = `${Math.round(cov)}%`;
+  }
+  drawSiteMap();
+}
+
+/* ===== Sensor (generic line view) ===== */
+const POLAR_BINS = 36;
+const Sensor = {
+  paused: false,
+  buf: [],
+  polar: new Array(POLAR_BINS).fill(0.5),
+  polarPeak: new Array(POLAR_BINS).fill(0.4),
+  polarPeakAge: new Array(POLAR_BINS).fill(0),
+  peaks: [],
+  cfg: null,
+  thr: { upper: 0.80, lower: 0.15, smooth: 0.30 }
+};
+const POLAR_TITLES = {
+  "RF Field":   { title: "RF · Directional Response",   chip: "azimuth 360°",      unitLabel: "dBm" },
+  "CSI Stream": { title: "CSI · Angular Power Profile", chip: "30 subcarriers",    unitLabel: "dB"  },
+  "Audio":      { title: "Audio · Direction of Arrival",chip: "MEMS beamform",     unitLabel: "dB SPL" },
+  "Thermal":    { title: "Thermal · Radial Slice",      chip: "24×32 unwrapped",   unitLabel: "°C"  },
+};
+function renderSensor(info) {
+  Sensor.cfg = info;
+  Sensor.buf = [];
+  Sensor.peaks = [];
+  // seed polar with sensor-specific shape (one or two lobes)
+  for (let i = 0; i < POLAR_BINS; i++) {
+    const a = (i / POLAR_BINS) * Math.PI * 2;
+    let v;
+    if (info.title === "RF Field")        v = 0.45 + 0.35 * Math.max(Math.cos(a - 0.5), 0) + 0.15 * Math.cos(a * 2);
+    else if (info.title === "CSI Stream") v = 0.4 + 0.4 * Math.abs(Math.cos(a + 0.4)) + 0.1 * Math.sin(a * 3);
+    else if (info.title === "Audio")      v = 0.3 + 0.55 * Math.max(Math.cos(a - 1.2), 0);
+    else                                  v = 0.5 + 0.25 * Math.sin(a * 2 + 0.7);
+    Sensor.polar[i]     = clamp(v + rand(-0.04, 0.04), 0.05, 0.98);
+    Sensor.polarPeak[i] = Sensor.polar[i];
+    Sensor.polarPeakAge[i] = 0;
+  }
+  for (let i = 0; i < 80; i++) Sensor.buf.push(sensorFrame(i));
+
+  $("sensorTitle").textContent = info.title;
+  $("sensorLegend").innerHTML = info.bands.map((b, i) => `<span><i style="background:${['var(--accent)','var(--accent-2)','var(--accent-3)'][i]}"></i>${b}</span>`).join("") + ` <span style="color:var(--text-mute)">unit: ${info.unit}</span>`;
+  $("sensorChip").textContent = info.title.toLowerCase();
+  const meta = POLAR_TITLES[info.title] || { title: "Directional Response", chip: "360° · live" };
+  $("polarTitle").textContent = meta.title;
+  $("polarChip").textContent  = meta.chip;
+  if (info.info) {
+    $("sensorDriver").textContent = info.info.driver;
+    $("sensorChan").textContent   = info.info.chan;
+    $("sensorRes").textContent    = info.info.res;
+    $("sensorRange").textContent  = info.info.range;
+    $("sensorCal").textContent    = info.info.cal;
+    $("sensorErr").textContent    = "—";
+  }
+  drawSensor();
+  drawPolar();
+  renderPeaks();
+}
+
+function drawPolar() {
+  const svg = $("sensorPolar"); if (!svg) return;
+  const W = 520, H = 240;
+  const cx = 130, cy = H / 2, R = 100;
+  let html = "";
+
+  // concentric rings (grid)
+  for (let r = 1; r <= 4; r++) {
+    const rr = (R / 4) * r;
+    html += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+  }
+  // angular spokes every 30°
+  for (let a = 0; a < 360; a += 30) {
+    const rad = a * Math.PI / 180;
+    const x = cx + Math.cos(rad) * R, y = cy + Math.sin(rad) * R;
+    html += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="1" opacity="0.6"/>`;
+    if (a % 90 === 0) {
+      const lx = cx + Math.cos(rad) * (R + 14), ly = cy + Math.sin(rad) * (R + 14);
+      html += `<text x="${lx}" y="${ly + 3}" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">${a}°</text>`;
+    }
+  }
+
+  // noise floor (inner ring)
+  const noise = Sensor.thr.lower;
+  const nr = noise * R;
+  html += `<circle cx="${cx}" cy="${cy}" r="${nr}" fill="var(--text-mute)" fill-opacity="0.04" stroke="var(--text-mute)" stroke-width="1" stroke-dasharray="2 3"/>`;
+
+  // helper: build closed path from polar samples
+  const polyFromBuf = (buf) => {
+    let pts = [];
+    for (let i = 0; i < buf.length; i++) {
+      const a = (i / buf.length) * Math.PI * 2 - Math.PI / 2;
+      const rr = buf[i] * R;
+      pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`);
+    }
+    return pts.join(" ");
+  };
+
+  // peak-hold trace (dashed)
+  html += `<polygon points="${polyFromBuf(Sensor.polarPeak)}" fill="var(--accent-3)" fill-opacity="0.05" stroke="var(--accent-3)" stroke-width="1" stroke-dasharray="4 3"/>`;
+
+  // current trace (filled)
+  html += `<polygon points="${polyFromBuf(Sensor.polar)}" fill="var(--accent)" fill-opacity="0.18" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/>`;
+
+  // dots at each sample
+  for (let i = 0; i < Sensor.polar.length; i++) {
+    const a = (i / Sensor.polar.length) * Math.PI * 2 - Math.PI / 2;
+    const rr = Sensor.polar[i] * R;
+    html += `<circle cx="${cx + Math.cos(a) * rr}" cy="${cy + Math.sin(a) * rr}" r="1.6" fill="var(--accent)"/>`;
+  }
+
+  // peak marker
+  let maxI = 0, maxV = 0;
+  Sensor.polar.forEach((v, i) => { if (v > maxV) { maxV = v; maxI = i; } });
+  const aMax = (maxI / Sensor.polar.length) * Math.PI * 2 - Math.PI / 2;
+  const px = cx + Math.cos(aMax) * (maxV * R);
+  const py = cy + Math.sin(aMax) * (maxV * R);
+  html += `<circle cx="${px}" cy="${py}" r="5" fill="var(--warn)"/>`;
+  html += `<circle cx="${px}" cy="${py}" r="10" fill="none" stroke="var(--warn)" stroke-width="1.2">
+    <animate attributeName="r" from="5" to="14" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" from="0.9" to="0" dur="1.8s" repeatCount="indefinite"/>
+  </circle>`;
+
+  // sweep radius (rotating "radar" line) — purely visual
+  const sweepA = ((Date.now() / 35) % 360) * Math.PI / 180 - Math.PI / 2;
+  html += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(sweepA) * R}" y2="${cy + Math.sin(sweepA) * R}" stroke="var(--accent)" stroke-width="1" opacity="0.35"/>`;
+
+  // ===== Right side: angular value strip (line, not bars) =====
+  const stripX = 280, stripY = 30, stripW = 220, stripH = 180;
+  html += `<text x="${stripX}" y="${stripY - 10}" font-size="10" fill="var(--text-mute)" font-family="var(--mono)" letter-spacing="1">UNROLLED · 0°→360°</text>`;
+  html += `<rect x="${stripX}" y="${stripY}" width="${stripW}" height="${stripH}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+  for (let gy = 0; gy <= 4; gy++) {
+    const y = stripY + (stripH / 4) * gy;
+    html += `<line x1="${stripX}" y1="${y}" x2="${stripX + stripW}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+  // threshold lines
+  const upY = stripY + stripH - Sensor.thr.upper * stripH;
+  const loY = stripY + stripH - Sensor.thr.lower * stripH;
+  html += `<line x1="${stripX}" y1="${upY}" x2="${stripX + stripW}" y2="${upY}" stroke="var(--crit)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  html += `<line x1="${stripX}" y1="${loY}" x2="${stripX + stripW}" y2="${loY}" stroke="var(--text-mute)" stroke-width="1" stroke-dasharray="2 3"/>`;
+  // current line
+  const stripPts = Sensor.polar.map((v, i) => {
+    const x = stripX + (i / (Sensor.polar.length - 1)) * stripW;
+    const y = stripY + stripH - v * stripH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${stripPts}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>`;
+  // area under current
+  html += `<polyline points="${stripX},${stripY + stripH} ${stripPts} ${stripX + stripW},${stripY + stripH}" fill="var(--accent)" fill-opacity="0.10" stroke="none"/>`;
+  // peak hold dashed
+  const peakPts = Sensor.polarPeak.map((v, i) => {
+    const x = stripX + (i / (Sensor.polarPeak.length - 1)) * stripW;
+    const y = stripY + stripH - v * stripH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${peakPts}" fill="none" stroke="var(--accent-3)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+  // peak marker on strip
+  const stripPx = stripX + (maxI / (Sensor.polar.length - 1)) * stripW;
+  const stripPy = stripY + stripH - maxV * stripH;
+  html += `<circle cx="${stripPx}" cy="${stripPy}" r="3" fill="var(--warn)"/>`;
+  // angle axis ticks
+  for (let a = 0; a <= 360; a += 90) {
+    const x = stripX + (a / 360) * stripW;
+    html += `<text x="${x}" y="${stripY + stripH + 11}" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">${a}°</text>`;
+  }
+
+  svg.innerHTML = html;
+
+  // readout
+  const deg = Math.round((maxI / Sensor.polar.length) * 360);
+  const unitLabel = (POLAR_TITLES[Sensor.cfg.title] || {}).unitLabel || Sensor.cfg.unit;
+  $("polarReadout").textContent = `peak ${(maxV * 10).toFixed(2)} ${unitLabel} at ${deg}°`;
+}
+function renderPeaks() {
+  const log = $("sensorPeakLog");
+  if (!log) return;
+  const rows = Sensor.peaks.slice(0, 12).map(p =>
+    `<div class="log-row"><span class="t">${p.t}</span><span class="ev">peak</span><span class="msg">band ${p.band} · ${p.v.toFixed(2)} ${Sensor.cfg ? Sensor.cfg.unit : ''}</span></div>`
+  ).join("");
+  log.innerHTML = rows || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no peaks above threshold</div>`;
+  $("sensorPeakCount").textContent = `${Sensor.peaks.length} peaks`;
+}
+function sensorFrame(t) {
+  return [
+    0.4 + 0.25 * Math.sin(t * 0.13) + rand(-0.03, 0.03),
+    0.5 + 0.20 * Math.cos(t * 0.17) + rand(-0.03, 0.03),
+    0.55 + 0.30 * Math.sin(t * 0.09 + 1) + rand(-0.04, 0.04),
+  ];
+}
+function drawSensor() {
+  const c = $("sensorChart"); if (!c) return;
+  const ctx = c.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr || c.height !== h * dpr) {
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(94,243,200,0.06)";
+  for (let gx = 0; gx <= w; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+  for (let gy = 0; gy <= h; gy += 30) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
+  const cols = ["#5ef3c8", "#36b8ff", "#b681ff"];
+  for (let band = 0; band < 3; band++) {
+    ctx.strokeStyle = cols[band];
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let t = 0; t < Sensor.buf.length; t++) {
+      const v = Sensor.buf[t][band];
+      const x = (t / (Sensor.buf.length - 1)) * w;
+      const y = h - v * (h - 8) - 4;
+      if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // stats from latest
+  const last = Sensor.buf[Sensor.buf.length - 1];
+  const all = Sensor.buf.flat();
+  const mean = all.reduce((a, b) => a + b, 0) / all.length;
+  const peak = Math.max(...all);
+  const variance = all.reduce((a, b) => a + (b - mean) ** 2, 0) / all.length;
+  const unit = Sensor.cfg ? Sensor.cfg.unit : "";
+  $("sensorMean").textContent = `${(mean * 10).toFixed(2)} ${unit}`;
+  $("sensorPeak").textContent = `${(peak * 10).toFixed(2)} ${unit}`;
+  $("sensorVar").textContent  = `${variance.toFixed(4)}`;
+}
+
+/* ===== Generic cog page ===== */
+function renderGenericCog(info) {
+  $("cogTitle").innerHTML = `${info.title} <span class="ver">${info.specs.find(s => s[0]==='Version')[1]}</span>`;
+  $("cogDesc").textContent = info.desc;
+  $("cogSpecs").innerHTML = info.specs.map(s => `<span>${s[0]}&nbsp;<b>${s[1]}</b></span>`).join("");
+  const now = nowStr();
+  $("cogEventsTitle").textContent = `Events · ${info.title}`;
+  $("cogEvents").innerHTML = info.events.map((ev, i) => {
+    const t = new Date(Date.now() - i * 12000).toTimeString().slice(0, 8);
+    return `<div class="log-row"><span class="t">${t}</span><span class="ev">${ev}</span><span class="msg">sample event ${i + 1}</span></div>`;
+  }).join("");
+}
+
+/* ===== Evidence ===== */
+const Evidence = [
+  { id: "E-201", t: "21:14:08", type: "rf",      summary: "RF spike -42 dBm · East Wing",   strength: 0.82 },
+  { id: "E-202", t: "21:11:42", type: "audio",   summary: "Audio anomaly · 3.2 s clip",     strength: 0.61 },
+  { id: "E-203", t: "21:07:21", type: "thermal", summary: "Thermal drop · 14°C delta",      strength: 0.74 },
+  { id: "E-204", t: "20:58:11", type: "csi",     summary: "Doppler signature · class M-2",  strength: 0.55 },
+  { id: "E-205", t: "20:44:03", type: "rf",      summary: "Sustained -58 dBm band",         strength: 0.38 },
+  { id: "E-206", t: "20:31:55", type: "audio",   summary: "Transient cluster · 4 hits",     strength: 0.69 },
+];
+function renderEvidence() {
+  const f = $("evidenceFilter").value;
+  const rows = Evidence.filter(e => f === "all" || e.type === f);
+  $("evidenceList").innerHTML = rows.map(e => `
+    <div class="goal" data-ev="${e.id}">
+      <div>
+        <div class="name"><span class="icon" style="background:var(--accent-3)"></span>${e.id} · <span style="color:var(--text-dim)">${e.summary}</span></div>
+        <div class="desc">${e.t} · type ${e.type}</div>
+      </div>
+      <div class="pri">${e.type}</div>
+      <div class="util">${(e.strength * 100).toFixed(0)}%</div>
+    </div>
+  `).join("") || `<div style="color:var(--text-mute); font-size:12px; padding:10px;">no evidence matching filter</div>`;
+  $("evidenceList").querySelectorAll("[data-ev]").forEach(el => {
+    el.addEventListener("click", () => toast(`Opened evidence ${el.dataset.ev}`, "info"));
+  });
+}
+
+/* ===== Devices ===== */
+const Devices = [
+  { id: "field-unit-01", chip: "ESP32-S3", state: "linked",  sig: -52, batt: 78,  cpu: 28, ram: 42, rtt: 12, mac: "7c:9e:bd:42:11:a0", fw: "0.5.0", uptime: "02:14:08", loss: 0.2, cogs: ["GOAP Autonomy", "Anomaly Detect", "Motion Classify"] },
+  { id: "field-unit-02", chip: "ESP32-S3", state: "linked",  sig: -64, batt: 41,  cpu: 19, ram: 36, rtt: 21, mac: "7c:9e:bd:42:11:b1", fw: "0.5.0", uptime: "01:02:55", loss: 0.6, cogs: ["GOAP Autonomy", "Anomaly Detect"] },
+  { id: "field-unit-03", chip: "ESP32-S3", state: "offline", sig: null,batt: null,cpu: 0,  ram: 0,  rtt: null, mac: "7c:9e:bd:42:11:c2", fw: "0.4.8", uptime: "—",         loss: null, cogs: [] },
+];
+let DevSel = "field-unit-01";
+const DevPerf = []; // {cpu, ram, rtt}
+for (let i = 0; i < 60; i++) DevPerf.push({ cpu: 25 + rand(-8, 12), ram: 40 + rand(-6, 10), rtt: 12 + rand(-3, 8) });
+
+function renderDevices() {
+  $("deviceList").innerHTML = Devices.map(d => `
+    <div class="goal ${d.id === DevSel ? 'active' : ''}" data-dev="${d.id}">
+      <div>
+        <div class="name"><span class="icon" style="background:${d.state==='linked'?'var(--accent)':'var(--text-mute)'}"></span>${d.id} <span class="chip ${d.state==='linked'?'ok':'warn'}" style="margin-left:8px;">${d.state}</span></div>
+        <div class="desc">${d.chip} ${d.sig !== null ? ' · '+d.sig+' dBm' : ''} ${d.batt !== null ? ' · batt '+d.batt+'%' : ''} · fw ${d.fw}</div>
+      </div>
+      <div class="pri">${d.batt !== null ? d.batt+'%' : '—'}</div>
+      <div class="util">${d.state === 'linked' ? '◉' : '○'}</div>
+    </div>
+  `).join("");
+  $("deviceList").querySelectorAll("[data-dev]").forEach(el => {
+    el.addEventListener("click", () => {
+      DevSel = el.dataset.dev;
+      renderDevices();
+      renderDeviceDetail();
+    });
+  });
+  $("devOnline").textContent = Devices.filter(d => d.state === 'linked').length;
+  drawMeshTopo();
+  renderDeviceDetail();
+}
+
+function renderDeviceDetail() {
+  const d = Devices.find(x => x.id === DevSel) || Devices[0];
+  $("devDetailName").textContent = `Detail · ${d.id}`;
+  $("devDetailState").textContent = d.state;
+  $("devDetailState").className = "chip " + (d.state === "linked" ? "ok" : "warn");
+  $("dvChip").textContent = d.chip;
+  $("dvMac").textContent = d.mac;
+  $("dvFw2").textContent = "cognitum " + d.fw;
+  $("dvSig").textContent  = d.sig !== null ? d.sig + " dBm" : "—";
+  $("dvBatt").textContent = d.batt !== null ? d.batt + "%" : "—";
+  $("dvUp").textContent   = d.uptime;
+  $("dvLat").textContent  = d.rtt !== null ? d.rtt + " ms" : "—";
+  $("dvLoss").textContent = d.loss !== null ? d.loss + "%" : "—";
+  $("dvSeen").textContent = d.state === "linked" ? "now" : "12 m ago";
+  $("devCogsFor").textContent = d.id;
+  $("devCogList").innerHTML = d.cogs.length ? d.cogs.map(c => `
+    <div class="plan-step done" style="opacity:1;">
+      <div class="num" style="background:var(--accent-2);color:#021620;border-color:var(--accent-2);">●</div>
+      <div class="action">${c}</div>
+      <div class="cost">running</div>
+    </div>
+  `).join("") : `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no cogs installed</div>`;
+  drawDevGauges(d);
+  drawDevPerf();
+}
+
+function drawDevGauges(d) {
+  const svg = $("devGauges");
+  const draw = (cx, cy, val, label, color) => {
+    const r = 32, c = 2 * Math.PI * r;
+    const off = c * (1 - val / 100);
+    return `
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg-3)" stroke-width="6"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+        stroke-dasharray="${c}" stroke-dashoffset="${off}"
+        transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>
+      <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="13" fill="${color}" font-family="var(--mono)" font-weight="600">${Math.round(val)}%</text>
+      <text x="${cx}" y="${cy + 50}" text-anchor="middle" font-size="10" fill="var(--text-mute)" font-family="var(--mono)" letter-spacing="1">${label}</text>
+    `;
+  };
+  svg.innerHTML = draw(40, 50, d.cpu, "CPU", "var(--accent)") + draw(120, 50, d.ram, "RAM", "var(--accent-2)") + draw(200, 50, d.batt || 0, "BATT", "var(--accent-3)");
+}
+
+function drawDevPerf() {
+  const svg = $("devPerf"); const W = 720, H = 140;
+  let html = "";
+  for (let gy = 0; gy < H; gy += 28) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)"/>`;
+  const series = [
+    { key: "cpu", color: "var(--accent)",   max: 100 },
+    { key: "ram", color: "var(--accent-2)", max: 100 },
+    { key: "rtt", color: "var(--accent-3)", max: 40  },
+  ];
+  series.forEach(s => {
+    const pts = DevPerf.map((d, i) => {
+      const x = (i / (DevPerf.length - 1)) * W;
+      const y = H - clamp(d[s.key], 0, s.max) / s.max * (H - 8) - 4;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    html += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="1.6"/>`;
+  });
+  svg.innerHTML = html;
+}
+
+function drawMeshTopo() {
+  const svg = $("meshTopo");
+  const cx = 130, cy = 110;
+  let html = `<circle cx="${cx}" cy="${cy}" r="14" fill="var(--accent-3)"/>
+              <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--bg-0)" font-weight="700">GW</text>`;
+  Devices.forEach((d, i) => {
+    const a = (i / Devices.length) * Math.PI * 2 - Math.PI / 2;
+    const r = 75;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    const color = d.state === "linked" ? "var(--accent)" : "var(--text-mute)";
+    html += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${color}" stroke-width="1.4" ${d.state === 'offline' ? 'stroke-dasharray="3 3"' : ''}/>`;
+    html += `<circle cx="${x}" cy="${y}" r="11" fill="${color}" opacity="${d.state === 'linked' ? 1 : 0.5}"/>`;
+    html += `<text x="${x}" y="${y + 24}" text-anchor="middle" font-size="9" fill="var(--text-dim)" font-family="var(--mono)">${d.id.replace('field-unit-','u')}</text>`;
+  });
+  svg.innerHTML = html;
+}
+
+function tickDevices() {
+  Devices.forEach(d => {
+    if (d.state !== "linked") return;
+    d.cpu = clamp(d.cpu + rand(-4, 4), 5, 95);
+    d.ram = clamp(d.ram + rand(-2, 2), 20, 90);
+    d.rtt = clamp(d.rtt + rand(-2, 2), 3, 40);
+  });
+  DevPerf.push({ cpu: Devices[0].cpu, ram: Devices[0].ram, rtt: Devices[0].rtt });
+  if (DevPerf.length > 60) DevPerf.shift();
+  renderDeviceDetail();
+}
+
+/* ==========================================================
+   ANOMALY DETECT
+   ========================================================== */
+const Anom = {
+  paused: false,
+  score: [],          // last 60 scores
+  threshold: 0.65,
+  sens: 0.65,
+  win: 64,
+  model: "EWMA",
+  ewma: 0.3,
+  count: 128,
+  log: [],
+  inputs: { csi: true, rf: true, audio: false, thermal: false },
+};
+function renderAnomaly() {
+  Anom.score = [];
+  for (let i = 0; i < 60; i++) Anom.score.push(clamp(0.3 + 0.2 * Math.sin(i * 0.2) + rand(-0.1, 0.1), 0, 1));
+  Anom.log = [
+    { t: "21:14:08", type: "rf",      sev: "high",   score: 0.91 },
+    { t: "21:12:42", type: "csi",     sev: "med",    score: 0.78 },
+    { t: "21:09:11", type: "rf",      sev: "med",    score: 0.71 },
+    { t: "21:04:22", type: "audio",   sev: "low",    score: 0.66 },
+    { t: "20:58:03", type: "csi",     sev: "high",   score: 0.88 },
+  ];
+  $("anomCount").textContent = Anom.count;
+  $("anomScore").textContent = Anom.score[Anom.score.length - 1].toFixed(2);
+  $("anomThrShow").textContent = Anom.threshold.toFixed(2);
+  $("anomSens").value = Anom.sens * 100; $("anomSensVal").textContent = Anom.sens.toFixed(2);
+  $("anomWin").value = Anom.win;         $("anomWinVal").textContent  = Anom.win;
+  $("anomModelSel").value = Anom.model;  $("anomModel").textContent   = Anom.model;
+  drawAnomChart();
+  drawAnomDist();
+  renderAnomLog();
+
+  // toggle inputs
+  document.querySelectorAll("#anomInputs [data-anomin]").forEach(el => {
+    el.onclick = () => {
+      const k = el.dataset.anomin;
+      Anom.inputs[k] = !Anom.inputs[k];
+      el.className = "chip " + (Anom.inputs[k] ? "ok" : "");
+    };
+  });
+}
+function renderAnomLog() {
+  $("anomLog").innerHTML = Anom.log.map(a => {
+    const sevColor = a.sev === "high" ? "var(--crit)" : a.sev === "med" ? "var(--warn)" : "var(--accent-2)";
+    return `<div class="log-row"><span class="t">${a.t}</span><span class="ev" style="color:${sevColor}">${a.sev}</span><span class="msg">${a.type} · score ${a.score.toFixed(2)}</span></div>`;
+  }).join("");
+  const counts = {};
+  Anom.log.forEach(a => counts[a.type] = (counts[a.type] || 0) + 1);
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  if (top) $("anomTopType").textContent = `top: ${top[0]}`;
+}
+function drawAnomChart() {
+  const svg = $("anomChart"); if (!svg) return;
+  const W = 400, H = 180;
+  let html = "";
+  for (let gy = 0; gy < H; gy += 36) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)"/>`;
+
+  // threshold band
+  const thY = H - Anom.threshold * (H - 8) - 4;
+  html += `<rect x="0" y="0" width="${W}" height="${thY}" fill="var(--crit)" fill-opacity="0.05"/>`;
+  html += `<line x1="0" y1="${thY}" x2="${W}" y2="${thY}" stroke="var(--crit)" stroke-dasharray="4 3" stroke-width="1"/>`;
+  html += `<text x="${W-6}" y="${thY-4}" text-anchor="end" font-size="9" fill="var(--crit)" font-family="var(--mono)">threshold ${Anom.threshold.toFixed(2)}</text>`;
+
+  // score line
+  const pts = Anom.score.map((v, i) => {
+    const x = (i / (Anom.score.length - 1)) * W;
+    const y = H - v * (H - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>`;
+
+  // ewma reference
+  const ewmaPts = Anom.score.map((v, i) => {
+    const x = (i / (Anom.score.length - 1)) * W;
+    const y = H - Anom.ewma * (H - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${ewmaPts}" fill="none" stroke="var(--accent-3)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+
+  // highlight points above threshold
+  Anom.score.forEach((v, i) => {
+    if (v > Anom.threshold) {
+      const x = (i / (Anom.score.length - 1)) * W;
+      const y = H - v * (H - 8) - 4;
+      html += `<circle cx="${x}" cy="${y}" r="3" fill="var(--crit)"/>`;
+    }
+  });
+  svg.innerHTML = html;
+}
+function drawAnomDist() {
+  const svg = $("anomDist"); if (!svg) return;
+  const W = 400, H = 180;
+  const bins = 20;
+  const counts = new Array(bins).fill(0);
+  Anom.score.forEach(v => counts[Math.min(bins - 1, Math.floor(v * bins))]++);
+  const max = Math.max(...counts, 1);
+  // smooth curve through bin tops (line chart, no bars)
+  let html = "";
+  for (let gy = 0; gy < H; gy += 36) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)"/>`;
+  const pts = counts.map((c, i) => {
+    const x = (i / (bins - 1)) * W;
+    const y = H - (c / max) * (H - 16) - 8;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const thrX = Anom.threshold * W;
+  html += `<line x1="${thrX}" y1="0" x2="${thrX}" y2="${H}" stroke="var(--crit)" stroke-dasharray="4 3"/>`;
+  // split into normal (below thr) and above
+  const split = Math.floor(Anom.threshold * bins);
+  const left = pts.slice(0, split + 1);
+  const right = pts.slice(split);
+  html += `<polyline points="${left.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  html += `<polyline points="${pts.map((_,i) => `${(i/(bins-1)*W).toFixed(1)},${H}`).join(' ')}" fill="none" stroke="none"/>`;
+  // area under
+  const area = `0,${H} ${left.join(' ')} ${left[left.length-1].split(',')[0]},${H}`;
+  html += `<polygon points="${area}" fill="var(--accent)" fill-opacity="0.10"/>`;
+  html += `<polyline points="${right.join(' ')}" fill="none" stroke="var(--crit)" stroke-width="2"/>`;
+  const areaR = `${right[0].split(',')[0]},${H} ${right.join(' ')} ${W},${H}`;
+  html += `<polygon points="${areaR}" fill="var(--crit)" fill-opacity="0.12"/>`;
+  svg.innerHTML = html;
+}
+function tickAnomaly() {
+  if (Anom.paused) return;
+  const next = clamp(Anom.ewma + rand(-0.15, 0.15) + (Math.random() < 0.08 ? rand(0.2, 0.5) : 0), 0, 1);
+  Anom.ewma = Anom.ewma * 0.9 + next * 0.1;
+  Anom.score.push(next);
+  if (Anom.score.length > 60) Anom.score.shift();
+  if (next > Anom.threshold) {
+    Anom.count++;
+    const types = Object.keys(Anom.inputs).filter(k => Anom.inputs[k]);
+    const type = types[Math.floor(Math.random() * types.length)] || "csi";
+    const sev = next > 0.85 ? "high" : next > 0.72 ? "med" : "low";
+    Anom.log.unshift({ t: nowStr(), type, sev, score: next });
+    if (Anom.log.length > 14) Anom.log.pop();
+    renderAnomLog();
+  }
+  $("anomCount").textContent = Anom.count;
+  $("anomScore").textContent = next.toFixed(2);
+  drawAnomChart();
+  drawAnomDist();
+}
+
+/* ==========================================================
+   MOTION CLASSIFY
+   ========================================================== */
+const MotionClasses = [
+  { name: "still",    color: "#5ef3c8" },
+  { name: "walking",  color: "#36b8ff" },
+  { name: "running",  color: "#b681ff" },
+  { name: "sitting",  color: "#ffb547" },
+  { name: "waving",   color: "#ff5d7a" },
+  { name: "fall",     color: "#7ce8ff" },
+];
+const Motion = {
+  probs: [0.05, 0.62, 0.06, 0.18, 0.06, 0.03],
+  confHistory: [],
+  inferences: 3412,
+  log: [],
+};
+function renderMotion() {
+  if (Motion.log.length === 0) {
+    Motion.log = [
+      { t: "21:14:01", cls: "walking", conf: 0.82 },
+      { t: "21:13:42", cls: "walking", conf: 0.77 },
+      { t: "21:13:21", cls: "still",   conf: 0.91 },
+      { t: "21:12:55", cls: "sitting", conf: 0.68 },
+      { t: "21:12:30", cls: "waving",  conf: 0.74 },
+    ];
+  }
+  if (Motion.confHistory.length === 0) {
+    for (let i = 0; i < 40; i++) Motion.confHistory.push(0.65 + 0.15 * Math.sin(i * 0.3) + rand(-0.05, 0.05));
+  }
+  $("moInf").textContent = Motion.inferences.toLocaleString();
+  drawMotionDonut();
+  drawMotionConf();
+  renderMotionLog();
+  renderMotionLib();
+}
+function drawMotionDonut() {
+  const svg = $("moDonut"); const cx = 130, cy = 110, R = 80, r = 50;
+  let acc = 0;
+  let html = "";
+  // outer ring segments
+  const total = Motion.probs.reduce((a, b) => a + b, 0);
+  Motion.probs.forEach((p, i) => {
+    const startA = (acc / total) * Math.PI * 2 - Math.PI / 2;
+    acc += p;
+    const endA = (acc / total) * Math.PI * 2 - Math.PI / 2;
+    const x1 = cx + Math.cos(startA) * R, y1 = cy + Math.sin(startA) * R;
+    const x2 = cx + Math.cos(endA)   * R, y2 = cy + Math.sin(endA)   * R;
+    const xi1 = cx + Math.cos(startA) * r, yi1 = cy + Math.sin(startA) * r;
+    const xi2 = cx + Math.cos(endA)   * r, yi2 = cy + Math.sin(endA)   * r;
+    const large = (endA - startA) > Math.PI ? 1 : 0;
+    html += `<path d="M${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${r} ${r} 0 ${large} 0 ${xi1} ${yi1} Z" fill="${MotionClasses[i].color}" fill-opacity="0.85"/>`;
+  });
+  // center info
+  const top = Motion.probs.indexOf(Math.max(...Motion.probs));
+  html += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="14" fill="${MotionClasses[top].color}" font-family="var(--mono)" font-weight="600">${MotionClasses[top].name}</text>`;
+  html += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="var(--mono)">${(Motion.probs[top] * 100).toFixed(0)}%</text>`;
+  // side labels
+  Motion.probs.forEach((p, i) => {
+    const y = 16 + i * 26;
+    html += `<rect x="270" y="${y}" width="10" height="10" fill="${MotionClasses[i].color}" rx="2"/>`;
+    html += `<text x="286" y="${y + 9}" font-size="11" fill="var(--text-dim)" font-family="var(--mono)">${MotionClasses[i].name}</text>`;
+    html += `<text x="390" y="${y + 9}" font-size="11" text-anchor="end" fill="var(--text)" font-family="var(--mono)">${(p * 100).toFixed(1)}%</text>`;
+  });
+  svg.innerHTML = html;
+  $("moTopClass").textContent = MotionClasses[top].name;
+  $("moTopConf").textContent  = `conf ${Motion.probs[top].toFixed(2)}`;
+}
+function drawMotionConf() {
+  const svg = $("moConfChart"); const W = 320, H = 160;
+  let html = "";
+  for (let gy = 0; gy < H; gy += 32) html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)"/>`;
+  // 0.5 boundary
+  const bY = H - 0.5 * (H - 8) - 4;
+  html += `<line x1="0" y1="${bY}" x2="${W}" y2="${bY}" stroke="var(--text-mute)" stroke-dasharray="3 3"/>`;
+  const pts = Motion.confHistory.map((v, i) => {
+    const x = (i / (Motion.confHistory.length - 1)) * W;
+    const y = H - v * (H - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>`;
+  html += `<polyline points="0,${H} ${pts} ${W},${H}" fill="var(--accent)" fill-opacity="0.10"/>`;
+  svg.innerHTML = html;
+  const avg = Motion.confHistory.reduce((a, b) => a + b, 0) / Motion.confHistory.length;
+  $("moAvgConf").textContent = avg.toFixed(2);
+}
+function renderMotionLog() {
+  $("moLog").innerHTML = Motion.log.map(m =>
+    `<div class="log-row"><span class="t">${m.t}</span><span class="ev">${m.cls}</span><span class="msg">conf ${m.conf.toFixed(2)}</span></div>`
+  ).join("");
+}
+function renderMotionLib() {
+  $("moClassLib").innerHTML = MotionClasses.map(c => `
+    <div class="goal" style="cursor:default;">
+      <div>
+        <div class="name"><span class="icon" style="background:${c.color};box-shadow:0 0 6px ${c.color};"></span>${c.name}</div>
+        <div class="desc">trained on ~12k samples</div>
+      </div>
+      <div class="pri">enabled</div>
+      <div class="util" style="color:${c.color}">●</div>
+    </div>
+  `).join("");
+}
+function tickMotion() {
+  // diffuse probabilities
+  Motion.probs = Motion.probs.map(p => clamp(p + rand(-0.02, 0.02), 0.01, 1));
+  // renormalize
+  const s = Motion.probs.reduce((a, b) => a + b, 0);
+  Motion.probs = Motion.probs.map(p => p / s);
+  const topIdx = Motion.probs.indexOf(Math.max(...Motion.probs));
+  Motion.confHistory.push(Motion.probs[topIdx]);
+  if (Motion.confHistory.length > 40) Motion.confHistory.shift();
+  Motion.inferences++;
+  // occasionally log a classification change
+  if (Math.random() < 0.06) {
+    Motion.log.unshift({ t: nowStr(), cls: MotionClasses[topIdx].name, conf: Motion.probs[topIdx] });
+    if (Motion.log.length > 14) Motion.log.pop();
+    renderMotionLog();
+  }
+  drawMotionDonut();
+  drawMotionConf();
+  $("moInf").textContent = Motion.inferences.toLocaleString();
+}
+
+/* ==========================================================
+   SPEECH SYNTH
+   ========================================================== */
+const Speech = {
+  state: "idle",
+  speaking: 0, // ticks remaining
+  queue: [],
+  log: [],
+  pitch: 140, rate: 1.0, gain: 70, voice: "formant-male",
+  buf: 0, under: 0, load: 8,
+};
+function renderSpeech() {
+  if (Speech.log.length === 0) {
+    Speech.log = [
+      { t: "21:03:12", phrase: "Calibration complete" },
+      { t: "20:51:44", phrase: "Anomaly cleared" },
+      { t: "20:30:01", phrase: "Field unit one online" },
+    ];
+  }
+  $("spPitch").value = Speech.pitch; $("spPitchVal").textContent = Speech.pitch + " Hz";
+  $("spRate").value  = Speech.rate * 100; $("spRateVal").textContent  = Speech.rate.toFixed(2) + "×";
+  $("spGain").value  = Speech.gain; $("spGainVal").textContent  = (-30 + Speech.gain * 0.3).toFixed(0) + " dB";
+  $("spVoice").value = Speech.voice;
+  drawSpWaveform();
+  renderSpQueue();
+  renderSpLog();
+  $("spState").textContent = Speech.state;
+  $("spState").className = "chip " + (Speech.state === "speaking" ? "ok" : "info");
+}
+function drawSpWaveform() {
+  const c = $("spWaveform"); if (!c) return;
+  const ctx = c.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr || c.height !== h * dpr) {
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(94,243,200,0.06)";
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx <= w; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+  // center axis
+  ctx.strokeStyle = "var(--line)";
+  ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+
+  const t = Date.now() / 200;
+  const amp = Speech.speaking > 0 ? (0.4 + (Speech.gain / 100) * 0.5) : 0.05;
+  ctx.strokeStyle = Speech.speaking > 0 ? "#5ef3c8" : "#36b8ff";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let x = 0; x < w; x++) {
+    const phase = x * 0.04 * Speech.rate + t;
+    const carrier = Math.sin(phase) * Math.sin(phase * 0.3 + Speech.pitch / 50);
+    const env = Speech.speaking > 0 ? (0.6 + 0.4 * Math.sin(t * 0.5 + x * 0.02)) : 0.3;
+    const y = h/2 - carrier * amp * env * (h * 0.4);
+    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+function renderSpQueue() {
+  $("spQueueList").innerHTML = Speech.queue.length
+    ? Speech.queue.map((q, i) => `
+        <div class="plan-step ${i === 0 ? 'current' : ''}">
+          <div class="num">${i + 1}</div>
+          <div class="action"><code style="color:var(--text);">"${q}"</code></div>
+          <div class="cost">${i === 0 ? 'next' : 'queued'}</div>
+        </div>
+      `).join("")
+    : `<div style="color:var(--text-mute); font-size:11px; padding:10px;">queue empty</div>`;
+}
+function renderSpLog() {
+  $("spLog").innerHTML = Speech.log.map(s =>
+    `<div class="log-row"><span class="t">${s.t}</span><span class="ev">utter</span><span class="msg">"${s.phrase}"</span></div>`
+  ).join("");
+}
+function tickSpeech() {
+  // update waveform buffer indicators
+  if (Speech.speaking > 0) {
+    Speech.speaking--;
+    Speech.buf = Math.min(4096, Speech.buf + 380);
+    Speech.load = clamp(Speech.load + rand(-2, 4), 25, 92);
+    if (Speech.speaking === 0) {
+      Speech.state = "idle";
+      Speech.buf = 0;
+    } else if (Speech.queue.length && Speech.speaking < 4) {
+      // continue to next queued
+      const nxt = Speech.queue.shift();
+      Speech.log.unshift({ t: nowStr(), phrase: nxt });
+      if (Speech.log.length > 12) Speech.log.pop();
+      Speech.speaking = Math.min(24, 6 + nxt.length / 3);
+      renderSpQueue(); renderSpLog();
+    }
+  } else {
+    Speech.load = clamp(Speech.load + rand(-1, 1), 5, 12);
+  }
+  $("spBuf").textContent  = `${Speech.buf} / 4096`;
+  $("spUnder").textContent = Speech.under;
+  $("spLoad").textContent  = `${Math.round(Speech.load)}%`;
+  $("spState").textContent = Speech.state;
+  $("spState").className = "chip " + (Speech.state === "speaking" ? "ok" : "info");
+  $("spWavInfo").textContent = Speech.state === "speaking" ? "active synthesis" : "silence";
+  drawSpWaveform();
+}
+
+/* ==========================================================
+   UTIL
+   ========================================================== */
+function $(id) { return document.getElementById(id); }
+function nowStr() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 8);
+}
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function toast(msg, kind = "ok") {
+  const w = $("toastWrap");
+  const el = document.createElement("div");
+  el.className = "toast " + (kind === "ok" ? "" : kind);
+  el.textContent = msg;
+  w.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 2400);
+  setTimeout(() => { el.remove(); }, 2800);
+}
+
+/* ==========================================================
+   EVENT LOG
+   ========================================================== */
+function pushEvent(ev, msg) {
+  State.events.unshift({ t: nowStr(), ev, msg });
+  if (State.events.length > 200) State.events.pop();
+  renderEvents();
+}
+
+function renderEvents() {
+  const filter = $("evFilter").value;
+  const log = $("eventLog");
+  const rows = State.events
+    .filter(e => filter === "all" || e.ev === filter)
+    .slice(0, 60)
+    .map(e => `<div class="log-row"><span class="t">${e.t}</span><span class="ev ${e.ev}">${e.ev}</span><span class="msg">${e.msg}</span></div>`)
+    .join("");
+  log.innerHTML = rows || `<div style="color:var(--text-mute); font-size:11px; padding:10px;">no events</div>`;
+}
+
+/* ==========================================================
+   GOAL LIST
+   ========================================================== */
+function renderGoals() {
+  const wrap = $("goalList");
+  wrap.innerHTML = State.goals
+    .sort((a, b) => b.util - a.util)
+    .map(g => `
+      <div class="goal ${g.active ? "active" : ""}" data-goal="${g.id}">
+        <div>
+          <div class="name"><span class="icon"></span>${g.name}</div>
+          <div class="desc">${g.desc}</div>
+        </div>
+        <div class="pri">P${g.pri}</div>
+        <div class="util">${g.util.toFixed(2)}</div>
+      </div>
+    `).join("");
+  wrap.querySelectorAll(".goal").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.goal;
+      State.goals.forEach(g => g.active = (g.id === id));
+      const g = State.goals.find(x => x.id === id);
+      $("statGoal").textContent = g.name;
+      $("statGoalDesc").textContent = `priority ${g.pri} · utility ${g.util.toFixed(2)}`;
+      $("planTarget").textContent = `→ ${g.name}`;
+      pushEvent("goal_set", `active goal → ${g.name}`);
+      toast(`Goal set: ${g.name}`, "info");
+      renderGoals();
+      replan();
+    });
+  });
+}
+
+/* ==========================================================
+   PLAN STEPS
+   ========================================================== */
+function renderPlan() {
+  $("planSteps").innerHTML = State.planSteps.map((s, i) => `
+    <div class="plan-step ${s.done ? "done" : ""} ${s.current ? "current" : ""}">
+      <div class="num">${i + 1}</div>
+      <div class="action"><code style="color:${s.done ? 'var(--text-mute)' : 'var(--text)'}">${s.name}</code></div>
+      <div class="cost">cost ${s.cost.toFixed(1)}</div>
+    </div>
+  `).join("");
+
+  const done = State.planSteps.filter(s => s.done).length;
+  const total = State.planSteps.length;
+  $("planProgress").textContent = `step ${done + (State.planSteps.some(s => s.current) ? 1 : 0)} / ${total}`;
+  $("statDepth").textContent = total;
+
+  const costSoFar = State.planSteps.filter(s => s.done).reduce((a, b) => a + b.cost, 0);
+  const costRem = State.planSteps.filter(s => !s.done).reduce((a, b) => a + b.cost, 0);
+  $("costSoFar").textContent = costSoFar.toFixed(1);
+  $("costRem").textContent = costRem.toFixed(1);
+  $("statCost").textContent = `total cost ${(costSoFar + costRem).toFixed(1)}`;
+  $("etaTxt").textContent = `~${Math.round(costRem * 3)} s`;
+}
+
+function stepNext() {
+  const idx = State.planSteps.findIndex(s => s.current);
+  if (idx < 0) return;
+  const s = State.planSteps[idx];
+  s.done = true; s.current = false;
+  pushEvent("action_executed", `${s.name} · cost ${s.cost.toFixed(1)}`);
+  if (idx + 1 < State.planSteps.length) {
+    State.planSteps[idx + 1].current = true;
+  } else {
+    // goal achieved
+    State.achieved += 1; State.ach24 += 1;
+    $("statAchieved").textContent = State.achieved;
+    $("statAch24").textContent = `+${State.ach24} today`;
+    const g = State.goals.find(x => x.active);
+    pushEvent("goal_achieved", `goal ${g ? g.name : '?'} satisfied`);
+    toast(`Goal achieved: ${g ? g.name : ''}`, "ok");
+    setTimeout(replan, 600);
+  }
+  renderPlan();
+  drawPlanGraph();
+}
+
+function replan() {
+  const g = State.goals.find(x => x.active) || State.goals[0];
+  const len = clamp(Math.round(rand(4, State.maxDepth)), 4, State.maxDepth);
+  const verbs = ["scan_csi","classify_field","approach_anomaly","stabilize_pose","capture_evidence","report_findings","triangulate","filter_noise","arm_camera","cool_sensor","sweep_audio","mark_location"];
+  const steps = [];
+  for (let i = 0; i < len; i++) {
+    steps.push({ name: verbs[Math.floor(Math.random() * verbs.length)], cost: +rand(0.8, 4.2).toFixed(1), done: false });
+  }
+  steps[0].current = true;
+  State.planSteps = steps;
+  pushEvent("plan_generated", `A* · ${len} steps · target ${g.name}`);
+  renderPlan();
+  drawPlanGraph();
+}
+
+/* ==========================================================
+   CHARTS: minilines (svg)
+   ========================================================== */
+function drawMini(id, data, color) {
+  const svg = $(id);
+  if (!svg) return;
+  const w = 70, h = 28;
+  if (data.length < 2) { svg.innerHTML = ""; return; }
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  svg.innerHTML = `
+    <polyline fill="none" stroke="${color}" stroke-width="1.5" points="${pts}" />
+    <polyline fill="${color}" fill-opacity="0.12" stroke="none"
+      points="0,${h} ${pts} ${w},${h}" />
+  `;
+}
+
+/* ==========================================================
+   CHART: utility radar (svg)
+   ========================================================== */
+function drawUtilityRadar() {
+  const svg = $("utilityRadar");
+  const cx = 160, cy = 160, R = 110;
+  const goals = State.goals;
+  const n = goals.length;
+  const ringSteps = 4;
+  let html = "";
+
+  // rings
+  for (let r = 1; r <= ringSteps; r++) {
+    const rr = (R / ringSteps) * r;
+    html += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="var(--line)" stroke-width="1" />`;
+  }
+
+  // spokes & labels
+  goals.forEach((g, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + Math.cos(a) * R;
+    const y = cy + Math.sin(a) * R;
+    html += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    const lx = cx + Math.cos(a) * (R + 18);
+    const ly = cy + Math.sin(a) * (R + 18);
+    html += `<text x="${lx}" y="${ly}" fill="var(--text-dim)" font-size="11" text-anchor="middle" dominant-baseline="middle" font-family="var(--mono)">${g.name}</text>`;
+  });
+
+  // current utility polygon
+  const cur = goals.map((g, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const rr = g.util * R;
+    return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr];
+  });
+  html += `<polygon points="${cur.map(p => p.join(",")).join(" ")}" fill="var(--accent)" fill-opacity="0.18" stroke="var(--accent)" stroke-width="2"/>`;
+  cur.forEach(p => { html += `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--accent)"/>`; });
+
+  // running average polygon (slightly different)
+  const avg = goals.map((g, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const rr = (g.util * 0.7 + 0.15) * R;
+    return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr];
+  });
+  html += `<polygon points="${avg.map(p => p.join(",")).join(" ")}" fill="none" stroke="var(--accent-3)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+
+  svg.innerHTML = html;
+}
+
+/* ==========================================================
+   CHART: plan graph (svg, force-ish layout)
+   ========================================================== */
+function drawPlanGraph() {
+  const svg = $("planGraph");
+  const W = 800, H = 320;
+  const steps = State.planSteps;
+  if (steps.length === 0) { svg.innerHTML = ""; return; }
+
+  // layout: main chain across width with branches
+  const margin = 40;
+  const usableW = W - 2 * margin;
+  const nodes = [];
+  steps.forEach((s, i) => {
+    const x = margin + (usableW / Math.max(1, steps.length - 1)) * i;
+    const y = H / 2 + Math.sin(i * 1.3) * 36;
+    nodes.push({ x, y, label: s.name, done: s.done, current: s.current, cost: s.cost });
+  });
+
+  // alternative branches (failed candidate paths)
+  const alts = [];
+  for (let i = 0; i < steps.length - 1; i++) {
+    if (i % 2 === 1) {
+      const fromX = nodes[i].x;
+      const fromY = nodes[i].y;
+      const toX = (nodes[i].x + nodes[i + 1].x) / 2;
+      const toY = fromY + 70;
+      alts.push({ x1: fromX, y1: fromY, x2: toX, y2: toY, label: "alt_" + i });
+    }
+  }
+
+  // goal node (rightmost)
+  const goalNode = { x: W - margin + 10, y: H / 2, label: (State.goals.find(g => g.active) || { name: "Goal" }).name };
+
+  let html = "";
+  // background grid
+  for (let gx = 0; gx <= W; gx += 40) {
+    html += `<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+  for (let gy = 0; gy <= H; gy += 40) {
+    html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+
+  // alt branches (dashed)
+  alts.forEach(a => {
+    html += `<line x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="var(--text-mute)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>`;
+    html += `<circle cx="${a.x2}" cy="${a.y2}" r="6" fill="var(--bg-3)" stroke="var(--text-mute)" stroke-width="1"/>`;
+    html += `<text x="${a.x2}" y="${a.y2 + 22}" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">${a.label}</text>`;
+  });
+
+  // edges main chain (curves)
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const n1 = nodes[i], n2 = nodes[i + 1];
+    const mx = (n1.x + n2.x) / 2;
+    const stroke = (n1.done && n2.done) ? "var(--accent)" : (n1.done && n2.current ? "var(--accent-2)" : "var(--text-mute)");
+    const op = (n1.done && n2.done) ? 1 : 0.7;
+    html += `<path d="M${n1.x} ${n1.y} Q ${mx} ${(n1.y + n2.y) / 2 - 20} ${n2.x} ${n2.y}" stroke="${stroke}" stroke-width="2" fill="none" opacity="${op}"/>`;
+  }
+  // last to goal
+  const last = nodes[nodes.length - 1];
+  html += `<path d="M${last.x} ${last.y} Q ${(last.x + goalNode.x) / 2} ${last.y - 30} ${goalNode.x} ${goalNode.y}" stroke="var(--accent-3)" stroke-width="2" fill="none" stroke-dasharray="${last.done ? '' : '4 3'}"/>`;
+
+  // nodes
+  nodes.forEach((n, i) => {
+    const fill = n.done ? "var(--accent)" : (n.current ? "var(--accent-2)" : "var(--bg-3)");
+    const stroke = n.done ? "var(--accent)" : (n.current ? "var(--accent-2)" : "var(--line-2)");
+    const r = n.current ? 14 : 11;
+    html += `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+    if (n.current) {
+      html += `<circle cx="${n.x}" cy="${n.y}" r="${r + 6}" fill="none" stroke="${stroke}" stroke-width="1" opacity="0.4">
+        <animate attributeName="r" from="${r + 4}" to="${r + 14}" dur="1.8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.6" to="0" dur="1.8s" repeatCount="indefinite"/>
+      </circle>`;
+    }
+    html += `<text x="${n.x}" y="${n.y + 4}" font-size="10" fill="${n.done ? '#062018' : 'var(--text)'}" text-anchor="middle" font-family="var(--mono)" font-weight="600">${i + 1}</text>`;
+    html += `<text x="${n.x}" y="${n.y + 30}" font-size="10" fill="var(--text-dim)" text-anchor="middle" font-family="var(--mono)">${n.label}</text>`;
+    html += `<text x="${n.x}" y="${n.y - 18}" font-size="9" fill="var(--text-mute)" text-anchor="middle" font-family="var(--mono)">c=${n.cost.toFixed(1)}</text>`;
+  });
+
+  // goal node
+  html += `<circle cx="${goalNode.x}" cy="${goalNode.y}" r="16" fill="var(--accent-3)" stroke="var(--accent-3)" stroke-width="2"/>`;
+  html += `<circle cx="${goalNode.x}" cy="${goalNode.y}" r="22" fill="none" stroke="var(--accent-3)" stroke-opacity="0.4" stroke-width="1"/>`;
+  html += `<text x="${goalNode.x}" y="${goalNode.y + 4}" font-size="13" fill="var(--bg-0)" text-anchor="middle" font-family="var(--mono)" font-weight="700">★</text>`;
+  html += `<text x="${goalNode.x}" y="${goalNode.y + 38}" font-size="10" fill="var(--accent-3)" text-anchor="middle" font-family="var(--mono)">${goalNode.label}</text>`;
+
+  svg.innerHTML = html;
+}
+
+/* ==========================================================
+   CHART: CSI canvas (line chart, animated)
+   ========================================================== */
+const csi = {
+  mode: "amp",  // amp | phase | doppler
+  buf: [],      // ring of arrays length 30
+  bufLen: 80,
+  init() {
+    // seed
+    for (let i = 0; i < this.bufLen; i++) {
+      this.buf.push(this.genFrame(i));
+    }
+  },
+  genFrame(t) {
+    const out = [];
+    for (let s = 0; s < 30; s++) {
+      let v;
+      if (this.mode === "amp") {
+        v = 0.5 + 0.3 * Math.sin(t * 0.1 + s * 0.4) + 0.15 * Math.sin(t * 0.07 + s * 0.7) + rand(-0.04, 0.04);
+      } else if (this.mode === "phase") {
+        v = 0.5 + 0.3 * Math.sin(t * 0.18 + s * 0.6 + Math.PI / 2) + rand(-0.05, 0.05);
+      } else {
+        v = 0.5 + 0.4 * Math.cos(t * 0.13 + s * 0.3) * (0.5 + 0.5 * Math.sin(s * 0.2)) + rand(-0.06, 0.06);
+      }
+      out.push(clamp(v, 0, 1));
+    }
+    return out;
+  }
+};
+
+function drawCSI() {
+  const c = $("csiChart");
+  const ctx = c.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr || c.height !== h * dpr) {
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ctx.clearRect(0, 0, w, h);
+
+  // bg grid
+  ctx.strokeStyle = "rgba(94,243,200,0.06)";
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx <= w; gx += 40) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+  }
+  for (let gy = 0; gy <= h; gy += 30) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+  }
+
+  // draw 30 subcarrier lines (colored in 3 bands)
+  const buf = csi.buf;
+  const cols = ["#5ef3c8", "#36b8ff", "#b681ff"];
+  for (let s = 0; s < 30; s++) {
+    const band = Math.floor(s / 10);
+    ctx.strokeStyle = cols[band] + "B0";
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    for (let t = 0; t < buf.length; t++) {
+      const v = buf[t][s];
+      const x = (t / (buf.length - 1)) * w;
+      const y = h - v * (h - 6) - 3;
+      if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // mean line (thick)
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  for (let t = 0; t < buf.length; t++) {
+    let m = 0; for (let s = 0; s < 30; s++) m += buf[t][s];
+    m /= 30;
+    const x = (t / (buf.length - 1)) * w;
+    const y = h - m * (h - 6) - 3;
+    if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.globalAlpha = 0.5;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/* ==========================================================
+   CHART: perf line (svg) — 3 streams
+   ========================================================== */
+function pushPerf() {
+  const lat = clamp(8 + rand(-3, 6) + (State.tickHz < 5 ? 4 : 0), 1, 60);
+  const util = (State.goals.find(g => g.active) || { util: 0.5 }).util + rand(-0.04, 0.04);
+  const ent = clamp(0.4 + 0.2 * Math.sin(Date.now() / 4000) + rand(-0.05, 0.05), 0, 1);
+  State.perfSeries.push({ lat, util: clamp(util, 0, 1), ent });
+  if (State.perfSeries.length > 60) State.perfSeries.shift();
+}
+
+function drawPerf() {
+  const svg = $("perfChart");
+  const W = 400, H = 200;
+  const data = State.perfSeries;
+  if (data.length < 2) { svg.innerHTML = ""; return; }
+
+  let html = "";
+  // grid
+  for (let gy = 0; gy < H; gy += 40) {
+    html += `<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+  for (let gx = 0; gx < W; gx += 40) {
+    html += `<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="var(--grid)" stroke-width="1"/>`;
+  }
+
+  // axes labels
+  html += `<text x="6" y="14" font-size="9" fill="var(--text-mute)" font-family="var(--mono)">1.0</text>`;
+  html += `<text x="6" y="${H - 4}" font-size="9" fill="var(--text-mute)" font-family="var(--mono)">0.0</text>`;
+
+  // latency (normalized into bottom 35% so it doesn't clash)
+  const maxLat = 30;
+  const latPts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - (d.lat / maxLat) * (H * 0.9) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${latPts}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>`;
+  // fill below
+  html += `<polyline points="0,${H} ${latPts} ${W},${H}" fill="var(--accent)" fill-opacity="0.08" stroke="none"/>`;
+
+  // utility (0..1)
+  const utilPts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - d.util * (H - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${utilPts}" fill="none" stroke="var(--accent-2)" stroke-width="1.6"/>`;
+
+  // entropy
+  const entPts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - d.ent * (H - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  html += `<polyline points="${entPts}" fill="none" stroke="var(--accent-3)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+
+  svg.innerHTML = html;
+}
+
+/* ==========================================================
+   TICK LOOP
+   ========================================================== */
+let tickCount = 0;
+function tick() {
+  if (!State.running) {
+    setTimeout(tick, 1000 / Math.max(1, State.tickHz));
+    return;
+  }
+  tickCount++;
+
+  // CSI buffer roll
+  csi.buf.push(csi.genFrame(tickCount));
+  if (csi.buf.length > csi.bufLen) csi.buf.shift();
+
+  // perturb utilities slightly
+  State.goals.forEach(g => {
+    g.util = clamp(g.util + rand(-0.015, 0.018), 0.05, 0.98);
+  });
+  // recompute active goal stat
+  const ag = State.goals.find(g => g.active);
+  if (ag) {
+    $("statGoal").textContent = ag.name;
+    $("statGoalDesc").textContent = `priority ${ag.pri} · utility ${ag.util.toFixed(2)}`;
+  }
+
+  // emit occasional events
+  if (tickCount % 30 === 0) pushEvent("plan_generated", `re-evaluated · h=${State.heuristic.toFixed(2)}`);
+  if (tickCount % 14 === 7) pushEvent("action_executed", `${State.planSteps.find(s => s.current)?.name || "noop"} tick`);
+  if (Math.random() < 0.02) {
+    // random goal shift
+    const candidates = State.goals.slice().sort((a, b) => b.util - a.util);
+    if (!candidates[0].active) {
+      State.goals.forEach(g => g.active = false);
+      candidates[0].active = true;
+      pushEvent("goal_set", `utility-driven shift → ${candidates[0].name}`);
+      replan();
+    }
+  }
+
+  // mini histories
+  State.tickSeries.push(State.tickHz + rand(-0.5, 0.5));
+  if (State.tickSeries.length > 20) State.tickSeries.shift();
+
+  // render (only if relevant view visible)
+  pushPerf();
+  if (currentRoute === "goap") {
+    drawCSI();
+    drawPerf();
+    drawUtilityRadar();
+    renderGoals();
+    drawMini("miniGoal",  State.perfSeries.map(p => p.util),                        "var(--accent)");
+    drawMini("miniDepth", State.perfSeries.map((_, i) => 4 + ((i + tickCount) % 6)), "var(--accent-2)");
+    drawMini("miniTick",  State.tickSeries,                                          "var(--accent-3)");
+    drawMini("miniAch",   State.perfSeries.map(p => 1 - p.ent),                     "var(--warn)");
+  }
+
+  // animate sensor view if active
+  if (RouteInfo[currentRoute]?.view === "sensor" && !Sensor.paused) {
+    const frame = sensorFrame(tickCount);
+    Sensor.buf.push(frame);
+    if (Sensor.buf.length > 80) Sensor.buf.shift();
+
+    // perturb polar samples (gentle wandering with slow rotation of the lobe)
+    const drift = Math.sin(tickCount * 0.05) * 1.5;
+    for (let i = 0; i < POLAR_BINS; i++) {
+      const a = (i / POLAR_BINS) * Math.PI * 2 + drift;
+      let base;
+      const title = Sensor.cfg.title;
+      if (title === "RF Field")        base = 0.45 + 0.35 * Math.max(Math.cos(a - 0.5), 0) + 0.15 * Math.cos(a * 2);
+      else if (title === "CSI Stream") base = 0.4 + 0.4 * Math.abs(Math.cos(a + 0.4)) + 0.1 * Math.sin(a * 3);
+      else if (title === "Audio")      base = 0.3 + 0.55 * Math.max(Math.cos(a - 1.2), 0);
+      else                             base = 0.5 + 0.25 * Math.sin(a * 2 + 0.7);
+      const target = clamp(base + rand(-0.06, 0.06), 0.05, 0.98);
+      // smoothing
+      Sensor.polar[i] = Sensor.polar[i] * (1 - 0.25) + target * 0.25;
+      // peak hold with decay
+      if (Sensor.polar[i] > Sensor.polarPeak[i]) {
+        Sensor.polarPeak[i] = Sensor.polar[i];
+        Sensor.polarPeakAge[i] = 0;
+      } else {
+        Sensor.polarPeakAge[i]++;
+        if (Sensor.polarPeakAge[i] > 30) Sensor.polarPeak[i] = Math.max(Sensor.polar[i], Sensor.polarPeak[i] * 0.985);
+      }
+    }
+
+    // detect peaks against upper threshold
+    frame.forEach((v, b) => {
+      if (v > Sensor.thr.upper && Sensor.peaks.length < 60) {
+        Sensor.peaks.unshift({ t: nowStr(), band: Sensor.cfg.bands[b], v: v * 10 });
+      }
+    });
+    drawSensor();
+    drawPolar();
+    renderPeaks();
+  }
+
+  // animate per-view
+  if (currentRoute === "anomaly") tickAnomaly();
+  if (currentRoute === "motion")  tickMotion();
+  if (currentRoute === "speech")  tickSpeech();
+  if (currentRoute === "devices") tickDevices();
+  if (currentRoute === "map")     tickMap();
+
+  // latency pill
+  const lastLat = State.perfSeries[State.perfSeries.length - 1]?.lat || 12;
+  $("latencyPill").textContent = `latency ${lastLat.toFixed(0)} ms`;
+
+  setTimeout(tick, 1000 / Math.max(1, State.tickHz));
+}
+
+/* ==========================================================
+   EVENT BINDINGS
+   ========================================================== */
+function bindUI() {
+  // Sidenav routes
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+      el.classList.add("active");
+      goRoute(el.dataset.route);
+    });
+  });
+
+  // Top toolbar
+  $("btnRefresh").addEventListener("click", () => {
+    replan();
+    toast("Refreshed planner state", "ok");
+  });
+  $("btnHelp").addEventListener("click", () => {
+    toast("GOAP plans actions to satisfy active goals based on CSI state.", "info");
+  });
+
+  // Hero actions
+  $("btnInstall").addEventListener("click", () => $("modalInstall").classList.add("open"));
+  $("btnDetails").addEventListener("click", () => $("modalDetails").classList.add("open"));
+  $("btnStart").addEventListener("click", () => {
+    State.running = true;
+    pushEvent("plan_generated", "planner resumed");
+    toast("Planner started", "ok");
+  });
+  $("btnStop").addEventListener("click", () => {
+    State.running = false;
+    pushEvent("plan_generated", "planner paused");
+    toast("Planner paused", "warn");
+  });
+
+  // Modal install
+  $("btnInstallCancel").addEventListener("click", () => $("modalInstall").classList.remove("open"));
+  $("btnInstallConfirm").addEventListener("click", () => {
+    State.installed = true;
+    $("modalInstall").classList.remove("open");
+    pushEvent("plan_generated", "cog installed · binding CSI");
+    toast("GOAP Autonomy installed on field-unit-01", "ok");
+  });
+
+  // Modal details
+  $("btnDetailsClose").addEventListener("click", () => $("modalDetails").classList.remove("open"));
+
+  // Add goal modal
+  $("btnAddGoal").addEventListener("click", () => $("modalGoal").classList.add("open"));
+  $("btnGoalCancel").addEventListener("click", () => $("modalGoal").classList.remove("open"));
+  $("goalPri").addEventListener("input", e => $("goalPriVal").textContent = e.target.value);
+  $("btnGoalConfirm").addEventListener("click", () => {
+    const name = $("goalName").value.trim() || "Unnamed";
+    const desc = $("goalDesc").value.trim() || "—";
+    const pri = +$("goalPri").value;
+    const id = name.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now().toString(36);
+    State.goals.push({ id, name, desc, pri, util: 0.3 + Math.random() * 0.3, active: false });
+    $("modalGoal").classList.remove("open");
+    $("goalName").value = ""; $("goalDesc").value = "";
+    pushEvent("goal_set", `added goal "${name}" pri ${pri}`);
+    toast(`Added goal "${name}"`, "ok");
+    renderGoals();
+    drawUtilityRadar();
+  });
+
+  // Plan controls
+  $("btnReplan").addEventListener("click", () => {
+    replan();
+    toast("Re-planned", "info");
+  });
+  $("btnStepNext").addEventListener("click", () => {
+    stepNext();
+  });
+
+  // Event log filter / clear
+  $("evFilter").addEventListener("change", renderEvents);
+  $("btnClearLog").addEventListener("click", () => {
+    State.events = [];
+    renderEvents();
+    toast("Event log cleared", "warn");
+  });
+
+  // CSI tab switch
+  document.querySelectorAll('[data-csitab]').forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll('[data-csitab]').forEach(t => t.classList.remove("active"));
+      el.classList.add("active");
+      csi.mode = el.dataset.csitab;
+      // reseed quickly
+      csi.buf = [];
+      for (let i = 0; i < csi.bufLen; i++) csi.buf.push(csi.genFrame(i));
+    });
+  });
+
+  // Tuning sliders
+  const r = (sl, valEl, fmt, set) => {
+    const e = $(sl), v = $(valEl);
+    e.addEventListener("input", () => {
+      const n = +e.value;
+      v.textContent = fmt(n);
+      set(n);
+      $("tuneSaved").textContent = "unsaved"; $("tuneSaved").classList.remove("ok");
+    });
+  };
+  r("rangeTick",  "rangeTickVal",  n => n,                 n => { State.tickHz = n; });
+  r("rangeHeur",  "rangeHeurVal",  n => (n / 100).toFixed(2), n => { State.heuristic = n / 100; });
+  r("rangeDepth", "rangeDepthVal", n => n,                 n => { State.maxDepth = n; });
+  r("rangeExpl",  "rangeExplVal",  n => (n / 100).toFixed(2), n => { State.exploration = n / 100; });
+
+  $("btnApplyTune").addEventListener("click", () => {
+    $("statTick").textContent = State.tickHz;
+    $("tuneSaved").textContent = "saved"; $("tuneSaved").classList.add("ok");
+    pushEvent("plan_generated", `tuning applied · h=${State.heuristic.toFixed(2)} d=${State.maxDepth}`);
+    toast("Tuning applied", "ok");
+    replan();
+  });
+  $("btnResetTune").addEventListener("click", () => {
+    State.tickHz = 10; State.heuristic = 0.55; State.maxDepth = 8; State.exploration = 0.30;
+    $("rangeTick").value = 10; $("rangeTickVal").textContent = 10;
+    $("rangeHeur").value = 55; $("rangeHeurVal").textContent = "0.55";
+    $("rangeDepth").value = 8; $("rangeDepthVal").textContent = 8;
+    $("rangeExpl").value = 30; $("rangeExplVal").textContent = "0.30";
+    $("statTick").textContent = 10;
+    $("tuneSaved").textContent = "default"; $("tuneSaved").classList.remove("ok");
+    toast("Tuning reset to defaults", "warn");
+  });
+
+  // ESC closes modals
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".modal-bg.open").forEach(m => m.classList.remove("open"));
+    }
+    if (e.key === " " && e.target === document.body) {
+      e.preventDefault();
+      stepNext();
+    }
+  });
+
+  // Resize redraw
+  window.addEventListener("resize", () => {
+    if (currentRoute === "goap")          { drawCSI(); drawPerf(); drawUtilityRadar(); drawPlanGraph(); }
+    if (RouteInfo[currentRoute]?.view === "sensor") { drawSensor(); drawPolar(); }
+    if (currentRoute === "map")           drawSiteMap();
+    if (currentRoute === "hunts")         { drawMxThroughput(); renderMxDetail(); }
+    if (currentRoute === "anomaly")       { drawAnomChart(); drawAnomDist(); }
+    if (currentRoute === "motion")        { drawMotionDonut(); drawMotionConf(); }
+    if (currentRoute === "speech")        drawSpWaveform();
+    if (currentRoute === "devices")       { drawDevPerf(); drawMeshTopo(); }
+  });
+
+  /* === Bindings for the other views === */
+
+  // Overview
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnOvScan")  { toast("Hunt started · field-unit-01", "ok"); }
+    if (e.target.id === "btnOvDiag")  { toast("Diagnostics running…", "info"); setTimeout(() => toast("Diagnostics OK · 0 faults", "ok"), 900); }
+  });
+
+  // Missions
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnNewHunt") {
+      const id = (Hunts.length ? Math.max(...Hunts.map(h => h.id)) : 0) + 1;
+      Hunts.unshift({ id, name: `New Mission #${id}`, loc: "unassigned", start: nowStr().slice(0, 5), status: "active", events: 0, progress: 0, op: "Nick R.", unit: "field-unit-01", goals: [["Initial sweep", 0]] });
+      seedTimeline(id);
+      MxSel = id;
+      renderHunts();
+      toast(`Created mission #${id}`, "ok");
+    }
+    if (e.target.id === "btnMxResume" || e.target.id === "btnMxPause" || e.target.id === "btnMxArchive") {
+      const m = Hunts.find(h => h.id === MxSel); if (!m) return;
+      if (e.target.id === "btnMxResume")  { m.status = "active";   toast(`Resumed ${m.name}`, "ok"); }
+      if (e.target.id === "btnMxPause")   { m.status = "review";   toast(`Paused ${m.name}`, "warn"); }
+      if (e.target.id === "btnMxArchive") { m.status = "archived"; m.progress = 1; toast(`Archived ${m.name}`, "info"); }
+      renderHunts();
+    }
+  });
+
+  // Site map
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnMapClear")  {
+      MapState.pings = [];
+      MapState.trail = [];
+      $("smMarkers").textContent = "0";
+      drawSiteMap();
+      toast("Markers and trail cleared", "warn");
+    }
+    if (e.target.id === "btnMapCenter") {
+      MapState.unit.x = 400; MapState.unit.y = 240;
+      drawSiteMap();
+      toast("Centered on unit", "info");
+    }
+  });
+
+  // Sensor controls
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnSensorPause") {
+      Sensor.paused = !Sensor.paused;
+      e.target.textContent = Sensor.paused ? "Resume" : "Pause";
+      $("sensorState").textContent = Sensor.paused ? "paused" : "streaming";
+      $("sensorState").className = "chip " + (Sensor.paused ? "warn" : "ok");
+    }
+    if (e.target.id === "btnSensorClear") {
+      Sensor.buf = [];
+      for (let i = 0; i < 80; i++) Sensor.buf.push(sensorFrame(i));
+      drawSensor();
+      toast("Sensor buffer reset", "info");
+    }
+  });
+
+  // Sensor threshold controls
+  document.addEventListener("input", e => {
+    if (e.target.id === "thrUpper")  { Sensor.thr.upper  = +e.target.value / 100; $("thrUpperVal").textContent  = Sensor.thr.upper.toFixed(2);  $("thrSaved").textContent = "unsaved"; $("thrSaved").classList.remove("ok"); }
+    if (e.target.id === "thrLower")  { Sensor.thr.lower  = +e.target.value / 100; $("thrLowerVal").textContent  = Sensor.thr.lower.toFixed(2);  $("thrSaved").textContent = "unsaved"; $("thrSaved").classList.remove("ok"); }
+    if (e.target.id === "thrSmooth") { Sensor.thr.smooth = +e.target.value / 100; $("thrSmoothVal").textContent = Sensor.thr.smooth.toFixed(2); $("thrSaved").textContent = "unsaved"; $("thrSaved").classList.remove("ok"); }
+  });
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnThrApply") { $("thrSaved").textContent = "saved"; $("thrSaved").classList.add("ok"); toast("Thresholds applied", "ok"); }
+    if (e.target.id === "btnThrReset") {
+      Sensor.thr = { upper: 0.80, lower: 0.15, smooth: 0.30 };
+      $("thrUpper").value = 80; $("thrUpperVal").textContent = "0.80";
+      $("thrLower").value = 15; $("thrLowerVal").textContent = "0.15";
+      $("thrSmooth").value = 30; $("thrSmoothVal").textContent = "0.30";
+      $("thrSaved").textContent = "default"; $("thrSaved").classList.remove("ok");
+      toast("Thresholds reset", "warn");
+    }
+    if (e.target.id === "btnSensorCal")  { $("sensorCal").textContent = "yes · just now"; toast("Calibration complete", "ok"); }
+    if (e.target.id === "btnSensorSnap") { toast("Snapshot saved to vault", "info"); }
+  });
+
+  // Anomaly Detect controls
+  document.addEventListener("input", e => {
+    if (e.target.id === "anomSens") { Anom.sens = +e.target.value / 100; Anom.threshold = Anom.sens; $("anomSensVal").textContent = Anom.sens.toFixed(2); $("anomThrShow").textContent = Anom.threshold.toFixed(2); drawAnomChart(); drawAnomDist(); }
+    if (e.target.id === "anomWin")  { Anom.win = +e.target.value; $("anomWinVal").textContent = Anom.win; }
+  });
+  document.addEventListener("change", e => {
+    if (e.target.id === "anomModelSel") { Anom.model = e.target.value; $("anomModel").textContent = Anom.model; toast(`Model: ${Anom.model}`, "info"); }
+  });
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnAnomInstall") toast("Anomaly Detect installed", "ok");
+    if (e.target.id === "btnAnomToggle")  { Anom.paused = !Anom.paused; e.target.textContent = Anom.paused ? "Resume" : "Pause"; toast(Anom.paused ? "Detector paused" : "Detector resumed", Anom.paused ? "warn" : "ok"); }
+    if (e.target.id === "btnAnomReset")   { Anom.count = 0; Anom.log = []; $("anomCount").textContent = "0"; renderAnomLog(); toast("Model reset", "warn"); }
+    if (e.target.id === "btnAnomApply")   toast("Tuning applied", "ok");
+  });
+
+  // Motion Classify controls
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnMoInstall") toast("Motion Classify installed", "ok");
+    if (e.target.id === "btnMoToggle")  { toast("Toggled classifier", "info"); }
+    if (e.target.id === "btnMoRecord")  {
+      Motion.log.unshift({ t: nowStr(), cls: "user_sample", conf: 1.0 });
+      renderMotionLog();
+      toast("Sample recorded", "ok");
+    }
+  });
+
+  // Speech controls
+  document.addEventListener("input", e => {
+    if (e.target.id === "spPitch") { Speech.pitch = +e.target.value; $("spPitchVal").textContent = Speech.pitch + " Hz"; }
+    if (e.target.id === "spRate")  { Speech.rate  = +e.target.value / 100; $("spRateVal").textContent = Speech.rate.toFixed(2) + "×"; }
+    if (e.target.id === "spGain")  { Speech.gain  = +e.target.value; $("spGainVal").textContent = (-30 + Speech.gain * 0.3).toFixed(0) + " dB"; }
+  });
+  document.addEventListener("change", e => {
+    if (e.target.id === "spVoice") { Speech.voice = e.target.value; toast(`Voice: ${Speech.voice}`, "info"); }
+  });
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnSpInstall") toast("Speech Synth installed", "ok");
+    if (e.target.id === "btnSpStop")    { Speech.speaking = 0; Speech.state = "idle"; Speech.buf = 0; toast("Synthesis stopped", "warn"); drawSpWaveform(); }
+    if (e.target.id === "btnSpFlush")   { Speech.queue = []; renderSpQueue(); toast("Queue flushed", "warn"); }
+    if (e.target.id === "btnSpClearQ")  { Speech.queue = []; renderSpQueue(); }
+    if (e.target.id === "btnSpSpeak")   {
+      const phrase = $("spPhrase").value.trim() || "(empty)";
+      Speech.speaking = Math.min(40, 8 + phrase.length / 2);
+      Speech.state = "speaking";
+      Speech.buf = 0;
+      Speech.log.unshift({ t: nowStr(), phrase });
+      if (Speech.log.length > 12) Speech.log.pop();
+      renderSpLog();
+      toast(`Speaking: "${phrase}"`, "ok");
+    }
+    if (e.target.id === "btnSpEnqueue") {
+      const phrase = $("spPhrase").value.trim() || "(empty)";
+      Speech.queue.push(phrase);
+      renderSpQueue();
+      toast("Queued", "info");
+    }
+  });
+
+  // Devices extra buttons
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnDeviceAdd") {
+      const id = `field-unit-0${Devices.length + 1}`;
+      Devices.push({ id, chip: "ESP32-S3", state: "linked", sig: -60, batt: 100, cpu: 12, ram: 28, rtt: 14, mac: "7c:9e:bd:42:11:" + (10 + Devices.length).toString(16), fw: "0.5.0", uptime: "00:00:01", loss: 0.0, cogs: [] });
+      renderDevices();
+      toast(`Paired ${id}`, "ok");
+    }
+    if (e.target.id === "btnDevReboot") toast(`Rebooting ${DevSel}…`, "warn");
+    if (e.target.id === "btnDevOTA")    toast(`OTA started → ${DevSel}`, "info");
+    if (e.target.id === "btnDevLog")    toast(`Streaming log from ${DevSel}`, "info");
+  });
+
+  // Evidence filter
+  document.addEventListener("change", e => {
+    if (e.target.id === "evidenceFilter") renderEvidence();
+  });
+
+  // Devices
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnDeviceScan") {
+      toast("Scanning for field units…", "info");
+      setTimeout(() => toast(`Scan complete · ${Devices.filter(d => d.state==='linked').length} online`, "ok"), 700);
+    }
+  });
+
+  // Settings
+  document.addEventListener("input", e => {
+    if (["setOperator","setUnit","setEndpoint","setAccent"].includes(e.target.id)) {
+      $("settingsSaved").textContent = "unsaved";
+      $("settingsSaved").classList.remove("ok");
+      if (e.target.id === "setAccent") {
+        document.documentElement.style.setProperty("--accent", e.target.value);
+      }
+    }
+  });
+  document.addEventListener("click", e => {
+    if (e.target.id === "btnSettingsSave") {
+      $("settingsSaved").textContent = "saved";
+      $("settingsSaved").classList.add("ok");
+      toast("Settings saved", "ok");
+    }
+    if (e.target.id === "btnSettingsReset") {
+      $("setOperator").value = "Nick R.";
+      $("setEndpoint").value = "mqtt://cognitum.local:1883";
+      $("setAccent").value = "#5ef3c8";
+      document.documentElement.style.setProperty("--accent", "#5ef3c8");
+      $("settingsSaved").textContent = "default";
+      $("settingsSaved").classList.remove("ok");
+      toast("Settings reset", "warn");
+    }
+  });
+}
+
+/* ==========================================================
+   BOOT
+   ========================================================== */
+function boot() {
+  csi.init();
+  bindUI();
+
+  // seed events
+  pushEvent("goal_set",        "boot · default goal → Investigate");
+  pushEvent("plan_generated",  "initial plan · 6 steps · cost 14.2");
+  pushEvent("action_executed", "scan_csi · cost 1.0");
+  pushEvent("action_executed", "classify_field · cost 1.8");
+  pushEvent("action_executed", "approach_anomaly · cost 3.6");
+
+  renderGoals();
+  renderPlan();
+  drawPlanGraph();
+  drawUtilityRadar();
+  drawCSI();
+  // seed perf
+  for (let i = 0; i < 40; i++) pushPerf();
+  drawPerf();
+
+  tick();
+}
+boot();
+</script>
+
+</body>
+</html>

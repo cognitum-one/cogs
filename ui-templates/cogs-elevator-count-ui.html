@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Elevator Count · Building Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Design tokens (mirrors v0-chrome.css) ─────────────────── */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --background:220 25% 6%;
+    --foreground:210 20% 92%;
+    --card:220 20% 10%;
+    --card-foreground:210 20% 92%;
+    --popover:220 20% 10%;
+    --popover-foreground:210 20% 92%;
+    --primary:185 80% 50%;
+    --primary-foreground:220 25% 6%;
+    --secondary:220 20% 14%;
+    --secondary-foreground:210 20% 80%;
+    --accent:142 70% 50%;
+    --accent-foreground:220 25% 6%;
+    --muted:220 15% 15%;
+    --muted-foreground:215 15% 55%;
+    --destructive:0 65% 50%;
+    --destructive-foreground:210 20% 92%;
+    --border:220 15% 18%;
+    --input:220 15% 18%;
+    --ring:185 80% 50%;
+    --radius:0.75rem;
+    --glow-primary:185 80% 50%;
+    --glow-accent:142 70% 50%;
+    --surface-elevated:220 20% 12%;
+    --surface-overlay:220 20% 8%;
+    --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+    --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+    --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+    --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+    --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+    --warn:35 85% 60%;
+    --font-display:'Outfit',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  body{
+    font-family:var(--font-display);
+    background:hsl(var(--background));color:hsl(var(--foreground));
+    min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+  }
+  *::-webkit-scrollbar{width:8px;height:8px}
+  *::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+  *::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+  *::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+  code,.mono{font-family:var(--font-mono)}
+  a{color:hsl(var(--primary));text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ── App bar ───────────────────────────────────────────────── */
+  .appbar{
+    position:sticky;top:0;z-index:50;
+    background:hsl(var(--background) / 0.9);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid hsl(var(--border) / 0.5);
+    padding:0.875rem 1.25rem;
+  }
+  .appbar-row{
+    max-width:1400px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:1rem;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+  .brand-mark{
+    width:32px;height:32px;border-radius:0.5rem;
+    background:hsl(var(--primary) / 0.12);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+  .brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+  .brand-text b{color:hsl(var(--foreground));font-weight:600}
+  .brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+  .brand-ver{
+    font-family:var(--font-mono);font-size:0.6875rem;
+    color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+  }
+  .nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+  .nav a{
+    display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+    font-size:0.8125rem;color:hsl(var(--muted-foreground));
+    font-weight:500;text-decoration:none;transition:all 0.2s;
+  }
+  .nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+  .nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  .wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+  .section{margin-bottom:1.5rem}
+  .crumbs{
+    font-size:0.75rem;color:hsl(var(--muted-foreground));
+    font-family:var(--font-mono);margin-bottom:0.75rem;
+  }
+  .crumbs a{color:hsl(var(--muted-foreground));cursor:pointer}
+  .crumbs .sep{margin:0 0.4rem;opacity:0.5}
+  .crumbs .cur{color:hsl(var(--foreground))}
+
+  /* ── Page routing ──────────────────────────────────────────── */
+  .page{display:none}
+  .page.show{display:block;animation:fadepage 0.2s ease-out}
+  @keyframes fadepage{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .page-h{margin-bottom:1.25rem}
+  .page-h h1{font-size:1.4rem;font-weight:600;color:hsl(var(--foreground));letter-spacing:-0.01em;font-family:var(--font-display)}
+  .page-h .sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.25rem}
+  .nav a{cursor:pointer}
+
+  /* ── Filter bar (events page) ──────────────────────────────── */
+  .filter-bar{
+    display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;
+    margin-bottom:0.875rem;
+  }
+  .filter-bar select,.filter-bar input{height:2.25rem}
+  .filter-bar .ev-legend{margin-left:auto}
+
+  /* ── Breach list / firmware table ──────────────────────────── */
+  .row-list{
+    border:1px solid hsl(var(--border) / 0.4);
+    border-radius:0.5rem;background:hsl(var(--background) / 0.4);
+    overflow:hidden;
+  }
+  .row-list .rl{
+    display:grid;grid-template-columns:120px 100px 1fr auto;gap:0.75rem;
+    align-items:center;padding:0.6rem 0.85rem;
+    border-bottom:1px solid hsl(var(--border) / 0.3);
+    font-family:var(--font-mono);font-size:0.75rem;
+  }
+  .row-list .rl:last-child{border-bottom:none}
+  .row-list .rl.head{
+    background:hsl(var(--secondary) / 0.4);font-size:0.625rem;
+    text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground));font-weight:600;
+  }
+  .row-list .rl .rv{color:hsl(var(--foreground))}
+
+  /* ── Heatmap (analytics page) ──────────────────────────────── */
+  .heatmap{
+    display:grid;grid-template-columns:60px repeat(24,1fr);gap:3px;
+    font-family:var(--font-mono);font-size:0.625rem;
+  }
+  .heatmap .hl{color:hsl(var(--muted-foreground));text-align:right;padding-right:0.5rem;font-size:0.625rem}
+  .heatmap .hh{
+    color:hsl(var(--muted-foreground));text-align:center;font-size:0.5rem;
+  }
+  .heatmap .hcell{
+    aspect-ratio:1/1;border-radius:2px;
+    background:hsl(var(--primary) / var(--int, 0.05));
+  }
+  .heatmap .hcell:hover{outline:1px solid hsl(var(--primary));z-index:1}
+
+  /* ── Bar chart ─────────────────────────────────────────────── */
+  .bars{display:flex;align-items:flex-end;gap:6px;height:140px;padding:0.25rem 0}
+  .bars .b{flex:1;background:linear-gradient(180deg,hsl(var(--primary) / 0.7),hsl(var(--primary) / 0.25));border-radius:3px 3px 0 0;position:relative;min-height:4px;transition:filter 0.15s}
+  .bars .b:hover{filter:brightness(1.4)}
+  .bars .b::after{
+    content:attr(data-v);position:absolute;top:-1.1rem;left:50%;transform:translateX(-50%);
+    font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));white-space:nowrap;
+  }
+  .bars-labels{display:flex;gap:6px;margin-top:0.25rem}
+  .bars-labels .l{flex:1;text-align:center;font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground))}
+
+  /* ── Detailed cab card ─────────────────────────────────────── */
+  .cab-detail-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .cab-detail{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);padding:1.1rem 1.2rem;
+    display:flex;flex-direction:column;gap:0.85rem;
+  }
+  .cab-detail-h{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem}
+  .cab-detail-h .name{font-size:1.05rem;font-weight:600;color:hsl(var(--foreground));font-family:var(--font-display)}
+  .cab-detail-h .meta{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+  .cab-detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem}
+  .cab-detail-stats .s{background:hsl(var(--background) / 0.4);border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;padding:0.55rem 0.7rem}
+  .cab-detail-stats .sl{font-size:0.5625rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+  .cab-detail-stats .sv{font-size:1rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.2rem}
+  .cab-detail-events{
+    display:flex;flex-direction:column;gap:0.25rem;max-height:130px;overflow:hidden;
+    border-top:1px dashed hsl(var(--border) / 0.4);padding-top:0.6rem;
+  }
+  .cab-detail-events .e{
+    font-family:var(--font-mono);font-size:0.6875rem;
+    display:flex;gap:0.5rem;color:hsl(var(--muted-foreground));
+  }
+  .cab-detail-events .e .ts{flex-shrink:0;width:60px}
+  .cab-detail-events .e .tag{
+    flex-shrink:0;padding:0 0.35rem;border-radius:0.25rem;font-size:0.625rem;font-weight:600;
+  }
+  .cab-detail-events .e .tag.occupant_count{background:hsl(var(--primary) / 0.14);color:hsl(var(--primary))}
+  .cab-detail-events .e .tag.capacity_warning{background:hsl(var(--warn) / 0.14);color:hsl(var(--warn))}
+  .cab-detail-events .e .tag.door_event{background:hsl(var(--accent) / 0.14);color:hsl(142 70% 65%)}
+
+  /* ── Hero ──────────────────────────────────────────────────── */
+  .hero{
+    position:relative;border-radius:0.875rem;overflow:hidden;
+    margin-bottom:1.5rem;border:1px solid hsl(var(--border) / 0.5);
+    background:var(--gradient-hero);
+    padding:2rem 2.25rem;min-height:280px;
+    display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;
+  }
+  .hero-emoji{font-size:4rem;line-height:1;flex-shrink:0;margin-bottom:0.5rem}
+  .hero-info{flex:1;min-width:260px}
+  .hero-cat{
+    display:inline-block;font-size:0.6875rem;text-transform:uppercase;
+    letter-spacing:0.08em;color:hsl(var(--primary-foreground));
+    background:hsl(var(--primary) / 0.85);padding:0.2rem 0.55rem;
+    border-radius:9999px;font-weight:600;font-family:var(--font-mono);
+    margin-bottom:0.6rem;
+  }
+  .hero-name{font-size:1.875rem;font-weight:700;color:hsl(var(--foreground));line-height:1.15;font-family:var(--font-display)}
+  .hero-desc{font-size:0.9375rem;color:hsl(var(--card-foreground));line-height:1.55;margin-top:0.4rem;max-width:48rem;opacity:0.92}
+  .hero-meta{display:flex;gap:0.45rem;flex-wrap:wrap;margin-top:0.85rem}
+  .hero-actions{display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end}
+  .live-pill{
+    display:inline-flex;align-items:center;gap:0.45rem;
+    padding:0.4rem 0.75rem;border-radius:9999px;
+    background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));
+    border:1px solid hsl(var(--primary) / 0.3);
+    font-size:0.75rem;font-weight:600;font-family:var(--font-mono);
+  }
+  .live-pill .pulse{
+    width:0.5rem;height:0.5rem;border-radius:9999px;
+    background:hsl(var(--primary));box-shadow:0 0 8px hsl(var(--primary));
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:0.55;transform:scale(0.9)}
+  }
+
+  /* ── Chips / badges ────────────────────────────────────────── */
+  .chip{
+    padding:0.15rem 0.55rem;border-radius:9999px;
+    background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+    text-transform:uppercase;letter-spacing:0.04em;font-size:0.625rem;font-weight:600;
+    font-family:var(--font-mono);
+  }
+  .chip.cat-building{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary))}
+  .chip.diff-medium{background:hsl(var(--secondary));color:hsl(var(--muted-foreground));border:1px solid hsl(var(--border))}
+  .chip.ver{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary))}
+  .chip.size{background:hsl(var(--secondary));color:hsl(var(--muted-foreground))}
+  .chip.hw{background:hsl(280 70% 60% / 0.15);color:hsl(280 70% 78%)}
+  .badge{
+    display:inline-flex;align-items:center;gap:0.25rem;
+    padding:0.125rem 0.5rem;border-radius:9999px;
+    font-size:0.6875rem;font-weight:600;border:1px solid transparent;
+  }
+  .badge.online{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+  .badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.3)}
+  .badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+
+  /* ── Buttons ───────────────────────────────────────────────── */
+  .btn{
+    display:inline-flex;align-items:center;gap:0.4rem;
+    padding:0.5rem 0.875rem;border-radius:0.4rem;
+    border:1px solid hsl(var(--border));
+    background:hsl(var(--secondary));color:hsl(var(--foreground));
+    font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+    cursor:pointer;transition:all 0.2s;
+  }
+  .btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+  .btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+  .btn.primary{
+    background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+    border-color:hsl(var(--primary));font-weight:600;
+    box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+  }
+  .btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+  .btn.outline{background:transparent}
+  .btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+
+  /* ── KPI grid ──────────────────────────────────────────────── */
+  .kpi-grid{
+    display:grid;gap:0.75rem;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  }
+  .kpi{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);padding:1rem 1.125rem;
+    display:flex;align-items:center;gap:0.875rem;
+  }
+  .kpi-ic{
+    width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+    background:hsl(var(--primary) / 0.12);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+  .kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+  .kpi-ic.accent svg{stroke:hsl(var(--accent))}
+  .kpi-ic.warn{background:hsl(35 85% 55% / 0.14)}
+  .kpi-ic.warn svg{stroke:hsl(35 85% 65%)}
+  .kpi-ic.danger{background:hsl(0 65% 50% / 0.14)}
+  .kpi-ic.danger svg{stroke:hsl(0 70% 70%)}
+  .kpi-info{flex:1;min-width:0}
+  .kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+  .kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.15rem;font-family:var(--font-display)}
+  .kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+
+  /* ── Card ──────────────────────────────────────────────────── */
+  .card{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+    padding:1.25rem;
+  }
+  .card-h{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:0.85rem;gap:0.5rem;flex-wrap:wrap;
+  }
+  .card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+  .card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+
+  /* ── Two-column layout ─────────────────────────────────────── */
+  .grid-12{display:grid;gap:1rem;grid-template-columns:repeat(12,1fr)}
+  .col-7{grid-column:span 7}
+  .col-5{grid-column:span 5}
+  .col-8{grid-column:span 8}
+  .col-4{grid-column:span 4}
+  .col-12{grid-column:span 12}
+  @media (max-width:880px){
+    .col-7,.col-5,.col-8,.col-4{grid-column:span 12}
+  }
+
+  /* ── Elevator cab visualization ────────────────────────────── */
+  .cab-wrap{
+    display:flex;gap:1.25rem;align-items:stretch;justify-content:space-between;flex-wrap:wrap;
+  }
+  .cab-stage{
+    flex:1;min-width:260px;display:flex;justify-content:center;align-items:center;
+    padding:1rem 0.5rem;
+  }
+  .cab{
+    position:relative;width:240px;height:300px;
+    background:linear-gradient(180deg,hsl(220 18% 14%) 0%,hsl(220 18% 9%) 100%);
+    border:2px solid hsl(var(--border));border-radius:0.85rem;
+    box-shadow:inset 0 0 30px hsl(220 30% 4% / 0.8),0 8px 30px -10px hsl(0 0% 0% / 0.6);
+    overflow:hidden;
+  }
+  .cab::before{
+    content:"";position:absolute;inset:0.5rem;
+    border:1px dashed hsl(var(--border) / 0.5);border-radius:0.5rem;pointer-events:none;
+  }
+  .cab-ceiling{
+    position:absolute;left:50%;top:0.55rem;transform:translateX(-50%);
+    width:42px;height:6px;border-radius:0 0 4px 4px;
+    background:hsl(var(--primary) / 0.4);box-shadow:0 4px 14px hsl(var(--primary) / 0.4);
+  }
+  .cab-door{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:80%;height:12px;background:hsl(var(--secondary));
+    border-top:2px solid hsl(var(--primary) / 0.45);
+  }
+  .cab-floor-line{
+    position:absolute;bottom:14px;left:8%;right:8%;height:1px;
+    background:hsl(var(--border));
+  }
+  .cab-floor-indicator{
+    position:absolute;top:0.5rem;right:0.6rem;
+    font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.08em;
+    color:hsl(var(--primary));text-transform:uppercase;
+    background:hsl(var(--background) / 0.7);padding:0.15rem 0.45rem;border-radius:0.3rem;
+    border:1px solid hsl(var(--primary) / 0.3);
+  }
+  .occupants{
+    position:absolute;bottom:18px;left:0;right:0;
+    display:flex;justify-content:center;align-items:flex-end;gap:0.45rem;
+    padding:0 0.75rem;flex-wrap:wrap-reverse;
+  }
+  .person{
+    width:26px;height:48px;display:flex;flex-direction:column;align-items:center;
+    transition:all 0.3s ease;
+  }
+  .person .head{
+    width:14px;height:14px;border-radius:50%;
+    background:hsl(var(--primary));box-shadow:0 0 8px hsl(var(--primary) / 0.4);
+  }
+  .person .body{
+    width:22px;height:30px;margin-top:2px;
+    background:hsl(var(--primary));border-radius:8px 8px 4px 4px;
+    box-shadow:0 0 8px hsl(var(--primary) / 0.25);
+  }
+  .person.warn .head,.person.warn .body{background:hsl(var(--warn))}
+  .person.warn .head{box-shadow:0 0 8px hsl(var(--warn) / 0.45)}
+  .person.warn .body{box-shadow:0 0 8px hsl(var(--warn) / 0.25)}
+
+  .cab-info{
+    flex:1;min-width:240px;display:flex;flex-direction:column;gap:0.85rem;
+  }
+  .meter{
+    display:flex;flex-direction:column;gap:0.35rem;
+  }
+  .meter-h{display:flex;justify-content:space-between;align-items:baseline}
+  .meter-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+  .meter-val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground))}
+  .meter-track{
+    height:10px;border-radius:9999px;
+    background:hsl(var(--muted) / 0.6);
+    overflow:hidden;border:1px solid hsl(var(--border));
+  }
+  .meter-fill{
+    height:100%;border-radius:9999px;
+    background:linear-gradient(90deg,hsl(var(--accent)) 0%,hsl(var(--primary)) 70%,hsl(var(--warn)) 100%);
+    transition:width 0.4s ease;
+  }
+  .meter-fill.warn{background:linear-gradient(90deg,hsl(var(--warn)),hsl(0 70% 60%))}
+  .stat-row{
+    display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;
+    padding-top:0.5rem;border-top:1px dashed hsl(var(--border) / 0.5);
+  }
+  .stat-row .s{
+    background:hsl(var(--background) / 0.4);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:0.5rem;padding:0.55rem 0.7rem;
+  }
+  .stat-row .sl{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)}
+  .stat-row .sv{font-size:1rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.2rem;font-family:var(--font-display)}
+  .stat-row .sd{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+
+  /* ── Sparkline / occupancy chart ───────────────────────────── */
+  .spark-wrap{
+    background:hsl(var(--background) / 0.3);
+    border:1px solid hsl(var(--border) / 0.4);
+    border-radius:0.5rem;padding:0.75rem;
+  }
+  .spark-svg{display:block;width:100%;height:140px}
+  .spark-axis{font-family:var(--font-mono);font-size:0.625rem;fill:hsl(var(--muted-foreground))}
+
+  /* ── Activity log ──────────────────────────────────────────── */
+  .log{
+    flex:1;min-height:240px;max-height:560px;overflow-y:auto;
+    border:1px solid hsl(var(--border) / 0.4);
+    border-radius:0.5rem;
+    background:hsl(var(--background) / 0.4);
+  }
+  .log-row{
+    display:grid;grid-template-columns:90px 130px 1fr auto;
+    align-items:center;gap:0.75rem;
+    padding:0.55rem 0.8rem;
+    border-bottom:1px solid hsl(var(--border) / 0.3);
+    font-family:var(--font-mono);font-size:0.75rem;
+  }
+  .log-row:last-child{border-bottom:none}
+  .log-ts{color:hsl(var(--muted-foreground))}
+  .log-ev{
+    font-weight:600;text-transform:lowercase;letter-spacing:0.02em;
+    padding:0.1rem 0.45rem;border-radius:0.3rem;width:max-content;font-size:0.6875rem;
+  }
+  .log-ev.occupant_count{background:hsl(var(--primary) / 0.14);color:hsl(var(--primary))}
+  .log-ev.capacity_warning{background:hsl(var(--warn) / 0.14);color:hsl(var(--warn))}
+  .log-ev.door_event{background:hsl(var(--accent) / 0.14);color:hsl(260 70% 78%)}
+  .log-msg{color:hsl(var(--foreground));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log-cab{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right}
+
+  /* ── Events legend ─────────────────────────────────────────── */
+  .ev-legend{
+    display:flex;gap:0.4rem;flex-wrap:wrap;
+  }
+  .ev-legend .ev{
+    display:inline-flex;align-items:center;gap:0.35rem;
+    font-family:var(--font-mono);font-size:0.6875rem;
+    padding:0.2rem 0.55rem;border-radius:9999px;
+    border:1px solid hsl(var(--border) / 0.6);
+    background:hsl(var(--background) / 0.4);color:hsl(var(--muted-foreground));
+  }
+  .ev-legend .ev .dot{width:8px;height:8px;border-radius:50%}
+  .ev-legend .ev[data-k="occupant_count"] .dot{background:hsl(var(--primary))}
+  .ev-legend .ev[data-k="capacity_warning"] .dot{background:hsl(var(--warn))}
+  .ev-legend .ev[data-k="door_event"] .dot{background:hsl(var(--accent))}
+
+  /* ── Cabs grid ─────────────────────────────────────────────── */
+  .cab-grid{
+    display:grid;gap:0.75rem;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  }
+  .cab-card{
+    background:var(--gradient-card);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:0.625rem;padding:0.85rem 0.95rem;
+    display:flex;flex-direction:column;gap:0.55rem;cursor:pointer;
+    transition:all 0.18s;
+  }
+  .cab-card:hover{transform:translateY(-2px);border-color:hsl(var(--primary) / 0.4);box-shadow:0 6px 16px -6px hsl(var(--primary) / 0.25)}
+  .cab-card.active{border-color:hsl(var(--primary) / 0.7);box-shadow:0 0 0 1px hsl(var(--primary) / 0.4),0 6px 16px -6px hsl(var(--primary) / 0.3)}
+  .cab-card-h{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+  .cab-id{font-size:0.875rem;font-weight:600;color:hsl(var(--foreground));font-family:var(--font-display)}
+  .cab-floor{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+  .cab-occ{
+    display:flex;align-items:baseline;justify-content:space-between;gap:0.25rem;
+    font-family:var(--font-mono);
+  }
+  .cab-occ .n{font-size:1.25rem;font-weight:600;color:hsl(var(--primary));font-family:var(--font-display)}
+  .cab-occ .d{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+  .cab-bar{height:6px;border-radius:9999px;background:hsl(var(--muted) / 0.6);overflow:hidden}
+  .cab-bar > i{display:block;height:100%;background:linear-gradient(90deg,hsl(var(--accent)),hsl(var(--primary)));transition:width 0.3s}
+
+  /* ── Config / form ─────────────────────────────────────────── */
+  input,textarea,select{
+    background:hsl(var(--input));color:hsl(var(--foreground));
+    border:1px solid hsl(var(--border));border-radius:0.4rem;
+    padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+    outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+  }
+  input:focus,textarea:focus,select:focus{
+    border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+  }
+  .cfg-grid{display:grid;gap:0.85rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .cfg-row{display:flex;flex-direction:column;gap:0.35rem}
+  .cfg-row label{
+    font-size:0.625rem;text-transform:uppercase;letter-spacing:0.08em;
+    color:hsl(var(--muted-foreground));font-family:var(--font-mono);font-weight:600;
+  }
+  .cfg-row input,.cfg-row select{width:100%}
+  .cfg-row .hint{font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.85);margin-top:0.15rem;font-family:var(--font-mono)}
+  .toggle-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:0.55rem 0;border-bottom:1px solid hsl(var(--border) / 0.3);
+  }
+  .toggle-row:last-child{border-bottom:none}
+  .toggle-row .tl{font-size:0.8125rem;color:hsl(var(--foreground))}
+  .toggle-row .tl small{display:block;font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+  .switch{
+    position:relative;width:36px;height:20px;border-radius:9999px;
+    background:hsl(var(--muted));cursor:pointer;transition:background 0.2s;
+    border:1px solid hsl(var(--border));
+  }
+  .switch::after{
+    content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;
+    border-radius:50%;background:hsl(var(--muted-foreground));transition:all 0.2s;
+  }
+  .switch.on{background:hsl(var(--primary) / 0.35);border-color:hsl(var(--primary) / 0.5)}
+  .switch.on::after{left:17px;background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary) / 0.6)}
+
+  /* ── Hardware / source row ─────────────────────────────────── */
+  .meta-grid{
+    display:grid;gap:0.5rem;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  }
+  .meta-grid .m{
+    background:hsl(var(--background) / 0.4);
+    border:1px solid hsl(var(--border) / 0.5);
+    border-radius:0.5rem;padding:0.6rem 0.75rem;
+  }
+  .meta-grid .ml{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+  .meta-grid .mv{font-size:0.8125rem;color:hsl(var(--foreground));margin-top:0.2rem;font-family:var(--font-mono);word-break:break-all}
+
+  /* ── Alert banner ──────────────────────────────────────────── */
+  .alert{
+    display:none;align-items:center;gap:0.65rem;
+    padding:0.7rem 0.95rem;border-radius:0.5rem;margin-bottom:1rem;
+    background:hsl(var(--warn) / 0.1);color:hsl(35 85% 75%);
+    border:1px solid hsl(var(--warn) / 0.35);
+    font-size:0.8125rem;
+  }
+  .alert.show{display:flex}
+  .alert.danger{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 75%);border-color:hsl(0 65% 50% / 0.35)}
+  .alert .alert-ic{
+    width:24px;height:24px;border-radius:50%;
+    background:hsl(var(--warn) / 0.2);display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .alert.danger .alert-ic{background:hsl(0 65% 50% / 0.2)}
+  .alert .alert-ic svg{width:14px;height:14px;stroke:hsl(35 85% 70%);fill:none;stroke-width:2.5}
+  .alert.danger .alert-ic svg{stroke:hsl(0 70% 75%)}
+
+  /* ── Footer ────────────────────────────────────────────────── */
+  footer.appfoot{
+    margin-top:2.5rem;padding-top:1.25rem;
+    border-top:1px solid hsl(var(--border) / 0.5);
+    font-size:0.75rem;color:hsl(var(--muted-foreground));
+    text-align:center;line-height:1.8;
+  }
+  footer.appfoot .mono{font-size:0.6875rem}
+
+  /* ── Mobile ────────────────────────────────────────────────── */
+  @media (max-width:700px){
+    .hero{padding:1.25rem 1rem}
+    .hero-name{font-size:1.4rem}
+    .hero-emoji{font-size:3rem}
+    .hero-actions{align-items:flex-start;width:100%}
+    .log-row{grid-template-columns:80px 110px 1fr;font-size:0.6875rem}
+    .log-cab{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Building Ops</b><span class="slash">/</span>Elevator Count<span class="brand-ver mono">v1.0.0</span></span>
+    </div>
+    <nav class="nav">
+      <a data-page="live" class="active">Live</a>
+      <a data-page="cabs">Cabs</a>
+      <a data-page="events">Events</a>
+      <a data-page="capacity">Capacity</a>
+      <a data-page="analytics">Analytics</a>
+      <a data-page="config">Config</a>
+      <a data-page="hardware">Hardware</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="crumbs">
+    <a href="#">Cogs</a>
+    <span class="sep">/</span>
+    <a href="#">Building</a>
+    <span class="sep">/</span>
+    <span class="cur">elevator-count</span>
+  </div>
+
+  <!-- ── Capacity alert (auto-toggles) ─────────────────────── -->
+  <div class="alert danger show" id="cap-alert">
+    <div class="alert-ic">
+      <svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </div>
+    <div>
+      <strong style="color:hsl(var(--foreground))">Cab B1 at 90% capacity</strong> ·
+      <span style="font-family:var(--font-mono);font-size:0.75rem">9 / 10 occupants &middot; threshold 80%</span>
+    </div>
+  </div>
+
+  <!-- ── Hero ───────────────────────────────────────────────── -->
+  <div class="hero">
+    <div class="hero-emoji">🛗</div>
+    <div class="hero-info">
+      <span class="hero-cat">Building</span>
+      <div class="hero-name">Elevator Count</div>
+      <div class="hero-desc">Real-time occupant counting in elevator cabs for capacity management and compliance with load limits. Operates on ESP32-S3 nodes using channel-state-information (CSI) presence inference — no cameras, no PII.</div>
+      <div class="hero-meta">
+        <span class="chip cat-building">Building</span>
+        <span class="chip diff-medium">Medium</span>
+        <span class="chip ver">v1.0.0</span>
+        <span class="chip size">16 KB</span>
+        <span class="chip hw">ESP32-S3</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <span class="live-pill"><span class="pulse"></span> LIVE · 3 cabs streaming</span>
+      <div style="display:flex;gap:0.4rem">
+        <button class="btn sm outline" id="btn-pause">Pause stream</button>
+        <button class="btn sm primary" id="btn-deploy">Deploy update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Page: Live ─────────────────────────────────────────── -->
+  <div class="page show" data-page="live">
+
+  <!-- ── KPI strip ──────────────────────────────────────────── -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 00-3-3.87"/><path d="M17 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Live occupants</div>
+          <div class="kpi-val" id="kpi-occ">18</div>
+          <div class="kpi-sub">across 3 cabs</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Capacity util.</div>
+          <div class="kpi-val" id="kpi-cap">62%</div>
+          <div class="kpi-sub">18 / 29 load limit</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Capacity warnings</div>
+          <div class="kpi-val" id="kpi-warn">4</div>
+          <div class="kpi-sub">today &middot; last 17m ago</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Door cycles</div>
+          <div class="kpi-val" id="kpi-doors">312</div>
+          <div class="kpi-sub">today &middot; 9.4/hr avg</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Avg dwell</div>
+          <div class="kpi-val" id="kpi-dwell">28s</div>
+          <div class="kpi-sub">per occupant ride</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Cabs strip ─────────────────────────────────────────── -->
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Active cabs</div>
+          <div class="card-sub">ESP32-S3 nodes reporting via mDNS · select to inspect</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <span class="badge online"><span style="width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary));display:inline-block"></span> 3 / 3 online</span>
+        </div>
+      </div>
+      <div class="cab-grid" id="cab-grid"></div>
+    </div>
+  </div>
+
+  <!-- ── Live cab + sparkline ───────────────────────────────── -->
+  <div class="section">
+    <div class="grid-12">
+      <div class="col-7">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Live cab view <span class="mono" id="cab-active" style="font-size:0.75rem;color:hsl(var(--primary));margin-left:0.35rem">cab-a1</span></div>
+              <div class="card-sub">CSI-inferred occupants &middot; updates every 500 ms</div>
+            </div>
+            <span class="badge online" id="cab-state"><span style="width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));display:inline-block"></span> ascending</span>
+          </div>
+          <div class="cab-wrap">
+            <div class="cab-stage">
+              <div class="cab">
+                <div class="cab-ceiling"></div>
+                <div class="cab-floor-indicator" id="cab-floor">F · 07</div>
+                <div class="cab-floor-line"></div>
+                <div class="occupants" id="occupants"></div>
+                <div class="cab-door"></div>
+              </div>
+            </div>
+            <div class="cab-info">
+              <div class="meter">
+                <div class="meter-h">
+                  <span class="meter-label">Occupancy</span>
+                  <span class="meter-val"><span id="m-occ">6</span> / 10 &middot; <span id="m-pct">60%</span></span>
+                </div>
+                <div class="meter-track"><div class="meter-fill" id="m-fill" style="width:60%"></div></div>
+              </div>
+              <div class="meter">
+                <div class="meter-h">
+                  <span class="meter-label">Estimated load</span>
+                  <span class="meter-val"><span id="m-load">462</span> kg / 800 kg</span>
+                </div>
+                <div class="meter-track"><div class="meter-fill" id="m-load-fill" style="width:58%"></div></div>
+              </div>
+              <div class="stat-row">
+                <div class="s"><div class="sl">Door</div><div class="sv" id="s-door">closed</div><div class="sd">held 22s</div></div>
+                <div class="s"><div class="sl">Direction</div><div class="sv" id="s-dir">↑ up</div><div class="sd">1.4 m/s</div></div>
+                <div class="s"><div class="sl">Last event</div><div class="sv" id="s-last">door_event</div><div class="sd">3s ago</div></div>
+                <div class="s"><div class="sl">Confidence</div><div class="sv">0.94</div><div class="sd">CSI delta var.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-5">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Occupancy &mdash; last 30 min</div>
+              <div class="card-sub">All cabs &middot; 30 s buckets</div>
+            </div>
+            <div class="ev-legend">
+              <span class="ev" data-k="occupant_count"><span class="dot"></span>count</span>
+              <span class="ev" data-k="capacity_warning"><span class="dot"></span>warn</span>
+            </div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark-svg" id="spark" viewBox="0 0 320 140" preserveAspectRatio="none"></svg>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.6rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">
+            <span>peak 24 occ. · 11:42</span>
+            <span>min 0 · 11:05</span>
+            <span>avg 14.6</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /page live -->
+
+  <!-- ── Page: Cabs ─────────────────────────────────────────── -->
+  <div class="page" data-page="cabs">
+    <div class="page-h">
+      <h1>Cabs</h1>
+      <div class="sub">Per-cab telemetry, capacity, and recent activity · 3 ESP32-S3 nodes reporting</div>
+    </div>
+    <div class="cab-detail-grid" id="cab-detail-grid"></div>
+  </div>
+
+  <!-- ── Page: Events ───────────────────────────────────────── -->
+  <div class="page" data-page="events">
+    <div class="page-h">
+      <h1>Event stream</h1>
+      <div class="sub">Cog-emitted events &middot; <code>occupant_count</code>, <code>capacity_warning</code>, <code>door_event</code></div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Events / min</div><div class="kpi-val" id="ev-rate">—</div><div class="kpi-sub">live rate</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div><div class="kpi-info"><div class="kpi-label">occupant_count</div><div class="kpi-val" id="ev-c-occ">0</div><div class="kpi-sub">today</div></div></div>
+        <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="kpi-info"><div class="kpi-label">capacity_warning</div><div class="kpi-val" id="ev-c-warn">0</div><div class="kpi-sub">today</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div><div class="kpi-info"><div class="kpi-label">door_event</div><div class="kpi-val" id="ev-c-door">0</div><div class="kpi-sub">today</div></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="filter-bar">
+        <select id="f-type" class="input" style="max-width:200px">
+          <option value="all">All event types</option>
+          <option value="occupant_count">occupant_count</option>
+          <option value="capacity_warning">capacity_warning</option>
+          <option value="door_event">door_event</option>
+        </select>
+        <select id="f-cab" class="input" style="max-width:160px">
+          <option value="all">All cabs</option>
+          <option value="cab-a1">cab-a1</option>
+          <option value="cab-b1">cab-b1</option>
+          <option value="cab-c1">cab-c1</option>
+        </select>
+        <input id="f-search" class="input" placeholder="Search payload…" style="max-width:240px">
+        <div class="ev-legend">
+          <span class="ev" data-k="occupant_count"><span class="dot"></span>count</span>
+          <span class="ev" data-k="capacity_warning"><span class="dot"></span>warn</span>
+          <span class="ev" data-k="door_event"><span class="dot"></span>door</span>
+        </div>
+        <button class="btn sm outline" id="btn-clear">Clear</button>
+      </div>
+      <div class="log" id="log" style="max-height:none;min-height:480px"></div>
+    </div>
+  </div>
+
+  <!-- ── Page: Capacity ─────────────────────────────────────── -->
+  <div class="page" data-page="capacity">
+    <div class="page-h">
+      <h1>Capacity &amp; compliance</h1>
+      <div class="sub">Load-limit enforcement, threshold policy, and breach history</div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div><div class="kpi-info"><div class="kpi-label">Warnings today</div><div class="kpi-val" id="cap-warns">4</div><div class="kpi-sub" id="cap-last">last 17m ago</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Peak utilization</div><div class="kpi-val">94%</div><div class="kpi-sub">cab-b1 · 11:42</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="kpi-info"><div class="kpi-label">Time at &gt;80%</div><div class="kpi-val">14 min</div><div class="kpi-sub">in last 24 h</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/></svg></div><div class="kpi-info"><div class="kpi-label">Compliance</div><div class="kpi-val">99.6%</div><div class="kpi-sub">no load-limit breaches</div></div></div>
+      </div>
+    </div>
+
+    <div class="grid-12">
+      <div class="col-7">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Threshold policy</div>
+              <div class="card-sub">Emit <code>capacity_warning</code> when occupants exceed these limits</div>
+            </div>
+          </div>
+          <div class="cfg-grid">
+            <div class="cfg-row">
+              <label>Warn at</label>
+              <input type="number" value="80" min="40" max="100">
+              <span class="hint">% of max occupants</span>
+            </div>
+            <div class="cfg-row">
+              <label>Block at</label>
+              <input type="number" value="100" min="80" max="120">
+              <span class="hint">% — refuse door close on breach</span>
+            </div>
+            <div class="cfg-row">
+              <label>Load assumption</label>
+              <input type="number" value="77" min="50" max="120">
+              <span class="hint">kg per occupant (avg)</span>
+            </div>
+            <div class="cfg-row">
+              <label>Cab load limit</label>
+              <input type="number" value="800" min="200" max="2000">
+              <span class="hint">kg · from elevator spec plate</span>
+            </div>
+          </div>
+          <div style="margin-top:0.9rem">
+            <div class="toggle-row">
+              <div class="tl">Buzzer on warn<small>Audible alarm in cab at threshold breach</small></div>
+              <div class="switch on" data-toggle="cap-buzz"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Refuse door close on block<small>Hold doors open until occupants reduce</small></div>
+              <div class="switch on" data-toggle="cap-block"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Notify building ops<small>Forward to facilities desk webhook</small></div>
+              <div class="switch" data-toggle="cap-notify"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.4rem;margin-top:1rem">
+            <button class="btn sm primary" style="flex:1">Save policy</button>
+            <button class="btn sm outline">Defaults</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-5">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Recent breaches</div>
+              <div class="card-sub">Capacity events from the last 24 hours</div>
+            </div>
+          </div>
+          <div class="row-list">
+            <div class="rl head"><span>Time</span><span>Cab</span><span>Detail</span><span>Peak</span></div>
+            <div class="rl"><span>11:42</span><span class="rv">cab-b1</span><span>Threshold breach during AM rush</span><span class="rv">94%</span></div>
+            <div class="rl"><span>10:18</span><span class="rv">cab-a1</span><span>Sustained &gt;80% for 4m 12s</span><span class="rv">86%</span></div>
+            <div class="rl"><span>09:51</span><span class="rv">cab-b1</span><span>Lobby boarding surge</span><span class="rv">90%</span></div>
+            <div class="rl"><span>08:33</span><span class="rv">cab-b1</span><span>Threshold breach</span><span class="rv">82%</span></div>
+            <div class="rl"><span>—</span><span class="rv">—</span><span style="color:hsl(var(--muted-foreground));font-style:italic">no further breaches in window</span><span>—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Page: Analytics ────────────────────────────────────── -->
+  <div class="page" data-page="analytics">
+    <div class="page-h">
+      <h1>Analytics</h1>
+      <div class="sub">Occupancy trends across all cabs &middot; last 24 h</div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/></svg></div><div class="kpi-info"><div class="kpi-label">Total rides</div><div class="kpi-val">1,284</div><div class="kpi-sub">today · all cabs</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Busiest hour</div><div class="kpi-val">11–12</div><div class="kpi-sub">peak 24 occupants</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="kpi-info"><div class="kpi-label">Avg dwell</div><div class="kpi-val">28s</div><div class="kpi-sub">per occupant ride</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div><div class="kpi-info"><div class="kpi-label">Door cycles</div><div class="kpi-val">312</div><div class="kpi-sub">9.4 / hr avg</div></div></div>
+      </div>
+    </div>
+
+    <div class="grid-12">
+      <div class="col-7">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Occupancy by hour</div>
+              <div class="card-sub">Average occupants across all cabs · 24 h window</div>
+            </div>
+          </div>
+          <div class="bars" id="bars-hourly"></div>
+          <div class="bars-labels" id="bars-labels"></div>
+        </div>
+      </div>
+      <div class="col-5">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Per-cab utilization</div>
+              <div class="card-sub">Hours at ≥50% capacity · today</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.85rem;margin-top:0.5rem">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.8125rem;margin-bottom:0.25rem"><span>cab-a1</span><span class="mono" style="color:hsl(var(--muted-foreground))">3.2 h</span></div>
+              <div class="meter-track"><div class="meter-fill" style="width:42%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.8125rem;margin-bottom:0.25rem"><span>cab-b1</span><span class="mono" style="color:hsl(var(--muted-foreground))">5.8 h</span></div>
+              <div class="meter-track"><div class="meter-fill warn" style="width:76%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.8125rem;margin-bottom:0.25rem"><span>cab-c1</span><span class="mono" style="color:hsl(var(--muted-foreground))">1.4 h</span></div>
+              <div class="meter-track"><div class="meter-fill" style="width:18%"></div></div>
+            </div>
+          </div>
+          <div style="margin-top:1rem;padding-top:0.85rem;border-top:1px dashed hsl(var(--border) / 0.5);font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.7">
+            <div><span style="color:hsl(var(--foreground))">cab-b1</span> is the busiest — recommend balancing dispatch during 11–13.</div>
+            <div><span style="color:hsl(var(--foreground))">cab-c1</span> sits idle ~74% of the day — candidate for off-hours sleep mode.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Day &times; hour heatmap</div>
+          <div class="card-sub">Occupancy intensity · last 7 days</div>
+        </div>
+        <span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">0% &nbsp;<span style="display:inline-block;width:12px;height:12px;background:hsl(var(--primary)/0.05);vertical-align:middle"></span>&nbsp;<span style="display:inline-block;width:12px;height:12px;background:hsl(var(--primary)/0.3);vertical-align:middle"></span>&nbsp;<span style="display:inline-block;width:12px;height:12px;background:hsl(var(--primary)/0.6);vertical-align:middle"></span>&nbsp;<span style="display:inline-block;width:12px;height:12px;background:hsl(var(--primary)/0.95);vertical-align:middle"></span>&nbsp;100%</span>
+      </div>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+  </div>
+
+  <!-- ── Page: Config ───────────────────────────────────────── -->
+  <div class="page" data-page="config">
+    <div class="page-h">
+      <h1>Configuration</h1>
+      <div class="sub">Runtime parameters for elevator-count cog &middot; applied per cab on next deploy</div>
+    </div>
+
+    <div class="grid-12">
+      <div class="col-7">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Counting</div>
+              <div class="card-sub">CSI inference and cadence</div>
+            </div>
+          </div>
+          <div class="cfg-grid">
+            <div class="cfg-row">
+              <label>Max occupants</label>
+              <input id="cfg-max" type="number" value="10" min="1" max="40">
+              <span class="hint">per cab &middot; from elevator spec</span>
+            </div>
+            <div class="cfg-row">
+              <label>Warning threshold</label>
+              <input id="cfg-warn" type="number" value="80" min="40" max="100">
+              <span class="hint">% capacity &middot; emits capacity_warning</span>
+            </div>
+            <div class="cfg-row">
+              <label>CSI sensitivity</label>
+              <select id="cfg-sens">
+                <option>low (conservative)</option>
+                <option selected>medium (recommended)</option>
+                <option>high (twitchy)</option>
+              </select>
+              <span class="hint">presence inference gain</span>
+            </div>
+            <div class="cfg-row">
+              <label>Emit interval</label>
+              <select id="cfg-int">
+                <option>250 ms</option>
+                <option selected>500 ms</option>
+                <option>1 s</option>
+                <option>2 s</option>
+              </select>
+              <span class="hint">occupant_count cadence</span>
+            </div>
+            <div class="cfg-row">
+              <label>CSI window</label>
+              <select>
+                <option>1 s</option>
+                <option selected>2 s</option>
+                <option>5 s</option>
+              </select>
+              <span class="hint">rolling delta window</span>
+            </div>
+            <div class="cfg-row">
+              <label>Confidence floor</label>
+              <input type="number" value="0.65" step="0.05" min="0" max="1">
+              <span class="hint">drop events below this</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-5">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Behaviour</div>
+              <div class="card-sub">Feature flags and integrations</div>
+            </div>
+          </div>
+          <div>
+            <div class="toggle-row">
+              <div class="tl">Door-edge debounce<small>Suppress count events during transitions</small></div>
+              <div class="switch on" data-toggle="debounce"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Persist to RVF index<small>Vectorize hourly occupancy traces</small></div>
+              <div class="switch on" data-toggle="rvf"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Capacity-warning audible<small>Trigger cab buzzer on threshold breach</small></div>
+              <div class="switch" data-toggle="buzz"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Sleep mode off-hours<small>Disable counting between 23:00–05:00</small></div>
+              <div class="switch" data-toggle="sleep"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Forward to facilities webhook<small>POST events to building-ops desk</small></div>
+              <div class="switch on" data-toggle="webhook"></div>
+            </div>
+            <div class="toggle-row">
+              <div class="tl">Verbose telemetry<small>Include raw CSI deltas in payload</small></div>
+              <div class="switch" data-toggle="verbose"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.4rem;margin-top:1rem">
+            <button class="btn sm primary" style="flex:1">Save &amp; reload</button>
+            <button class="btn sm outline">Defaults</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Page: Hardware ─────────────────────────────────────── -->
+  <div class="page" data-page="hardware">
+    <div class="page-h">
+      <h1>Hardware</h1>
+      <div class="sub">Edge node fleet &middot; firmware, signal, uptime</div>
+    </div>
+
+    <div class="grid-12">
+      <div class="col-7">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Hardware &amp; signal</div>
+              <div class="card-sub">Edge node configuration</div>
+            </div>
+            <span class="badge online"><span style="width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));display:inline-block"></span> nominal</span>
+          </div>
+          <div class="meta-grid">
+            <div class="m"><div class="ml">MCU</div><div class="mv">ESP32-S3 / 8 MB PSRAM</div></div>
+            <div class="m"><div class="ml">Input</div><div class="mv">CSI presence (802.11n)</div></div>
+            <div class="m"><div class="ml">Antenna</div><div class="mv">2.4 GHz on-board PCB</div></div>
+            <div class="m"><div class="ml">Power</div><div class="mv">PoE-passive · 5 V / 1.2 W</div></div>
+            <div class="m"><div class="ml">Mount</div><div class="mv">Cab ceiling, IP30 housing</div></div>
+            <div class="m"><div class="ml">Firmware</div><div class="mv">cogd 1.4.2-rc3</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-5">
+        <div class="card" style="height:100%">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Source &amp; manifest</div>
+              <div class="card-sub">cog package metadata</div>
+            </div>
+            <button class="btn sm outline">View manifest →</button>
+          </div>
+          <div class="meta-grid" style="grid-template-columns:1fr">
+            <div class="m"><div class="ml">Repository</div><div class="mv">cognitum-one/cogs/src/cogs/elevator-count</div></div>
+            <div class="m"><div class="ml">Bundle</div><div class="mv">elevator-count_1.0.0.cog &middot; 16 KB</div></div>
+            <div class="m"><div class="ml">Checksum</div><div class="mv">sha256:e8c1…b94a</div></div>
+            <div class="m"><div class="ml">Signed</div><div class="mv">building-ops-publisher 2026-Q2 ✓</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Edge nodes</div>
+          <div class="card-sub">ESP32-S3 devices running this cog</div>
+        </div>
+        <button class="btn sm primary">Push firmware</button>
+      </div>
+      <div class="row-list">
+        <div class="rl head"><span>Node</span><span>Firmware</span><span>Signal / uptime</span><span>Status</span></div>
+        <div class="rl"><span class="rv">cab-a1</span><span>cogd 1.4.2-rc3</span><span>RSSI -52 dBm · up 17d 4h</span><span><span class="badge online">online</span></span></div>
+        <div class="rl"><span class="rv">cab-b1</span><span>cogd 1.4.2-rc3</span><span>RSSI -48 dBm · up 17d 4h</span><span><span class="badge online">online</span></span></div>
+        <div class="rl"><span class="rv">cab-c1</span><span>cogd 1.4.1</span><span>RSSI -61 dBm · up 9d 22h</span><span><span class="badge warn">update available</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: elevator-count@1.0.0</span> &middot; <span class="mono">building/occupancy</span> &middot; <a href="#">/healthz</a> &middot; <a href="#">manifest</a></div>
+    <div style="margin-top:0.4rem">Building Ops console &middot; sample UI &middot; no live data sources connected</div>
+  </footer>
+
+</div>
+
+<script>
+  // ── Demo state ────────────────────────────────────────────
+  const CABS = [
+    { id:"cab-a1", name:"Cab A1", floor:7, cap:10, occ:6, dir:"up",   load:462, state:"ascending" },
+    { id:"cab-b1", name:"Cab B1", floor:3, cap:10, occ:9, dir:"down", load:692, state:"descending" },
+    { id:"cab-c1", name:"Cab C1", floor:12,cap:9,  occ:3, dir:"idle", load:231, state:"idle" }
+  ];
+  let active = "cab-a1";
+
+  const $ = sel => document.querySelector(sel);
+  const fmtPct = (n,d) => Math.round((n/d)*100) + "%";
+
+  // ── Cab tiles ─────────────────────────────────────────────
+  function renderCabs(){
+    const g = $("#cab-grid");
+    g.innerHTML = CABS.map(c => {
+      const pct = (c.occ/c.cap)*100;
+      const cls = c.id === active ? "cab-card active" : "cab-card";
+      const arrow = c.dir === "up" ? "↑" : c.dir === "down" ? "↓" : "—";
+      const warn = pct >= 80 ? '<span class="badge warn" style="margin-left:0.25rem;font-size:0.625rem">WARN</span>' : "";
+      return `<div class="${cls}" data-id="${c.id}">
+        <div class="cab-card-h">
+          <span class="cab-id">${c.name} ${warn}</span>
+          <span class="cab-floor">F · ${String(c.floor).padStart(2,"0")} ${arrow}</span>
+        </div>
+        <div class="cab-occ">
+          <span class="n">${c.occ}<span class="d"> / ${c.cap}</span></span>
+          <span class="d mono">${c.load} kg</span>
+        </div>
+        <div class="cab-bar"><i style="width:${pct}%"></i></div>
+      </div>`;
+    }).join("");
+    g.querySelectorAll(".cab-card").forEach(el => {
+      el.addEventListener("click", () => { active = el.dataset.id; renderCabs(); renderActive(); });
+    });
+  }
+
+  // ── Active cab detail ─────────────────────────────────────
+  function renderActive(){
+    const c = CABS.find(x => x.id === active);
+    $("#cab-active").textContent = c.id;
+    $("#cab-floor").textContent = "F · " + String(c.floor).padStart(2,"0");
+    $("#cab-state").innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));display:inline-block"></span> ' + c.state;
+    $("#m-occ").textContent = c.occ;
+    const pct = (c.occ/c.cap)*100;
+    $("#m-pct").textContent = Math.round(pct) + "%";
+    const fill = $("#m-fill");
+    fill.style.width = pct + "%";
+    fill.classList.toggle("warn", pct >= 80);
+    $("#m-load").textContent = c.load;
+    $("#m-load-fill").style.width = Math.min(100,(c.load/800)*100) + "%";
+    $("#s-dir").textContent = c.dir === "up" ? "↑ up" : c.dir === "down" ? "↓ down" : "— idle";
+    $("#s-door").textContent = c.state === "idle" ? "open" : "closed";
+    // occupants rendering
+    const occ = $("#occupants"); occ.innerHTML = "";
+    for (let i = 0; i < c.occ; i++){
+      const p = document.createElement("div");
+      p.className = "person" + (pct >= 80 ? " warn" : "");
+      p.innerHTML = '<div class="head"></div><div class="body"></div>';
+      occ.appendChild(p);
+    }
+    // alert banner
+    const alertEl = $("#cap-alert");
+    const anyWarn = CABS.find(x => (x.occ/x.cap) >= 0.8);
+    if (anyWarn){
+      alertEl.classList.add("show");
+      alertEl.querySelector("strong").textContent =
+        `${anyWarn.name} at ${Math.round((anyWarn.occ/anyWarn.cap)*100)}% capacity`;
+      alertEl.querySelector("strong").nextElementSibling.textContent =
+        ` · ${anyWarn.occ} / ${anyWarn.cap} occupants  ·  threshold 80%`;
+    } else {
+      alertEl.classList.remove("show");
+    }
+  }
+
+  // ── Sparkline ─────────────────────────────────────────────
+  function renderSpark(){
+    const svg = $("#spark");
+    const W = 320, H = 140, N = 60;
+    const data = []; let v = 8;
+    for (let i = 0; i < N; i++){
+      v = Math.max(0, Math.min(28, v + (Math.random() - 0.45) * 4));
+      data.push(v);
+    }
+    const max = 28;
+    const pts = data.map((d,i) => [i*(W/(N-1)), H - 10 - (d/max)*(H-30)]);
+    const path = pts.map((p,i) => (i?"L":"M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    const area = path + ` L ${W},${H} L 0,${H} Z`;
+    // warning band
+    const warnY = H - 10 - (22/max)*(H-30);
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="hsl(185 80% 50%)" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="${warnY}" x2="${W}" y2="${warnY}" stroke="hsl(35 85% 60% / 0.45)" stroke-dasharray="3 3"/>
+      <text x="4" y="${warnY-4}" class="spark-axis" fill="hsl(35 85% 65%)">warn 22</text>
+      <path d="${area}" fill="url(#g1)"/>
+      <path d="${path}" fill="none" stroke="hsl(185 80% 60%)" stroke-width="2"/>
+      ${pts.filter((_,i)=>i%10===0).map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="hsl(185 80% 65%)"/>`).join("")}
+      <text x="${W-4}" y="${H-2}" text-anchor="end" class="spark-axis">now</text>
+      <text x="4" y="${H-2}" class="spark-axis">−30 min</text>
+    `;
+  }
+
+  // ── Event log ─────────────────────────────────────────────
+  const EV_TYPES = ["occupant_count","door_event","occupant_count","occupant_count","capacity_warning","door_event"];
+  const log = [];
+  const evCounts = { occupant_count: 0, capacity_warning: 0, door_event: 0 };
+  const evRateWindow = []; // timestamps for rate calc
+
+  function pushEvent(forceType){
+    const cab = CABS[Math.floor(Math.random()*CABS.length)];
+    const type = forceType || EV_TYPES[Math.floor(Math.random()*EV_TYPES.length)];
+    let msg = "";
+    if (type === "occupant_count"){
+      const delta = Math.random() < 0.5 ? +1 : -1;
+      cab.occ = Math.max(0, Math.min(cab.cap, cab.occ + delta));
+      cab.load = Math.round(cab.occ * 77 + Math.random()*40);
+      msg = `count=${cab.occ}  Δ${delta>0?"+":""}${delta}  conf=0.${80+Math.floor(Math.random()*20)}`;
+    } else if (type === "door_event"){
+      const phase = ["opening","opened","closing","closed"][Math.floor(Math.random()*4)];
+      msg = `door=${phase}  floor=F${String(cab.floor).padStart(2,"0")}`;
+    } else if (type === "capacity_warning"){
+      cab.occ = Math.max(cab.occ, Math.ceil(cab.cap*0.9));
+      cab.load = Math.round(cab.occ * 77);
+      msg = `breach ${Math.round((cab.occ/cab.cap)*100)}%  occ=${cab.occ}/${cab.cap}`;
+    }
+    const ts = new Date();
+    const tss = ts.toTimeString().slice(0,8);
+    log.unshift({ ts:tss, type, cab:cab.id, msg, t: ts.getTime() });
+    if (log.length > 200) log.pop();
+    evCounts[type]++;
+    evRateWindow.push(ts.getTime());
+    const cutoff = Date.now() - 60000;
+    while (evRateWindow.length && evRateWindow[0] < cutoff) evRateWindow.shift();
+    renderLog();
+    renderEventCounts();
+    renderCabs(); renderActive();
+    renderCabDetail();
+  }
+
+  function renderLog(){
+    const wrap = $("#log");
+    if (!wrap) return;
+    const fType = $("#f-type") ? $("#f-type").value : "all";
+    const fCab  = $("#f-cab")  ? $("#f-cab").value  : "all";
+    const fStr  = $("#f-search") ? $("#f-search").value.toLowerCase().trim() : "";
+    const rows = log.filter(r =>
+      (fType === "all" || r.type === fType) &&
+      (fCab  === "all" || r.cab  === fCab) &&
+      (!fStr || r.msg.toLowerCase().includes(fStr))
+    );
+    if (rows.length === 0){
+      wrap.innerHTML = '<div style="padding:1rem;text-align:center;color:hsl(var(--muted-foreground));font-style:italic;font-size:0.8125rem">No matching events.</div>';
+      return;
+    }
+    wrap.innerHTML = rows.map(r =>
+      `<div class="log-row">
+        <span class="log-ts">${r.ts}</span>
+        <span class="log-ev ${r.type}">${r.type}</span>
+        <span class="log-msg">${r.msg}</span>
+        <span class="log-cab">${r.cab}</span>
+      </div>`
+    ).join("");
+  }
+
+  function renderEventCounts(){
+    if ($("#ev-rate"))   $("#ev-rate").textContent   = evRateWindow.length;
+    if ($("#ev-c-occ"))  $("#ev-c-occ").textContent  = evCounts.occupant_count;
+    if ($("#ev-c-warn")) $("#ev-c-warn").textContent = evCounts.capacity_warning;
+    if ($("#ev-c-door")) $("#ev-c-door").textContent = evCounts.door_event;
+    if ($("#cap-warns")) $("#cap-warns").textContent = evCounts.capacity_warning;
+  }
+
+  // ── Cab detail (Cabs page) ────────────────────────────────
+  function renderCabDetail(){
+    const g = $("#cab-detail-grid");
+    if (!g) return;
+    const uptime = ["17d 4h","17d 4h","9d 22h"];
+    g.innerHTML = CABS.map((c, i) => {
+      const pct = (c.occ/c.cap)*100;
+      const arrow = c.dir === "up" ? "↑ up" : c.dir === "down" ? "↓ down" : "— idle";
+      const door = c.state === "idle" ? "open" : "closed";
+      const warn = pct >= 80;
+      const recent = log.filter(r => r.cab === c.id).slice(0, 4);
+      const recentHtml = recent.length
+        ? recent.map(r => `<div class="e"><span class="ts">${r.ts.slice(0,5)}</span><span class="tag ${r.type}">${r.type.replace("_"," ")}</span><span style="color:hsl(var(--foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.msg}</span></div>`).join("")
+        : '<div class="e" style="font-style:italic">no recent events</div>';
+      return `
+      <div class="cab-detail">
+        <div class="cab-detail-h">
+          <div>
+            <div class="name">${c.name} ${warn ? '<span class="badge warn" style="margin-left:0.3rem;font-size:0.625rem">WARN</span>' : ''}</div>
+            <div class="meta">node ${c.id} · ESP32-S3 · up ${uptime[i]}</div>
+          </div>
+          <span class="badge online"><span style="width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));display:inline-block"></span> online</span>
+        </div>
+        <div class="cab-detail-stats">
+          <div class="s"><div class="sl">Occupants</div><div class="sv">${c.occ} / ${c.cap}</div></div>
+          <div class="s"><div class="sl">Floor</div><div class="sv">F${String(c.floor).padStart(2,"0")}</div></div>
+          <div class="s"><div class="sl">Direction</div><div class="sv">${arrow}</div></div>
+          <div class="s"><div class="sl">Load</div><div class="sv">${c.load} kg</div></div>
+          <div class="s"><div class="sl">Door</div><div class="sv">${door}</div></div>
+          <div class="s"><div class="sl">Capacity</div><div class="sv">${Math.round(pct)}%</div></div>
+        </div>
+        <div class="meter">
+          <div class="meter-h">
+            <span class="meter-label">Capacity load</span>
+            <span class="meter-val">${Math.round(pct)}% &middot; ${c.load}/800 kg</span>
+          </div>
+          <div class="meter-track"><div class="meter-fill ${warn?'warn':''}" style="width:${pct}%"></div></div>
+        </div>
+        <div class="cab-detail-events">${recentHtml}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Analytics: hourly bars + heatmap ──────────────────────
+  function renderBars(){
+    const g = $("#bars-hourly");
+    if (!g) return;
+    const hours = Array.from({length:24}, (_,h) => {
+      // simulated weekday occupancy curve
+      const peakAM = Math.exp(-Math.pow((h-9)/1.6, 2)) * 22;
+      const peakPM = Math.exp(-Math.pow((h-17)/1.8, 2)) * 19;
+      const lunch  = Math.exp(-Math.pow((h-12)/1.2, 2)) * 14;
+      const base   = h >= 7 && h <= 20 ? 4 : 0.5;
+      return Math.max(0, base + peakAM + peakPM + lunch + (Math.random()-0.5)*1.5);
+    });
+    const max = Math.max(...hours);
+    g.innerHTML = hours.map(v => `<div class="b" style="height:${(v/max)*100}%" data-v="${v.toFixed(0)}"></div>`).join("");
+    const labels = $("#bars-labels");
+    if (labels){
+      labels.innerHTML = hours.map((_,h) => `<div class="l">${h%6===0?String(h).padStart(2,"0"):""}</div>`).join("");
+    }
+  }
+
+  function renderHeatmap(){
+    const g = $("#heatmap");
+    if (!g) return;
+    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    let html = '<div class="hl"></div>';
+    for (let h = 0; h < 24; h++) html += `<div class="hh">${String(h).padStart(2,"0")}</div>`;
+    days.forEach((d, di) => {
+      html += `<div class="hl">${d}</div>`;
+      for (let h = 0; h < 24; h++){
+        const isWeekend = di >= 5;
+        const peakAM = Math.exp(-Math.pow((h-9)/2.0, 2));
+        const peakPM = Math.exp(-Math.pow((h-17)/2.2, 2));
+        const lunch  = Math.exp(-Math.pow((h-12)/1.4, 2)) * 0.7;
+        const base = h >= 7 && h <= 20 ? 0.15 : 0.02;
+        let v = base + (isWeekend ? 0.1 : (peakAM + peakPM + lunch));
+        v = Math.min(1, v * (0.85 + Math.random()*0.3));
+        html += `<div class="hcell" style="--int:${v.toFixed(2)}" title="${d} ${String(h).padStart(2,"0")}:00 · ${Math.round(v*100)}%"></div>`;
+      }
+    });
+    g.innerHTML = html;
+  }
+
+  // ── Router ────────────────────────────────────────────────
+  const PAGES = ["live","cabs","events","capacity","analytics","config","hardware"];
+  function showPage(name){
+    if (!PAGES.includes(name)) name = "live";
+    document.querySelectorAll(".page").forEach(p => p.classList.toggle("show", p.dataset.page === name));
+    document.querySelectorAll(".nav a[data-page]").forEach(a => a.classList.toggle("active", a.dataset.page === name));
+    if (name === "cabs")      renderCabDetail();
+    if (name === "analytics") { renderBars(); renderHeatmap(); }
+    if (name === "events")    { renderLog(); renderEventCounts(); }
+    if (location.hash.replace("#","") !== name) {
+      history.replaceState(null, "", "#"+name);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  document.querySelectorAll(".nav a[data-page]").forEach(a => {
+    a.addEventListener("click", e => { e.preventDefault(); showPage(a.dataset.page); });
+  });
+  window.addEventListener("hashchange", () => showPage(location.hash.replace("#","")));
+
+  // ── Events page filters ───────────────────────────────────
+  ["f-type","f-cab","f-search"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", renderLog);
+  });
+
+  // ── Toggles ───────────────────────────────────────────────
+  document.querySelectorAll(".switch").forEach(s => {
+    s.addEventListener("click", () => s.classList.toggle("on"));
+  });
+
+  // ── Controls ──────────────────────────────────────────────
+  let streaming = true;
+  $("#btn-pause").addEventListener("click", () => {
+    streaming = !streaming;
+    $("#btn-pause").textContent = streaming ? "Pause stream" : "Resume stream";
+  });
+  $("#btn-clear").addEventListener("click", () => { log.length = 0; renderLog(); });
+  $("#btn-deploy").addEventListener("click", () => {
+    const b = $("#btn-deploy");
+    const orig = b.textContent;
+    b.textContent = "Queuing…"; b.disabled = true;
+    setTimeout(() => { b.textContent = "✓ Queued"; setTimeout(() => { b.textContent = orig; b.disabled = false; }, 1400); }, 600);
+  });
+
+  // ── Boot ──────────────────────────────────────────────────
+  renderCabs(); renderActive(); renderSpark();
+  // seed events
+  for (let i = 0; i < 12; i++) pushEvent();
+  renderBars(); renderHeatmap(); renderCabDetail(); renderEventCounts();
+
+  // initial page from hash
+  showPage(location.hash.replace("#","") || "live");
+
+  // live stream
+  setInterval(() => { if (streaming) pushEvent(); }, 1800);
+  // periodic warning
+  setInterval(() => { if (streaming && Math.random() < 0.35) pushEvent("capacity_warning"); }, 9500);
+  // periodic spark refresh
+  setInterval(renderSpark, 12000);
+</script>
+</body>
+</html>

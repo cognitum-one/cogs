@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>HVAC Presence — Cognitum Cog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --warm:25 95% 58%;
+  --cool:200 90% 60%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:34px;height:34px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;cursor:pointer;transition:all 0.2s}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem;transition:border-color 0.2s}
+.kpi:hover{border-color:hsl(var(--primary) / 0.4)}
+.kpi-ic{width:40px;height:40px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warm{background:hsl(var(--warm) / 0.12)}
+.kpi-ic.warm svg{stroke:hsl(var(--warm))}
+.kpi-ic.cool{background:hsl(var(--cool) / 0.12)}
+.kpi-ic.cool svg{stroke:hsl(var(--cool))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-3{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.row-split{display:grid;gap:1rem;grid-template-columns:1.6fr 1fr}
+@media (max-width:900px){.row-split{grid-template-columns:1fr}}
+
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.18rem 0.55rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.info{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.heat{background:hsl(var(--warm) / 0.12);color:hsl(var(--warm));border-color:hsl(var(--warm) / 0.3)}
+.badge.cool{background:hsl(var(--cool) / 0.12);color:hsl(var(--cool));border-color:hsl(var(--cool) / 0.3)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:transform 0.12s ease,background 0.18s,border-color 0.18s,box-shadow 0.18s,color 0.18s;user-select:none}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5);transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0) scale(0.96)}
+.btn.flash{animation:btnflash 0.45s ease}
+@keyframes btnflash{0%{box-shadow:0 0 0 0 hsl(var(--primary) / 0.6)}100%{box-shadow:0 0 0 14px hsl(var(--primary) / 0)}}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 12px -4px hsl(var(--primary) / 0.4)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.warm{background:hsl(var(--warm) / 0.12);color:hsl(var(--warm));border-color:hsl(var(--warm) / 0.3)}
+.btn.warm.on{background:hsl(var(--warm));color:hsl(220 25% 6%);border-color:hsl(var(--warm));box-shadow:0 0 24px -2px hsl(var(--warm) / 0.7),inset 0 0 0 1px hsl(40 100% 90% / 0.4);font-weight:700}
+.btn.cool{background:hsl(var(--cool) / 0.12);color:hsl(var(--cool));border-color:hsl(var(--cool) / 0.3)}
+.btn.cool.on{background:hsl(var(--cool));color:hsl(220 25% 6%);border-color:hsl(var(--cool));box-shadow:0 0 24px -2px hsl(var(--cool) / 0.7),inset 0 0 0 1px hsl(200 100% 90% / 0.4);font-weight:700}
+.btn.accent.on{background:hsl(var(--accent));color:hsl(220 25% 6%);border-color:hsl(var(--accent));box-shadow:0 0 24px -2px hsl(var(--accent) / 0.7),inset 0 0 0 1px hsl(140 100% 90% / 0.4);font-weight:700}
+.btn.ghost{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.btn.ghost.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));box-shadow:0 0 24px -2px hsl(var(--primary) / 0.7),inset 0 0 0 1px hsl(190 100% 90% / 0.4);font-weight:700}
+#mode-row .btn,#fan-row .btn{transition:all 0.18s ease;position:relative}
+#mode-row .btn.on,#fan-row .btn.on{transform:translateY(-1px) scale(1.03)}
+#mode-row .btn.on::after,#fan-row .btn.on::after{content:"";position:absolute;left:50%;bottom:-5px;width:6px;height:6px;border-radius:50%;background:currentColor;transform:translateX(-50%);box-shadow:0 0 6px currentColor}
+
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input[type=range]{padding:0;background:transparent;border:none}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:hsl(var(--muted));border-radius:3px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:hsl(var(--primary));margin-top:-6px;cursor:pointer;box-shadow:0 0 0 4px hsl(var(--primary) / 0.2)}
+input[type=checkbox]{accent-color:hsl(var(--primary))}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{padding:0.4rem 0.75rem;border-radius:0.375rem;font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));background:hsl(var(--muted));border:1px solid transparent;cursor:pointer;transition:all 0.2s}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.4rem 0.5rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+
+.panel{display:none}
+.panel.on{display:block;animation:fadein 0.25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.live-pill{display:inline-flex;align-items:center;gap:0.35rem;padding:0.18rem 0.55rem;border-radius:9999px;font-size:0.65rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;background:hsl(var(--destructive) / 0.12);color:hsl(0 80% 70%);border:1px solid hsl(var(--destructive) / 0.3)}
+.live-pill .ldot{width:6px;height:6px;border-radius:50%;background:hsl(0 80% 60%);box-shadow:0 0 8px hsl(0 80% 60%);animation:pulse 1.4s ease-in-out infinite}
+
+/* HUD state strip — sits above mode/fan buttons so changes are unmistakable */
+.hud-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.5rem;margin:0.4rem 0 0.8rem;padding:0.6rem 0.75rem;background:linear-gradient(180deg,hsl(220 25% 5%) 0%,hsl(220 20% 8%) 100%);border:1px solid hsl(var(--primary) / 0.25);border-radius:0.5rem;position:relative;overflow:hidden}
+.hud-strip::before,.hud-strip::after{content:"";position:absolute;width:14px;height:14px;border:1px solid hsl(var(--primary) / 0.7)}
+.hud-strip::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.hud-strip::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+.hud-cell{display:flex;flex-direction:column;gap:0.15rem;position:relative;padding-left:0.55rem}
+.hud-cell::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:2px;background:hsl(var(--primary) / 0.6);border-radius:1px;transition:background 0.25s}
+.hud-cell.heat::before{background:hsl(var(--warm))}
+.hud-cell.cool::before{background:hsl(var(--cool))}
+.hud-cell.off::before{background:hsl(var(--muted-foreground))}
+.hud-cell.on::before{background:hsl(var(--accent))}
+.hud-k{font-family:var(--font-mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground))}
+.hud-v{font-family:var(--font-mono);font-size:1rem;font-weight:600;color:hsl(var(--foreground));letter-spacing:0.04em;line-height:1;transition:color 0.3s,text-shadow 0.3s}
+.hud-v.heat{color:hsl(var(--warm));text-shadow:0 0 12px hsl(var(--warm) / 0.6)}
+.hud-v.cool{color:hsl(var(--cool));text-shadow:0 0 12px hsl(var(--cool) / 0.6)}
+.hud-v.on{color:hsl(var(--accent));text-shadow:0 0 12px hsl(var(--accent) / 0.55)}
+.hud-v.off{color:hsl(var(--muted-foreground))}
+.hud-strip.flash{animation:hudflash 0.5s ease}
+@keyframes hudflash{0%{box-shadow:0 0 0 0 hsl(var(--primary) / 0.5),inset 0 0 0 0 hsl(var(--primary) / 0.2)}100%{box-shadow:0 0 0 8px hsl(var(--primary) / 0),inset 0 0 0 1px hsl(var(--primary) / 0)}}
+
+.thermo{display:flex;align-items:center;gap:1.25rem;justify-content:center;padding:0.5rem 0}
+.thermo-ring{position:relative;width:200px;height:200px}
+.thermo-ring svg{transform:rotate(-90deg);width:200px;height:200px}
+.thermo-ring .bg{fill:none;stroke:hsl(var(--muted));stroke-width:10}
+.thermo-ring .fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dasharray 0.5s ease,stroke 0.5s}
+.thermo-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.thermo-value{font-size:2.6rem;font-weight:600;letter-spacing:-0.04em;line-height:1;transition:color 0.4s,text-shadow 0.4s}
+.thermo-value.bump{animation:bump 0.4s ease}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+.thermo-unit{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-top:0.25rem}
+.thermo-set{font-family:var(--font-mono);font-size:0.7rem;color:hsl(var(--muted-foreground));margin-top:0.4rem}
+.thermo-ctrl{display:flex;flex-direction:column;gap:0.6rem;min-width:130px}
+.thermo-ctrl .btn{justify-content:center}
+.temp-readout{text-align:center;font-family:var(--font-mono);font-size:0.875rem;color:hsl(var(--foreground));padding:0.4rem 0.6rem;background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem}
+
+.presence-tile{display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1rem;border-radius:var(--radius);background:hsl(var(--background));border:1px solid hsl(var(--border));cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.presence-tile:hover{border-color:hsl(var(--primary) / 0.5)}
+.presence-tile.active{border-color:hsl(var(--accent));background:linear-gradient(180deg,hsl(var(--accent) / 0.08) 0%,hsl(var(--background)) 100%)}
+.presence-tile.active::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:hsl(var(--accent));box-shadow:0 0 12px hsl(var(--accent))}
+.presence-icon{width:42px;height:42px;border-radius:50%;background:hsl(var(--muted));display:flex;align-items:center;justify-content:center;transition:all 0.3s}
+.presence-tile.active .presence-icon{background:hsl(var(--accent) / 0.18)}
+.presence-icon svg{width:22px;height:22px;stroke:hsl(var(--muted-foreground));fill:none;stroke-width:2;transition:stroke 0.3s}
+.presence-tile.active .presence-icon svg{stroke:hsl(var(--accent))}
+.presence-name{font-size:0.8125rem;font-weight:600}
+.presence-stat{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+
+.evt-list{display:flex;flex-direction:column;gap:0.4rem;max-height:24rem;overflow-y:auto}
+.evt{display:grid;grid-template-columns:auto 1fr auto;gap:0.6rem;align-items:center;padding:0.55rem 0.75rem;border-radius:0.4rem;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);font-size:0.8125rem}
+.evt .evt-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:hsl(var(--primary) / 0.12)}
+.evt .evt-ic svg{width:13px;height:13px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.evt.t-arrival .evt-ic{background:hsl(var(--accent) / 0.12)}.evt.t-arrival .evt-ic svg{stroke:hsl(var(--accent))}
+.evt.t-departure .evt-ic{background:hsl(var(--warm) / 0.12)}.evt.t-departure .evt-ic svg{stroke:hsl(var(--warm))}
+.evt.t-hvac .evt-ic{background:hsl(var(--cool) / 0.12)}.evt.t-hvac .evt-ic svg{stroke:hsl(var(--cool))}
+.evt-msg{display:flex;flex-direction:column;gap:0.1rem;min-width:0}
+.evt-msg .m1{color:hsl(var(--foreground));font-weight:500}
+.evt-msg .m2{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.evt-time{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));white-space:nowrap}
+
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.5rem}
+.legend-item{display:flex;align-items:center;gap:0.35rem}
+.legend-swatch{width:12px;height:3px;border-radius:2px}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.4);border-radius:0.5rem;padding:0.75rem 1rem;font-size:0.8125rem;box-shadow:var(--shadow-card),0 0 24px hsl(var(--primary) / 0.15);transform:translateY(100px);opacity:0;transition:all 0.3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-color:hsl(var(--destructive) / 0.5);box-shadow:var(--shadow-card),0 0 24px hsl(var(--destructive) / 0.15)}
+
+.meta-row{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.meta-row .meta-k{color:hsl(var(--muted-foreground) / 0.7)}
+.meta-row .meta-v{color:hsl(var(--foreground));font-family:var(--font-mono)}
+
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+
+.zone-grid{display:grid;gap:0.6rem;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:0.875rem;color:hsl(var(--foreground));font-weight:500}
+.setting-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.setting-input{min-width:140px;text-align:right}
+
+.switch{position:relative;width:40px;height:22px;background:hsl(var(--muted));border-radius:11px;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+.switch.on{background:hsl(var(--primary))}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:hsl(var(--foreground));transition:transform 0.2s}
+.switch.on::after{transform:translateX(18px)}
+
+svg.chart{width:100%;height:100%;display:block}
+.chart-wrap{position:relative;width:100%;height:240px;background:hsl(var(--background) / 0.4);border-radius:0.5rem;padding:0.5rem}
+.chart-wrap.tall{height:280px}
+.chart-tip{position:absolute;pointer-events:none;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.55rem;font-family:var(--font-mono);font-size:0.7rem;color:hsl(var(--foreground));box-shadow:var(--shadow-card);opacity:0;transition:opacity 0.1s;white-space:nowrap;z-index:10}
+.chart-tip.show{opacity:1}
+.chart-tip .tip-k{color:hsl(var(--muted-foreground))}
+
+.timeline-axis{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.65rem;color:hsl(var(--muted-foreground));margin-top:0.35rem;padding:0 0.5rem}
+
+.spark{display:inline-block;vertical-align:middle;width:80px;height:24px}
+
+/* ===== Forecast Timeline (replaces the old line/band prediction chart) ===== */
+.forecast-timeline{display:flex;flex-direction:column;gap:0.65rem;padding:0.45rem 0.4rem;height:100%}
+.ft-header{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;padding:0 0.25rem}
+.ft-now-chip{display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.65rem;background:hsl(var(--accent) / 0.12);border:1px solid hsl(var(--accent) / 0.55);border-radius:0.4rem;font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:hsl(var(--accent));letter-spacing:0.12em;text-shadow:0 0 8px hsl(var(--accent) / 0.5)}
+.ft-pulse-dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--accent));box-shadow:0 0 12px hsl(var(--accent));animation:pulse 1.5s ease-in-out infinite}
+.ft-summary{display:flex;gap:0.6rem;flex-wrap:wrap;font-family:var(--font-mono)}
+.ft-sum-cell{display:flex;flex-direction:column;align-items:flex-end;gap:0.05rem;line-height:1;padding-left:0.6rem;border-left:1px solid hsl(var(--border))}
+.ft-sum-k{font-size:0.55rem;color:hsl(var(--muted-foreground));letter-spacing:0.14em;font-weight:600}
+.ft-sum-v{font-size:0.85rem;font-weight:700;color:hsl(var(--foreground))}
+.ft-sum-v.home{color:hsl(var(--accent))}
+.ft-sum-v.away{color:hsl(var(--muted-foreground))}
+
+.ft-track{display:flex;gap:0.25rem;align-items:stretch;min-height:0;flex:1;background:linear-gradient(180deg,hsl(220 30% 4%) 0%,hsl(220 20% 7%) 100%);border:1px solid hsl(var(--primary) / 0.2);border-radius:0.5rem;padding:0.5rem;position:relative;overflow:hidden}
+.ft-track::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,hsl(var(--primary) / 0.04) 0%,transparent 50%,hsl(var(--primary) / 0.04) 100%);pointer-events:none}
+
+.ft-seg{display:flex;flex-direction:column;gap:0.18rem;padding:0.6rem 0.65rem;border-radius:0.4rem;position:relative;overflow:hidden;min-width:0;cursor:pointer;transition:transform 0.15s,box-shadow 0.18s;justify-content:space-between}
+.ft-seg:hover{transform:translateY(-2px)}
+.ft-seg::before{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+.ft-seg.ft-home{background:linear-gradient(165deg,hsl(var(--accent) / 0.22) 0%,hsl(var(--accent) / 0.05) 100%);border:1px solid hsl(var(--accent) / 0.45);box-shadow:inset 0 0 20px hsl(var(--accent) / 0.08),0 0 14px -4px hsl(var(--accent) / 0.4)}
+.ft-seg.ft-home::before{background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent))}
+.ft-seg.ft-home:hover{box-shadow:inset 0 0 24px hsl(var(--accent) / 0.14),0 0 20px -2px hsl(var(--accent) / 0.55)}
+.ft-seg.ft-away{background:linear-gradient(165deg,hsl(220 18% 13%) 0%,hsl(220 20% 7%) 100%);border:1px dashed hsl(var(--muted-foreground) / 0.45)}
+.ft-seg.ft-away::before{background:hsl(var(--muted-foreground) / 0.6)}
+.ft-seg.ft-away:hover{border-color:hsl(var(--muted-foreground) / 0.7)}
+
+.ft-seg-row{display:flex;align-items:center;justify-content:space-between;gap:0.3rem}
+.ft-seg-state{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;display:inline-flex;align-items:center;gap:0.3rem}
+.ft-home .ft-seg-state{color:hsl(var(--accent));text-shadow:0 0 6px hsl(var(--accent) / 0.55)}
+.ft-away .ft-seg-state{color:hsl(var(--muted-foreground))}
+.ft-seg-state::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.ft-seg-conf-pill{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;padding:0.1rem 0.35rem;border-radius:3px;background:hsl(220 25% 4% / 0.7);border:1px solid;letter-spacing:0.04em}
+.ft-home .ft-seg-conf-pill{color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.5)}
+.ft-away .ft-seg-conf-pill{color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.ft-seg-time{font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:hsl(var(--foreground));letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ft-seg-dur{font-family:var(--font-mono);font-size:0.66rem;color:hsl(var(--muted-foreground));letter-spacing:0.04em}
+.ft-seg-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:hsl(220 25% 6% / 0.6)}
+.ft-seg-conffill{height:100%;transition:width 0.4s ease}
+.ft-home .ft-seg-conffill{background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent) / 0.7)}
+.ft-away .ft-seg-conffill{background:hsl(var(--muted-foreground))}
+
+.ft-trans{width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+.ft-trans-vline{position:absolute;top:6px;bottom:6px;left:50%;width:1px;background:hsl(var(--muted-foreground) / 0.35);transform:translateX(-50%)}
+.ft-arrival .ft-trans-vline{background:linear-gradient(180deg,transparent 0%,hsl(var(--warm) / 0.55) 50%,transparent 100%)}
+.ft-departure .ft-trans-vline{background:linear-gradient(180deg,transparent 0%,hsl(var(--cool) / 0.55) 50%,transparent 100%)}
+.ft-trans-chip{position:relative;display:flex;flex-direction:column;align-items:center;gap:0.1rem;padding:0.3rem 0.25rem;background:hsl(220 25% 4%);border:1px solid;border-radius:0.35rem;font-family:var(--font-mono);min-width:40px}
+.ft-arrival .ft-trans-chip{border-color:hsl(var(--warm) / 0.55);color:hsl(var(--warm));box-shadow:0 0 10px -2px hsl(var(--warm) / 0.45)}
+.ft-departure .ft-trans-chip{border-color:hsl(var(--cool) / 0.55);color:hsl(var(--cool));box-shadow:0 0 10px -2px hsl(var(--cool) / 0.45)}
+.ft-trans-arrow{font-size:0.95rem;line-height:1;font-weight:700}
+.ft-trans-label{font-size:0.5rem;font-weight:700;letter-spacing:0.1em;line-height:1}
+.ft-trans-time{font-size:0.65rem;font-weight:700;letter-spacing:0.02em;color:hsl(var(--foreground));line-height:1;margin-top:0.05rem}
+
+.ft-axis{display:flex;justify-content:space-between;padding:0 0.5rem;font-family:var(--font-mono);font-size:0.62rem;color:hsl(var(--muted-foreground));letter-spacing:0.06em;font-weight:600}
+
+/* 24-hour occupancy compass (replaces the old block heatmap) */
+.compass-layout{display:grid;grid-template-columns:minmax(280px,1.4fr) minmax(220px,1fr);gap:1.25rem;align-items:start}
+@media (max-width:780px){.compass-layout{grid-template-columns:1fr}}
+.compass-svg-wrap{position:relative;width:100%;background:radial-gradient(ellipse at center,hsl(220 30% 8%) 0%,hsl(220 25% 5%) 70%);border:1px solid hsl(var(--primary) / 0.18);border-radius:0.6rem;padding:0.5rem;overflow:hidden}
+.compass-svg{width:100%;height:auto;display:block;max-height:420px}
+.compass-svg .wedge{cursor:pointer;transition:filter 0.15s}
+.compass-stats{display:flex;flex-direction:column;gap:0.15rem;font-family:var(--font-mono)}
+.compass-stats-h{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.18em;color:hsl(var(--muted-foreground));padding:0.25rem 0.4rem;border-bottom:1px solid hsl(var(--border));margin-bottom:0.25rem}
+.dayrow{display:grid;grid-template-columns:32px 1fr 36px 64px;align-items:center;gap:0.5rem;padding:0.4rem 0.45rem;border-radius:0.35rem;cursor:pointer;transition:background 0.15s}
+.dayrow:hover{background:hsl(var(--primary) / 0.06)}
+.dayrow.today{background:hsl(var(--primary) / 0.08);border-left:2px solid hsl(var(--accent))}
+.dayrow-name{font-size:0.72rem;color:hsl(var(--muted-foreground));font-weight:600;letter-spacing:0.06em}
+.dayrow.today .dayrow-name{color:hsl(var(--accent))}
+.dayrow-spark{width:100%;height:22px;display:block}
+.dayrow-avg{font-size:0.78rem;font-weight:600;text-align:right}
+.dayrow-peak{font-size:0.62rem;color:hsl(var(--muted-foreground));text-align:right;letter-spacing:0.04em}
+
+.install-strip{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:var(--gradient-hero);border:1px solid hsl(var(--primary) / 0.2);border-radius:var(--radius);box-shadow:var(--shadow-glow)}
+.install-strip .install-ic{width:48px;height:48px;border-radius:0.6rem;background:hsl(var(--primary) / 0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.install-strip .install-ic svg{width:24px;height:24px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.install-strip .install-meta{flex:1;min-width:0}
+.install-strip .install-meta h3{font-size:1rem;font-weight:600;margin-bottom:0.15rem}
+.install-strip .install-meta .ml{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.install-strip .install-stats{display:flex;gap:0.5rem;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2v6m0 8v6M2 12h6m8 0h6M5 5l4 4m6 6l4 4M5 19l4-4m6-6l4-4"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>HVAC Presence<span class="brand-ver mono">v1.4.0</span></span>
+    </div>
+    <nav class="nav" id="topnav">
+      <a data-tab="overview" class="active">Overview</a>
+      <a data-tab="presence">Presence</a>
+      <a data-tab="predictions">Predictions</a>
+      <a data-tab="hvac">HVAC Control</a>
+      <a data-tab="events">Events</a>
+      <a data-tab="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <h1 class="page">HVAC Presence</h1>
+    <p class="lede">HVAC control integration with arrival/departure prediction. CSI-based occupancy inference on ESP32-S3 feeds setpoint adjustments before you walk through the door.</p>
+    <div class="install-strip">
+      <div class="install-ic">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M3 12a9 9 0 0 0 18 0"/><path d="M12 3v18"/></svg>
+      </div>
+      <div class="install-meta">
+        <h3>Cog status <span class="badge online" id="cog-status-badge"><span class="dot up"></span>running</span></h3>
+        <div class="ml">cognitum-one/cogs/src/cogs/hvac-presence &middot; ESP32-S3 &middot; CSI presence input &middot; 16 KB</div>
+      </div>
+      <div class="install-stats">
+        <button class="btn primary" id="btn-toggle-cog">Pause</button>
+        <button class="btn outline" id="btn-restart-cog">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <div class="panel on" id="panel-overview">
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Presence</div>
+            <div class="kpi-val" id="kpi-presence">—</div>
+            <div class="kpi-sub" id="kpi-presence-sub">confidence —</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic cool"><svg viewBox="0 0 24 24"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07L19.07 4.93"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">HVAC Mode</div>
+            <div class="kpi-val" id="kpi-mode">Auto</div>
+            <div class="kpi-sub" id="kpi-mode-sub">cooling · 22.0&deg;C</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Next Predicted</div>
+            <div class="kpi-val" id="kpi-next">—</div>
+            <div class="kpi-sub" id="kpi-next-sub">— · — confidence</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic warm"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Energy savings</div>
+            <div class="kpi-val" id="kpi-savings">17.4%</div>
+            <div class="kpi-sub">vs always-on baseline (7d)</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">CSI Quality</div>
+            <div class="kpi-val" id="kpi-csi">—</div>
+            <div class="kpi-sub" id="kpi-csi-sub">SNR — dB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Occupancy probability (24h) <span class="live-pill"><span class="ldot"></span>live</span></div>
+            <div class="card-sub">Rolling presence belief from CSI inference</div>
+          </div>
+          <div class="pill-tabs" id="occ-range">
+            <button class="pill-tab on" data-range="24">24h</button>
+            <button class="pill-tab" data-range="12">12h</button>
+            <button class="pill-tab" data-range="6">6h</button>
+            <button class="pill-tab" data-range="1">1h</button>
+          </div>
+        </div>
+        <div class="chart-wrap tall" id="occ-chart-wrap">
+          <svg class="chart" id="occ-chart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+          <div class="chart-tip" id="occ-tip"></div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--accent))"></span>Occupancy probability</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--primary))"></span>HVAC active</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Current state</div>
+            <div class="card-sub" id="hvac-sub">Heat pump · zone living</div>
+          </div>
+          <span class="badge cool" id="hvac-mode-badge">cooling</span>
+        </div>
+        <div class="thermo">
+          <div class="thermo-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="bg" cx="60" cy="60" r="52"/>
+              <circle class="fg" cx="60" cy="60" r="52" id="thermo-fg" stroke="hsl(var(--cool))" stroke-dasharray="0 326.7"/>
+            </svg>
+            <div class="thermo-center">
+              <div class="thermo-value" id="thermo-current">22.0&deg;</div>
+              <div class="thermo-unit">current</div>
+              <div class="thermo-set">set <span id="thermo-set">22.0</span>&deg;C</div>
+            </div>
+          </div>
+        </div>
+        <div class="meta-row" style="justify-content:space-around;margin-top:0.75rem">
+          <span><span class="meta-k">humidity</span> <span class="meta-v" id="ov-hum">42%</span></span>
+          <span><span class="meta-k">target</span> <span class="meta-v" id="ov-target">22.0&deg;C</span></span>
+          <span><span class="meta-k">fan</span> <span class="meta-v" id="ov-fan">auto</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent activity</div>
+            <div class="card-sub">Last 12 events from the cog</div>
+          </div>
+          <button class="btn sm outline" id="btn-ov-events">View all &rarr;</button>
+        </div>
+        <div class="evt-list" id="ov-events"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PRESENCE ============ -->
+  <div class="panel" id="panel-presence">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Zones</div>
+            <div class="card-sub">Per-zone occupancy from CSI signature</div>
+          </div>
+          <button class="btn sm outline" id="btn-recalibrate">Recalibrate</button>
+        </div>
+        <div class="zone-grid" id="zone-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI signal quality <span class="live-pill"><span class="ldot"></span>live</span></div>
+            <div class="card-sub">Last 5 minutes &middot; subcarrier amplitude</div>
+          </div>
+          <div class="pill-tabs">
+            <button class="pill-tab on" data-csi="amp">Amplitude</button>
+            <button class="pill-tab" data-csi="snr">SNR</button>
+            <button class="pill-tab" data-csi="phase">Phase</button>
+          </div>
+        </div>
+        <div class="chart-wrap" id="csi-chart-wrap">
+          <svg class="chart" id="csi-chart" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
+          <div class="chart-tip" id="csi-tip"></div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--primary))"></span><span id="csi-legend-1">subcarrier 12</span></span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--accent))"></span><span id="csi-legend-2">subcarrier 28</span></span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--warm))"></span><span id="csi-legend-3">subcarrier 47</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">24-hour occupancy compass</div>
+            <div class="card-sub">7d &middot; concentric rings = days &middot; angle = hour</div>
+          </div>
+          <div class="pill-tabs">
+            <button class="pill-tab on" data-heat="prob">Occupancy</button>
+            <button class="pill-tab" data-heat="hvac">HVAC duty</button>
+          </div>
+        </div>
+        <div id="heat-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PREDICTIONS ============ -->
+  <div class="panel" id="panel-predictions">
+    <div class="row-split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Arrival / departure forecast <span class="live-pill"><span class="ldot"></span>live</span></div>
+            <div class="card-sub">Next 12 hours &middot; model confidence band</div>
+          </div>
+          <div class="pill-tabs">
+            <button class="pill-tab on" data-pred="12">12h</button>
+            <button class="pill-tab" data-pred="6">6h</button>
+            <button class="pill-tab" data-pred="3">3h</button>
+          </div>
+        </div>
+        <div class="chart-wrap tall" id="pred-chart-wrap" style="background:transparent;padding:0;border-radius:0;height:auto;min-height:300px"></div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--accent))"></span>Occupied period</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--muted-foreground) / 0.5)"></span>Vacant period</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--warm))"></span>Arrival transition</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--cool))"></span>Departure transition</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Upcoming events</div>
+            <div class="card-sub">Predicted arrivals & departures</div>
+          </div>
+          <button class="btn sm outline" id="btn-rerun">Re-run model</button>
+        </div>
+        <div class="evt-list" id="upcoming-events"></div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">Model accuracy</div>
+          <span class="badge info mono" id="acc-band">7d</span>
+        </div>
+        <div class="chart-wrap" id="acc-chart-wrap">
+          <svg class="chart" id="acc-chart" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="meta-row" style="margin-top:0.5rem;justify-content:space-around">
+          <span><span class="meta-k">arrival MAE</span> <span class="meta-v" id="mae-arr">5.2 min</span></span>
+          <span><span class="meta-k">departure MAE</span> <span class="meta-v" id="mae-dep">7.8 min</span></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Lead time</div></div>
+        <div style="font-size:2rem;font-weight:600;line-height:1" id="lead-val">12<span style="font-size:1rem;color:hsl(var(--muted-foreground));font-weight:500">&nbsp;min</span></div>
+        <div class="card-sub" style="margin-top:0.4rem">avg pre-arrival HVAC ramp</div>
+        <div style="margin-top:0.8rem">
+          <input type="range" min="0" max="30" value="12" id="lead-slider" style="width:100%"/>
+        </div>
+        <div class="meta-row" style="justify-content:space-between;margin-top:0.4rem">
+          <span class="meta-k">0 min</span><span class="meta-k">30 min</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Model</div></div>
+        <div class="meta-row" style="flex-direction:column;align-items:flex-start;gap:0.4rem">
+          <span><span class="meta-k">name</span> <span class="meta-v">tiny-lstm-presence</span></span>
+          <span><span class="meta-k">params</span> <span class="meta-v">14.2k</span></span>
+          <span><span class="meta-k">trained</span> <span class="meta-v" id="model-trained">2d 4h ago</span></span>
+          <span><span class="meta-k">device</span> <span class="meta-v">esp32-s3 / RVF</span></span>
+        </div>
+        <div style="margin-top:0.8rem;display:flex;gap:0.4rem">
+          <button class="btn sm primary" id="btn-train">Retrain</button>
+          <button class="btn sm outline" id="btn-export-model">Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HVAC CONTROL ============ -->
+  <div class="panel" id="panel-hvac">
+    <div class="row-split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Live control</div>
+            <div class="card-sub">Setpoint, mode, fan</div>
+          </div>
+          <span class="badge info" id="ctrl-state">following schedule</span>
+        </div>
+        <div class="hud-strip" id="hud-strip">
+          <div class="hud-cell cool" id="hud-cell-mode"><span class="hud-k">MODE</span><span class="hud-v cool" id="hud-mode">COOL</span></div>
+          <div class="hud-cell on" id="hud-cell-fan"><span class="hud-k">FAN</span><span class="hud-v on" id="hud-fan">AUTO</span></div>
+          <div class="hud-cell on" id="hud-cell-comp"><span class="hud-k">COMP</span><span class="hud-v on" id="hud-comp">ON</span></div>
+          <div class="hud-cell" id="hud-cell-duty"><span class="hud-k">DUTY</span><span class="hud-v" id="hud-duty">42%</span></div>
+        </div>
+        <div class="thermo">
+          <div class="thermo-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="bg" cx="60" cy="60" r="52"/>
+              <circle class="fg" cx="60" cy="60" r="52" id="ctrl-thermo-fg" stroke="hsl(var(--cool))" stroke-dasharray="0 326.7"/>
+            </svg>
+            <div class="thermo-center">
+              <div class="thermo-value" id="ctrl-set">22.0&deg;</div>
+              <div class="thermo-unit">setpoint</div>
+              <div class="thermo-set">current <span id="ctrl-current">22.0</span>&deg;C</div>
+            </div>
+          </div>
+          <div class="thermo-ctrl">
+            <button class="btn primary" id="btn-temp-up">+ 0.5&deg;C</button>
+            <div class="temp-readout"><span id="ctrl-set-readout">22.0</span> &deg;C</div>
+            <button class="btn primary" id="btn-temp-dn">- 0.5&deg;C</button>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;font-weight:600">Mode</div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap" id="mode-row">
+            <button class="btn warm" data-mode="heat">Heat</button>
+            <button class="btn cool on" data-mode="cool">Cool</button>
+            <button class="btn ghost" data-mode="auto">Auto</button>
+            <button class="btn ghost" data-mode="fan">Fan only</button>
+            <button class="btn ghost" data-mode="off">Off</button>
+          </div>
+        </div>
+        <div style="margin-top:0.8rem">
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;font-weight:600">Fan</div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap" id="fan-row">
+            <button class="btn ghost on" data-fan="auto">Auto</button>
+            <button class="btn ghost" data-fan="low">Low</button>
+            <button class="btn ghost" data-fan="med">Med</button>
+            <button class="btn ghost" data-fan="high">High</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Temperature trend <span class="live-pill"><span class="ldot"></span>live</span></div>
+            <div class="card-sub">Setpoint vs measured &middot; last 6 hours</div>
+          </div>
+        </div>
+        <div class="chart-wrap" id="temp-chart-wrap">
+          <svg class="chart" id="temp-chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+          <div class="chart-tip" id="temp-tip"></div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--cool))"></span>Measured</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--warm))"></span>Setpoint</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:hsl(var(--accent))"></span>Compressor on</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h"><div class="card-title">Pre-conditioning</div></div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Auto pre-condition</div>
+            <div class="setting-sub">Ramp HVAC ahead of predicted arrival</div>
+          </div>
+          <div class="switch on" data-toggle="precondition"></div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Departure setback</div>
+            <div class="setting-sub">Relax setpoint after predicted departure</div>
+          </div>
+          <div class="switch on" data-toggle="setback"></div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Min confidence</div>
+            <div class="setting-sub">Only act on predictions above</div>
+          </div>
+          <div class="setting-input">
+            <input type="range" min="50" max="95" value="78" id="conf-slider" style="width:100px"/>
+            <span class="mono" id="conf-val" style="margin-left:0.4rem">78%</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Override</div></div>
+        <p style="font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:0.75rem">Hold setpoint for a fixed duration. The cog will resume schedule after.</p>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap" id="override-row">
+          <button class="btn ghost" data-ov="30">30 min</button>
+          <button class="btn ghost" data-ov="60">1 h</button>
+          <button class="btn ghost" data-ov="120">2 h</button>
+          <button class="btn ghost" data-ov="0">Cancel</button>
+        </div>
+        <div class="meta-row" style="margin-top:0.75rem" id="override-state">
+          <span class="meta-k">status</span> <span class="meta-v">no override</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Schedule (today)</div></div>
+        <div id="sched-list" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        <button class="btn sm outline" style="margin-top:0.6rem;width:100%;justify-content:center" id="btn-add-block">+ Add block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EVENTS ============ -->
+  <div class="panel" id="panel-events">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event log</div>
+          <div class="card-sub">Live stream from cog &middot; <span class="mono" id="evt-count">0</span> events</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <button class="btn sm outline" id="btn-pause-evts">Pause</button>
+          <button class="btn sm outline" id="btn-clear-evts">Clear</button>
+          <button class="btn sm outline" id="btn-export-evts">Export JSON</button>
+        </div>
+      </div>
+      <div style="margin-bottom:0.75rem">
+        <div class="pill-tabs" id="evt-filter">
+          <button class="pill-tab on" data-filter="all">All</button>
+          <button class="pill-tab" data-filter="presence_changed">presence_changed</button>
+          <button class="pill-tab" data-filter="arrival_predicted">arrival_predicted</button>
+          <button class="pill-tab" data-filter="departure_predicted">departure_predicted</button>
+          <button class="pill-tab" data-filter="hvac_signal">hvac_signal</button>
+        </div>
+      </div>
+      <div class="evt-list" id="event-list" style="max-height:32rem"></div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="panel" id="panel-settings">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><div class="card-title">Hardware</div></div>
+        <div class="setting-row">
+          <div><div class="setting-label">Device</div><div class="setting-sub">ESP32-S3 &middot; 8MB PSRAM</div></div>
+          <span class="badge online"><span class="dot up"></span>connected</span>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">CSI sample rate</div><div class="setting-sub">Hz, packets per second</div></div>
+          <div class="setting-input"><input type="number" value="100" min="10" max="500" step="10" style="width:80px;text-align:right" id="set-rate"/></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Subcarriers</div><div class="setting-sub">Active subcarriers in window</div></div>
+          <div class="setting-input"><input type="number" value="52" min="4" max="64" style="width:80px;text-align:right" id="set-subc"/></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">HVAC bridge</div><div class="setting-sub">Relay protocol</div></div>
+          <div class="setting-input">
+            <select id="set-bridge" style="width:140px">
+              <option>24V relay</option>
+              <option selected>IR (Daikin)</option>
+              <option>Modbus RTU</option>
+              <option>Zigbee</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-title">Detection</div></div>
+        <div class="setting-row">
+          <div><div class="setting-label">Sensitivity</div><div class="setting-sub">Lower = fewer false positives</div></div>
+          <div class="setting-input">
+            <input type="range" min="1" max="10" value="6" id="set-sens" style="width:120px"/>
+            <span class="mono" id="set-sens-val" style="margin-left:0.4rem">6</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Smoothing window</div><div class="setting-sub">Seconds of CSI averaging</div></div>
+          <div class="setting-input"><input type="number" value="3" min="1" max="30" style="width:80px;text-align:right" id="set-smooth"/></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Idle timeout</div><div class="setting-sub">Time to confirm vacancy (s)</div></div>
+          <div class="setting-input"><input type="number" value="120" min="30" max="900" step="30" style="width:80px;text-align:right" id="set-idle"/></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">Publish events to RVF</div><div class="setting-sub">Index for retrieval-augmented queries</div></div>
+          <div class="switch on" data-toggle="rvf"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h"><div class="card-title">Events &amp; routing</div></div>
+        <div class="setting-row">
+          <div><div class="setting-label">presence_changed</div><div class="setting-sub">Emit on any belief change &gt; 20%</div></div>
+          <div class="switch on" data-toggle="ev1"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">arrival_predicted</div><div class="setting-sub">Emit when arrival within lead time</div></div>
+          <div class="switch on" data-toggle="ev2"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">departure_predicted</div><div class="setting-sub">Emit when departure within lead time</div></div>
+          <div class="switch on" data-toggle="ev3"></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">hvac_signal</div><div class="setting-sub">Emit every relay command</div></div>
+          <div class="switch on" data-toggle="ev4"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-title">About</div></div>
+        <div class="meta-row" style="flex-direction:column;align-items:flex-start;gap:0.5rem">
+          <span><span class="meta-k">cog</span> <span class="meta-v">hvac-presence</span></span>
+          <span><span class="meta-k">version</span> <span class="meta-v">v1.4.0</span></span>
+          <span><span class="meta-k">size</span> <span class="meta-v">16 KB</span></span>
+          <span><span class="meta-k">category</span> <span class="meta-v">Building</span></span>
+          <span><span class="meta-k">complexity</span> <span class="meta-v">Easy</span></span>
+          <span><span class="meta-k">source</span> <span class="meta-v">cognitum-one/cogs/src/cogs/hvac-presence</span></span>
+          <span><span class="meta-k">events</span> <span class="meta-v">presence_changed, arrival_predicted, departure_predicted, hvac_signal</span></span>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.4rem;flex-wrap:wrap">
+          <button class="btn primary" id="btn-save">Save settings</button>
+          <button class="btn outline" id="btn-reset">Reset defaults</button>
+          <button class="btn danger" id="btn-uninstall">Uninstall cog</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: hvac-presence@1.4.0</span> &middot; <span class="mono">esp32-s3 / csi-presence</span> &middot; <a href="#" id="ft-guide">guide</a></div>
+    <div style="margin-top:0.4rem">All times local &middot; data refreshes every 5s</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+// ───────────── utilities ─────────────
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmtTime = d => d.toTimeString().slice(0,5);
+const fmtTimeSec = d => d.toTimeString().slice(0,8);
+const fmtRel = d => {
+  const sec = Math.round((Date.now() - d.getTime()) / 1000);
+  if (sec < 10) return "just now";
+  if (sec < 60) return sec + "s ago";
+  const m = Math.round(sec / 60);
+  if (m < 60) return m + "m ago";
+  const h = Math.round(m / 60);
+  if (h < 24) return h + "h ago";
+  return Math.round(h/24) + "d ago";
+};
+const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rand = (a,b) => a + Math.random()*(b-a);
+const noise = (n=1) => (Math.random()*2-1)*n;
+
+function showToast(msg, isErr) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.toggle("err", !!isErr);
+  t.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> t.classList.remove("show"), 2400);
+}
+
+// ───────────── seeded mock state ─────────────
+const STATE = {
+  cogRunning: true,
+  presence: true,
+  presenceConfidence: 0.87,
+  zones: [
+    { id:"living", name:"Living Room", active:true, conf:0.92, lastSeen:Date.now() - 14*1000 },
+    { id:"kitchen", name:"Kitchen", active:false, conf:0.18, lastSeen:Date.now() - 42*60*1000 },
+    { id:"bedroom", name:"Bedroom", active:false, conf:0.06, lastSeen:Date.now() - 4*3600*1000 },
+    { id:"office", name:"Office", active:true, conf:0.74, lastSeen:Date.now() - 2*60*1000 },
+    { id:"hall", name:"Hallway", active:false, conf:0.11, lastSeen:Date.now() - 8*60*1000 },
+  ],
+  hvac: {
+    mode: "cool",
+    fan: "auto",
+    setpoint: 22.0,
+    current: 22.0,
+    humidity: 42,
+    compressorOn: true,
+  },
+  csiSNR: 28.4,
+  csiQuality: "Good",
+  override: { active:false, expiresAt:0, label:"" },
+  schedule: [
+    { label:"Pre-condition (predicted arrival)", time:"07:30", temp:21.5, mode:"warm" },
+    { label:"Daytime", time:"09:00", temp:23.0, mode:"away" },
+    { label:"Evening", time:"17:30", temp:22.0, mode:"home" },
+    { label:"Sleep", time:"22:30", temp:20.0, mode:"sleep" },
+  ],
+  prediction: {
+    nextEvent: null,
+    nextTime: null,
+    confidence: 0,
+  },
+  events: [],
+  evtFilter: "all",
+  evtPaused: false,
+  occRange: 24,
+  csiMode: "amp",
+  predRange: 12,
+  heatMode: "prob",
+};
+
+// ───────────── synthetic history generators ─────────────
+function buildOccupancyHistory(hours) {
+  const out = [];
+  const now = Date.now();
+  const pts = hours * 12; // 5-min buckets
+  for (let i = pts; i >= 0; i--) {
+    const t = now - i * 5*60*1000;
+    const d = new Date(t);
+    const hh = d.getHours() + d.getMinutes()/60;
+    let base = 0;
+    if (hh >= 6.5 && hh < 8.5) base = 0.85; // morning home
+    else if (hh >= 8.5 && hh < 17) base = 0.12; // away
+    else if (hh >= 17 && hh < 23) base = 0.92; // evening
+    else if (hh >= 23 || hh < 6.5) base = 0.78; // sleep present
+    base += noise(0.06);
+    out.push({ t, v: clamp(base,0,1), hvac: base > 0.4 ? (Math.random()<0.7?1:0) : (Math.random()<0.15?1:0) });
+  }
+  return out;
+}
+
+function buildPredictionForecast(hours) {
+  const out = [];
+  const now = Date.now();
+  const pts = hours * 6; // 10-min buckets forward
+  const start = new Date(now);
+  for (let i = 0; i < pts; i++) {
+    const t = now + i * 10*60*1000;
+    const d = new Date(t);
+    const hh = d.getHours() + d.getMinutes()/60;
+    let base = 0.5;
+    if (hh >= 6.5 && hh < 8.5) base = 0.8;
+    else if (hh >= 8.5 && hh < 17) base = 0.18;
+    else if (hh >= 17 && hh < 23) base = 0.9;
+    else base = 0.75;
+    const uncertainty = clamp(0.06 + i*0.006, 0.06, 0.22);
+    out.push({ t, v: clamp(base + noise(0.04), 0, 1), lo: clamp(base - uncertainty, 0, 1), hi: clamp(base + uncertainty, 0, 1) });
+  }
+  return out;
+}
+
+function buildCsiSeries(mode) {
+  const N = 240;
+  const out = { a: [], b: [], c: [] };
+  const baseA = mode === "snr" ? 26 : (mode === "phase" ? 0 : 0.5);
+  const ampA = mode === "snr" ? 4 : (mode === "phase" ? 1.5 : 0.25);
+  for (let i = 0; i < N; i++) {
+    const x = i / N;
+    const occMod = STATE.presence ? Math.sin(x * 18) * 0.7 + Math.sin(x*5)*0.4 : Math.sin(x*30)*0.18;
+    out.a.push(baseA + ampA * (occMod + noise(0.18)));
+    out.b.push(baseA*0.9 + ampA * (Math.sin(x*22+1.2)*0.65 + noise(0.22)));
+    out.c.push(baseA*1.1 + ampA * (Math.sin(x*14+2.4)*0.5 + noise(0.2)));
+  }
+  return out;
+}
+
+function buildTempSeries() {
+  const out = [];
+  const now = Date.now();
+  const pts = 6 * 12;
+  let cur = 21.5;
+  for (let i = pts; i >= 0; i--) {
+    const t = now - i * 5*60*1000;
+    const set = i > pts/2 ? 22 : (i > pts/4 ? 21.5 : 22);
+    cur += (set - cur)*0.12 + noise(0.05);
+    const comp = Math.abs(cur - set) > 0.4 || Math.random() < 0.4 ? 1 : 0;
+    out.push({ t, cur, set, comp });
+  }
+  return out;
+}
+
+function buildHeatmap() {
+  const days = 7, hrs = 24;
+  const out = [];
+  for (let d = 0; d < days; d++) {
+    const row = [];
+    for (let h = 0; h < hrs; h++) {
+      let base = 0;
+      if (h >= 6 && h < 9) base = 0.8;
+      else if (h >= 9 && h < 17) base = (d===5||d===6) ? 0.7 : 0.15;
+      else if (h >= 17 && h < 23) base = 0.95;
+      else base = 0.7;
+      base += noise(0.1);
+      row.push(clamp(base,0,1));
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+function buildAccuracySeries() {
+  const N = 28;
+  const out = [];
+  let acc = 0.78;
+  for (let i = 0; i < N; i++) {
+    acc += noise(0.02);
+    acc = clamp(acc + (0.9 - acc)*0.04, 0.6, 0.96);
+    out.push({ x: i, v: acc });
+  }
+  return out;
+}
+
+let OCC_DATA = buildOccupancyHistory(24);
+let PRED_DATA = buildPredictionForecast(12);
+let CSI_DATA = buildCsiSeries(STATE.csiMode);
+let TEMP_DATA = buildTempSeries();
+let HEAT_DATA = buildHeatmap();
+let ACC_DATA = buildAccuracySeries();
+
+// ───────────── chart rendering ─────────────
+function path(pts, w, h, getY, smooth) {
+  if (!pts.length) return "";
+  const stepX = w / (pts.length - 1);
+  let d = "";
+  pts.forEach((p,i)=>{
+    const x = i*stepX, y = getY(p, h);
+    if (i === 0) d += `M${x.toFixed(2)} ${y.toFixed(2)}`;
+    else d += ` L${x.toFixed(2)} ${y.toFixed(2)}`;
+  });
+  return d;
+}
+
+// Catmull-Rom-to-bezier smooth curve. Tension 0.5 → cardinal spline.
+function smoothPath(pts, w, h, getY) {
+  if (pts.length < 2) return "";
+  const stepX = w / (pts.length - 1);
+  const pt = i => ({ x: clamp(i,0,pts.length-1)*stepX, y: getY(pts[clamp(i,0,pts.length-1)], h) });
+  let d = `M${pt(0).x.toFixed(2)} ${pt(0).y.toFixed(2)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pt(i-1), p1 = pt(i), p2 = pt(i+1), p3 = pt(i+2);
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+function smoothArea(pts, w, h, getY) {
+  if (pts.length < 2) return "";
+  const stepX = w / (pts.length - 1);
+  return `${smoothPath(pts,w,h,getY)} L${(w).toFixed(2)} ${h} L0 ${h} Z`;
+}
+
+function areaPath(pts, w, h, getY) {
+  if (!pts.length) return "";
+  const stepX = w / (pts.length - 1);
+  let d = `M0 ${h}`;
+  pts.forEach((p,i)=>{
+    const x = i*stepX, y = getY(p, h);
+    d += ` L${x.toFixed(2)} ${y.toFixed(2)}`;
+  });
+  d += ` L${w} ${h} Z`;
+  return d;
+}
+
+function bandPath(pts, w, h, getLo, getHi) {
+  if (!pts.length) return "";
+  const stepX = w / (pts.length - 1);
+  let dUp = "", dDn = "";
+  pts.forEach((p,i)=>{
+    const x = i*stepX;
+    const yh = getHi(p, h);
+    const yl = getLo(p, h);
+    if (i === 0) { dUp += `M${x} ${yh}`; }
+    else dUp += ` L${x.toFixed(2)} ${yh.toFixed(2)}`;
+  });
+  for (let i = pts.length-1; i >= 0; i--) {
+    const x = i*stepX, yl = getLo(pts[i], h);
+    dDn += ` L${x.toFixed(2)} ${yl.toFixed(2)}`;
+  }
+  return dUp + dDn + " Z";
+}
+
+function renderOccupancy() {
+  const svg = $("#occ-chart");
+  const data = OCC_DATA.slice(-STATE.occRange*12 - 1);
+  const W = 800, H = 240, pad = 22;
+  const w = W - pad*2, h = H - pad*2;
+  const yFor = (p) => pad + (1 - p.v) * h;
+  const linePath = smoothPath(data, w, h, (p,hh)=> (1 - p.v) * hh);
+  const fillPath = smoothArea(data, w, h, (p,hh)=> (1 - p.v) * hh);
+
+  let hvacBars = "";
+  data.forEach((p,i)=>{
+    if (p.hvac) {
+      const x = (i / (data.length-1)) * w;
+      const stepX = w / (data.length-1);
+      hvacBars += `<rect x="${x.toFixed(2)}" y="${h-4}" width="${(stepX*0.92).toFixed(2)}" height="3" fill="hsl(var(--primary))" opacity="0.6"/>`;
+    }
+  });
+
+  let grid = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = (i/4) * h;
+    grid += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="hsl(var(--border))" stroke-opacity="0.4" stroke-dasharray="2 4"/>`;
+    grid += `<text x="-6" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))">${(1-i/4).toFixed(1)}</text>`;
+  }
+
+  // x axis labels
+  let axis = "";
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const x = (i/ticks) * w;
+    const t = new Date(data[Math.round(((data.length-1) * i)/ticks)].t);
+    axis += `<text x="${x}" y="${h+14}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))">${fmtTime(t)}</text>`;
+  }
+
+  const lastIdx = data.length - 1;
+  const lastX = w;
+  const lastY = (1 - data[lastIdx].v) * h;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="occGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="hsl(var(--accent))" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="hsl(var(--accent))" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="occGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g transform="translate(${pad},${pad})">
+      ${grid}
+      ${hvacBars}
+      <path d="${fillPath}" fill="url(#occGrad)"/>
+      <path d="${linePath}" fill="none" stroke="hsl(var(--accent))" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" filter="url(#occGlow)"/>
+      <circle cx="${lastX}" cy="${lastY.toFixed(2)}" r="14" fill="hsl(var(--accent))" opacity="0.18">
+        <animate attributeName="r" values="6;16;6" dur="1.8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.35;0;0.35" dur="1.8s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="${lastX}" cy="${lastY.toFixed(2)}" r="4.5" fill="hsl(var(--accent))" stroke="hsl(var(--background))" stroke-width="1.5"/>
+      ${axis}
+    </g>
+  `;
+
+  // hover
+  const wrap = $("#occ-chart-wrap"), tip = $("#occ-tip");
+  wrap.onmousemove = (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const xRel = (e.clientX - rect.left - pad/(W/rect.width)) / ((w/W) * rect.width);
+    const idx = clamp(Math.round(xRel * (data.length-1)), 0, data.length-1);
+    const p = data[idx];
+    tip.innerHTML = `<span class="tip-k">time</span> ${fmtTime(new Date(p.t))}<br><span class="tip-k">occ</span> ${(p.v*100).toFixed(0)}%<br><span class="tip-k">hvac</span> ${p.hvac?"on":"off"}`;
+    tip.style.left = (e.clientX - rect.left + 10) + "px";
+    tip.style.top = (e.clientY - rect.top - 30) + "px";
+    tip.classList.add("show");
+  };
+  wrap.onmouseleave = () => tip.classList.remove("show");
+}
+
+function renderCsi() {
+  const svg = $("#csi-chart");
+  const W = 800, H = 200, pad = 22;
+  const w = W - pad*2, h = H - pad*2;
+  const all = [...CSI_DATA.a, ...CSI_DATA.b, ...CSI_DATA.c];
+  const min = Math.min(...all), max = Math.max(...all);
+  const norm = v => h - ((v - min) / (max - min || 1)) * h;
+  const mk = (arr, color) => {
+    const pts = arr.map((v,i)=>({ i, v }));
+    const d = smoothPath(pts, w, h, p => norm(p.v));
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
+  };
+  let grid = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = (i/4)*h;
+    const val = max - (i/4)*(max-min);
+    grid += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="hsl(var(--border))" stroke-opacity="0.4" stroke-dasharray="2 4"/>`;
+    grid += `<text x="-6" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))">${val.toFixed(STATE.csiMode==="snr"?0:2)}</text>`;
+  }
+  svg.innerHTML = `
+    <g transform="translate(${pad},${pad})">
+      ${grid}
+      ${mk(CSI_DATA.a, "hsl(var(--primary))")}
+      ${mk(CSI_DATA.b, "hsl(var(--accent))")}
+      ${mk(CSI_DATA.c, "hsl(var(--warm))")}
+    </g>
+  `;
+  // hover
+  const wrap = $("#csi-chart-wrap"), tip = $("#csi-tip");
+  wrap.onmousemove = (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const xRel = (e.clientX - rect.left - pad/(W/rect.width)) / ((w/W) * rect.width);
+    const idx = clamp(Math.round(xRel * (CSI_DATA.a.length-1)), 0, CSI_DATA.a.length-1);
+    const unit = STATE.csiMode === "snr" ? " dB" : (STATE.csiMode === "phase" ? " rad" : "");
+    tip.innerHTML = `<span class="tip-k">a</span> ${CSI_DATA.a[idx].toFixed(2)}${unit}<br><span class="tip-k">b</span> ${CSI_DATA.b[idx].toFixed(2)}${unit}<br><span class="tip-k">c</span> ${CSI_DATA.c[idx].toFixed(2)}${unit}`;
+    tip.style.left = (e.clientX - rect.left + 10) + "px";
+    tip.style.top = (e.clientY - rect.top - 40) + "px";
+    tip.classList.add("show");
+  };
+  wrap.onmouseleave = () => tip.classList.remove("show");
+}
+
+function formatDuration(ms) {
+  const totalMin = Math.max(0, Math.round(ms / 60000));
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  if (hh === 0) return `${mm}m`;
+  if (mm === 0) return `${hh}h`;
+  return `${hh}h ${mm.toString().padStart(2,"0")}m`;
+}
+
+// Forecast Timeline: shows the next N hours as a strip of segmented duration cards
+// (OCCUPIED / VACANT) with arrival/departure transition chips between them. The
+// strip replaces the line/band chart entirely.
+function renderPrediction() {
+  const wrap = $("#pred-chart-wrap");
+  if (!wrap) return;
+  const data = PRED_DATA.slice(0, STATE.predRange * 6);
+  if (!data.length) {
+    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:hsl(var(--muted-foreground))">No forecast data</div>';
+    return;
+  }
+
+  const startT = data[0].t;
+  const endT = data[data.length - 1].t;
+  const totalMs = endT - startT;
+
+  // Build segments using hysteresis so noise around 0.5 doesn't fragment the timeline.
+  const HOME_UP = 0.55, AWAY_DN = 0.45;
+  let state = data[0].v >= 0.5 ? "home" : "away";
+  const segments = [{ state, startT, endT: startT, confSum: 0, n: 0, vSum: 0 }];
+  data.forEach(p => {
+    let next = state;
+    if (state === "home" && p.v < AWAY_DN) next = "away";
+    else if (state === "away" && p.v >= HOME_UP) next = "home";
+    if (next !== state) {
+      segments[segments.length-1].endT = p.t;
+      segments.push({ state: next, startT: p.t, endT: p.t, confSum: 0, n: 0, vSum: 0 });
+      state = next;
+    }
+    const cur = segments[segments.length-1];
+    cur.endT = p.t;
+    cur.confSum += (p.hi - p.lo);
+    cur.n += 1;
+    cur.vSum += p.v;
+  });
+  segments[segments.length-1].endT = endT;
+
+  // Per-segment stats
+  segments.forEach(s => {
+    s.durationMs = Math.max(0, s.endT - s.startT);
+    s.conf = s.n > 0 ? clamp(1 - (s.confSum / s.n), 0, 1) : 0.6;
+    s.avgV = s.n > 0 ? s.vSum / s.n : (s.state === "home" ? 0.8 : 0.2);
+    s.pct = totalMs > 0 ? (s.durationMs / totalMs) * 100 : 0;
+    s.startStr = fmtTime(new Date(s.startT));
+    s.endStr = fmtTime(new Date(s.endT));
+  });
+
+  // Drop segments shorter than 15 minutes (visual noise); if filtering kills
+  // everything, fall back to the unfiltered list.
+  const minMs = 15 * 60 * 1000;
+  let segs = segments.filter(s => s.durationMs >= minMs);
+  if (!segs.length) segs = segments;
+
+  // Summary stats
+  const homeMs = segs.filter(s => s.state === "home").reduce((a,s)=>a+s.durationMs, 0);
+  const awayMs = segs.filter(s => s.state === "away").reduce((a,s)=>a+s.durationMs, 0);
+  let arrivals = 0, departures = 0;
+  for (let i = 1; i < segs.length; i++) {
+    if (segs[i-1].state === "away" && segs[i].state === "home") arrivals++;
+    else if (segs[i-1].state === "home" && segs[i].state === "away") departures++;
+  }
+
+  // Build the track HTML: alternating segment cards + transition chips
+  let trackHtml = "";
+  segs.forEach((s, i) => {
+    const isHome = s.state === "home";
+    const flex = Math.max(s.pct, 7);
+    const stateLabel = isHome ? "OCCUPIED" : "VACANT";
+    trackHtml += `
+      <div class="ft-seg ${isHome?'ft-home':'ft-away'}" style="flex:${flex.toFixed(2)}" data-segidx="${i}" title="${stateLabel} ${s.startStr}–${s.endStr} · ${formatDuration(s.durationMs)} · ${(s.conf*100).toFixed(0)}% conf">
+        <div class="ft-seg-row">
+          <span class="ft-seg-state">${stateLabel}</span>
+          <span class="ft-seg-conf-pill">${(s.conf*100).toFixed(0)}%</span>
+        </div>
+        <div class="ft-seg-time">${s.startStr} → ${s.endStr}</div>
+        <div class="ft-seg-dur">${formatDuration(s.durationMs)}</div>
+        <div class="ft-seg-bar"><div class="ft-seg-conffill" style="width:${(s.conf*100).toFixed(0)}%"></div></div>
+      </div>
+    `;
+    if (i < segs.length - 1) {
+      const next = segs[i+1];
+      const isArrival = s.state === "away" && next.state === "home";
+      const transTime = fmtTime(new Date(s.endT));
+      trackHtml += `
+        <div class="ft-trans ${isArrival?'ft-arrival':'ft-departure'}">
+          <div class="ft-trans-vline"></div>
+          <div class="ft-trans-chip">
+            <div class="ft-trans-arrow">${isArrival ? "↘" : "↗"}</div>
+            <div class="ft-trans-label">${isArrival ? "ARRIVE" : "DEPART"}</div>
+            <div class="ft-trans-time">${transTime}</div>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  // Time axis
+  const tickCount = STATE.predRange >= 12 ? 7 : (STATE.predRange >= 6 ? 7 : 5);
+  let axisHtml = "";
+  for (let i = 0; i < tickCount; i++) {
+    const t = new Date(startT + (i/(tickCount-1)) * totalMs);
+    axisHtml += `<span>${fmtTime(t)}</span>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="forecast-timeline">
+      <div class="ft-header">
+        <div class="ft-now-chip"><span class="ft-pulse-dot"></span><span>NOW · ${fmtTime(new Date(startT))}</span></div>
+        <div class="ft-summary">
+          <span class="ft-sum-cell"><span class="ft-sum-k">OCCUPIED</span><span class="ft-sum-v home">${formatDuration(homeMs)}</span></span>
+          <span class="ft-sum-cell"><span class="ft-sum-k">VACANT</span><span class="ft-sum-v away">${formatDuration(awayMs)}</span></span>
+          <span class="ft-sum-cell"><span class="ft-sum-k">ARRIVALS</span><span class="ft-sum-v">${arrivals}</span></span>
+          <span class="ft-sum-cell"><span class="ft-sum-k">DEPARTURES</span><span class="ft-sum-v">${departures}</span></span>
+        </div>
+      </div>
+      <div class="ft-track">${trackHtml}</div>
+      <div class="ft-axis">${axisHtml}</div>
+    </div>
+  `;
+
+  // Click a segment → toast its details
+  wrap.querySelectorAll(".ft-seg").forEach(el => {
+    el.addEventListener("click", () => {
+      const i = +el.dataset.segidx;
+      const s = segs[i];
+      showToast(`${s.state === "home" ? "OCCUPIED" : "VACANT"} ${s.startStr}–${s.endStr} · ${formatDuration(s.durationMs)} · ${(s.conf*100).toFixed(0)}% confidence`);
+    });
+  });
+}
+
+function renderTemp() {
+  const svg = $("#temp-chart");
+  const W = 800, H = 220, pad = 28;
+  const w = W - pad*2, h = H - pad*2;
+  const all = TEMP_DATA.flatMap(p => [p.cur, p.set]);
+  const minR = Math.min(...all) - 0.6, maxR = Math.max(...all) + 0.6;
+  const min = Math.min(minR, 19), max = Math.max(maxR, 24);
+  const yV = (v) => h - ((v - min) / (max - min)) * h;
+  const lineCur = smoothPath(TEMP_DATA, w, h, p => yV(p.cur));
+  const fillCur = smoothArea(TEMP_DATA, w, h, p => yV(p.cur));
+  const lineSet = path(TEMP_DATA, w, h, p => yV(p.set));
+
+  // comfort band shading (20-23°C) — label HUD chip top-LEFT inside band.
+  const yComfortTop = yV(23), yComfortBot = yV(20);
+  const comfort = `<rect x="0" y="${yComfortTop.toFixed(2)}" width="${w}" height="${(yComfortBot-yComfortTop).toFixed(2)}" fill="hsl(var(--accent))" opacity="0.08"/>
+    <line x1="0" y1="${yComfortTop.toFixed(2)}" x2="${w}" y2="${yComfortTop.toFixed(2)}" stroke="hsl(var(--accent))" stroke-width="0.6" stroke-dasharray="1 4" opacity="0.45"/>
+    <line x1="0" y1="${yComfortBot.toFixed(2)}" x2="${w}" y2="${yComfortBot.toFixed(2)}" stroke="hsl(var(--accent))" stroke-width="0.6" stroke-dasharray="1 4" opacity="0.45"/>
+    <g transform="translate(6,${(yComfortTop+5).toFixed(2)})">
+      <rect x="0" y="0" width="92" height="14" fill="hsl(220 25% 6%)" stroke="hsl(var(--accent))" stroke-width="0.6" opacity="0.85"/>
+      <text x="6" y="10" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--accent))" letter-spacing="0.08em">COMFORT 20–23°</text>
+    </g>`;
+
+  // compressor cycles as glowing tick marks at bottom rail
+  let compSegs = "";
+  TEMP_DATA.forEach((p,i)=>{
+    if (p.comp) {
+      const x = (i/(TEMP_DATA.length-1))*w;
+      const stepX = w/(TEMP_DATA.length-1);
+      compSegs += `<rect x="${x.toFixed(2)}" y="${(h-3).toFixed(2)}" width="${(stepX*0.95).toFixed(2)}" height="3" rx="1" fill="hsl(var(--accent))" opacity="0.85" filter="url(#tempGlow)"/>`;
+    }
+  });
+
+  // Grid with tick marks
+  let grid = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = (i/4)*h;
+    const val = max - (i/4)*(max-min);
+    grid += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="hsl(var(--primary))" stroke-opacity="0.08" stroke-dasharray="1 3"/>`;
+    grid += `<line x1="-3" y1="${y}" x2="0" y2="${y}" stroke="hsl(var(--muted-foreground))" stroke-width="0.8"/>`;
+    grid += `<text x="-8" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))" letter-spacing="0.04em">${val.toFixed(1)}°</text>`;
+  }
+  let axis = "";
+  for (let i = 0; i <= 6; i++) {
+    const x = (i/6)*w;
+    const t = new Date(TEMP_DATA[Math.round(((TEMP_DATA.length-1)*i)/6)].t);
+    axis += `<line x1="${x.toFixed(2)}" y1="${h}" x2="${x.toFixed(2)}" y2="${h+3}" stroke="hsl(var(--muted-foreground))" stroke-width="0.8"/>`;
+    axis += `<text x="${x.toFixed(2)}" y="${h+15}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))" letter-spacing="0.04em">${fmtTime(t)}</text>`;
+  }
+
+  // live current point (right edge)
+  const lastIdx = TEMP_DATA.length - 1;
+  const lastX = w;
+  const lastY = yV(TEMP_DATA[lastIdx].cur);
+  const setY = yV(TEMP_DATA[lastIdx].set);
+  const curVal = TEMP_DATA[lastIdx].cur;
+  const setVal = TEMP_DATA[lastIdx].set;
+
+  // mode-aware color
+  const curColor = STATE.hvac.mode === "heat" ? "hsl(var(--warm))" : STATE.hvac.mode === "cool" ? "hsl(var(--cool))" : "hsl(var(--primary))";
+  const fillGrad = STATE.hvac.mode === "heat" ? "tempFillWarm" : "tempFillCool";
+
+  // Current-value pill: positioned LEFT of the live dot with a background
+  // so it never collides with axis ticks or the setpoint line.
+  const pillW = 50, pillH = 18;
+  const pillGap = 14;
+  let pillX = lastX - pillW - pillGap;
+  // If the dot is too close to the comfort/edge, clamp inside the chart.
+  pillX = clamp(pillX, 2, w - pillW - 2);
+  // Center vertically on dot, but flip above/below to avoid the setpoint line.
+  let pillY = lastY - pillH / 2;
+  if (Math.abs(lastY - setY) < pillH + 4) {
+    // setpoint and current too close — push the pill above
+    pillY = Math.min(lastY, setY) - pillH - 6;
+    if (pillY < 2) pillY = Math.max(lastY, setY) + 6;
+  }
+  pillY = clamp(pillY, 2, h - pillH - 2);
+
+  // Setpoint label: placed at the LEFT end of the dashed line, not the right edge.
+  // Avoid colliding with the comfort label if they sit at similar y.
+  const setLabelY = Math.abs(setY - (yComfortTop + 11)) < 12 ? setY + 12 : setY - 4;
+
+  // HUD corner brackets
+  const br = 12;
+  const frame = `
+    <path d="M0 ${br} L0 0 L${br} 0" stroke="hsl(var(--primary))" stroke-width="1.2" fill="none" opacity="0.7"/>
+    <path d="M${w-br} 0 L${w} 0 L${w} ${br}" stroke="hsl(var(--primary))" stroke-width="1.2" fill="none" opacity="0.7"/>
+    <path d="M0 ${h-br} L0 ${h} L${br} ${h}" stroke="hsl(var(--primary))" stroke-width="1.2" fill="none" opacity="0.7"/>
+    <path d="M${w-br} ${h} L${w} ${h} L${w} ${h-br}" stroke="hsl(var(--primary))" stroke-width="1.2" fill="none" opacity="0.7"/>
+  `;
+  // sweep beam
+  const sweep = `
+    <rect x="-25" y="0" width="50" height="${h}" fill="url(#tempSweep)">
+      <animate attributeName="x" values="-25;${w-25};-25" dur="8s" repeatCount="indefinite"/>
+    </rect>
+  `;
+  // Setpoint label as a HUD chip near the LEFT
+  const setChip = `
+    <g transform="translate(6,${(setLabelY-9).toFixed(2)})">
+      <rect x="0" y="0" width="64" height="14" fill="hsl(220 25% 6%)" stroke="hsl(var(--warm))" stroke-width="0.6" opacity="0.9"/>
+      <text x="6" y="10" font-family="JetBrains Mono" font-size="9" font-weight="600" fill="hsl(var(--warm))" letter-spacing="0.06em">SET ${setVal.toFixed(1)}°</text>
+    </g>
+  `;
+  // Crosshair reticle at live current point
+  const reticle = `
+    <g transform="translate(${lastX.toFixed(2)},${lastY.toFixed(2)})">
+      <circle r="16" fill="${curColor}" opacity="0.18">
+        <animate attributeName="r" values="8;20;8" dur="1.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle r="10" fill="none" stroke="${curColor}" stroke-width="0.6" opacity="0.7" stroke-dasharray="2 2.5">
+        <animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="7s" repeatCount="indefinite"/>
+      </circle>
+      <line x1="-9" y1="0" x2="-4" y2="0" stroke="${curColor}" stroke-width="1.2"/>
+      <line x1="4" y1="0" x2="9" y2="0" stroke="${curColor}" stroke-width="1.2"/>
+      <line x1="0" y1="-9" x2="0" y2="-4" stroke="${curColor}" stroke-width="1.2"/>
+      <line x1="0" y1="4" x2="0" y2="9" stroke="${curColor}" stroke-width="1.2"/>
+      <circle r="3.5" fill="${curColor}" stroke="hsl(220 25% 6%)" stroke-width="1"/>
+    </g>
+  `;
+  // Pill with bracket frame
+  const pill = `
+    <g transform="translate(${pillX.toFixed(2)},${pillY.toFixed(2)})">
+      <rect x="0" y="0" width="${pillW}" height="${pillH}" fill="hsl(220 25% 6%)" stroke="${curColor}" stroke-width="1.2"/>
+      <path d="M-3 3 L-3 -3 L3 -3" stroke="${curColor}" stroke-width="1" fill="none"/>
+      <path d="M${pillW-3} -3 L${pillW+3} -3 L${pillW+3} 3" stroke="${curColor}" stroke-width="1" fill="none"/>
+      <path d="M-3 ${pillH-3} L-3 ${pillH+3} L3 ${pillH+3}" stroke="${curColor}" stroke-width="1" fill="none"/>
+      <path d="M${pillW-3} ${pillH+3} L${pillW+3} ${pillH+3} L${pillW+3} ${pillH-3}" stroke="${curColor}" stroke-width="1" fill="none"/>
+      <text x="${pillW/2}" y="${pillH/2 + 3.5}" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="11" fill="${curColor}" letter-spacing="0.04em">${curVal.toFixed(1)}°</text>
+    </g>
+  `;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="tempFillCool" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="hsl(var(--cool))" stop-opacity="0.55"/>
+        <stop offset="40%" stop-color="hsl(var(--cool))" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="hsl(var(--cool))" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="tempFillWarm" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="hsl(var(--warm))" stop-opacity="0.55"/>
+        <stop offset="40%" stop-color="hsl(var(--warm))" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="hsl(var(--warm))" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="tempSweep" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="hsl(var(--primary))" stop-opacity="0"/>
+        <stop offset="50%" stop-color="hsl(var(--primary))" stop-opacity="0.14"/>
+        <stop offset="100%" stop-color="hsl(var(--primary))" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="tempGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="tempNeon" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" result="g"/>
+        <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g transform="translate(${pad},${pad})">
+      ${comfort}
+      ${grid}
+      <path d="${fillCur}" fill="url(#${fillGrad})"/>
+      ${sweep}
+      <path d="${lineSet}" fill="none" stroke="hsl(var(--warm))" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.95">
+        <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="1.2s" repeatCount="indefinite"/>
+      </path>
+      ${setChip}
+      <path d="${lineCur}" fill="none" stroke="${curColor}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" filter="url(#tempNeon)" opacity="0.85"/>
+      <path d="${lineCur}" fill="none" stroke="hsl(0 0% 100%)" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+      ${compSegs}
+      ${frame}
+      ${reticle}
+      ${pill}
+      ${axis}
+    </g>
+  `;
+
+  const wrap = $("#temp-chart-wrap"), tip = $("#temp-tip");
+  wrap.onmousemove = (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const xRel = (e.clientX - rect.left - pad/(W/rect.width)) / ((w/W) * rect.width);
+    const idx = clamp(Math.round(xRel * (TEMP_DATA.length-1)), 0, TEMP_DATA.length-1);
+    const p = TEMP_DATA[idx];
+    tip.innerHTML = `<span class="tip-k">time</span> ${fmtTime(new Date(p.t))}<br><span class="tip-k">cur</span> ${p.cur.toFixed(2)}°<br><span class="tip-k">set</span> ${p.set.toFixed(1)}°<br><span class="tip-k">comp</span> ${p.comp?"on":"off"}`;
+    tip.style.left = (e.clientX - rect.left + 10) + "px";
+    tip.style.top = (e.clientY - rect.top - 50) + "px";
+    tip.classList.add("show");
+  };
+  wrap.onmouseleave = () => tip.classList.remove("show");
+}
+
+function renderAccuracy() {
+  const svg = $("#acc-chart");
+  const W = 800, H = 200, pad = 22;
+  const w = W - pad*2, h = H - pad*2;
+  const min = 0.5, max = 1;
+  const yV = (v) => h - ((v - min) / (max - min)) * h;
+  const line = path(ACC_DATA, w, h, p => yV(p.v));
+  const fill = areaPath(ACC_DATA, w, h, p => yV(p.v));
+  let grid = "";
+  for (let i = 0; i <= 4; i++) {
+    const y = (i/4)*h;
+    const val = max - (i/4)*(max-min);
+    grid += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="hsl(var(--border))" stroke-opacity="0.4" stroke-dasharray="2 4"/>`;
+    grid += `<text x="-6" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="hsl(var(--muted-foreground))">${(val*100).toFixed(0)}%</text>`;
+  }
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="accGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="hsl(var(--primary))" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="hsl(var(--primary))" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(${pad},${pad})">
+      ${grid}
+      <path d="${fill}" fill="url(#accGrad)"/>
+      <path d="${line}" fill="none" stroke="hsl(var(--primary))" stroke-width="1.8" stroke-linejoin="round"/>
+    </g>
+  `;
+}
+
+// Polar wedge path: outer-arc (a1→a2 cw) + line in + inner-arc (a2→a1 ccw) + close.
+function wedgePath(cx, cy, r1, r2, a1, a2) {
+  const x1a = cx + r1 * Math.cos(a1), y1a = cy + r1 * Math.sin(a1);
+  const x1b = cx + r1 * Math.cos(a2), y1b = cy + r1 * Math.sin(a2);
+  const x2a = cx + r2 * Math.cos(a1), y2a = cy + r2 * Math.sin(a1);
+  const x2b = cx + r2 * Math.cos(a2), y2b = cy + r2 * Math.sin(a2);
+  const largeArc = (a2 - a1) > Math.PI ? 1 : 0;
+  return `M${x2a.toFixed(2)} ${y2a.toFixed(2)} A${r2} ${r2} 0 ${largeArc} 1 ${x2b.toFixed(2)} ${y2b.toFixed(2)} L${x1b.toFixed(2)} ${y1b.toFixed(2)} A${r1} ${r1} 0 ${largeArc} 0 ${x1a.toFixed(2)} ${y1a.toFixed(2)} Z`;
+}
+
+function renderHeatmap() {
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const daysFull = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const cont = $("#heat-rows");
+
+  const SVG_W = 380, SVG_H = 380;
+  const cx = SVG_W/2, cy = SVG_H/2;
+  const rInner = 44, rOuter = 168;
+  const ringW = (rOuter - rInner) / 7;
+  const TWO_PI = Math.PI * 2;
+  const angleFor = h => -Math.PI/2 + (h/24) * TWO_PI;
+
+  // Color scale: cyan for occupancy, orange for HVAC duty.
+  const colorFor = v => STATE.heatMode === "prob"
+    ? `hsl(185 95% ${lerp(20, 62, v).toFixed(0)}% / ${lerp(0.12, 1, v).toFixed(2)})`
+    : `hsl(25 95% ${lerp(22, 60, v).toFixed(0)}% / ${lerp(0.12, 1, v).toFixed(2)})`;
+  const accentStrong = STATE.heatMode === "prob" ? "hsl(var(--primary))" : "hsl(var(--warm))";
+
+  // Background guide circles (one per ring boundary)
+  let guides = "";
+  for (let d = 0; d <= 7; d++) {
+    const r = rInner + d * ringW;
+    guides += `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(2)}" fill="none" stroke="hsl(var(--primary))" stroke-opacity="0.12" stroke-width="0.6"/>`;
+  }
+
+  // Spokes every 3 hours + outer hour labels
+  let spokes = "";
+  for (let h = 0; h < 24; h += 3) {
+    const a = angleFor(h);
+    const x1 = cx + Math.cos(a) * rInner;
+    const y1 = cy + Math.sin(a) * rInner;
+    const x2 = cx + Math.cos(a) * (rOuter + 6);
+    const y2 = cy + Math.sin(a) * (rOuter + 6);
+    spokes += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="hsl(var(--primary))" stroke-opacity="0.18" stroke-width="0.6"/>`;
+    // hour label
+    const lx = cx + Math.cos(a) * (rOuter + 20);
+    const ly = cy + Math.sin(a) * (rOuter + 20);
+    const labelTxt = String(h).padStart(2,"0");
+    spokes += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" text-anchor="middle" dy="0.35em" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="hsl(var(--muted-foreground))" letter-spacing="0.06em">${labelTxt}</text>`;
+  }
+
+  // Wedges (7 days × 24 hours)
+  let wedges = "";
+  for (let d = 0; d < 7; d++) {
+    const r1 = rInner + d * ringW + 1.2;
+    const r2 = rInner + (d + 1) * ringW - 1.2;
+    for (let h = 0; h < 24; h++) {
+      const v = HEAT_DATA[d][h];
+      const a1 = angleFor(h);
+      const a2 = angleFor(h + 1);
+      const fill = colorFor(v);
+      wedges += `<path d="${wedgePath(cx,cy,r1,r2,a1,a2)}" fill="${fill}" stroke="hsl(220 25% 6%)" stroke-width="0.4" data-d="${d}" data-h="${h}" data-v="${v.toFixed(2)}" class="wedge"/>`;
+    }
+  }
+
+  // Day labels — placed near the 6-o'clock position of each ring, but
+  // angled to read naturally. Simpler: single column to the right of the chart.
+  let dayLabels = "";
+  for (let d = 0; d < 7; d++) {
+    const r = rInner + d * ringW + ringW / 2;
+    // anchor at the angle that's at 4-o'clock (≈ 60°) so labels splay outward.
+    const a = -Math.PI/2 + TWO_PI * (4.5/24); // slightly past 4 o'clock
+    const x = cx + Math.cos(a) * (r + 0);
+    const y = cy + Math.sin(a) * (r + 0);
+    dayLabels += `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dy="0.35em" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="hsl(var(--foreground))" opacity="0.55" letter-spacing="0.08em">${days[d].toUpperCase()}</text>`;
+  }
+
+  // NOW indicator — glowing ray from inner→outer at the current hour-of-day,
+  // and a small "today" highlight ring.
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes()/60;
+  const nowA = angleFor(nowH);
+  const todayIdx = (now.getDay() + 6) % 7; // 0=Mon
+  const todayR1 = rInner + todayIdx * ringW;
+  const todayR2 = rInner + (todayIdx + 1) * ringW;
+  // Highlight today's ring with a slightly brighter outline
+  const todayHighlight = `
+    <circle cx="${cx}" cy="${cy}" r="${todayR1.toFixed(2)}" fill="none" stroke="${accentStrong}" stroke-width="0.7" stroke-opacity="0.55"/>
+    <circle cx="${cx}" cy="${cy}" r="${todayR2.toFixed(2)}" fill="none" stroke="${accentStrong}" stroke-width="0.7" stroke-opacity="0.55"/>
+  `;
+  const nx1 = cx + Math.cos(nowA) * (rInner - 4);
+  const ny1 = cy + Math.sin(nowA) * (rInner - 4);
+  const nx2 = cx + Math.cos(nowA) * (rOuter + 4);
+  const ny2 = cy + Math.sin(nowA) * (rOuter + 4);
+  const nowRay = `
+    <line x1="${nx1.toFixed(2)}" y1="${ny1.toFixed(2)}" x2="${nx2.toFixed(2)}" y2="${ny2.toFixed(2)}" stroke="hsl(var(--accent))" stroke-width="2" filter="url(#heatGlow)"/>
+    <circle cx="${nx2.toFixed(2)}" cy="${ny2.toFixed(2)}" r="3.5" fill="hsl(var(--accent))" filter="url(#heatGlow)"/>
+    <circle cx="${nx2.toFixed(2)}" cy="${ny2.toFixed(2)}" r="8" fill="hsl(var(--accent))" opacity="0.3">
+      <animate attributeName="r" values="4;12;4" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  `;
+
+  // Center HUD: digital clock + label
+  const centerHud = `
+    <circle cx="${cx}" cy="${cy}" r="${(rInner-6).toFixed(2)}" fill="hsl(220 25% 6%)" stroke="hsl(var(--primary))" stroke-width="0.8" stroke-opacity="0.5"/>
+    <text x="${cx}" y="${(cy-12).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" font-weight="600" fill="hsl(var(--muted-foreground))" letter-spacing="0.18em">NOW</text>
+    <text x="${cx}" y="${(cy+4).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono" font-size="14" font-weight="700" fill="hsl(var(--accent))" letter-spacing="0.04em">${fmtTime(now)}</text>
+    <text x="${cx}" y="${(cy+18).toFixed(2)}" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="hsl(var(--muted-foreground))" letter-spacing="0.1em">${daysFull[todayIdx].toUpperCase()}</text>
+  `;
+
+  // Right-side stats panel (per-day): mini 24h sparkline + averages
+  const sparkW = 92, sparkH = 22;
+  const rowsHtml = days.map((dayName, d) => {
+    const row = HEAT_DATA[d];
+    const avg = row.reduce((a,b)=>a+b,0) / 24;
+    const peak = row.reduce((m,v,h)=> v > m.v ? {v, h} : m, {v:-1, h:-1});
+    // mini sparkline (smooth)
+    const pts = row.map((v,i) => ({i, v}));
+    const minVal = 0, maxVal = 1;
+    const sparkPath = smoothPath(pts, sparkW, sparkH, p => sparkH - ((p.v - minVal)/(maxVal-minVal||1)) * sparkH);
+    const sparkArea = smoothArea(pts, sparkW, sparkH, p => sparkH - ((p.v - minVal)/(maxVal-minVal||1)) * sparkH);
+    const isToday = d === todayIdx;
+    const accent = isToday ? accentStrong : "hsl(var(--muted-foreground))";
+    return `
+      <div class="dayrow ${isToday?'today':''}" data-d="${d}">
+        <div class="dayrow-name">${dayName}</div>
+        <svg class="dayrow-spark" viewBox="0 0 ${sparkW} ${sparkH}" preserveAspectRatio="none">
+          <path d="${sparkArea}" fill="${accent}" opacity="${isToday?0.25:0.12}"/>
+          <path d="${sparkPath}" fill="none" stroke="${accent}" stroke-width="${isToday?1.4:1}" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+        <div class="dayrow-avg" style="color:${accent}">${(avg*100).toFixed(0)}%</div>
+        <div class="dayrow-peak">peak ${String(peak.h).padStart(2,"0")}:00</div>
+      </div>
+    `;
+  }).join("");
+
+  // Hover tooltip
+  cont.innerHTML = `
+    <div class="compass-layout">
+      <div class="compass-svg-wrap">
+        <svg viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="xMidYMid meet" class="compass-svg" id="compass-svg">
+          <defs>
+            <filter id="heatGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.5" result="g"/>
+              <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          ${guides}
+          ${spokes}
+          ${wedges}
+          ${todayHighlight}
+          ${dayLabels}
+          ${nowRay}
+          ${centerHud}
+        </svg>
+        <div class="chart-tip" id="compass-tip"></div>
+      </div>
+      <div class="compass-stats">
+        <div class="compass-stats-h">PER DAY</div>
+        ${rowsHtml}
+      </div>
+    </div>
+  `;
+
+  // Hover interactions on wedges
+  const tip = $("#compass-tip");
+  cont.querySelectorAll(".wedge").forEach(el => {
+    el.addEventListener("mousemove", e => {
+      const d = +el.dataset.d, h = +el.dataset.h, v = +el.dataset.v;
+      const wrap = $(".compass-svg-wrap").getBoundingClientRect();
+      tip.innerHTML = `<span class="tip-k">${days[d]}</span> ${String(h).padStart(2,"0")}:00<br><span class="tip-k">${STATE.heatMode === "prob" ? "occ" : "duty"}</span> ${(v*100).toFixed(0)}%`;
+      tip.style.left = (e.clientX - wrap.left + 12) + "px";
+      tip.style.top = (e.clientY - wrap.top - 36) + "px";
+      tip.classList.add("show");
+      el.style.filter = "brightness(1.7)";
+    });
+    el.addEventListener("mouseleave", () => {
+      tip.classList.remove("show");
+      el.style.filter = "";
+    });
+    el.addEventListener("click", () => {
+      const d = +el.dataset.d, h = +el.dataset.h, v = +el.dataset.v;
+      showToast(`${days[d]} ${String(h).padStart(2,"0")}:00 — ${(v*100).toFixed(0)}% ${STATE.heatMode === "prob" ? "occupied" : "duty"}`);
+    });
+  });
+
+  // Click on a day stat row → highlight that ring briefly
+  cont.querySelectorAll(".dayrow").forEach(el => {
+    el.addEventListener("click", () => {
+      const d = +el.dataset.d;
+      cont.querySelectorAll(`.wedge[data-d="${d}"]`).forEach(w => {
+        w.style.filter = "brightness(1.6)";
+        setTimeout(()=> w.style.filter = "", 700);
+      });
+    });
+  });
+}
+
+// ───────────── KPI / cards / lists ─────────────
+function renderKpis() {
+  $("#kpi-presence").innerHTML = STATE.presence
+    ? '<span style="color:hsl(var(--accent))">Occupied</span>'
+    : '<span style="color:hsl(var(--muted-foreground))">Vacant</span>';
+  $("#kpi-presence-sub").textContent = "confidence " + (STATE.presenceConfidence*100).toFixed(0) + "%";
+
+  const modeLabel = ({heat:"Heating",cool:"Cooling",auto:"Auto",fan:"Fan only",off:"Off"})[STATE.hvac.mode];
+  $("#kpi-mode").textContent = modeLabel;
+  $("#kpi-mode-sub").textContent = STATE.hvac.mode === "off"
+    ? "idle"
+    : `${STATE.hvac.mode === "heat" ? "heating" : STATE.hvac.mode === "cool" ? "cooling" : "auto"} · ${STATE.hvac.setpoint.toFixed(1)}°C`;
+
+  if (STATE.prediction.nextTime) {
+    const m = Math.round((STATE.prediction.nextTime - Date.now())/60000);
+    $("#kpi-next").textContent = m > 0 ? `+${m} min` : "now";
+    $("#kpi-next-sub").textContent = `${STATE.prediction.nextEvent} · ${(STATE.prediction.confidence*100).toFixed(0)}% conf`;
+  } else {
+    $("#kpi-next").textContent = "—";
+    $("#kpi-next-sub").textContent = "no prediction";
+  }
+  $("#kpi-csi").textContent = STATE.csiQuality;
+  $("#kpi-csi-sub").textContent = `SNR ${STATE.csiSNR.toFixed(1)} dB`;
+
+  // current state card
+  const pct = clamp((STATE.hvac.setpoint - 16) / (28 - 16), 0, 1);
+  const circ = 2 * Math.PI * 52;
+  const dash = `${(circ * pct).toFixed(2)} ${circ.toFixed(2)}`;
+  $("#thermo-fg").setAttribute("stroke-dasharray", dash);
+  $("#thermo-fg").setAttribute("stroke", STATE.hvac.mode === "heat" ? "hsl(var(--warm))" : STATE.hvac.mode === "cool" ? "hsl(var(--cool))" : "hsl(var(--primary))");
+  $("#thermo-current").innerHTML = `${STATE.hvac.current.toFixed(1)}&deg;`;
+  $("#thermo-set").textContent = STATE.hvac.setpoint.toFixed(1);
+  $("#hvac-sub").textContent = `Heat pump · ${STATE.hvac.mode} · ${STATE.hvac.compressorOn?"active":"idle"}`;
+  const modeBadge = $("#hvac-mode-badge");
+  modeBadge.className = "badge " + (STATE.hvac.mode === "heat" ? "heat" : STATE.hvac.mode === "cool" ? "cool" : "info");
+  modeBadge.textContent = modeLabel.toLowerCase();
+  $("#ov-hum").textContent = STATE.hvac.humidity + "%";
+  $("#ov-target").textContent = STATE.hvac.setpoint.toFixed(1) + "°C";
+  $("#ov-fan").textContent = STATE.hvac.fan;
+
+  // control thermo
+  $("#ctrl-thermo-fg").setAttribute("stroke-dasharray", dash);
+  $("#ctrl-thermo-fg").setAttribute("stroke", STATE.hvac.mode === "heat" ? "hsl(var(--warm))" : STATE.hvac.mode === "cool" ? "hsl(var(--cool))" : "hsl(var(--primary))");
+  $("#ctrl-set").innerHTML = STATE.hvac.setpoint.toFixed(1) + "&deg;";
+  $("#ctrl-set-readout").textContent = STATE.hvac.setpoint.toFixed(1);
+  $("#ctrl-current").textContent = STATE.hvac.current.toFixed(1);
+
+  // HUD strip (live)
+  if ($("#hud-strip")) renderHud();
+}
+
+function renderZones() {
+  const cont = $("#zone-grid");
+  cont.innerHTML = "";
+  STATE.zones.forEach(z => {
+    const tile = document.createElement("div");
+    tile.className = "presence-tile" + (z.active ? " active" : "");
+    tile.innerHTML = `
+      <div class="presence-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>
+      </div>
+      <div class="presence-name">${escapeHtml(z.name)}</div>
+      <div class="presence-stat">${z.active ? "occupied" : "vacant"} · ${(z.conf*100).toFixed(0)}%</div>
+      <div class="presence-stat">${fmtRel(new Date(z.lastSeen))}</div>
+    `;
+    tile.onclick = () => {
+      z.active = !z.active;
+      z.conf = z.active ? clamp(rand(0.6, 0.95),0,1) : clamp(rand(0.04,0.25),0,1);
+      z.lastSeen = Date.now();
+      addEvent({ type: "presence_changed", zone: z.id, label: `${z.name}: ${z.active?"occupied":"vacant"}`, conf: z.conf });
+      renderZones();
+      updatePresence();
+    };
+    cont.appendChild(tile);
+  });
+}
+
+function updatePresence() {
+  const anyActive = STATE.zones.some(z => z.active);
+  STATE.presence = anyActive;
+  STATE.presenceConfidence = anyActive
+    ? Math.max(...STATE.zones.filter(z=>z.active).map(z=>z.conf))
+    : 1 - Math.max(...STATE.zones.map(z=>z.conf));
+  renderKpis();
+}
+
+function renderSchedule() {
+  const cont = $("#sched-list");
+  cont.innerHTML = "";
+  STATE.schedule.forEach((s,i)=>{
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.4rem 0.6rem;background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem";
+    row.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.8125rem;font-weight:500">${escapeHtml(s.label)}</div>
+        <div class="mono" style="font-size:0.7rem;color:hsl(var(--muted-foreground))">${s.time} · ${s.temp.toFixed(1)}°C</div>
+      </div>
+      <button class="btn sm danger" data-i="${i}" title="Remove">×</button>
+    `;
+    row.querySelector("button").onclick = (e) => {
+      e.stopPropagation();
+      STATE.schedule.splice(i,1);
+      renderSchedule();
+      showToast("Schedule block removed");
+    };
+    cont.appendChild(row);
+  });
+  if (!STATE.schedule.length) {
+    cont.innerHTML = '<div style="font-size:0.8125rem;color:hsl(var(--muted-foreground));text-align:center;padding:0.5rem">No schedule blocks</div>';
+  }
+}
+
+// ───────────── events ─────────────
+const EVT_META = {
+  presence_changed: { ic: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>', cls: "presence", label: "presence_changed" },
+  arrival_predicted: { ic: '<svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>', cls: "arrival", label: "arrival_predicted" },
+  departure_predicted: { ic: '<svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>', cls: "departure", label: "departure_predicted" },
+  hvac_signal: { ic: '<svg viewBox="0 0 24 24"><path d="M12 2v6m0 8v6M4 12h6m4 0h6"/><circle cx="12" cy="12" r="3"/></svg>', cls: "hvac", label: "hvac_signal" },
+};
+
+function addEvent(e) {
+  const evt = {
+    id: Date.now() + "-" + Math.random().toString(36).slice(2,7),
+    ts: Date.now(),
+    type: e.type,
+    label: e.label || e.type,
+    payload: e,
+  };
+  STATE.events.unshift(evt);
+  if (STATE.events.length > 500) STATE.events.length = 500;
+  renderEvents();
+  renderOverviewEvents();
+}
+
+function renderEvents() {
+  const list = $("#event-list");
+  const filtered = STATE.evtFilter === "all" ? STATE.events : STATE.events.filter(e => e.type === STATE.evtFilter);
+  $("#evt-count").textContent = filtered.length;
+  if (!filtered.length) {
+    list.innerHTML = '<div style="font-size:0.8125rem;color:hsl(var(--muted-foreground));text-align:center;padding:1rem">No events yet</div>';
+    return;
+  }
+  list.innerHTML = filtered.slice(0, 100).map(e => {
+    const m = EVT_META[e.type] || EVT_META.presence_changed;
+    return `<div class="evt t-${m.cls}">
+      <div class="evt-ic">${m.ic}</div>
+      <div class="evt-msg">
+        <span class="m1">${escapeHtml(e.label)}</span>
+        <span class="m2">${m.label}${e.payload.conf ? " · conf " + (e.payload.conf*100).toFixed(0) + "%" : ""}${e.payload.zone ? " · zone " + e.payload.zone : ""}</span>
+      </div>
+      <span class="evt-time">${fmtTimeSec(new Date(e.ts))}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderOverviewEvents() {
+  const list = $("#ov-events");
+  if (!STATE.events.length) {
+    list.innerHTML = '<div style="font-size:0.8125rem;color:hsl(var(--muted-foreground));text-align:center;padding:1rem">No events yet</div>';
+    return;
+  }
+  list.innerHTML = STATE.events.slice(0, 12).map(e => {
+    const m = EVT_META[e.type] || EVT_META.presence_changed;
+    return `<div class="evt t-${m.cls}">
+      <div class="evt-ic">${m.ic}</div>
+      <div class="evt-msg">
+        <span class="m1">${escapeHtml(e.label)}</span>
+        <span class="m2">${m.label}</span>
+      </div>
+      <span class="evt-time">${fmtRel(new Date(e.ts))}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderUpcoming() {
+  const list = $("#upcoming-events");
+  const now = Date.now();
+  const upcoming = [];
+  for (let i = 1; i < PRED_DATA.length; i++) {
+    if (PRED_DATA[i-1].v < 0.45 && PRED_DATA[i].v >= 0.45) {
+      upcoming.push({ type:"arrival_predicted", t: PRED_DATA[i].t, conf: 0.7 + Math.random()*0.25 });
+    } else if (PRED_DATA[i-1].v > 0.55 && PRED_DATA[i].v <= 0.55) {
+      upcoming.push({ type:"departure_predicted", t: PRED_DATA[i].t, conf: 0.65 + Math.random()*0.3 });
+    }
+  }
+  upcoming.sort((a,b)=>a.t-b.t);
+  const top = upcoming.slice(0, 6);
+  if (top.length) {
+    STATE.prediction = { nextEvent: top[0].type === "arrival_predicted" ? "Arrival" : "Departure", nextTime: top[0].t, confidence: top[0].conf };
+  }
+  if (!top.length) {
+    list.innerHTML = '<div style="font-size:0.8125rem;color:hsl(var(--muted-foreground));text-align:center;padding:1rem">No predicted events in window</div>';
+    return;
+  }
+  list.innerHTML = top.map(e => {
+    const m = EVT_META[e.type];
+    const min = Math.round((e.t - now)/60000);
+    return `<div class="evt t-${m.cls}">
+      <div class="evt-ic">${m.ic}</div>
+      <div class="evt-msg">
+        <span class="m1">${e.type === "arrival_predicted" ? "Arrival" : "Departure"} at ${fmtTime(new Date(e.t))}</span>
+        <span class="m2">${m.label} · in ${min} min · conf ${(e.conf*100).toFixed(0)}%</span>
+      </div>
+      <span class="evt-time">+${min}m</span>
+    </div>`;
+  }).join("");
+  renderKpis();
+}
+
+// ───────────── tab switching ─────────────
+$$("#topnav a").forEach(a => {
+  a.onclick = () => {
+    const tab = a.dataset.tab;
+    $$("#topnav a").forEach(x => x.classList.toggle("active", x === a));
+    $$(".panel").forEach(p => p.classList.toggle("on", p.id === "panel-"+tab));
+    if (tab === "presence") { renderCsi(); renderHeatmap(); }
+    if (tab === "predictions") { renderPrediction(); renderAccuracy(); renderUpcoming(); }
+    if (tab === "hvac") { renderTemp(); }
+    if (tab === "overview") { renderOccupancy(); }
+  };
+});
+
+// ───────────── button wiring ─────────────
+$("#btn-toggle-cog").onclick = () => {
+  STATE.cogRunning = !STATE.cogRunning;
+  const b = $("#btn-toggle-cog");
+  b.textContent = STATE.cogRunning ? "Pause" : "Resume";
+  const badge = $("#cog-status-badge");
+  badge.innerHTML = STATE.cogRunning ? '<span class="dot up"></span>running' : '<span class="dot down"></span>paused';
+  badge.className = "badge " + (STATE.cogRunning ? "online" : "offline");
+  showToast(STATE.cogRunning ? "Cog resumed" : "Cog paused");
+  addEvent({ type:"hvac_signal", label: STATE.cogRunning ? "Cog resumed" : "Cog paused" });
+};
+
+$("#btn-restart-cog").onclick = () => {
+  showToast("Restarting cog…");
+  setTimeout(()=>{ showToast("Cog restarted"); addEvent({ type:"hvac_signal", label:"Cog restarted" }); }, 700);
+};
+
+$("#btn-ov-events").onclick = () => {
+  $$("#topnav a").forEach(x => x.classList.toggle("active", x.dataset.tab === "events"));
+  $$(".panel").forEach(p => p.classList.toggle("on", p.id === "panel-events"));
+};
+
+$("#btn-recalibrate").onclick = () => {
+  showToast("CSI baseline recalibrated");
+  STATE.csiSNR = clamp(STATE.csiSNR + rand(1, 4), 5, 45);
+  CSI_DATA = buildCsiSeries(STATE.csiMode);
+  renderCsi(); renderKpis();
+  addEvent({ type:"hvac_signal", label:"CSI recalibrated" });
+};
+
+$("#btn-rerun").onclick = () => {
+  PRED_DATA = buildPredictionForecast(STATE.predRange);
+  renderPrediction(); renderUpcoming();
+  showToast("Prediction model re-run");
+};
+
+$("#btn-train").onclick = () => {
+  showToast("Training in background…");
+  setTimeout(()=>{
+    ACC_DATA = buildAccuracySeries();
+    renderAccuracy();
+    $("#model-trained").textContent = "just now";
+    $("#mae-arr").textContent = (4.5 + rand(0,1.5)).toFixed(1) + " min";
+    $("#mae-dep").textContent = (6.0 + rand(0,2)).toFixed(1) + " min";
+    showToast("Training complete");
+    addEvent({ type:"hvac_signal", label:"Model retrained" });
+  }, 900);
+};
+$("#btn-export-model").onclick = () => {
+  const blob = new Blob([JSON.stringify({ name:"tiny-lstm-presence", params:14200, version:"1.4.0" }, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "hvac-presence-model.json"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("Model JSON exported");
+};
+
+$("#lead-slider").oninput = (e) => {
+  const v = +e.target.value;
+  $("#lead-val").innerHTML = `${v}<span style="font-size:1rem;color:hsl(var(--muted-foreground));font-weight:500">&nbsp;min</span>`;
+};
+
+// HVAC controls
+function flashBtn(b) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); setTimeout(()=>b.classList.remove("flash"), 480); }
+function bumpThermo() {
+  ["#thermo-current","#ctrl-set"].forEach(s => {
+    const el = $(s); if (!el) return;
+    el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+  });
+}
+function flashHud() {
+  const s = $("#hud-strip");
+  if (!s) return;
+  s.classList.remove("flash"); void s.offsetWidth; s.classList.add("flash");
+}
+function renderHud() {
+  const m = STATE.hvac.mode, f = STATE.hvac.fan;
+  const modeLbl = ({heat:"HEAT",cool:"COOL",auto:"AUTO",fan:"FAN",off:"OFF"})[m] || m.toUpperCase();
+  const modeClass = m === "heat" ? "heat" : m === "cool" ? "cool" : m === "off" ? "off" : "on";
+  const compOn = STATE.hvac.compressorOn;
+  // Approx duty cycle from |delta|
+  const duty = Math.min(100, Math.round(Math.abs(STATE.hvac.current - STATE.hvac.setpoint) * 35 + (compOn?22:0)));
+
+  $("#hud-mode").textContent = modeLbl;
+  $("#hud-mode").className = "hud-v " + modeClass;
+  $("#hud-cell-mode").className = "hud-cell " + modeClass;
+
+  $("#hud-fan").textContent = f.toUpperCase();
+  $("#hud-fan").className = "hud-v " + (f === "off" ? "off" : "on");
+  $("#hud-cell-fan").className = "hud-cell " + (f === "off" ? "off" : "on");
+
+  $("#hud-comp").textContent = compOn ? "ON" : "OFF";
+  $("#hud-comp").className = "hud-v " + (compOn ? "on" : "off");
+  $("#hud-cell-comp").className = "hud-cell " + (compOn ? "on" : "off");
+
+  $("#hud-duty").textContent = duty + "%";
+  $("#hud-duty").className = "hud-v " + (duty > 50 ? "on" : "");
+}
+
+function setMode(m, btn) {
+  STATE.hvac.mode = m;
+  $$("#mode-row button").forEach(b => {
+    b.classList.remove("on","warm","cool","ghost","accent");
+    if (b.dataset.mode === "heat") b.classList.add("warm");
+    else if (b.dataset.mode === "cool") b.classList.add("cool");
+    else b.classList.add("ghost");
+    if (b.dataset.mode === m) b.classList.add("on");
+  });
+  STATE.hvac.compressorOn = m !== "off";
+  if (btn) flashBtn(btn);
+  bumpThermo();
+  flashHud();
+  renderHud();
+  renderKpis();
+  renderTemp();
+  addEvent({ type:"hvac_signal", label:`Mode → ${m}` });
+  showToast(`HVAC mode: ${m}`);
+}
+$$("#mode-row button").forEach(b => b.onclick = (e) => setMode(b.dataset.mode, b));
+
+function setFan(f, btn) {
+  STATE.hvac.fan = f;
+  $$("#fan-row button").forEach(b => b.classList.toggle("on", b.dataset.fan === f));
+  if (btn) flashBtn(btn);
+  flashHud();
+  renderHud();
+  renderKpis();
+  addEvent({ type:"hvac_signal", label:`Fan → ${f}` });
+  showToast(`Fan: ${f}`);
+}
+$$("#fan-row button").forEach(b => b.onclick = () => setFan(b.dataset.fan, b));
+
+$("#btn-temp-up").onclick = (e) => {
+  const prev = STATE.hvac.setpoint;
+  STATE.hvac.setpoint = clamp(STATE.hvac.setpoint + 0.5, 16, 28);
+  flashBtn(e.currentTarget);
+  if (prev === STATE.hvac.setpoint) { showToast("Max setpoint 28°C", true); return; }
+  bumpThermo();
+  renderKpis();
+  renderTemp();
+  addEvent({ type:"hvac_signal", label:`Setpoint → ${STATE.hvac.setpoint.toFixed(1)}°C` });
+};
+$("#btn-temp-dn").onclick = (e) => {
+  const prev = STATE.hvac.setpoint;
+  STATE.hvac.setpoint = clamp(STATE.hvac.setpoint - 0.5, 16, 28);
+  flashBtn(e.currentTarget);
+  if (prev === STATE.hvac.setpoint) { showToast("Min setpoint 16°C", true); return; }
+  bumpThermo();
+  renderKpis();
+  renderTemp();
+  addEvent({ type:"hvac_signal", label:`Setpoint → ${STATE.hvac.setpoint.toFixed(1)}°C` });
+};
+
+// Override
+$$("#override-row button").forEach(b => b.onclick = () => {
+  const mins = +b.dataset.ov;
+  if (mins === 0) {
+    STATE.override = { active:false, expiresAt:0, label:"" };
+    $("#override-state").innerHTML = '<span class="meta-k">status</span> <span class="meta-v">no override</span>';
+    $("#ctrl-state").className = "badge info";
+    $("#ctrl-state").textContent = "following schedule";
+    showToast("Override cancelled");
+  } else {
+    STATE.override = { active:true, expiresAt: Date.now() + mins*60*1000, label: `${mins}m hold` };
+    $("#override-state").innerHTML = `<span class="meta-k">status</span> <span class="meta-v">hold for ${mins}m</span>`;
+    $("#ctrl-state").className = "badge warn";
+    $("#ctrl-state").textContent = `override · ${mins}m`;
+    showToast(`Holding setpoint for ${mins} minutes`);
+  }
+  addEvent({ type:"hvac_signal", label: mins===0 ? "Override cancelled" : `Override ${mins}m` });
+});
+
+// Settings sliders
+$("#conf-slider").oninput = (e) => $("#conf-val").textContent = e.target.value + "%";
+$("#set-sens").oninput = (e) => $("#set-sens-val").textContent = e.target.value;
+
+// Switches
+$$(".switch").forEach(s => s.onclick = () => {
+  s.classList.toggle("on");
+  showToast(`${s.dataset.toggle}: ${s.classList.contains("on")?"on":"off"}`);
+});
+
+// Settings buttons
+$("#btn-save").onclick = () => showToast("Settings saved");
+$("#btn-reset").onclick = () => {
+  if (confirm("Reset all settings to defaults?")) {
+    $("#set-rate").value = 100;
+    $("#set-subc").value = 52;
+    $("#set-smooth").value = 3;
+    $("#set-idle").value = 120;
+    $("#set-sens").value = 6; $("#set-sens-val").textContent = "6";
+    showToast("Defaults restored");
+  }
+};
+$("#btn-uninstall").onclick = () => {
+  if (confirm("Uninstall hvac-presence cog? Events and predictions will stop.")) {
+    showToast("Uninstall queued", false);
+  }
+};
+
+// Event log filtering
+$$("#evt-filter .pill-tab").forEach(b => b.onclick = () => {
+  $$("#evt-filter .pill-tab").forEach(x => x.classList.toggle("on", x===b));
+  STATE.evtFilter = b.dataset.filter;
+  renderEvents();
+});
+
+$("#btn-pause-evts").onclick = () => {
+  STATE.evtPaused = !STATE.evtPaused;
+  $("#btn-pause-evts").textContent = STATE.evtPaused ? "Resume" : "Pause";
+  showToast(STATE.evtPaused ? "Event stream paused" : "Event stream resumed");
+};
+$("#btn-clear-evts").onclick = () => {
+  if (confirm("Clear " + STATE.events.length + " events?")) {
+    STATE.events = [];
+    renderEvents(); renderOverviewEvents();
+  }
+};
+$("#btn-export-evts").onclick = () => {
+  const blob = new Blob([JSON.stringify(STATE.events, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "hvac-presence-events.json"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("Events exported");
+};
+
+// Add schedule block
+$("#btn-add-block").onclick = () => {
+  const label = prompt("Block label?", "Custom");
+  if (!label) return;
+  const time = prompt("Time (HH:MM)?", "12:00");
+  if (!time || !/^\d{2}:\d{2}$/.test(time)) { showToast("Invalid time", true); return; }
+  const tempStr = prompt("Setpoint °C?", "22.0");
+  const temp = parseFloat(tempStr);
+  if (isNaN(temp)) { showToast("Invalid temp", true); return; }
+  STATE.schedule.push({ label, time, temp, mode:"custom" });
+  STATE.schedule.sort((a,b)=> a.time.localeCompare(b.time));
+  renderSchedule();
+  showToast("Block added");
+};
+
+// Range selectors
+$$("#occ-range .pill-tab").forEach(b => b.onclick = () => {
+  $$("#occ-range .pill-tab").forEach(x => x.classList.toggle("on", x===b));
+  STATE.occRange = +b.dataset.range;
+  renderOccupancy();
+});
+$$("[data-csi]").forEach(b => b.onclick = () => {
+  $$("[data-csi]").forEach(x => x.classList.toggle("on", x===b));
+  STATE.csiMode = b.dataset.csi;
+  CSI_DATA = buildCsiSeries(STATE.csiMode);
+  const labels = STATE.csiMode === "snr" ? ["channel 1","channel 2","channel 3"] : (STATE.csiMode === "phase" ? ["subcarrier 8","subcarrier 24","subcarrier 40"] : ["subcarrier 12","subcarrier 28","subcarrier 47"]);
+  $("#csi-legend-1").textContent = labels[0];
+  $("#csi-legend-2").textContent = labels[1];
+  $("#csi-legend-3").textContent = labels[2];
+  renderCsi();
+});
+$$("[data-pred]").forEach(b => b.onclick = () => {
+  $$("[data-pred]").forEach(x => x.classList.toggle("on", x===b));
+  STATE.predRange = +b.dataset.pred;
+  PRED_DATA = buildPredictionForecast(STATE.predRange);
+  renderPrediction(); renderUpcoming();
+});
+$$("[data-heat]").forEach(b => b.onclick = () => {
+  $$("[data-heat]").forEach(x => x.classList.toggle("on", x===b));
+  STATE.heatMode = b.dataset.heat;
+  renderHeatmap();
+});
+
+// ───────────── live tick ─────────────
+let tickCount = 0;
+function tick() {
+  if (!STATE.cogRunning) return;
+  tickCount++;
+
+  // drift current toward setpoint — smaller step since we tick faster now
+  STATE.hvac.current += (STATE.hvac.setpoint - STATE.hvac.current) * 0.04 + noise(0.025);
+  STATE.hvac.humidity = clamp(STATE.hvac.humidity + noise(0.2), 30, 70);
+  STATE.csiSNR = clamp(STATE.csiSNR + noise(0.3), 5, 45);
+  STATE.csiQuality = STATE.csiSNR > 25 ? "Good" : STATE.csiSNR > 15 ? "Fair" : "Poor";
+
+  // sliding-window updates so the line is always moving
+  // Occupancy: shift latest point's value slightly + every 10 ticks append a new bucket
+  const lastOcc = OCC_DATA[OCC_DATA.length-1];
+  lastOcc.v = clamp(lastOcc.v + noise(0.025), 0, 1);
+  if (tickCount % 10 === 0) {
+    const hh = new Date().getHours() + new Date().getMinutes()/60;
+    let base = (hh >= 17 && hh < 23) ? 0.92 : (hh >= 6.5 && hh < 8.5) ? 0.8 : 0.3;
+    OCC_DATA.push({ t: Date.now(), v: clamp(base + noise(0.06),0,1), hvac: Math.random()<0.6?1:0 });
+    if (OCC_DATA.length > 24*12+1) OCC_DATA.shift();
+  }
+
+  // Temp: append every tick (1s) so the line streams
+  TEMP_DATA.push({ t: Date.now(), cur: STATE.hvac.current, set: STATE.hvac.setpoint, comp: STATE.hvac.compressorOn && Math.abs(STATE.hvac.current - STATE.hvac.setpoint) > 0.25 ? 1 : 0 });
+  if (TEMP_DATA.length > 240) TEMP_DATA.shift();
+
+  // CSI: continuously regenerate amplitude (it's high-rate signal data)
+  if (tickCount % 2 === 0) {
+    // shift the buffer left and add a new sample on the right
+    ["a","b","c"].forEach((k,idx) => {
+      const arr = CSI_DATA[k];
+      arr.shift();
+      const x = (tickCount + idx*40) / 80;
+      const baseA = STATE.csiMode === "snr" ? 26 : (STATE.csiMode === "phase" ? 0 : 0.5);
+      const ampA = STATE.csiMode === "snr" ? 4 : (STATE.csiMode === "phase" ? 1.5 : 0.25);
+      const occMod = STATE.presence ? Math.sin(x * 18 + idx*0.8) * 0.7 + Math.sin(x*5+idx)*0.4 : Math.sin(x*30+idx)*0.18;
+      arr.push(baseA*(1 + idx*0.05) + ampA * (occMod + noise(0.22)));
+    });
+  }
+
+  // Predictions: shift smoothly so curve animates left over time
+  if (tickCount % 4 === 0) {
+    const lastT = PRED_DATA[PRED_DATA.length-1].t;
+    PRED_DATA.shift();
+    const t = lastT + 10*60*1000;
+    const d = new Date(t);
+    const hh = d.getHours() + d.getMinutes()/60;
+    let base = 0.5;
+    if (hh >= 6.5 && hh < 8.5) base = 0.8;
+    else if (hh >= 8.5 && hh < 17) base = 0.18;
+    else if (hh >= 17 && hh < 23) base = 0.9;
+    else base = 0.75;
+    const uncertainty = 0.12;
+    PRED_DATA.push({ t, v: clamp(base + noise(0.04),0,1), lo: clamp(base - uncertainty,0,1), hi: clamp(base + uncertainty,0,1) });
+  }
+
+  // occasionally synthesize events
+  if (!STATE.evtPaused && Math.random() < 0.05) {
+    const r = Math.random();
+    if (r < 0.4) {
+      const z = STATE.zones[Math.floor(Math.random()*STATE.zones.length)];
+      addEvent({ type:"presence_changed", zone: z.id, label: `${z.name}: ${z.active?"motion sustained":"transition"}`, conf: z.conf });
+    } else if (r < 0.7) {
+      addEvent({ type:"hvac_signal", label: `Compressor ${STATE.hvac.compressorOn?"cycle":"start"}` });
+    } else if (r < 0.85) {
+      addEvent({ type:"arrival_predicted", label:`Arrival predicted +${10+Math.floor(Math.random()*20)} min`, conf: 0.7+Math.random()*0.25 });
+    } else {
+      addEvent({ type:"departure_predicted", label:`Departure predicted +${20+Math.floor(Math.random()*40)} min`, conf: 0.65+Math.random()*0.25 });
+    }
+  }
+
+  // override countdown
+  if (STATE.override.active && Date.now() > STATE.override.expiresAt) {
+    STATE.override = { active:false, expiresAt:0, label:"" };
+    $("#override-state").innerHTML = '<span class="meta-k">status</span> <span class="meta-v">no override</span>';
+    $("#ctrl-state").className = "badge info";
+    $("#ctrl-state").textContent = "following schedule";
+    addEvent({ type:"hvac_signal", label:"Override expired" });
+  }
+
+  // redraw visible panel each tick
+  const active = document.querySelector(".panel.on")?.id;
+  if (active === "panel-overview") renderOccupancy();
+  if (active === "panel-hvac") renderTemp();
+  if (active === "panel-presence") renderCsi();
+  if (active === "panel-predictions" && tickCount % 4 === 0) renderPrediction();
+
+  renderKpis();
+}
+
+// ───────────── seed initial events ─────────────
+function seedEvents() {
+  const now = Date.now();
+  const seeds = [
+    { type:"arrival_predicted", offset: -120, label:"Arrival predicted +12 min", conf:0.84 },
+    { type:"hvac_signal", offset: -110, label:"Pre-condition started" },
+    { type:"presence_changed", offset: -90, label:"Office: occupied", zone:"office", conf:0.74 },
+    { type:"hvac_signal", offset: -65, label:"Setpoint → 22.0°C" },
+    { type:"presence_changed", offset: -42, label:"Living Room: occupied", zone:"living", conf:0.92 },
+    { type:"hvac_signal", offset: -30, label:"Compressor start" },
+    { type:"departure_predicted", offset: -22, label:"Departure predicted +45 min", conf:0.71 },
+    { type:"presence_changed", offset: -10, label:"Kitchen: vacant", zone:"kitchen", conf:0.18 },
+  ];
+  seeds.forEach(s => STATE.events.push({
+    id: "seed-" + s.offset,
+    ts: now + s.offset*60*1000,
+    type: s.type,
+    label: s.label,
+    payload: s,
+  }));
+  STATE.events.sort((a,b)=>b.ts-a.ts);
+}
+
+// ───────────── init ─────────────
+seedEvents();
+renderKpis();
+renderZones();
+renderSchedule();
+renderEvents();
+renderOverviewEvents();
+renderOccupancy();
+renderCsi();
+renderTemp();
+renderPrediction();
+renderAccuracy();
+renderHeatmap();
+renderUpcoming();
+
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

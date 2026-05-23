@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Livestock Monitor — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --accent:142 70% 50%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warning:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;cursor:pointer;transition:all 0.2s}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.75rem;scroll-margin-top:5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;display:flex;align-items:center;gap:0.5rem}
+.section h2 .count{font-family:var(--font-mono);color:hsl(var(--primary));font-size:0.6875rem}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:54rem}
+
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:0.95rem 1rem;display:flex;align-items:center;gap:0.75rem;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at top right,hsl(var(--primary) / 0.06) 0%,transparent 60%);pointer-events:none}
+.kpi-ic{width:36px;height:36px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warning) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warning))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(var(--destructive))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+.kpi-sub.up{color:hsl(var(--accent))}
+.kpi-sub.dn{color:hsl(var(--destructive))}
+
+.split-2{display:grid;gap:0.875rem;grid-template-columns:2fr 1fr}
+@media(max-width:980px){.split-2{grid-template-columns:1fr}}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(3,1fr)}
+@media(max-width:980px){.grid-3{grid-template-columns:1fr}}
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:1fr 1fr}
+@media(max-width:780px){.grid-2{grid-template-columns:1fr}}
+.grid-4{display:grid;gap:0.875rem;grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.grid-4{grid-template-columns:1fr}}
+
+.badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.15rem 0.55rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent;font-family:var(--font-display)}
+.badge.ok{background:hsl(var(--accent) / 0.12);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.25)}
+.badge.warn{background:hsl(var(--warning) / 0.12);color:hsl(35 85% 70%);border-color:hsl(var(--warning) / 0.25)}
+.badge.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.25)}
+.badge.info{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.species{font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.04em;text-transform:uppercase}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(var(--accent));box-shadow:0 0 6px hsl(var(--accent) / 0.6)}
+.dot.down{background:hsl(var(--destructive))}
+.dot.warn{background:hsl(var(--warning));box-shadow:0 0 6px hsl(var(--warning) / 0.6)}
+.pulse{animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.btn-row{display:flex;gap:0.4rem;flex-wrap:wrap}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{padding:0.4rem 0.75rem;border-radius:0.375rem;font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));background:hsl(var(--muted));border:1px solid transparent;cursor:pointer;transition:all 0.2s;font-family:var(--font-display)}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.55rem 0.6rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-size:0.8125rem;color:hsl(var(--foreground))}
+tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+tbody td.mono{font-family:var(--font-mono);font-size:0.75rem}
+.events-table-wrap{max-height:420px;overflow-y:auto;border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem}
+.events-table-wrap thead th{position:sticky;top:0;background:hsl(var(--card));z-index:1}
+
+/* Breathing canvas */
+.breathing-host{position:relative;height:220px;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;overflow:hidden}
+.breathing-host canvas{position:absolute;inset:0;width:100%;height:100%}
+.breathing-overlay{position:absolute;top:0.5rem;left:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));pointer-events:none;line-height:1.6}
+.breathing-overlay b{color:hsl(var(--primary));font-weight:600}
+.breathing-overlay .anomaly{color:hsl(var(--destructive));font-weight:600}
+.breathing-overlay .pen-meta-line{color:hsl(var(--muted-foreground))}
+.breathing-overlay .pen-meta-line b{color:hsl(var(--foreground))}
+
+/* Pen selector */
+.pen-selector{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+.pen-selector select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.65rem;font-family:var(--font-mono);font-size:0.75rem;outline:none}
+.pen-selector select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+.recent-pens{display:flex;gap:0.25rem;flex-wrap:wrap}
+
+/* Pen cards */
+.barn-header{display:flex;align-items:center;justify-content:space-between;margin:0.5rem 0 0.5rem;padding:0.4rem 0.6rem;background:hsl(var(--secondary) / 0.4);border-radius:0.4rem;font-size:0.75rem;font-family:var(--font-mono)}
+.barn-header b{color:hsl(var(--foreground));font-weight:600}
+.barn-header .meta{color:hsl(var(--muted-foreground));font-size:0.6875rem}
+.pen-grid{display:grid;gap:0.5rem;grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}
+.pen{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.6rem 0.7rem;display:flex;flex-direction:column;gap:0.25rem;position:relative;cursor:pointer;transition:all 0.15s;overflow:hidden}
+.pen:hover{border-color:hsl(var(--primary) / 0.5);transform:translateY(-1px)}
+.pen.occupied{border-color:hsl(var(--accent) / 0.35);background:linear-gradient(180deg,hsl(var(--accent) / 0.04),hsl(var(--background)))}
+.pen.empty{opacity:0.5}
+.pen.alarm{border-color:hsl(var(--destructive) / 0.6);background:linear-gradient(180deg,hsl(var(--destructive) / 0.08),hsl(var(--background)))}
+.pen.focused{outline:2px solid hsl(var(--primary));outline-offset:1px}
+.pen-h{display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;font-weight:600;font-family:var(--font-mono);color:hsl(var(--foreground))}
+.pen-meta{font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);line-height:1.55}
+.pen-meta b{color:hsl(var(--foreground));font-weight:500}
+.pen-species{font-size:0.6rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+
+/* Ridgeline — futuristic HUD style */
+.ridge{position:relative;padding:0.55rem 0;border-radius:0.55rem;overflow:hidden;border:1px solid hsl(220 30% 14%);background:
+  radial-gradient(ellipse 110% 90% at 50% 50%,hsl(220 60% 9% / 0.85) 0%,hsl(220 70% 4% / 0.95) 80%),
+  linear-gradient(180deg,hsl(220 45% 7%) 0%,hsl(220 60% 5%) 100%)}
+.ridge::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;background:repeating-linear-gradient(180deg,transparent 0 2px,hsl(185 90% 65% / 0.045) 2px 3px,transparent 3px 4px)}
+.ridge::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:
+  radial-gradient(ellipse 130% 110% at 50% 50%,transparent 55%,hsl(220 70% 3% / 0.55) 100%),
+  linear-gradient(180deg,hsl(220 70% 3% / 0.5) 0%,transparent 12%,transparent 88%,hsl(220 70% 3% / 0.5))}
+.ridge svg{display:block;width:100%;height:auto;position:relative;z-index:1}
+.ridge-corner{stroke:hsl(185 90% 70%);stroke-width:1.3;fill:none;opacity:0.55;filter:drop-shadow(0 0 3px hsl(185 90% 50% / 0.6))}
+.ridge-day-label{font-family:var(--font-mono);font-size:0.78rem;font-weight:700;letter-spacing:0.08em}
+.ridge-day-sub{font-family:var(--font-mono);font-size:0.52rem;letter-spacing:0.2em;fill:hsl(var(--muted-foreground));font-weight:600}
+.ridge-day-peak{font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.04em}
+.ridge-stroke-glow{fill:none;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;opacity:0.55}
+.ridge-stroke{fill:none;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}
+.ridge-baseline{stroke-width:0.5;opacity:0.22;fill:none;stroke-dasharray:4 6}
+.ridge-hour-tick{stroke:hsl(185 60% 35%);stroke-width:0.7;stroke-dasharray:1 5;opacity:0.45}
+.ridge-hour-major{stroke:hsl(185 80% 60%);stroke-width:0.6;stroke-dasharray:none;opacity:0.25}
+.ridge-hour-label{font-family:var(--font-mono);font-size:0.55rem;fill:hsl(185 65% 65%);letter-spacing:0.12em;font-weight:600}
+.ridge-hud{font-family:var(--font-mono);font-size:9px;fill:hsl(185 80% 70%);letter-spacing:0.18em;font-weight:600}
+.ridge-hud.dim{fill:hsl(var(--muted-foreground));font-size:8px;letter-spacing:0.15em;font-weight:500}
+.ridge-escape{cursor:pointer}
+.ridge-escape:hover{transform:scale(1.15);transform-origin:center}
+.ridge-sweep line{filter:drop-shadow(0 0 4px hsl(185 100% 60%))}
+@keyframes ridge-peak{0%,100%{opacity:0.9;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}
+.ridge-peak-dot{transform-box:fill-box;transform-origin:center;animation:ridge-peak 2.6s ease-in-out infinite}
+@keyframes ridge-esc{0%,100%{opacity:0.35}50%{opacity:0.85}}
+.ridge-esc-halo{animation:ridge-esc 1.6s ease-in-out infinite}
+
+/* Perimeter map */
+.perimeter-host{position:relative;background:radial-gradient(ellipse at center,hsl(120 25% 8%) 0%,hsl(120 30% 4%) 100%);border:1px solid hsl(120 25% 14%);border-radius:0.5rem;overflow:hidden}
+.perimeter-host svg{display:block;width:100%;height:auto}
+.perimeter-host .barn-rect{fill:hsl(220 20% 12%);stroke:hsl(185 60% 35%);stroke-width:1.5}
+.perimeter-host .barn-label{font-family:var(--font-mono);font-size:11px;fill:hsl(185 70% 75%);font-weight:600}
+.perimeter-host .property{fill:none;stroke:hsl(120 30% 28%);stroke-width:1.5;stroke-dasharray:6 4}
+.perimeter-host .fence-line{stroke-width:3;stroke-linecap:round}
+.perimeter-host .fence-line.ok{stroke:hsl(142 60% 45%)}
+.perimeter-host .fence-line.warn{stroke:hsl(35 85% 55%)}
+.perimeter-host .fence-line.breach{stroke:hsl(0 75% 55%);filter:drop-shadow(0 0 6px hsl(0 75% 50%))}
+.perimeter-host .fence-sensor{fill:hsl(120 30% 5%);stroke:hsl(142 60% 50%);stroke-width:1.2}
+.perimeter-host .fence-sensor.warn{stroke:hsl(35 85% 60%);fill:hsl(35 60% 12%)}
+.perimeter-host .fence-sensor.breach{stroke:hsl(0 80% 65%);fill:hsl(0 60% 15%)}
+.perimeter-host .gate{fill:hsl(220 25% 5%);stroke:hsl(190 80% 60%);stroke-width:1.5}
+.perimeter-host .gate-label{font-family:var(--font-mono);font-size:8px;fill:hsl(190 70% 75%)}
+.perimeter-host .compass{font-family:var(--font-mono);font-size:11px;font-weight:700;fill:hsl(210 20% 80%)}
+.perimeter-host .animal{transition:r 0.3s}
+.perimeter-host .animal-alarm{filter:drop-shadow(0 0 6px hsl(0 75% 55%));animation:peri-pulse 1.1s ease-in-out infinite}
+.perimeter-host .vector{stroke:hsl(0 75% 60%);stroke-width:1.5;fill:none;marker-end:url(#arrowhead)}
+@keyframes peri-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+
+.perimeter-legend{display:flex;gap:0.85rem;flex-wrap:wrap;margin-top:0.6rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.perimeter-legend .item{display:inline-flex;align-items:center;gap:0.35rem}
+.perimeter-legend .dot-swatch{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+.fence-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.5rem;margin-top:0.4rem}
+.fence-seg{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.55rem 0.7rem;font-family:var(--font-mono);font-size:0.75rem}
+.fence-seg .seg-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;gap:0.4rem}
+.fence-seg .seg-name{color:hsl(var(--foreground));font-weight:600;font-size:0.8125rem}
+.fence-seg .seg-meta{color:hsl(var(--muted-foreground));font-size:0.6875rem;line-height:1.4}
+.fence-seg.ok{border-color:hsl(142 60% 40% / 0.35)}
+.fence-seg.warn{border-color:hsl(35 85% 55% / 0.4);background:linear-gradient(180deg,hsl(35 80% 50% / 0.05),hsl(var(--background)))}
+.fence-seg.breach{border-color:hsl(0 70% 55% / 0.5);background:linear-gradient(180deg,hsl(0 70% 50% / 0.08),hsl(var(--background)));animation:pulse 1.6s ease-in-out infinite}
+
+.proximity-list{display:flex;flex-direction:column;gap:0.25rem;margin-top:0.4rem}
+.proximity-row{display:flex;justify-content:space-between;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;border:1px solid hsl(var(--border));border-radius:0.4rem;background:hsl(var(--background));flex-wrap:wrap}
+.proximity-row.theft{border-color:hsl(0 70% 55% / 0.5);background:linear-gradient(180deg,hsl(0 70% 50% / 0.08),hsl(var(--background)));animation:pulse 1.6s ease-in-out infinite}
+.proximity-row.warn{border-color:hsl(35 85% 55% / 0.4)}
+.proximity-row .info{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.proximity-row .pen-tag{font-family:var(--font-mono);font-weight:600;color:hsl(var(--foreground));font-size:0.8125rem}
+.proximity-row .meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));flex:1;min-width:140px;text-align:right}
+.proximity-empty{padding:1.25rem;text-align:center;color:hsl(142 70% 60%);font-size:0.8125rem}
+
+/* Floating tooltip (reused) */
+#tooltip{position:fixed;z-index:200;background:hsl(var(--card));border:1px solid hsl(var(--border));padding:0.45rem 0.65rem;border-radius:0.4rem;font-size:0.75rem;font-family:var(--font-mono);color:hsl(var(--foreground));pointer-events:none;opacity:0;transition:opacity 0.12s;box-shadow:var(--shadow-card);max-width:260px;line-height:1.55}
+#tooltip.show{opacity:1}
+#tooltip b{color:hsl(var(--primary));font-weight:600}
+#tooltip .lbl{color:hsl(var(--muted-foreground));font-size:0.6875rem}
+#tooltip .alert{color:hsl(0 70% 70%);font-weight:600}
+
+/* Sparkline / line charts */
+.chart-host{width:100%;height:160px}
+.chart-host svg{width:100%;height:100%;display:block}
+.chart-line{fill:none;stroke:hsl(var(--primary));stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart-area{fill:url(#gradPrimary);opacity:0.9}
+.chart-grid{stroke:hsl(var(--border) / 0.4);stroke-width:1;stroke-dasharray:2 4}
+.chart-axis{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground))}
+.chart-host.small{height:96px}
+
+/* Donut */
+.donut-row{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+.donut-host{flex:0 0 auto;width:160px;height:160px;position:relative}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.donut-center .v{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));font-variant-numeric:tabular-nums}
+.donut-center .l{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;margin-top:0.1rem}
+.donut-legend{flex:1;min-width:160px;display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem}
+.donut-legend .row{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.3rem 0;border-bottom:1px dashed hsl(var(--border) / 0.4)}
+.donut-legend .row:last-child{border-bottom:none}
+.donut-legend .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:0.5rem;vertical-align:middle}
+.donut-legend .v{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* Gauge */
+.gauge-host{position:relative;width:100%;height:140px;display:flex;align-items:center;justify-content:center}
+.gauge-host svg{width:240px;height:140px;display:block}
+.gauge-val{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);text-align:center}
+.gauge-val .v{font-size:1.625rem;font-weight:700;color:hsl(var(--foreground));line-height:1;font-variant-numeric:tabular-nums}
+.gauge-val .l{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em;margin-top:0.25rem}
+
+/* Vitals + Env mini stats */
+.stat-grid{display:grid;gap:0.5rem;grid-template-columns:repeat(2,1fr)}
+.stat{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.5rem 0.65rem}
+.stat .l{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+.stat .v{font-size:1.05rem;font-weight:600;color:hsl(var(--foreground));font-variant-numeric:tabular-nums;line-height:1.2;margin-top:0.1rem}
+.stat .v.warn{color:hsl(var(--warning))}
+.stat .v.dn{color:hsl(var(--destructive))}
+.stat .v.up{color:hsl(var(--accent))}
+.stat .sub{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+
+/* Progress bars for feed/water levels (NOT a bar chart — these are individual gauges) */
+.level{display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;font-family:var(--font-mono)}
+.level .name{width:48px;color:hsl(var(--muted-foreground))}
+.level .track{flex:1;height:8px;background:hsl(var(--muted));border-radius:4px;overflow:hidden}
+.level .fill{height:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));border-radius:4px;transition:width 0.3s}
+.level .fill.low{background:linear-gradient(90deg,hsl(var(--warning)),hsl(var(--destructive)))}
+.level .num{width:42px;text-align:right;color:hsl(var(--foreground))}
+
+/* Hospital bedside monitor */
+.monitor{padding:0.85rem;background:hsl(220 35% 3%);border:1px solid hsl(220 25% 14%);border-radius:var(--radius);box-shadow:inset 0 0 24px hsl(220 50% 2% / 0.6),var(--shadow-card)}
+.monitor-h{display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0.65rem;margin-bottom:0.55rem;background:hsl(220 30% 6%);border:1px solid hsl(220 25% 12%);border-radius:0.35rem;font-family:var(--font-mono);font-size:0.75rem;flex-wrap:wrap;gap:0.5rem}
+.monitor-title{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap}
+.monitor-title .lead{color:hsl(var(--muted-foreground));font-size:0.625rem;letter-spacing:0.12em;text-transform:uppercase}
+.monitor-title .pt-name{color:hsl(140 85% 62%);font-weight:700;font-size:0.95rem;text-shadow:0 0 8px hsl(140 80% 50% / 0.5)}
+.monitor-title .pt-meta{color:hsl(var(--muted-foreground));font-size:0.7rem}
+.monitor-status{display:flex;align-items:center;gap:0.6rem;color:hsl(140 85% 62%)}
+.monitor-status .state{font-family:var(--font-mono);background:hsl(140 60% 10%);color:hsl(140 90% 65%);border:1px solid hsl(140 60% 22%);border-radius:9999px;padding:0.1rem 0.55rem;font-size:0.625rem;font-weight:700;letter-spacing:0.06em}
+.monitor-status .state.alarm{background:hsl(0 60% 14%);color:hsl(0 85% 75%);border-color:hsl(0 60% 30%);animation:pulse 1.2s ease-in-out infinite}
+.monitor-status .time{color:hsl(140 85% 62%);font-variant-numeric:tabular-nums;text-shadow:0 0 6px hsl(140 80% 50% / 0.45)}
+.monitor-grid{display:grid;gap:0.5rem;grid-template-columns:1fr 168px}
+@media(max-width:780px){.monitor-grid{grid-template-columns:1fr}}
+.monitor-traces{display:flex;flex-direction:column;gap:0.45rem}
+.trace{background:hsl(220 40% 2.5%);border:1px solid hsl(220 25% 11%);border-radius:0.35rem;overflow:hidden;position:relative;height:120px;
+  background-image:
+    linear-gradient(hsl(345 35% 22% / 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(345 35% 22% / 0.16) 1px, transparent 1px),
+    linear-gradient(hsl(345 40% 28% / 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(345 40% 28% / 0.32) 1px, transparent 1px);
+  background-size: 8px 8px, 8px 8px, 40px 40px, 40px 40px;
+}
+.trace-h{position:absolute;top:5px;left:8px;right:8px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));pointer-events:none;z-index:2;letter-spacing:0.04em}
+.trace-h .lead-tag{font-weight:700;letter-spacing:0.08em;text-shadow:0 0 4px currentColor}
+.trace canvas{position:absolute;inset:0;width:100%;height:100%}
+.monitor-side{display:flex;flex-direction:column;gap:0.4rem}
+.vital{background:hsl(220 40% 2.5%);border:1px solid hsl(220 25% 11%);border-radius:0.35rem;padding:0.4rem 0.6rem 0.45rem;display:flex;flex-direction:column;font-family:var(--font-mono);position:relative;overflow:hidden}
+.vital::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:currentColor;opacity:0.85}
+.vital.hr{color:hsl(140 85% 62%)}
+.vital.spo2{color:hsl(190 90% 62%)}
+.vital.resp{color:hsl(50 95% 62%)}
+.vital.temp{color:hsl(210 25% 92%)}
+.vital.nibp{color:hsl(15 90% 68%)}
+.vital-h{display:flex;align-items:baseline;justify-content:space-between;color:hsl(var(--muted-foreground));font-size:0.625rem;text-transform:uppercase;letter-spacing:0.08em}
+.vital-label{color:currentColor;font-weight:700;letter-spacing:0.1em}
+.vital-unit{color:hsl(var(--muted-foreground));font-size:0.6rem}
+.vital-val{color:currentColor;font-size:1.85rem;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums;text-shadow:0 0 12px currentColor,0 0 4px currentColor;margin-top:0.05rem;font-family:var(--font-mono)}
+.vital-val.small{font-size:1.4rem;letter-spacing:-0.03em}
+.vital-limits{color:hsl(var(--muted-foreground));font-size:0.625rem;margin-top:0.08rem}
+.vital.alarm{animation:vital-alarm 0.95s ease-in-out infinite;border-color:hsl(0 70% 40%)}
+.vital.alarm .vital-val{color:hsl(0 80% 70%);text-shadow:0 0 12px hsl(0 80% 60%),0 0 4px hsl(0 80% 60%)}
+@keyframes vital-alarm{0%,100%{background:hsl(220 40% 2.5%)}50%{background:hsl(0 60% 10%)}}
+
+/* KV */
+.kv{display:grid;grid-template-columns:120px 1fr;gap:0.4rem 0.85rem;font-size:0.8125rem}
+.kv dt{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;align-self:center}
+.kv dd{color:hsl(var(--foreground));font-family:var(--font-mono);font-size:0.75rem;word-break:break-all}
+
+/* Toast */
+.toast{position:fixed;bottom:1rem;right:1rem;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.6rem 0.875rem;font-size:0.8125rem;box-shadow:var(--shadow-card);opacity:0;transform:translateY(8px);transition:all 0.25s;z-index:100;pointer-events:none;max-width:320px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-color:hsl(var(--accent) / 0.4)}
+.toast.err{border-color:hsl(var(--destructive) / 0.4)}
+
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+
+.toolbar{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.75rem}
+.toolbar input,.toolbar select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.65rem;font-family:var(--font-display);font-size:0.8125rem;outline:none}
+.toolbar input:focus,.toolbar select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+.toolbar input{min-width:200px}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 11c0-2.5 2-4.5 4.5-4.5h7c2.5 0 4.5 2 4.5 4.5v2c0 2.5-2 4.5-4.5 4.5h-7C6 17.5 4 15.5 4 13zM8 7V4M16 7V4M8 21v-3M16 21v-3"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Livestock Monitor<span class="brand-ver mono">v0.9.0</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-target="overview" class="active">Overview</a>
+      <a data-target="breathing">Breathing</a>
+      <a data-target="vitals">Vitals</a>
+      <a data-target="environment">Environment</a>
+      <a data-target="pens">Pens</a>
+      <a data-target="activity">Activity</a>
+      <a data-target="perimeter">Perimeter</a>
+      <a data-target="events">Events</a>
+      <a data-target="hardware">Hardware</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="section">
+    <h1 class="page">Livestock Monitor</h1>
+    <p class="lede">Continuous welfare monitoring across the herd: animal presence and per-individual respiratory waveforms via channel state inference (CSI), body temperature, activity, feed and water levels, barn environment (temperature / humidity / NH<sub>3</sub> / CO<sub>2</sub>), and escape detection. 48 animals across 4 species streamed from an ESP32-S3 sensor mesh.</p>
+    <div class="btn-row">
+      <button class="btn primary" id="btn-sim-present"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Animal present</button>
+      <button class="btn" id="btn-sim-breath"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 4 10 2-5h7"/></svg>Breathing anomaly</button>
+      <button class="btn danger" id="btn-sim-escape"><svg viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>Escape detected</button>
+      <button class="btn outline" id="btn-refresh"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>Refresh</button>
+      <button class="btn outline" id="btn-export"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export CSV</button>
+    </div>
+  </div>
+
+  <div class="section" id="overview">
+    <h2>Overview</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M4 11c0-2.5 2-4.5 4.5-4.5h7c2.5 0 4.5 2 4.5 4.5v2c0 2.5-2 4.5-4.5 4.5h-7C6 17.5 4 15.5 4 13zM8 7V4M16 7V4M8 21v-3M16 21v-3"/></svg></div><div class="kpi-info"><div class="kpi-label">Animals present</div><div class="kpi-val" id="kpi-count">—</div><div class="kpi-sub" id="kpi-count-sub">— of 48 pens</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 4 10 2-5h7"/></svg></div><div class="kpi-info"><div class="kpi-label">Mean BPM</div><div class="kpi-val" id="kpi-bpm">—</div><div class="kpi-sub up" id="kpi-bpm-sub">within normal range</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div><div class="kpi-info"><div class="kpi-label">Mean body temp</div><div class="kpi-val" id="kpi-temp">—</div><div class="kpi-sub up" id="kpi-temp-sub">38.6 °C normal</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div><div class="kpi-info"><div class="kpi-label">Breathing anomalies</div><div class="kpi-val" id="kpi-anom">—</div><div class="kpi-sub" id="kpi-anom-sub">last 24h</div></div></div>
+      <div class="kpi"><div class="kpi-ic danger"><svg viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg></div><div class="kpi-info"><div class="kpi-label">Escapes today</div><div class="kpi-val" id="kpi-esc">—</div><div class="kpi-sub" id="kpi-esc-sub">acknowledged 0</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div class="kpi-info"><div class="kpi-label">Sensor uptime</div><div class="kpi-val" id="kpi-up">—</div><div class="kpi-sub" id="kpi-up-sub">12 of 12 nodes online</div></div></div>
+    </div>
+  </div>
+
+  <!-- Breathing + gauge -->
+  <div class="section" id="breathing">
+    <h2>Live respiratory monitor <span class="count" id="breath-tag">— bpm</span></h2>
+    <div class="split-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI breathing waveform <span id="ovl-pen-title" class="mono" style="font-weight:400;color:hsl(var(--muted-foreground));margin-left:0.4rem">—</span></div>
+            <div class="card-sub" id="breath-sub">Channel state inference · 10 Hz · per-animal pattern</div>
+          </div>
+          <div class="pen-selector">
+            <select id="pen-select" title="Choose an animal"></select>
+            <button class="btn sm" id="btn-pause"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause</button>
+          </div>
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <div class="recent-pens pill-tabs" id="breath-quick"></div>
+        </div>
+        <div class="breathing-host">
+          <canvas id="breath-canvas"></canvas>
+          <div class="breathing-overlay">
+            <div>Pen <b id="ovl-pen">—</b> · <b id="ovl-bpm">—</b> bpm · <span id="ovl-status" class="anomaly" style="display:none">⚠ anomaly</span></div>
+            <div class="pen-meta-line">species <b id="ovl-species">—</b> · normal <b id="ovl-normal">—</b></div>
+            <div class="pen-meta-line">amp <b id="ovl-amp">—</b> · noise <b id="ovl-noise">—</b> · irreg <b id="ovl-irreg">—</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Herd health</div><div class="card-sub">Composite score · last 5 min</div></div></div>
+        <div class="gauge-host">
+          <svg viewBox="0 0 240 140">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="hsl(0 65% 50%)"/>
+                <stop offset="50%" stop-color="hsl(35 85% 55%)"/>
+                <stop offset="100%" stop-color="hsl(142 70% 50%)"/>
+              </linearGradient>
+            </defs>
+            <path d="M 20 120 A 100 100 0 0 1 220 120" stroke="hsl(220 15% 18%)" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M 20 120 A 100 100 0 0 1 220 120" stroke="url(#gaugeGrad)" stroke-width="14" fill="none" stroke-linecap="round" id="gauge-arc" stroke-dasharray="314.16" stroke-dashoffset="80"/>
+            <g id="gauge-needle">
+              <line x1="120" y1="120" x2="120" y2="40" stroke="hsl(210 20% 92%)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="120" cy="120" r="6" fill="hsl(185 80% 50%)"/>
+            </g>
+          </svg>
+          <div class="gauge-val"><div class="v" id="gauge-val">—</div><div class="l">healthy</div></div>
+        </div>
+        <div class="stat-grid" style="margin-top:0.75rem">
+          <div class="stat"><div class="l">Min BPM</div><div class="v mono" id="hm-min">—</div></div>
+          <div class="stat"><div class="l">Max BPM</div><div class="v mono" id="hm-max">—</div></div>
+          <div class="stat"><div class="l">Variance</div><div class="v mono" id="hm-var">—</div></div>
+          <div class="stat"><div class="l">Alerts open</div><div class="v mono" id="hm-alerts">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vitals — bedside monitor -->
+  <div class="section" id="vitals">
+    <h2>Vital signs · bedside monitor <span class="count" id="vitals-pen">—</span></h2>
+    <div class="monitor">
+      <div class="monitor-h">
+        <div class="monitor-title">
+          <span class="lead">PT</span>
+          <span class="pt-name" id="mon-pen">—</span>
+          <span class="pt-meta" id="mon-meta">—</span>
+        </div>
+        <div class="monitor-status">
+          <span class="state" id="mon-state">MONITORING</span>
+          <span class="time" id="mon-time">--:--:--</span>
+        </div>
+      </div>
+      <div class="monitor-grid">
+        <div class="monitor-traces">
+          <div class="trace">
+            <div class="trace-h"><span class="lead-tag" style="color:hsl(140 85% 62%)">ECG  II</span><span>25 mm/s · 10 mm/mV</span></div>
+            <canvas id="trace-ecg"></canvas>
+          </div>
+          <div class="trace">
+            <div class="trace-h"><span class="lead-tag" style="color:hsl(190 90% 62%)">SpO₂  PLETH</span><span>PR derived</span></div>
+            <canvas id="trace-pleth"></canvas>
+          </div>
+          <div class="trace">
+            <div class="trace-h"><span class="lead-tag" style="color:hsl(50 95% 62%)">RESP  CSI</span><span>channel state</span></div>
+            <canvas id="trace-resp"></canvas>
+          </div>
+        </div>
+        <div class="monitor-side">
+          <div class="vital hr" id="vital-hr"><div class="vital-h"><span class="vital-label">HR</span><span class="vital-unit">bpm</span></div><div class="vital-val" id="vit-hr">—</div><div class="vital-limits" id="vit-hr-lim">—</div></div>
+          <div class="vital spo2" id="vital-spo2"><div class="vital-h"><span class="vital-label">SpO₂</span><span class="vital-unit">%</span></div><div class="vital-val" id="vit-spo2">—</div><div class="vital-limits">≥ 95</div></div>
+          <div class="vital resp" id="vital-resp"><div class="vital-h"><span class="vital-label">RESP</span><span class="vital-unit">/min</span></div><div class="vital-val" id="vit-resp">—</div><div class="vital-limits" id="vit-resp-lim">—</div></div>
+          <div class="vital temp" id="vital-temp"><div class="vital-h"><span class="vital-label">TEMP</span><span class="vital-unit">°C</span></div><div class="vital-val" id="vit-temp">—</div><div class="vital-limits" id="vit-temp-lim">—</div></div>
+          <div class="vital nibp" id="vital-nibp"><div class="vital-h"><span class="vital-label">NIBP</span><span class="vital-unit">mmHg</span></div><div class="vital-val small" id="vit-nibp">—</div><div class="vital-limits" id="vit-nibp-lim">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:0.875rem">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Trends · 30 min</div><div class="card-sub">Body temperature &amp; CSI motion</div></div></div>
+        <div class="chart-host small" id="chart-temp"></div>
+        <div class="chart-host small" id="chart-act" style="margin-top:0.4rem"></div>
+        <div class="stat-grid" style="margin-top:0.6rem">
+          <div class="stat"><div class="l">Temp 24h Δ</div><div class="v mono" id="vt-temp-delta">—</div><div class="sub" id="vt-temp-status">—</div></div>
+          <div class="stat"><div class="l">Steps · 1h</div><div class="v mono" id="vt-steps">—</div><div class="sub" id="vt-act-status">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Feed &amp; water</div><div class="card-sub">trough levels · last consumed</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.55rem;margin-top:0.4rem">
+          <div class="level"><span class="name">Feed</span><div class="track"><div class="fill" id="lvl-feed" style="width:0%"></div></div><span class="num mono" id="lvl-feed-n">—</span></div>
+          <div class="level"><span class="name">Water</span><div class="track"><div class="fill" id="lvl-water" style="width:0%"></div></div><span class="num mono" id="lvl-water-n">—</span></div>
+          <div class="level"><span class="name">Salt</span><div class="track"><div class="fill" id="lvl-salt" style="width:0%"></div></div><span class="num mono" id="lvl-salt-n">—</span></div>
+        </div>
+        <div class="stat-grid" style="margin-top:0.7rem">
+          <div class="stat"><div class="l">Last meal</div><div class="v mono" id="vt-meal" style="font-size:0.9rem">—</div></div>
+          <div class="stat"><div class="l">Last drink</div><div class="v mono" id="vt-drink" style="font-size:0.9rem">—</div></div>
+          <div class="stat"><div class="l">Weight</div><div class="v mono" id="vt-weight" style="font-size:0.9rem">—</div></div>
+          <div class="stat"><div class="l">Activity</div><div class="v mono" id="vt-act" style="font-size:0.9rem">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Count chart + Event donut -->
+  <div class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Animal count (last 60 min)</div>
+            <div class="card-sub" id="count-sub">Aggregated presence across all pens</div>
+          </div>
+          <div class="pill-tabs" id="range-tabs">
+            <button class="pill-tab" data-range="15">15m</button>
+            <button class="pill-tab on" data-range="60">60m</button>
+            <button class="pill-tab" data-range="240">4h</button>
+            <button class="pill-tab" data-range="1440">24h</button>
+          </div>
+        </div>
+        <div class="chart-host" id="chart-count"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Event distribution</div><div class="card-sub">Last 24 hours · <span id="donut-total">0</span> events</div></div></div>
+        <div class="donut-row">
+          <div class="donut-host" id="donut"></div>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Environment -->
+  <div class="section" id="environment">
+    <h2>Barn environment</h2>
+    <div class="grid-4" id="env-grid"></div>
+  </div>
+
+  <!-- Pens -->
+  <div class="section" id="pens">
+    <h2>Pens <span class="count" id="pens-count"></span></h2>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Presence map · 48 animals</div>
+          <div class="card-sub">Click any animal to focus its waveform &amp; vitals</div>
+        </div>
+        <div class="btn-row">
+          <span class="badge ok"><span class="dot up"></span>occupied</span>
+          <span class="badge muted">empty</span>
+          <span class="badge danger"><span class="dot down"></span>alarm</span>
+        </div>
+      </div>
+      <div id="barns"></div>
+    </div>
+  </div>
+
+  <!-- Activity rhythms — joy/ridgeline plot -->
+  <div class="section" id="activity">
+    <h2>Activity rhythms</h2>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Herd activity rhythm · 7-day ridgeline</div>
+          <div class="card-sub">Each ridge is one day's herd activity over 24 hours. Peaks are feeding / movement windows. Red ▼ marks an escape event at that hour.</div>
+        </div>
+        <button class="btn sm outline" id="btn-regen-ridge"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/></svg>Resample</button>
+      </div>
+      <div class="ridge" id="ridge-host"></div>
+    </div>
+  </div>
+
+  <!-- Perimeter & escape watch -->
+  <div class="section" id="perimeter">
+    <h2>Perimeter &amp; escape watch <span class="count" id="perimeter-count">—</span></h2>
+    <div class="split-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Property map · live positions</div>
+            <div class="card-sub">Top-down view of the 4 barns. ~254 head of livestock shown by species colour; 48 are individually instrumented (clickable) — the rest are tracked as herd density. Perimeter: 8 fence sensors + 2 gates.</div>
+          </div>
+          <div class="btn-row">
+            <span class="badge ok"><span class="dot up"></span>intact</span>
+            <span class="badge warn">vibration</span>
+            <span class="badge danger"><span class="dot down"></span>breach</span>
+          </div>
+        </div>
+        <div class="perimeter-host" id="perimeter-map"></div>
+        <div class="perimeter-legend">
+          <span class="item"><span class="dot-swatch" style="background:hsl(35 80% 60%)"></span>cattle</span>
+          <span class="item"><span class="dot-swatch" style="background:hsl(200 30% 75%)"></span>sheep</span>
+          <span class="item"><span class="dot-swatch" style="background:hsl(355 60% 70%)"></span>pig</span>
+          <span class="item"><span class="dot-swatch" style="background:hsl(45 60% 65%)"></span>goat</span>
+          <span class="item"><span class="dot-swatch" style="background:hsl(0 75% 60%);box-shadow:0 0 6px hsl(0 75% 50%)"></span>alarm / escaping</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Escape &amp; theft watch</div><div class="card-sub">Geofence proximity + unauthorised motion · last 30 min</div></div>
+          <button class="btn sm" id="btn-sim-theft"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Sim theft alert</button>
+        </div>
+        <div class="proximity-list" id="proximity-list"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0.875rem">
+      <div class="card-h">
+        <div><div class="card-title">Fence sensors · 8 segments</div><div class="card-sub">Magnetometer + accelerometer pair on each perimeter span. Detects cut wire, climbing pressure, vehicle vibration.</div></div>
+        <button class="btn sm outline" id="btn-sim-fence"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Sim fence vibration</button>
+      </div>
+      <div class="fence-list" id="fence-list"></div>
+    </div>
+  </div>
+
+  <!-- Events -->
+  <div class="section" id="events">
+    <h2>Events <span class="count" id="events-count"></span></h2>
+    <div class="card">
+      <div class="card-h" style="margin-bottom:0.5rem">
+        <div><div class="card-title">Event stream</div><div class="card-sub">All events emitted by the livestock-monitor cog</div></div>
+        <div class="btn-row"><button class="btn sm outline" id="btn-clear"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Clear</button></div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="evt-search" placeholder="Search pen, species, type, message…">
+        <div class="pill-tabs" id="evt-tabs">
+          <button class="pill-tab on" data-evt="all">All</button>
+          <button class="pill-tab" data-evt="animal_present">animal_present</button>
+          <button class="pill-tab" data-evt="breathing_anomaly">breathing_anomaly</button>
+          <button class="pill-tab" data-evt="escape_detected">escape_detected</button>
+          <button class="pill-tab" data-evt="count">count</button>
+        </div>
+      </div>
+      <div class="events-table-wrap">
+        <table>
+          <thead><tr><th style="width:9rem">Time</th><th style="width:11rem">Event</th><th style="width:5.5rem">Pen</th><th>Message</th><th style="width:8rem;text-align:right">Action</th></tr></thead>
+          <tbody id="evt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hardware -->
+  <div class="section" id="hardware">
+    <h2>Hardware &amp; source</h2>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Cog metadata</div><div class="card-sub">Manifest</div></div></div>
+        <dl class="kv">
+          <dt>Name</dt><dd>livestock-monitor</dd>
+          <dt>Version</dt><dd>0.9.0</dd>
+          <dt>Category</dt><dd>Industrial</dd>
+          <dt>Footprint</dt><dd>20 KB</dd>
+          <dt>Complexity</dt><dd>Medium</dd>
+          <dt>Source</dt><dd>cognitum-one/cogs/src/cogs/livestock-monitor</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Sensor mesh</div><div class="card-sub">ESP32-S3 nodes</div></div></div>
+        <dl class="kv">
+          <dt>MCU</dt><dd>ESP32-S3</dd>
+          <dt>Input</dt><dd>CSI presence + breathing, NTC body-temp, NH<sub>3</sub>/CO<sub>2</sub>, ultrasonic level</dd>
+          <dt>Sample rate</dt><dd>10 Hz (CSI), 0.2 Hz (env)</dd>
+          <dt>Nodes</dt><dd id="hw-nodes">12 online / 12 total</dd>
+          <dt>Mesh</dt><dd>ESP-NOW, 2.4 GHz, 4 barn relays</dd>
+          <dt>Power</dt><dd>5 V DC · ~120 mA / node</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Emitted events</div><div class="card-sub">Schema · livestock-monitor</div></div></div>
+        <dl class="kv">
+          <dt>animal_present</dt><dd>{ pen, ts, confidence }</dd>
+          <dt>breathing_anomaly</dt><dd>{ pen, ts, bpm, kind }</dd>
+          <dt>escape_detected</dt><dd>{ pen, ts, vector }</dd>
+          <dt>count</dt><dd>{ pen, ts, n }</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: livestock-monitor</span> · <span class="mono">v0.9.0</span> · <span class="mono">esp32-s3 · csi</span></div>
+    <div style="margin-top:0.4rem">cognitum-one/cogs/src/cogs/livestock-monitor</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="tooltip"></div>
+
+<script>
+"use strict";
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const fmtTime = d => d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const rand = (a,b) => a+Math.random()*(b-a);
+const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+
+// Tiny seeded RNG so per-pen waveform character is stable across re-renders
+function mulberry32(seed){
+  return function(){
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t>>>15, t | 1);
+    t ^= t + Math.imul(t ^ t>>>7, t | 61);
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  };
+}
+function strHash(s){ let h = 2166136261>>>0; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h>>>0; }
+
+// --------------- Species + barn layout ---------------
+const SPECIES = {
+  cattle: { label:'Cattle',  bpmRange:[26,42], tempRange:[38.0,39.2], hrRange:[48,84],  nibpSys:[120,150], nibpDia:[70,90], normal:'26–42', icon:'🐄', amp:0.55, noiseBase:0.05, color:'hsl(35 80% 60%)' },
+  sheep:  { label:'Sheep',   bpmRange:[14,22], tempRange:[38.5,39.8], hrRange:[60,120], nibpSys:[100,130], nibpDia:[60,85], normal:'14–22', icon:'🐑', amp:0.38, noiseBase:0.04, color:'hsl(200 30% 75%)' },
+  pig:    { label:'Pig',     bpmRange:[25,38], tempRange:[38.7,39.8], hrRange:[70,120], nibpSys:[130,160], nibpDia:[75,95], normal:'25–38', icon:'🐖', amp:0.45, noiseBase:0.07, color:'hsl(355 60% 70%)' },
+  goat:   { label:'Goat',    bpmRange:[18,30], tempRange:[38.6,40.0], hrRange:[70,110], nibpSys:[110,140], nibpDia:[65,85], normal:'18–30', icon:'🐐', amp:0.42, noiseBase:0.05, color:'hsl(45 60% 65%)' },
+};
+const BARNS = [
+  { id:'A', label:'Barn A', species:'cattle', count:12 },
+  { id:'B', label:'Barn B', species:'sheep',  count:12 },
+  { id:'C', label:'Barn C', species:'pig',    count:12 },
+  { id:'D', label:'Barn D', species:'goat',   count:12 },
+];
+
+const STATE = {
+  pens: {},
+  penIds: [],
+  events: [],
+  filter: 'all',
+  search: '',
+  range: 60,
+  countSeries: [],
+  focusPen: 'A-01',
+  paused: false,
+  startedAt: new Date(Date.now() - 1000*60*60*36),
+  recents: ['A-01'],
+  env: {},
+};
+
+// --------------- Seed ---------------
+function seedPens(){
+  const ids = [];
+  BARNS.forEach(barn => {
+    const sp = SPECIES[barn.species];
+    for (let i=1; i<=barn.count; i++){
+      const id = `${barn.id}-${String(i).padStart(2,'0')}`;
+      ids.push(id);
+      const rng = mulberry32(strHash(id));
+      // every stall is occupied by default; escapes flip occupied→false at runtime
+      const occupied = true;
+      const baseBpm = Math.round(sp.bpmRange[0] + rng()*(sp.bpmRange[1]-sp.bpmRange[0]));
+      const baseTemp = sp.tempRange[0] + rng()*(sp.tempRange[1]-sp.tempRange[0]);
+      // each animal gets a slightly different waveform character
+      const breath = {
+        baseBpm,
+        ampMul: 0.85 + rng()*0.3,           // 0.85..1.15 × species amplitude
+        noiseMul: 0.7 + rng()*0.6,          // 0.7..1.3 × species noise
+        irregularity: rng()*0.06,            // baseline random irregularity (0..0.06)
+        sharpness: 0.4 + rng()*1.8,          // wave shape exponent (peaks vs sin)
+        phase: rng()*Math.PI*2,
+        drift: 0.5 + rng()*1.2,              // BPM drift speed
+      };
+      const hrBase = Math.round(sp.hrRange[0] + rng()*(sp.hrRange[1]-sp.hrRange[0]));
+      const sysBase = Math.round(sp.nibpSys[0] + rng()*(sp.nibpSys[1]-sp.nibpSys[0]));
+      const diaBase = Math.round(sp.nibpDia[0] + rng()*(sp.nibpDia[1]-sp.nibpDia[0]));
+      STATE.pens[id] = {
+        id,
+        species: barn.species,
+        barn: barn.id,
+        occupied,
+        bpm: occupied ? baseBpm + Math.round(rng()*2-1) : 0,
+        hr: occupied ? hrBase : 0,
+        spo2: occupied ? Math.round(96 + rng()*3) : 0,
+        nibpSys: occupied ? sysBase : 0,
+        nibpDia: occupied ? diaBase : 0,
+        confidence: occupied ? 0.72 + rng()*0.26 : 0,
+        bodyTemp: occupied ? baseTemp + (rng()*0.4-0.2) : 0,
+        activity: occupied ? Math.round(rng()*70+15) : 0,    // 0..100
+        feed: Math.round(rng()*70+25),                       // 25..95
+        water: Math.round(rng()*60+35),                      // 35..95
+        salt: Math.round(rng()*50+40),                       // 40..90
+        alarm: false,
+        weightKg: Math.round(({cattle:500,sheep:75,pig:120,goat:65}[barn.species]) + rng()*120 - 60),
+        lastSeen: occupied ? new Date(Date.now()-rng()*1000*60*5) : new Date(Date.now()-rng()*1000*60*60*8),
+        lastMeal: new Date(Date.now() - rng()*1000*60*180),
+        lastDrink: new Date(Date.now() - rng()*1000*60*120),
+        breath,
+        tempSeries: [],
+        actSeries: [],
+        steps1h: Math.round(rng()*900+80),
+      };
+      // seed mini timeseries (30 mins, 30s resolution)
+      const p = STATE.pens[id];
+      const samples = 60;
+      for (let s=samples-1; s>=0; s--){
+        const t = new Date(Date.now() - s*30*1000);
+        p.tempSeries.push({t, v: clamp(baseTemp + (Math.sin(s*0.18+rng())*0.15) + (rng()*0.08-0.04), 36.5, 41.5)});
+        p.actSeries.push({t, v: clamp(p.activity + Math.sin(s*0.22)*15 + (rng()*20-10), 0, 100)});
+      }
+    }
+  });
+  STATE.penIds = ids;
+}
+
+function seedEvents(){
+  const types = ['animal_present','breathing_anomaly','escape_detected','count'];
+  const weights = [0.55, 0.18, 0.04, 0.23];
+  const now = Date.now();
+  for (let i=0;i<140;i++){
+    const t = now - Math.random()*1000*60*60*24;
+    const r = Math.random();
+    let acc = 0, type = 'count';
+    for (let j=0;j<types.length;j++){ acc += weights[j]; if (r<=acc){ type = types[j]; break } }
+    pushEvent(type, new Date(t), {silent:true, pen:choice(STATE.penIds)});
+  }
+  STATE.events.sort((a,b)=> b.ts - a.ts);
+}
+function seedCountSeries(){
+  const minutes = 24*60;
+  let n = Math.round(STATE.penIds.length * 0.7);
+  const arr = [];
+  for (let i=minutes;i>=0;i--){
+    n = clamp(n + (Math.random()<0.5?-1:1)*(Math.random()<0.18?1:0), 0, STATE.penIds.length);
+    arr.push({t: new Date(Date.now()-i*60*1000), n});
+  }
+  STATE.countSeries = arr;
+}
+function seedRidge(){
+  // 7 days × 48 half-hourly buckets of herd activity intensity
+  const days = 7, buckets = 48;
+  const ridges = [];
+  for (let d=0; d<days; d++){
+    const arr = [];
+    const escapes = [];
+    const dailyOffset = (Math.random()-0.5)*1.5;
+    for (let i=0;i<buckets;i++){
+      const hr = i/2;
+      const morning = Math.exp(-((hr-8)/1.7)*((hr-8)/1.7)) * 9;
+      const evening = Math.exp(-((hr-19)/2.0)*((hr-19)/2.0)) * 7.5;
+      const noonRest = -Math.exp(-((hr-13)/2.2)*((hr-13)/2.2)) * 2;
+      const nightFloor = (hr<5||hr>22) ? -2 : 0;
+      const noise = (Math.random()-0.5)*1.6;
+      arr.push(clamp(5 + dailyOffset + morning + evening + noonRest + nightFloor + noise, 0, 16));
+    }
+    if (Math.random()<0.4){
+      escapes.push({h: rand(5,23)});
+      if (Math.random()<0.25) escapes.push({h: rand(5,23)});
+    }
+    ridges.push({ data: arr, escapes });
+  }
+  STATE._ridge = ridges;
+}
+
+function seedFenceSegs(){
+  // 8 segments around the property: 2 per side
+  const segs = [
+    { id:'N-W', label:'North-West', side:'top',    half:'left',  x1: 50,  y1: 30,  x2: 410, y2: 30  },
+    { id:'N-E', label:'North-East', side:'top',    half:'right', x1: 410, y1: 30,  x2: 770, y2: 30  },
+    { id:'E-N', label:'East-North', side:'right',  half:'top',   x1: 770, y1: 30,  x2: 770, y2: 195 },
+    { id:'E-S', label:'East-South', side:'right',  half:'bottom',x1: 770, y1: 205, x2: 770, y2: 370 },
+    { id:'S-E', label:'South-East', side:'bottom', half:'right', x1: 770, y1: 370, x2: 410, y2: 370 },
+    { id:'S-W', label:'South-West', side:'bottom', half:'left',  x1: 410, y1: 370, x2: 50,  y2: 370 },
+    { id:'W-S', label:'West-South', side:'left',   half:'bottom',x1: 30,  y1: 370, x2: 30,  y2: 205 },
+    { id:'W-N', label:'West-North', side:'left',   half:'top',   x1: 30,  y1: 195, x2: 30,  y2: 30  },
+  ];
+  segs.forEach(s => {
+    const r = Math.random();
+    s.status = r < 0.08 ? 'breach' : r < 0.22 ? 'warn' : 'ok';
+    s.lastEvent = new Date(Date.now() - rand(60*1000, 60*60*1000*6));
+    s.lastCheck = new Date(Date.now() - rand(2000, 90*1000));
+    s.vibration = s.status==='ok' ? Math.round(rand(0,15)) : Math.round(rand(40,120));
+  });
+  STATE._fenceSegs = segs;
+  // Gates: south middle, east middle
+  STATE._gates = [
+    { id:'Gate-S', x:410, y:370, side:'bottom', lastOpen: new Date(Date.now()-1000*60*rand(20,180)) },
+    { id:'Gate-E', x:770, y:200, side:'right',  lastOpen: new Date(Date.now()-1000*60*rand(120,400)) },
+  ];
+}
+function seedEnv(){
+  BARNS.forEach(b => {
+    const rng = mulberry32(strHash(b.id+'env'));
+    const series = [];
+    let t=18+rng()*4, h=55+rng()*15, nh=4+rng()*6, co=600+rng()*400;
+    for (let i=119;i>=0;i--){
+      t += (rng()*0.2-0.1);
+      h += (rng()*0.6-0.3);
+      nh += (rng()*0.4-0.2);
+      co += (rng()*30-15);
+      series.push({
+        t: new Date(Date.now()-i*60*1000),
+        temp: clamp(t, 12, 30),
+        humid: clamp(h, 40, 85),
+        nh3: clamp(nh, 0, 25),
+        co2: clamp(co, 400, 2000),
+      });
+    }
+    STATE.env[b.id] = { barn:b, series };
+  });
+}
+
+// --------------- Event ops ---------------
+function eventLabel(t){
+  return ({
+    animal_present:'Animal entered pen',
+    breathing_anomaly:'Irregular respiration detected',
+    escape_detected:'Animal left enclosure boundary',
+    count:'Periodic count snapshot',
+  })[t] || t;
+}
+function eventBadge(t){
+  return ({
+    animal_present:'<span class="badge ok"><span class="dot up"></span>animal_present</span>',
+    breathing_anomaly:'<span class="badge warn">breathing_anomaly</span>',
+    escape_detected:'<span class="badge danger"><span class="dot down"></span>escape_detected</span>',
+    count:'<span class="badge info">count</span>',
+  })[t] || ('<span class="badge muted">'+t+'</span>');
+}
+
+function pushEvent(type, ts, opts={}){
+  ts = ts || new Date();
+  const pen = opts.pen || choice(STATE.penIds);
+  const ev = { id: (crypto.randomUUID? crypto.randomUUID(): (Date.now()+'-'+Math.random())), type, ts, pen, ack: false };
+  const p = STATE.pens[pen];
+  const sp = p ? SPECIES[p.species] : null;
+  if (type === 'animal_present') ev.msg = `${sp?sp.label+' · ':''}confidence ${(rand(0.82,0.99)).toFixed(2)} · CSI var ${(rand(0.2,0.8)).toFixed(2)}`;
+  else if (type === 'breathing_anomaly') ev.msg = `${sp?sp.label+' · ':''}BPM ${Math.round(rand(sp?sp.bpmRange[0]-10:8, sp?sp.bpmRange[1]+12:55))} · ${choice(['arrhythmic','shallow','tachypnea','apneic','bradypnea'])}`;
+  else if (type === 'escape_detected') ev.msg = `${sp?sp.label+' · ':''}vector ${choice(['N','S','E','W','NE','SW'])} · bearing ${(rand(0,360)).toFixed(0)}°`;
+  else ev.msg = `n=${Math.round(rand(0,STATE.penIds.length))} across ${Math.round(rand(1,STATE.penIds.length))} pen(s)`;
+  STATE.events.unshift(ev);
+  if (STATE.events.length > 800) STATE.events.length = 800;
+  if (p){
+    if (type==='breathing_anomaly') p.alarm = true;
+    if (type==='escape_detected'){ p.alarm = true; p.occupied = false; }
+    if (type==='animal_present'){ p.occupied = true; p.lastSeen = ts; }
+  }
+  if (!opts.silent){
+    toast(`${eventLabel(type)} · ${pen}`, type==='escape_detected'?'err':'ok');
+    if (type==='escape_detected'){
+      // mark the closest fence segment as a breach
+      const segs = STATE._fenceSegs;
+      if (segs && segs.length){
+        const seg = choice(segs);
+        seg.status = 'breach';
+        seg.vibration = Math.round(rand(80,120));
+        seg.lastEvent = new Date();
+      }
+    }
+    renderAll();
+  }
+}
+
+function ackEvent(id){
+  const e = STATE.events.find(x => x.id === id);
+  if (!e) return;
+  e.ack = true;
+  if (STATE.pens[e.pen]) STATE.pens[e.pen].alarm = false;
+  renderEvents(); renderKpis(); renderPens();
+}
+
+// --------------- Renderers: KPIs ---------------
+function renderKpis(){
+  const occ = Object.values(STATE.pens).filter(p => p.occupied);
+  $('#kpi-count').textContent = occ.length;
+  $('#kpi-count-sub').textContent = `${occ.length} of ${STATE.penIds.length} pens`;
+
+  const bpms = occ.map(p => p.bpm);
+  const mean = bpms.length ? bpms.reduce((a,b)=>a+b,0)/bpms.length : 0;
+  $('#kpi-bpm').textContent = mean ? mean.toFixed(1) : '—';
+  const sub = $('#kpi-bpm-sub');
+  if (!mean){ sub.textContent='no signal'; sub.className='kpi-sub'; }
+  else if (mean < 14 || mean > 42){ sub.textContent='out of normal range'; sub.className='kpi-sub dn'; }
+  else { sub.textContent='within normal range'; sub.className='kpi-sub up'; }
+
+  const temps = occ.map(p => p.bodyTemp).filter(Boolean);
+  const meanT = temps.length ? temps.reduce((a,b)=>a+b,0)/temps.length : 0;
+  $('#kpi-temp').textContent = meanT ? meanT.toFixed(1)+'°C' : '—';
+  const tsub = $('#kpi-temp-sub');
+  if (meanT > 39.6){ tsub.textContent='elevated mean temp'; tsub.className='kpi-sub dn'; }
+  else if (meanT < 38.0){ tsub.textContent='below normal'; tsub.className='kpi-sub dn'; }
+  else { tsub.textContent=`${meanT.toFixed(1)}°C · normal`; tsub.className='kpi-sub up'; }
+
+  const since24 = Date.now() - 1000*60*60*24;
+  const anom = STATE.events.filter(e => e.type==='breathing_anomaly' && e.ts.getTime()>since24).length;
+  const esc = STATE.events.filter(e => e.type==='escape_detected' && e.ts.getTime()>=new Date().setHours(0,0,0,0)).length;
+  const ackEsc = STATE.events.filter(e => e.type==='escape_detected' && e.ack).length;
+  $('#kpi-anom').textContent = anom;
+  $('#kpi-esc').textContent = esc;
+  $('#kpi-esc-sub').textContent = `acknowledged ${ackEsc}`;
+
+  const hrs = (Date.now() - STATE.startedAt.getTime())/(1000*60*60);
+  $('#kpi-up').textContent = hrs >= 24 ? (hrs/24).toFixed(1)+'d' : hrs.toFixed(1)+'h';
+
+  // Gauge
+  const score = computeHealthScore();
+  $('#gauge-val').textContent = Math.round(score);
+  const arcLen = 314.16;
+  $('#gauge-arc').setAttribute('stroke-dashoffset', String(arcLen * (1 - score/100)));
+  $('#gauge-needle').setAttribute('transform',`rotate(${-90 + (score/100)*180} 120 120)`);
+
+  $('#hm-min').textContent = bpms.length ? Math.min(...bpms) : '—';
+  $('#hm-max').textContent = bpms.length ? Math.max(...bpms) : '—';
+  const variance = bpms.length ? Math.sqrt(bpms.reduce((a,b)=>a+(b-mean)**2,0)/bpms.length).toFixed(2) : '—';
+  $('#hm-var').textContent = variance;
+  $('#hm-alerts').textContent = Object.values(STATE.pens).filter(p=>p.alarm).length;
+}
+function computeHealthScore(){
+  const occ = Object.values(STATE.pens).filter(p => p.occupied);
+  if (!occ.length) return 0;
+  const inRangeBpm = occ.filter(p => { const r = SPECIES[p.species].bpmRange; return p.bpm>=r[0]-2 && p.bpm<=r[1]+2; }).length / occ.length;
+  const inRangeTemp = occ.filter(p => { const r = SPECIES[p.species].tempRange; return p.bodyTemp>=r[0]-0.5 && p.bodyTemp<=r[1]+0.5; }).length / occ.length;
+  const since1h = Date.now() - 1000*60*60;
+  const recentBad = STATE.events.filter(e => e.ts.getTime()>since1h && (e.type==='breathing_anomaly'||e.type==='escape_detected') && !e.ack).length;
+  const penalty = clamp(recentBad*4, 0, 50);
+  return clamp((inRangeBpm*60 + inRangeTemp*40) - penalty, 0, 100);
+}
+
+// --------------- Renderers: Pens ---------------
+function renderPens(){
+  const root = $('#barns');
+  root.innerHTML = BARNS.map(b => {
+    const occ = STATE.penIds.filter(id => id.startsWith(b.id+'-') && STATE.pens[id].occupied).length;
+    const total = b.count;
+    return `<div class="barn-header"><b>${b.label} · ${SPECIES[b.species].label}</b><span class="meta">${occ}/${total} occupied</span></div>
+      <div class="pen-grid" data-barn="${b.id}">${
+        STATE.penIds.filter(id => id.startsWith(b.id+'-')).map(id => penCard(id)).join('')
+      }</div>`;
+  }).join('');
+  root.querySelectorAll('.pen').forEach(node => node.addEventListener('click', () => focusPen(node.dataset.pen)));
+  $('#pens-count').textContent = `${Object.values(STATE.pens).filter(p=>p.occupied).length}/${STATE.penIds.length} occupied`;
+}
+function penCard(id){
+  const p = STATE.pens[id];
+  const sp = SPECIES[p.species];
+  const cls = p.alarm ? 'alarm' : (p.occupied ? 'occupied' : 'empty');
+  const focused = STATE.focusPen === id ? ' focused' : '';
+  const ago = formatAgo(p.lastSeen);
+  return `<div class="pen ${cls}${focused}" data-pen="${id}">
+    <div class="pen-h">${id}${p.alarm?'<span class="dot down pulse"></span>':p.occupied?'<span class="dot up"></span>':''}</div>
+    <div class="pen-species">${sp.icon} ${sp.label}</div>
+    <div class="pen-meta">
+      <div>bpm <b>${p.occupied?p.bpm:'—'}</b> · ${p.occupied?p.bodyTemp.toFixed(1)+'°':'—'}</div>
+      <div>act <b>${p.occupied?p.activity:'—'}</b> · ${p.weightKg}kg</div>
+      <div>seen <b>${ago}</b></div>
+    </div>
+  </div>`;
+}
+function formatAgo(d){
+  if (!d) return '—';
+  const s = Math.floor((Date.now()-d.getTime())/1000);
+  if (s<60) return s+'s';
+  if (s<3600) return Math.floor(s/60)+'m';
+  if (s<86400) return Math.floor(s/3600)+'h';
+  return Math.floor(s/86400)+'d';
+}
+
+// --------------- Pen selector + focus ---------------
+function buildPenSelector(){
+  const sel = $('#pen-select');
+  sel.innerHTML = BARNS.map(b => `<optgroup label="${b.label} · ${SPECIES[b.species].label}">${
+    STATE.penIds.filter(id => id.startsWith(b.id+'-')).map(id => {
+      const p = STATE.pens[id];
+      return `<option value="${id}">${id} — ${SPECIES[p.species].icon} ${SPECIES[p.species].label}${p.occupied?'':' (empty)'}</option>`;
+    }).join('')
+  }</optgroup>`).join('');
+  sel.value = STATE.focusPen;
+  sel.addEventListener('change', e => focusPen(e.target.value));
+}
+function renderRecentQuick(){
+  const host = $('#breath-quick');
+  host.innerHTML = STATE.recents.slice(0,8).map(id => {
+    const p = STATE.pens[id];
+    const cls = STATE.focusPen===id?'pill-tab on':'pill-tab';
+    return `<button class="${cls}" data-pen="${id}">${SPECIES[p.species].icon} ${id}</button>`;
+  }).join('');
+  host.querySelectorAll('.pill-tab').forEach(b => b.addEventListener('click', () => focusPen(b.dataset.pen)));
+}
+function focusPen(id){
+  if (!STATE.pens[id]) return;
+  STATE.focusPen = id;
+  STATE.recents = [id, ...STATE.recents.filter(x => x!==id)].slice(0,8);
+  $('#pen-select').value = id;
+  $('#ovl-pen').textContent = id;
+  $('#ovl-pen-title').textContent = `· ${id}`;
+  renderRecentQuick();
+  renderPens();
+  renderVitals();
+  // reset all live waveform buffers so new patterns show immediately
+  for (let i=0;i<breathBuf.length;i++) breathBuf[i] = 0;
+  ['ecg','pleth','resp'].forEach(n => {
+    const ch = MON.channels[n];
+    if (ch.buf) ch.buf.fill(0);
+    ch.cursor = 0; ch.phase = 0; ch.pxFrac = 0;
+    if (ch.ctx) ch.ctx.clearRect(0,0,ch.W,ch.H);
+  });
+}
+
+// --------------- Events table ---------------
+function renderEvents(){
+  const tbody = $('#evt-tbody');
+  const q = STATE.search.toLowerCase().trim();
+  const filtered = STATE.events.filter(e => {
+    if (STATE.filter !== 'all' && e.type !== STATE.filter) return false;
+    if (!q) return true;
+    const p = STATE.pens[e.pen];
+    const sp = p ? SPECIES[p.species].label : '';
+    return (e.pen+' '+e.type+' '+e.msg+' '+sp).toLowerCase().includes(q);
+  });
+  $('#events-count').textContent = `${filtered.length} of ${STATE.events.length}`;
+  if (!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:hsl(var(--muted-foreground));padding:1.5rem">No matching events.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.slice(0,250).map(e => `
+    <tr>
+      <td class="mono">${fmtTime(e.ts)}</td>
+      <td>${eventBadge(e.type)}</td>
+      <td class="mono"><a data-focus="${e.pen}">${e.pen}</a></td>
+      <td>${e.msg}${e.ack?' <span class="badge muted">ack</span>':''}</td>
+      <td style="text-align:right">${e.ack?'<span style="color:hsl(var(--muted-foreground));font-size:0.6875rem">acked</span>':`<button class="btn sm" data-ack="${e.id}">Acknowledge</button>`}</td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-ack]').forEach(b => b.addEventListener('click', () => ackEvent(b.dataset.ack)));
+  tbody.querySelectorAll('[data-focus]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); focusPen(a.dataset.focus); document.getElementById('breathing').scrollIntoView({behavior:'smooth'}); }));
+}
+
+// --------------- Count area chart (SVG) ---------------
+function renderCountChart(){
+  const host = $('#chart-count');
+  const W = host.clientWidth || 480, H = 160;
+  const minutes = STATE.range;
+  const slice = STATE.countSeries.slice(-minutes);
+  if (!slice.length){ host.innerHTML=''; return }
+  const xs = i => 36 + (i/(slice.length-1))*(W-44);
+  const minN = 0, maxN = Math.max(STATE.penIds.length, ...slice.map(p=>p.n));
+  const ys = n => H-22 - (n-minN)/(maxN-minN || 1)*(H-40);
+  let path = `M ${xs(0)} ${ys(slice[0].n)}`;
+  for (let i=1;i<slice.length;i++) path += ` L ${xs(i)} ${ys(slice[i].n)}`;
+  const area = path + ` L ${xs(slice.length-1)} ${H-22} L ${xs(0)} ${H-22} Z`;
+  const ticks = 4;
+  let grid = '';
+  for (let i=0;i<=ticks;i++){
+    const y = 8 + (i/ticks)*(H-30);
+    const v = Math.round(maxN - (i/ticks)*(maxN-minN));
+    grid += `<line class="chart-grid" x1="32" y1="${y}" x2="${W-4}" y2="${y}"/><text class="chart-axis" x="4" y="${y+3}">${v}</text>`;
+  }
+  const first = slice[0].t, last = slice[slice.length-1].t;
+  const xt = `<text class="chart-axis" x="36" y="${H-4}">${fmtTime(first)}</text><text class="chart-axis" x="${W-4}" y="${H-4}" text-anchor="end">${fmtTime(last)}</text>`;
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="gradPrimary" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="hsl(185 80% 50%)" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}<path class="chart-area" d="${area}"/><path class="chart-line" d="${path}"/>${xt}
+  </svg>`;
+  $('#count-sub').textContent = `n=${slice[slice.length-1].n} now · range ${minN}–${maxN}`;
+}
+
+// --------------- Donut ---------------
+function renderDonut(){
+  const types = ['animal_present','breathing_anomaly','escape_detected','count'];
+  const colors = ['hsl(142 70% 50%)','hsl(35 85% 55%)','hsl(0 65% 50%)','hsl(185 80% 50%)'];
+  const since = Date.now() - 1000*60*60*24;
+  const counts = types.map(t => STATE.events.filter(e => e.type===t && e.ts.getTime()>since).length);
+  const total = counts.reduce((a,b)=>a+b,0);
+  $('#donut-total').textContent = total;
+  const host = $('#donut');
+  const cx=80, cy=80, r=58, sw=18;
+  let arcs = '';
+  if (total === 0){
+    arcs = `<circle cx="${cx}" cy="${cy}" r="${r}" stroke="hsl(var(--border))" stroke-width="${sw}" fill="none"/>`;
+  } else {
+    let acc = 0;
+    counts.forEach((c,i) => {
+      if (!c) return;
+      const a0 = (acc/total)*Math.PI*2 - Math.PI/2;
+      const a1 = ((acc+c)/total)*Math.PI*2 - Math.PI/2;
+      const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+      const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+      const large = (a1-a0) > Math.PI ? 1 : 0;
+      arcs += `<path d="M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}" stroke="${colors[i]}" stroke-width="${sw}" fill="none"/>`;
+      acc += c;
+    });
+  }
+  host.innerHTML = `<svg viewBox="0 0 160 160">${arcs}</svg><div class="donut-center"><div class="v">${total}</div><div class="l">events / 24h</div></div>`;
+  $('#donut-legend').innerHTML = types.map((t,i) => {
+    const c = counts[i];
+    const pct = total ? Math.round(100*c/total) : 0;
+    return `<div class="row"><span><span class="swatch" style="background:${colors[i]}"></span>${t}</span><span class="v">${c} · ${pct}%</span></div>`;
+  }).join('');
+}
+
+// --------------- Generic floating tooltip ---------------
+function showTip(html, e){
+  const tip = $('#tooltip');
+  tip.innerHTML = html;
+  tip.classList.add('show');
+  positionTip(e);
+}
+function positionTip(e){
+  const tip = $('#tooltip');
+  const pad = 12;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+function hideTip(){ $('#tooltip').classList.remove('show'); }
+
+// --------------- Ridgeline — futuristic HUD ---------------
+function renderRidgeline(){
+  const host = $('#ridge-host');
+  if (!host) return;
+  const W = host.clientWidth || 920;
+  const days = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  // Aurora spectrum across the week
+  const dayCols = [
+    {h:272,s:85,l:66},  // violet
+    {h:238,s:88,l:65},  // blue
+    {h:202,s:92,l:62},  // cyan-blue
+    {h:178,s:92,l:55},  // teal
+    {h:148,s:85,l:55},  // green
+    {h:82, s:80,l:60},  // chartreuse
+    {h:45, s:95,l:62},  // gold
+  ];
+  const hsl = (c, l, a) => `hsl(${c.h} ${c.s}% ${l ?? c.l}%${a!=null?' / '+a:''})`;
+  const buckets = STATE._ridge[0].data.length;
+  const labelW = 92;
+  const padR = 28;
+  const headerH = 34;
+  const footH = 24;
+  const rowH = 80;
+  const overlap = 42;
+  const ridgeH = rowH;
+  const H = headerH + (days.length-1)*(rowH-overlap) + rowH + footH;
+  const chartX0 = labelW - 12, chartX1 = W - padR + 12;
+  const chartY0 = headerH - 8, chartY1 = H - footH + 8;
+
+  const x = i => labelW + (i/(buckets-1)) * (W - labelW - padR);
+  const maxV = Math.max(1, ...STATE._ridge.flatMap(r => r.data));
+  const yBase = di => headerH + di*(rowH-overlap) + rowH;
+  const yVal = (v, di) => yBase(di) - (v/maxV) * ridgeH;
+
+  // defs: glow filter + per-day gradient
+  let defs = '<defs>';
+  defs += `<filter id="ridge-glow-f" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="2.6" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>`;
+  defs += `<filter id="ridge-esc-f" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>`;
+  dayCols.forEach((c, di) => {
+    defs += `<linearGradient id="rg-${di}" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${hsl(c, c.l+8, 0.85)}"/>
+      <stop offset="50%" stop-color="${hsl(c, c.l-15, 0.30)}"/>
+      <stop offset="100%" stop-color="${hsl(c, c.l-30, 0)}"/>
+    </linearGradient>`;
+  });
+  defs += '</defs>';
+
+  // Corner HUD brackets
+  const cs = 16;
+  const brackets = `
+    <path class="ridge-corner" d="M ${chartX0} ${chartY0+cs} L ${chartX0} ${chartY0} L ${chartX0+cs} ${chartY0}"/>
+    <path class="ridge-corner" d="M ${chartX1-cs} ${chartY0} L ${chartX1} ${chartY0} L ${chartX1} ${chartY0+cs}"/>
+    <path class="ridge-corner" d="M ${chartX0} ${chartY1-cs} L ${chartX0} ${chartY1} L ${chartX0+cs} ${chartY1}"/>
+    <path class="ridge-corner" d="M ${chartX1-cs} ${chartY1} L ${chartX1} ${chartY1} L ${chartX1} ${chartY1-cs}"/>
+  `;
+
+  // Hour grid + labels (every 3 hours)
+  let grid = '';
+  for (let h=0; h<=24; h+=3){
+    const xx = labelW + (h/24)*(W-labelW-padR);
+    const cls = (h%6===0) ? 'ridge-hour-major' : 'ridge-hour-tick';
+    grid += `<line class="${cls}" x1="${xx}" y1="${headerH}" x2="${xx}" y2="${H-footH}"/>`;
+    grid += `<text class="ridge-hour-label" x="${xx}" y="${headerH-12}" text-anchor="middle">${String(h%24).padStart(2,'0')}:00</text>`;
+    grid += `<text class="ridge-hour-label" x="${xx}" y="${H-6}" text-anchor="middle">${String(h%24).padStart(2,'0')}</text>`;
+  }
+
+  // Ridges (back-to-front so newer days draw on top)
+  let ridges = '';
+  STATE._ridge.forEach((r, di) => {
+    const d = r.data;
+    const c = dayCols[di];
+    const colorMain = hsl(c);
+    const colorBright = hsl(c, Math.min(95, c.l+15));
+
+    let area = `M ${x(0).toFixed(1)} ${yBase(di)}`;
+    for (let i=0;i<buckets;i++) area += ` L ${x(i).toFixed(1)} ${yVal(d[i], di).toFixed(1)}`;
+    area += ` L ${x(buckets-1).toFixed(1)} ${yBase(di)} Z`;
+    let stroke = `M ${x(0).toFixed(1)} ${yVal(d[0], di).toFixed(1)}`;
+    for (let i=1;i<buckets;i++) stroke += ` L ${x(i).toFixed(1)} ${yVal(d[i], di).toFixed(1)}`;
+
+    // Peak detection
+    let maxIdx = 0;
+    for (let i=1;i<buckets;i++) if (d[i] > d[maxIdx]) maxIdx = i;
+    const peakX = x(maxIdx), peakY = yVal(d[maxIdx], di);
+    const total = Math.round(d.reduce((a,b)=>a+b,0));
+    const peakHr = (maxIdx/2);
+    const peakHh = Math.floor(peakHr), peakMm = Math.round((peakHr-peakHh)*60);
+
+    ridges += `<g data-day="${di}">`;
+    ridges += `<line class="ridge-baseline" x1="${x(0)}" y1="${yBase(di)}" x2="${x(buckets-1)}" y2="${yBase(di)}" stroke="${colorMain}"/>`;
+    ridges += `<path d="${area}" fill="url(#rg-${di})"/>`;
+    ridges += `<path class="ridge-stroke-glow" d="${stroke}" stroke="${colorMain}" filter="url(#ridge-glow-f)"/>`;
+    ridges += `<path class="ridge-stroke" d="${stroke}" stroke="${colorBright}"/>`;
+    // peak: outer halo + ring + dot
+    ridges += `<circle cx="${peakX}" cy="${peakY}" r="11" fill="${colorMain}" opacity="0.14" filter="url(#ridge-glow-f)"/>`;
+    ridges += `<circle cx="${peakX}" cy="${peakY}" r="6" fill="none" stroke="${colorBright}" stroke-width="0.7" opacity="0.7"/>`;
+    ridges += `<circle class="ridge-peak-dot" cx="${peakX}" cy="${peakY}" r="2.4" fill="${colorBright}"/>`;
+    // Label block (HUD-style annotation)
+    ridges += `<g transform="translate(${labelW-14}, ${yBase(di) - ridgeH*0.42})">`;
+    ridges += `<text class="ridge-day-sub" x="0" y="-10" text-anchor="end">▸ DAY ${String(di+1).padStart(2,'0')}</text>`;
+    ridges += `<text class="ridge-day-label" x="0" y="6" text-anchor="end" style="fill:${colorBright}">${days[di]}</text>`;
+    ridges += `<text class="ridge-day-peak" x="0" y="20" text-anchor="end" style="fill:${colorMain}">Σ ${total} · ▲ ${d[maxIdx].toFixed(1)} @ ${String(peakHh).padStart(2,'0')}:${String(peakMm).padStart(2,'0')}</text>`;
+    ridges += '</g>';
+    // Escape markers — glowing diamond + pulsing halo
+    r.escapes.forEach((esc) => {
+      const bx = labelW + (esc.h/24) * (W-labelW-padR);
+      const by = yVal(d[Math.min(buckets-1, Math.floor(esc.h*2))], di) - 10;
+      ridges += `<g class="ridge-escape" data-d="${di}" data-h="${esc.h.toFixed(2)}">
+        <circle class="ridge-esc-halo" cx="${bx}" cy="${by}" r="9" fill="hsl(0 95% 60%)"/>
+        <line x1="${bx}" y1="${by+4}" x2="${bx}" y2="${yBase(di)-1}" stroke="hsl(0 90% 70% / 0.55)" stroke-width="0.7" stroke-dasharray="2 2"/>
+        <g transform="translate(${bx} ${by}) rotate(45)" filter="url(#ridge-esc-f)">
+          <rect x="-3.5" y="-3.5" width="7" height="7" fill="hsl(0 95% 65%)" stroke="hsl(0 100% 92%)" stroke-width="0.6"/>
+        </g>
+      </g>`;
+    });
+    ridges += '</g>';
+  });
+
+  // Sweep cursor (SMIL — scales with viewBox)
+  const sweep = `<g class="ridge-sweep" opacity="0.6">
+    <line x1="0" y1="${headerH}" x2="0" y2="${H-footH}" stroke="hsl(185 100% 80%)" stroke-width="1.2" filter="url(#ridge-glow-f)"/>
+    <animateTransform attributeName="transform" type="translate" from="${labelW},0" to="${W-padR},0" dur="9s" repeatCount="indefinite"/>
+  </g>`;
+
+  // HUD header / footer text
+  const totalEscapes = STATE._ridge.reduce((a,r) => a + r.escapes.length, 0);
+  const totalAct = Math.round(STATE._ridge.reduce((a,r) => a + r.data.reduce((s,v)=>s+v,0), 0));
+  const hud = `
+    <text class="ridge-hud" x="${labelW-14}" y="16" text-anchor="start">▸ ACT.RHYTHM ⟢ 7D × 24H ⟢ LIVE</text>
+    <text class="ridge-hud" x="${W-padR+10}" y="16" text-anchor="end">Σ ${totalAct} u // ${totalEscapes} ESC // PEAK ${maxV.toFixed(1)}</text>
+    <text class="ridge-hud dim" x="${(labelW+W-padR)/2}" y="${H-6}" text-anchor="middle">⟨ 00H ── HOUR OF DAY ── 24H ⟩</text>
+  `;
+
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="height:${H}px;width:100%">
+    ${defs}
+    ${brackets}
+    ${grid}
+    ${sweep}
+    ${ridges}
+    ${hud}
+  </svg>`;
+
+  // Escape interactions
+  host.querySelectorAll('.ridge-escape').forEach(g => {
+    g.addEventListener('mouseenter', e => {
+      const d = +g.dataset.d, h = parseFloat(g.dataset.h);
+      const hh = Math.floor(h), mm = Math.round((h-hh)*60);
+      showTip(`<div><b>${days[d]} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}</b></div><div class="alert">⚠ ESCAPE EVENT</div><div class="lbl">click to jump to events</div>`, e);
+    });
+    g.addEventListener('mousemove', positionTip);
+    g.addEventListener('mouseleave', hideTip);
+    g.addEventListener('click', () => {
+      document.getElementById('events').scrollIntoView({behavior:'smooth'});
+      toast('Filtered events to escape_detected','ok');
+      STATE.filter='escape_detected';
+      $$('#evt-tabs .pill-tab').forEach(x => x.classList.toggle('on', x.dataset.evt==='escape_detected'));
+      renderEvents();
+    });
+  });
+}
+
+// --------------- Perimeter map ---------------
+function renderPerimeter(){
+  const host = $('#perimeter-map');
+  if (!host) return;
+  const W = 800, H = 400;
+  const property = { x:30, y:30, w:740, h:340 };
+  const barnW = 310, barnH = 110, gapX = 40, gapY = 40;
+  const baseX = property.x + (property.w - 2*barnW - gapX)/2;
+  const baseY = property.y + (property.h - 2*barnH - gapY)/2;
+  const barns = {
+    A: { x: baseX, y: baseY, w: barnW, h: barnH },
+    B: { x: baseX + barnW + gapX, y: baseY, w: barnW, h: barnH },
+    C: { x: baseX, y: baseY + barnH + gapY, w: barnW, h: barnH },
+    D: { x: baseX + barnW + gapX, y: baseY + barnH + gapY, w: barnW, h: barnH },
+  };
+  const speciesColors = { cattle:'hsl(35 80% 60%)', sheep:'hsl(200 30% 75%)', pig:'hsl(355 60% 70%)', goat:'hsl(45 60% 65%)' };
+
+  // Defs
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:520px">
+    <defs>
+      <marker id="arrowhead-peri" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="hsl(0 75% 65%)"/></marker>
+    </defs>`;
+
+  // Property boundary
+  svg += `<rect class="property" x="${property.x}" y="${property.y}" width="${property.w}" height="${property.h}" rx="6"/>`;
+
+  // Fence segments
+  STATE._fenceSegs.forEach(s => {
+    svg += `<line class="fence-line ${s.status}" x1="${s.x1}" y1="${s.y1}" x2="${s.x2}" y2="${s.y2}" data-id="${s.id}"/>`;
+  });
+
+  // Fence sensor nodes (at every segment endpoint, one per side mid-segment)
+  STATE._fenceSegs.forEach(s => {
+    const mx = (s.x1+s.x2)/2, my = (s.y1+s.y2)/2;
+    svg += `<circle class="fence-sensor ${s.status==='ok'?'':s.status}" cx="${mx}" cy="${my}" r="5" data-fence="${s.id}"/>`;
+  });
+
+  // Gates
+  STATE._gates.forEach(g => {
+    const wd = 14;
+    if (g.side==='bottom' || g.side==='top'){
+      svg += `<rect class="gate" x="${g.x-wd/2}" y="${g.y-4}" width="${wd}" height="8" rx="1"/>`;
+      svg += `<text class="gate-label" x="${g.x}" y="${g.y+(g.side==='bottom'?20:-8)}" text-anchor="middle">${g.id}</text>`;
+    } else {
+      svg += `<rect class="gate" x="${g.x-4}" y="${g.y-wd/2}" width="8" height="${wd}" rx="1"/>`;
+      svg += `<text class="gate-label" x="${g.x+(g.side==='right'?-14:14)}" y="${g.y+3}" text-anchor="${g.side==='right'?'end':'start'}">${g.id}</text>`;
+    }
+  });
+
+  // Barns
+  Object.entries(barns).forEach(([id, b]) => {
+    svg += `<rect class="barn-rect" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="3"/>`;
+    svg += `<text class="barn-label" x="${b.x+8}" y="${b.y+14}">Barn ${id} · ${SPECIES[BARNS.find(bn=>bn.id===id).species].label}</text>`;
+  });
+
+  // Animals — full herd (240 in barns + yard stragglers).
+  // Named (instrumented) pens are placed at every 5th slot and stay clickable.
+  const cols = 10, rows = 6;
+  const namedSlots = new Set([3,8,13,18,23,28,33,38,43,48,53,58]);
+  if (!STATE._herdDots){
+    const dots = [];
+    BARNS.forEach(b => {
+      let nc = 0;
+      for (let i=0; i<cols*rows; i++){
+        const col = i % cols, row = Math.floor(i/cols);
+        const rng = mulberry32(strHash(b.id+'-h-'+i));
+        let named = false, penId = null;
+        if (namedSlots.has(i) && nc < 12){
+          nc++;
+          named = true;
+          penId = `${b.id}-${String(nc).padStart(2,'0')}`;
+        }
+        dots.push({ barn:b.id, species:b.species, named, penId, col, row, jx:(rng()*2-1)*5, jy:(rng()*2-1)*3.5, sz:0.9 + rng()*0.3 });
+      }
+    });
+    // Yard stragglers — 14 dots scattered outside barns inside property
+    const yard = [];
+    let attempts = 0;
+    while (yard.length < 14 && attempts < 200){
+      attempts++;
+      const rng = mulberry32(strHash('y-'+yard.length+'-'+attempts));
+      const sx = property.x + 18 + rng()*(property.w-36);
+      const sy = property.y + 18 + rng()*(property.h-36);
+      // reject if inside any barn (with padding)
+      const inside = Object.values(barns).some(b => sx>b.x-6 && sx<b.x+b.w+6 && sy>b.y-6 && sy<b.y+b.h+6);
+      if (inside) continue;
+      const sp = ['cattle','sheep','pig','goat'][Math.floor(rng()*4)];
+      yard.push({ yard:true, species:sp, x:sx, y:sy });
+    }
+    STATE._herdDots = { dots, yard };
+  }
+  const padX = 20, padY = 22;
+  STATE._herdDots.dots.forEach(d => {
+    const barn = barns[d.barn];
+    const cw = (barn.w - 2*padX) / (cols-1);
+    const ch = (barn.h - 2*padY) / (rows-1);
+    const dx = barn.x + padX + d.col*cw + d.jx;
+    const dy = barn.y + padY + d.row*ch + d.jy;
+    const color = speciesColors[d.species];
+    if (d.named){
+      const p = STATE.pens[d.penId];
+      const escaping = !p.occupied || p.alarm;
+      const cls = escaping ? 'animal animal-alarm' : 'animal';
+      const r = escaping ? 4.5 : 3 * d.sz;
+      const fill = escaping ? 'hsl(0 80% 65%)' : color;
+      svg += `<circle class="${cls}" cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" stroke="hsl(220 30% 4%)" stroke-width="0.8" data-pen="${d.penId}"/>`;
+    } else {
+      svg += `<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${(2.1*d.sz).toFixed(1)}" fill="${color}" opacity="0.78"/>`;
+    }
+  });
+  // Yard stragglers (drawn after barns so they appear in the open)
+  STATE._herdDots.yard.forEach(y => {
+    const color = speciesColors[y.species];
+    svg += `<circle cx="${y.x.toFixed(1)}" cy="${y.y.toFixed(1)}" r="2.4" fill="${color}" opacity="0.85" stroke="hsl(120 30% 12%)" stroke-width="0.5"/>`;
+  });
+
+  // Compass
+  svg += `<g transform="translate(${W-46}, 50)">
+    <circle r="22" fill="hsl(220 30% 6%)" stroke="hsl(220 25% 18%)"/>
+    <polygon points="0,-14 4,4 0,1 -4,4" fill="hsl(0 70% 60%)"/>
+    <polygon points="0,14 4,-4 0,-1 -4,-4" fill="hsl(210 20% 50%)"/>
+    <text class="compass" y="-24" text-anchor="middle">N</text>
+  </g>`;
+
+  svg += '</svg>';
+  host.innerHTML = svg;
+
+  // Hover on animals
+  host.querySelectorAll('.animal').forEach(c => {
+    c.addEventListener('mouseenter', e => {
+      const id = c.dataset.pen, p = STATE.pens[id], sp = SPECIES[p.species];
+      const html = `<div><b>${id}</b> · ${sp.icon} ${sp.label}</div>` +
+        `<div>HR <b>${p.hr||'—'}</b> bpm · RESP <b>${p.bpm||'—'}</b> · ${(p.bodyTemp||0).toFixed(1)}°C</div>` +
+        (p.alarm ? '<div class="alert">⚠ ALARM</div>' : !p.occupied ? '<div class="alert">⚠ Outside enclosure</div>' : '<div class="lbl">click to focus</div>');
+      showTip(html, e);
+    });
+    c.addEventListener('mousemove', positionTip);
+    c.addEventListener('mouseleave', hideTip);
+    c.addEventListener('click', () => { focusPen(c.dataset.pen); document.getElementById('vitals').scrollIntoView({behavior:'smooth'}); });
+  });
+  host.querySelectorAll('[data-fence]').forEach(c => {
+    c.addEventListener('mouseenter', e => {
+      const s = STATE._fenceSegs.find(x => x.id === c.dataset.fence);
+      const html = `<div><b>${s.id}</b> · ${s.label}</div>` +
+        `<div>status <b>${s.status}</b> · vibration <b>${s.vibration}</b></div>` +
+        `<div class="lbl">last event ${formatAgo(s.lastEvent)} ago</div>`;
+      showTip(html, e);
+    });
+    c.addEventListener('mousemove', positionTip);
+    c.addEventListener('mouseleave', hideTip);
+  });
+
+  // Header summary
+  const breaches = STATE._fenceSegs.filter(s=>s.status==='breach').length;
+  const warns = STATE._fenceSegs.filter(s=>s.status==='warn').length;
+  const escaped = Object.values(STATE.pens).filter(p => !p.occupied).length;
+  const herdTotal = (STATE._herdDots ? STATE._herdDots.dots.length + STATE._herdDots.yard.length : 0);
+  $('#perimeter-count').textContent = `${herdTotal} animals · ${escaped} outside · ${breaches} breach · ${warns} vibration`;
+}
+
+// --------------- Fence list ---------------
+function renderFenceList(){
+  const el = $('#fence-list');
+  el.innerHTML = STATE._fenceSegs.map(s => {
+    const cls = s.status;
+    const badge = s.status==='ok' ? '<span class="badge ok">intact</span>'
+              : s.status==='warn' ? '<span class="badge warn">vibration</span>'
+              : '<span class="badge danger"><span class="dot down"></span>breach</span>';
+    const meta = s.status==='ok'
+      ? `Stable · last check ${formatAgo(s.lastCheck)} ago`
+      : s.status==='warn'
+        ? `Vibration ${s.vibration}/100 · ${formatAgo(s.lastEvent)} ago`
+        : `⚠ Breach detected · ${formatAgo(s.lastEvent)} ago`;
+    return `<div class="fence-seg ${cls}">
+      <div class="seg-h"><span class="seg-name">${s.id}</span>${badge}</div>
+      <div class="seg-meta">${s.label}<br>${meta}</div>
+    </div>`;
+  }).join('');
+}
+
+// --------------- Proximity / theft watch ---------------
+function renderProximity(){
+  const list = $('#proximity-list');
+  let html = '';
+  // Theft watch entries
+  if (STATE._theftWatch){
+    STATE._theftWatch.forEach(t => {
+      html += `<div class="proximity-row theft">
+        <div class="info">
+          <span class="badge danger">UNKNOWN PRESENCE</span>
+          <span class="pen-tag">${t.where}</span>
+        </div>
+        <span class="meta">human-shape · ${t.speed} m/min · ${formatAgo(t.ts)} ago</span>
+        <button class="btn sm danger" data-ack-theft="${t.id}">Dismiss</button>
+      </div>`;
+    });
+  }
+  // Animals in alarm or near boundary
+  const proximate = Object.values(STATE.pens)
+    .filter(p => p.alarm || !p.occupied)
+    .slice(0, 6);
+  proximate.forEach(p => {
+    const sp = SPECIES[p.species];
+    const out = !p.occupied;
+    const dist = out ? -Math.round(rand(2,18)) : Math.round(rand(2,12));
+    const vec = choice(['N','NE','E','SE','S','SW','W','NW']);
+    const cls = out ? 'theft' : 'warn';
+    const badge = out ? '<span class="badge danger">OUTSIDE</span>' : '<span class="badge warn">restless</span>';
+    html += `<div class="proximity-row ${cls}">
+      <div class="info">
+        <span class="pen-tag">${p.id}</span>
+        <span class="badge species muted">${sp.icon} ${sp.label}</span>
+        ${badge}
+      </div>
+      <span class="meta">${out ? Math.abs(dist)+'m past fence' : dist+'m to fence'} · vector ${vec} · ${Math.round(rand(2,15))} m/min</span>
+      <button class="btn sm" data-focus="${p.id}">View</button>
+    </div>`;
+  });
+  if (!html){
+    list.innerHTML = '<div class="proximity-empty">✓ All animals within safe zones · perimeter clear</div>';
+    return;
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', () => { focusPen(b.dataset.focus); document.getElementById('vitals').scrollIntoView({behavior:'smooth'}); }));
+  list.querySelectorAll('[data-ack-theft]').forEach(b => b.addEventListener('click', () => {
+    STATE._theftWatch = (STATE._theftWatch||[]).filter(t => t.id !== b.dataset.ackTheft);
+    renderProximity();
+    toast('Theft alert dismissed','ok');
+  }));
+}
+
+// --------------- Environment ---------------
+function renderEnv(){
+  const root = $('#env-grid');
+  root.innerHTML = BARNS.map(b => {
+    const env = STATE.env[b.id];
+    const cur = env.series[env.series.length-1];
+    const sp = SPECIES[b.species];
+    const nhWarn = cur.nh3 > 15;
+    const co2Warn = cur.co2 > 1500;
+    return `<div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">${b.label} <span class="badge species muted" style="margin-left:0.3rem">${sp.icon} ${sp.label}</span></div>
+          <div class="card-sub">${b.count} pens · ${cur.t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+      </div>
+      <div class="chart-host small" id="env-spark-${b.id}"></div>
+      <div class="stat-grid" style="margin-top:0.6rem">
+        <div class="stat"><div class="l">Temp</div><div class="v">${cur.temp.toFixed(1)}°C</div><div class="sub">${cur.temp<14||cur.temp>26?'out of comfort':'in comfort'}</div></div>
+        <div class="stat"><div class="l">Humidity</div><div class="v">${cur.humid.toFixed(0)}%</div><div class="sub">RH</div></div>
+        <div class="stat"><div class="l">NH₃</div><div class="v ${nhWarn?'warn':''}">${cur.nh3.toFixed(1)} ppm</div><div class="sub">${nhWarn?'above 15 ppm':'within limits'}</div></div>
+        <div class="stat"><div class="l">CO₂</div><div class="v ${co2Warn?'warn':''}">${Math.round(cur.co2)} ppm</div><div class="sub">${co2Warn?'ventilate':'ok'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  BARNS.forEach(b => drawEnvSpark(b.id));
+}
+function drawEnvSpark(barnId){
+  const host = $('#env-spark-'+barnId);
+  if (!host) return;
+  const series = STATE.env[barnId].series;
+  const W = host.clientWidth || 280, H = 96;
+  const xs = i => 4 + (i/(series.length-1))*(W-8);
+  const norm = (arr, key) => {
+    const vs = arr.map(p=>p[key]);
+    const mn = Math.min(...vs), mx = Math.max(...vs);
+    return v => H-8 - (v-mn)/((mx-mn)||1)*(H-16);
+  };
+  const tY = norm(series,'temp'), hY = norm(series,'humid'), nY = norm(series,'nh3');
+  const mkPath = (yf, key) => { let p=`M ${xs(0)} ${yf(series[0][key])}`; for(let i=1;i<series.length;i++) p += ` L ${xs(i)} ${yf(series[i][key])}`; return p; };
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${mkPath(hY,'humid')}" fill="none" stroke="hsl(200 60% 60% / 0.55)" stroke-width="1.5"/>
+    <path d="${mkPath(nY,'nh3')}" fill="none" stroke="hsl(35 85% 60% / 0.7)" stroke-width="1.5"/>
+    <path d="${mkPath(tY,'temp')}" fill="none" stroke="hsl(185 80% 55%)" stroke-width="2"/>
+    <g class="chart-axis"><text x="4" y="12" fill="hsl(185 80% 55%)">temp</text><text x="46" y="12" fill="hsl(200 60% 60%)">RH</text><text x="76" y="12" fill="hsl(35 85% 60%)">NH₃</text></g>
+  </svg>`;
+}
+
+// --------------- Vitals (per focused pen) ---------------
+function renderVitals(){
+  const p = STATE.pens[STATE.focusPen];
+  $('#vitals-pen').textContent = STATE.focusPen + (p ? ` · ${SPECIES[p.species].label}` : '');
+  $('#mon-pen').textContent = STATE.focusPen;
+  if (!p || !p.occupied){
+    $('#mon-meta').textContent = 'no signal';
+    $('#mon-state').textContent = 'NO SIGNAL';
+    $('#mon-state').classList.add('alarm');
+    ['#vit-hr','#vit-spo2','#vit-resp','#vit-temp','#vit-nibp','#vt-temp-delta','#vt-steps','#vt-meal','#vt-drink','#vt-weight','#vt-act'].forEach(s=> $(s).textContent='—');
+    ['#vit-hr-lim','#vit-resp-lim','#vit-temp-lim','#vit-nibp-lim'].forEach(s=> $(s).textContent='—');
+    ['#vt-temp-status','#vt-act-status'].forEach(s=> $(s).textContent='no signal');
+    $('#lvl-feed').style.width = $('#lvl-water').style.width = $('#lvl-salt').style.width = '0%';
+    $('#lvl-feed-n').textContent = $('#lvl-water-n').textContent = $('#lvl-salt-n').textContent = '—';
+    $('#chart-temp').innerHTML = $('#chart-act').innerHTML = '';
+    ['hr','spo2','resp','temp','nibp'].forEach(k => $('#vital-'+k).classList.remove('alarm'));
+    return;
+  }
+  const sp = SPECIES[p.species];
+  const lastT = p.tempSeries[p.tempSeries.length-1].v;
+
+  // Monitor header
+  $('#mon-meta').textContent = `${sp.icon} ${sp.label} · ${p.weightKg} kg · Barn ${p.barn}`;
+  const stateEl = $('#mon-state');
+  if (p.alarm){ stateEl.textContent='ALARM'; stateEl.classList.add('alarm'); }
+  else { stateEl.textContent='MONITORING'; stateEl.classList.remove('alarm'); }
+
+  // HR
+  const hrLow = sp.hrRange[0], hrHigh = sp.hrRange[1];
+  $('#vit-hr').textContent = p.hr;
+  $('#vit-hr-lim').textContent = `${hrLow}–${hrHigh}`;
+  $('#vital-hr').classList.toggle('alarm', p.hr < hrLow-5 || p.hr > hrHigh+10);
+
+  // SpO2
+  $('#vit-spo2').textContent = p.spo2;
+  $('#vital-spo2').classList.toggle('alarm', p.spo2 < 92);
+
+  // RESP
+  $('#vit-resp').textContent = p.bpm;
+  $('#vit-resp-lim').textContent = sp.normal;
+  $('#vital-resp').classList.toggle('alarm', p.bpm < sp.bpmRange[0]-4 || p.bpm > sp.bpmRange[1]+6 || p.alarm);
+
+  // TEMP
+  $('#vit-temp').textContent = lastT.toFixed(1);
+  $('#vit-temp-lim').textContent = `${sp.tempRange[0].toFixed(1)}–${sp.tempRange[1].toFixed(1)}`;
+  $('#vital-temp').classList.toggle('alarm', lastT > sp.tempRange[1]+0.4 || lastT < sp.tempRange[0]-0.4);
+
+  // NIBP
+  const map = Math.round((p.nibpSys + 2*p.nibpDia)/3);
+  $('#vit-nibp').textContent = `${p.nibpSys}/${p.nibpDia}`;
+  $('#vit-nibp-lim').textContent = `MAP ${map}`;
+  $('#vital-nibp').classList.toggle('alarm', p.nibpSys > sp.nibpSys[1]+25 || p.nibpSys < sp.nibpSys[0]-20);
+
+  // Secondary stats
+  const first = p.tempSeries[0].v;
+  $('#vt-temp-delta').textContent = (lastT-first>=0?'+':'') + (lastT-first).toFixed(2)+'°C';
+  const tempStatus = $('#vt-temp-status');
+  if (lastT > sp.tempRange[1]+0.4) tempStatus.textContent='hyperthermia risk';
+  else if (lastT < sp.tempRange[0]-0.4) tempStatus.textContent='hypothermia risk';
+  else if (lastT > sp.tempRange[1]) tempStatus.textContent='slightly elevated';
+  else tempStatus.textContent=`normal range`;
+
+  const lastA = p.actSeries[p.actSeries.length-1].v;
+  $('#vt-act').textContent = Math.round(lastA);
+  const actStatus = $('#vt-act-status');
+  if (lastA < 10) actStatus.textContent='resting';
+  else if (lastA > 80) actStatus.textContent='very active';
+  else actStatus.textContent='normal';
+  $('#vt-steps').textContent = p.steps1h.toLocaleString();
+  $('#vt-weight').textContent = p.weightKg + ' kg';
+
+  const setLevel = (el, num, v) => { const low = v<30; el.style.width = v+'%'; el.classList.toggle('low', low); num.textContent = v+'%'; };
+  setLevel($('#lvl-feed'),  $('#lvl-feed-n'),  p.feed);
+  setLevel($('#lvl-water'), $('#lvl-water-n'), p.water);
+  setLevel($('#lvl-salt'),  $('#lvl-salt-n'),  p.salt);
+
+  $('#vt-meal').textContent  = formatAgo(p.lastMeal)  + ' ago';
+  $('#vt-drink').textContent = formatAgo(p.lastDrink) + ' ago';
+
+  drawMiniLine('#chart-temp', p.tempSeries, sp.tempRange, 'hsl(35 85% 60%)');
+  drawMiniLine('#chart-act',  p.actSeries,  [0,100],      'hsl(185 80% 55%)');
+}
+function drawMiniLine(sel, series, band, color){
+  const host = $(sel);
+  if (!host) return;
+  const W = host.clientWidth || 280, H = 96;
+  const vs = series.map(p=>p.v);
+  const lo = Math.min(...vs, band[0]), hi = Math.max(...vs, band[1]);
+  const pad = (hi-lo) * 0.08 || 1;
+  const Y = v => H-8 - ((v-(lo-pad))/((hi-lo+2*pad)||1)) * (H-16);
+  const X = i => 4 + (i/(series.length-1))*(W-8);
+  let path = `M ${X(0)} ${Y(series[0].v)}`;
+  for (let i=1;i<series.length;i++) path += ` L ${X(i)} ${Y(series[i].v)}`;
+  const bandY1 = Y(band[1]), bandY2 = Y(band[0]);
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <rect x="4" y="${Math.min(bandY1,bandY2)}" width="${W-8}" height="${Math.abs(bandY2-bandY1)}" fill="hsl(142 70% 50% / 0.08)" stroke="hsl(142 70% 50% / 0.3)" stroke-dasharray="2 3" stroke-width="1"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round"/>
+    <g class="chart-axis"><text x="4" y="11">${hi.toFixed(1)}</text><text x="4" y="${H-2}">${lo.toFixed(1)}</text></g>
+  </svg>`;
+}
+
+// --------------- Bedside monitor (ECG / SpO₂ pleth / RESP) ---------------
+const MON = {
+  pxPerSec: 110,                            // sweep speed
+  channels: {
+    ecg:   { color:'hsl(140 85% 62%)', glow:'hsl(140 80% 50% / 0.55)', scale:0.30, mid:0.62 },
+    pleth: { color:'hsl(190 90% 62%)', glow:'hsl(190 80% 50% / 0.50)', scale:0.42, mid:0.60 },
+    resp:  { color:'hsl(50 95% 62%)',  glow:'hsl(50 90% 55% / 0.45)',  scale:0.44, mid:0.55 },
+  },
+};
+function initMonitor(){
+  ['ecg','pleth','resp'].forEach(name => {
+    const c = document.getElementById('trace-'+name);
+    if (!c) return;
+    const dpr = devicePixelRatio || 1;
+    const r = c.getBoundingClientRect();
+    c.width = Math.max(1, r.width*dpr);
+    c.height = Math.max(1, r.height*dpr);
+    const ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    MON.channels[name].ctx = ctx;
+    MON.channels[name].W = r.width;
+    MON.channels[name].H = r.height;
+    MON.channels[name].buf = new Float32Array(Math.max(2, Math.ceil(r.width)));
+    MON.channels[name].cursor = 0;
+    MON.channels[name].phase = 0;
+    MON.channels[name].pxFrac = 0;
+    ctx.clearRect(0,0,r.width,r.height);
+  });
+}
+// ECG Lead II — sum of Gaussians for P–Q–R–S–T over one cardiac cycle (t∈[0,1])
+function ecgPoint(t){
+  const g = (mu, sig, amp) => amp * Math.exp(-((t-mu)/sig)*((t-mu)/sig));
+  return g(0.18, 0.026, 0.13)  // P
+       - g(0.285, 0.012, 0.14) // Q
+       + g(0.315, 0.010, 1.10) // R
+       - g(0.355, 0.018, 0.34) // S
+       + g(0.55,  0.055, 0.34);// T
+}
+// Photoplethysmogram — steep upstroke + dicrotic notch
+function plethPoint(t){
+  const g = (mu, sig, amp) => amp * Math.exp(-((t-mu)/sig)*((t-mu)/sig));
+  return g(0.22, 0.10, 1.0) + g(0.55, 0.13, 0.32) - 0.32;
+}
+function tickMonitor(dt){
+  const p = STATE.pens[STATE.focusPen];
+  const alarm = p && p.alarm;
+  const noise = alarm ? 0.04 : 0.012;
+  let hrHz = 0, respHz = 0;
+  if (p && p.occupied){
+    hrHz = p.hr / 60;
+    respHz = p.bpm / 60;
+  }
+  const respFn = (p && p.occupied)
+    ? (t => breathShape(t*Math.PI*2 + p.breath.phase, p.breath.sharpness) * (0.7 * p.breath.ampMul))
+    : (() => 0);
+  drawTrace('ecg',   dt, hrHz,   ecgPoint,   alarm ? noise*2 : noise, alarm);
+  drawTrace('pleth', dt, hrHz,   plethPoint, noise*0.6, false);
+  drawTrace('resp',  dt, respHz, respFn,     0.02, alarm);
+}
+function drawTrace(name, dt, hz, fn, noiseAmp, alarmMode){
+  const ch = MON.channels[name];
+  if (!ch.ctx) return;
+  const { ctx, W, H, buf } = ch;
+  const pxs = MON.pxPerSec;
+  // advance cursor by pixel count this frame
+  let acc = (ch.pxFrac || 0) + dt * pxs;
+  while (acc >= 1){
+    // phase advances by hz cycles per second → per pixel = hz/pxs cycles
+    ch.phase += (hz / pxs) * Math.PI * 2;
+    if (ch.phase > Math.PI*2) ch.phase -= Math.PI*2;
+    const t = ch.phase / (Math.PI*2);
+    let v = (hz > 0) ? fn(t) : 0;
+    v += (Math.random()-0.5) * noiseAmp;
+    buf[ch.cursor] = v;
+    ch.cursor = (ch.cursor + 1) % W;
+    acc -= 1;
+  }
+  ch.pxFrac = acc;
+
+  // render
+  ctx.clearRect(0,0,W,H);
+  const midY = H * ch.mid;
+  const sc = H * ch.scale;
+  ctx.lineWidth = 1.7;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = alarmMode ? 'hsl(0 80% 65%)' : MON.channels[name].color;
+  ctx.shadowColor = alarmMode ? 'hsl(0 70% 50% / 0.6)' : MON.channels[name].glow;
+  ctx.shadowBlur = 8;
+  const gap = 14;
+  const c = ch.cursor;
+  ctx.beginPath();
+  let down = false;
+  for (let x=0; x<W; x++){
+    const aheadDist = (x - c + W) % W;
+    if (aheadDist < gap) { down = false; continue; }
+    const y = midY - buf[x] * sc;
+    if (!down){ ctx.moveTo(x, y); down = true; }
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // sweep cursor line
+  ctx.strokeStyle = alarmMode ? 'hsl(0 80% 70% / 0.45)' : 'hsl(210 20% 92% / 0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(c+0.5, 0); ctx.lineTo(c+0.5, H); ctx.stroke();
+}
+
+// --------------- Breathing canvas — per-animal pattern ---------------
+let breathCtx, breathW=0, breathH=0;
+const breathBuf = new Array(800).fill(0);
+let bp = 0;
+let phase = 0;
+let lastBpmJitterAt = 0;
+function initBreath(){
+  const c = $('#breath-canvas');
+  const dpr = devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width = r.width*dpr; c.height = r.height*dpr;
+  breathW = r.width; breathH = r.height;
+  breathCtx = c.getContext('2d');
+  breathCtx.scale(dpr, dpr);
+}
+// shape waveform per pen (sharpness exponent gives different breath shapes per species/animal)
+function breathShape(theta, sharpness){
+  // sharpness ~0.4 (deep, sinusoidal) .. ~2.2 (sharp inhale, slow exhale)
+  const s = Math.sin(theta);
+  return Math.sign(s) * Math.pow(Math.abs(s), 1/sharpness);
+}
+function tickBreath(dt){
+  if (!breathCtx) return;
+  const pen = STATE.pens[STATE.focusPen];
+  drawBreathBg();
+  if (!pen || !pen.occupied){
+    breathCtx.fillStyle = 'hsl(215 15% 55%)';
+    breathCtx.font = '12px JetBrains Mono';
+    breathCtx.fillText(`No respiration signal for ${STATE.focusPen}`, 12, breathH/2);
+    setBreathOverlay(null);
+    return;
+  }
+  const sp = SPECIES[pen.species];
+  const b = pen.breath;
+  const anomalous = pen.alarm;
+  const bpm = pen.bpm;
+  const freq = bpm/60;
+  phase += dt * freq * Math.PI * 2;
+  const baseAmp = sp.amp * b.ampMul;
+  const noise = sp.noiseBase * b.noiseMul * (anomalous ? 4.5 : 1);
+  const irreg = b.irregularity + (anomalous ? 0.18 : 0);
+  let y = breathShape(phase + b.phase, b.sharpness) * baseAmp;
+  // mid-tier amplitude wobble (chest swell over multiple breaths)
+  y *= (1 + Math.sin(phase*0.07)*0.06);
+  if (Math.random() < irreg) y += rand(-0.45, 0.45);
+  if (anomalous && Math.random() < 0.04) y *= -0.2; // brief apnea-like dip
+  y += (Math.random()-0.5)*noise*2;
+  breathBuf[bp] = y;
+  bp = (bp+1) % breathBuf.length;
+
+  // draw
+  breathCtx.beginPath();
+  breathCtx.lineWidth = 1.8;
+  breathCtx.strokeStyle = anomalous ? 'hsl(0 70% 65%)' : sp.color;
+  breathCtx.shadowColor = anomalous ? 'hsl(0 70% 50% / 0.6)' : 'hsl(185 80% 50% / 0.45)';
+  breathCtx.shadowBlur = 6;
+  const len = breathBuf.length;
+  for (let i=0;i<len;i++){
+    const idx = (bp + i) % len;
+    const x = (i/(len-1)) * breathW;
+    const yy = breathH/2 - breathBuf[idx]*(breathH*0.38);
+    if (i===0) breathCtx.moveTo(x,yy); else breathCtx.lineTo(x,yy);
+  }
+  breathCtx.stroke();
+  breathCtx.shadowBlur = 0;
+
+  setBreathOverlay({pen, sp, baseAmp, noise, irreg});
+}
+function setBreathOverlay(d){
+  if (!d){
+    $('#ovl-bpm').textContent='—'; $('#ovl-amp').textContent='—'; $('#ovl-noise').textContent='—'; $('#ovl-irreg').textContent='—';
+    $('#ovl-species').textContent='—'; $('#ovl-normal').textContent='—';
+    $('#ovl-status').style.display='none'; $('#breath-tag').textContent='— bpm';
+    return;
+  }
+  const { pen, sp, baseAmp, noise, irreg } = d;
+  $('#ovl-bpm').textContent = pen.bpm;
+  $('#ovl-amp').textContent = baseAmp.toFixed(2);
+  $('#ovl-noise').textContent = noise.toFixed(2);
+  $('#ovl-irreg').textContent = irreg.toFixed(2);
+  $('#ovl-species').textContent = sp.label;
+  $('#ovl-normal').textContent = sp.normal+' bpm';
+  $('#ovl-status').style.display = pen.alarm ? '' : 'none';
+  $('#breath-tag').textContent = `${pen.bpm} bpm`;
+}
+function drawBreathBg(){
+  breathCtx.clearRect(0,0,breathW,breathH);
+  breathCtx.strokeStyle = 'hsl(220 15% 18% / 0.6)';
+  breathCtx.lineWidth = 1;
+  breathCtx.beginPath();
+  for (let i=0;i<=10;i++){ const x=i*breathW/10; breathCtx.moveTo(x,0); breathCtx.lineTo(x,breathH) }
+  for (let i=0;i<=4;i++){ const y=i*breathH/4; breathCtx.moveTo(0,y); breathCtx.lineTo(breathW,y) }
+  breathCtx.stroke();
+  breathCtx.strokeStyle = 'hsl(220 15% 25% / 0.7)';
+  breathCtx.beginPath(); breathCtx.moveTo(0,breathH/2); breathCtx.lineTo(breathW,breathH/2); breathCtx.stroke();
+}
+
+// --------------- Toast ---------------
+let toastT = null;
+function toast(msg, kind='ok'){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind==='err'?'err':'ok');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className='toast', 2200);
+}
+
+// --------------- Export ---------------
+function exportCsv(){
+  const header = 'time,type,pen,species,acknowledged,message';
+  const rows = STATE.events.map(e => {
+    const p = STATE.pens[e.pen]; const sp = p ? p.species : '';
+    return [e.ts.toISOString(), e.type, e.pen, sp, e.ack?'true':'false', '"'+e.msg.replace(/"/g,'""')+'"'].join(',');
+  });
+  const blob = new Blob([header+'\n'+rows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `livestock-events-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  toast(`Exported ${STATE.events.length} events`, 'ok');
+}
+
+// --------------- Nav ---------------
+function bindNav(){
+  $$('#nav a').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.getElementById(a.dataset.target);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    $$('#nav a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+  }));
+  const sections = ['overview','breathing','vitals','environment','pens','activity','perimeter','events','hardware'].map(id => document.getElementById(id)).filter(Boolean);
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) $$('#nav a').forEach(x => x.classList.toggle('active', x.dataset.target === en.target.id)); });
+  }, {rootMargin:'-40% 0px -55% 0px', threshold:0});
+  sections.forEach(s => io.observe(s));
+}
+
+// --------------- Wiring ---------------
+function bindControls(){
+  $('#btn-sim-present').addEventListener('click', () => pushEvent('animal_present'));
+  $('#btn-sim-breath').addEventListener('click', () => pushEvent('breathing_anomaly'));
+  $('#btn-sim-escape').addEventListener('click', () => pushEvent('escape_detected'));
+  $('#btn-refresh').addEventListener('click', () => { seedRidge(); seedCountSeries(); seedEnv(); seedFenceSegs(); STATE._theftWatch=null; renderAll(); toast('Resampled live data','ok'); });
+  $('#btn-export').addEventListener('click', exportCsv);
+  $('#btn-clear').addEventListener('click', () => {
+    if (!STATE.events.length){ toast('No events to clear','ok'); return }
+    STATE.events = []; renderEvents(); renderDonut(); renderKpis(); toast('Cleared event stream','ok');
+  });
+  $('#btn-regen-ridge').addEventListener('click', () => { seedRidge(); renderRidgeline(); toast('Activity rhythm resampled','ok'); });
+  $('#btn-sim-theft').addEventListener('click', () => {
+    STATE._theftWatch = STATE._theftWatch || [];
+    STATE._theftWatch.unshift({
+      id: 'theft-'+Date.now(),
+      where: choice(['Fence E-N','Fence W-S','Gate-S','Gate-E','NW corner']),
+      speed: Math.round(rand(30,120)),
+      ts: new Date(),
+    });
+    renderProximity();
+    toast('⚠ Unknown presence detected at perimeter','err');
+  });
+  $('#btn-sim-fence').addEventListener('click', () => {
+    const seg = choice(STATE._fenceSegs);
+    seg.status = Math.random()<0.3 ? 'breach' : 'warn';
+    seg.vibration = Math.round(rand(60,120));
+    seg.lastEvent = new Date();
+    renderFenceList(); renderPerimeter();
+    toast(`Fence ${seg.id}: ${seg.status}`, seg.status==='breach'?'err':'ok');
+  });
+  $('#btn-pause').addEventListener('click', () => {
+    STATE.paused = !STATE.paused;
+    $('#btn-pause').innerHTML = STATE.paused
+      ? '<svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9z"/></svg>Resume'
+      : '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause';
+  });
+  $$('#range-tabs .pill-tab').forEach(b => b.addEventListener('click', () => {
+    STATE.range = parseInt(b.dataset.range,10);
+    $$('#range-tabs .pill-tab').forEach(x => x.classList.toggle('on', x===b));
+    renderCountChart();
+  }));
+  $$('#evt-tabs .pill-tab').forEach(b => b.addEventListener('click', () => {
+    STATE.filter = b.dataset.evt;
+    $$('#evt-tabs .pill-tab').forEach(x => x.classList.toggle('on', x===b));
+    renderEvents();
+  }));
+  $('#evt-search').addEventListener('input', e => { STATE.search = e.target.value; renderEvents(); });
+}
+
+// --------------- Loop ---------------
+function renderAll(){
+  renderKpis();
+  renderPens();
+  renderEvents();
+  renderCountChart();
+  renderDonut();
+  renderRidgeline();
+  renderPerimeter();
+  renderFenceList();
+  renderProximity();
+  renderEnv();
+  renderVitals();
+  renderRecentQuick();
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.1, (now - last)/1000);
+  last = now;
+  if (!STATE.paused){
+    tickBreath(dt);
+    tickMonitor(dt);
+  }
+  requestAnimationFrame(frame);
+}
+function tickClock(){
+  const t = new Date();
+  const el = document.getElementById('mon-time');
+  if (el) el.textContent = t.toLocaleTimeString('en-GB',{hour12:false});
+}
+
+function startSimulation(){
+  // Count series
+  setInterval(() => {
+    if (STATE.paused) return;
+    const last = STATE.countSeries[STATE.countSeries.length-1];
+    const n = clamp(last.n + (Math.random()<0.5?-1:1)*(Math.random()<0.3?1:0), 0, STATE.penIds.length);
+    STATE.countSeries.push({t: new Date(), n});
+    if (STATE.countSeries.length > 60*48) STATE.countSeries.shift();
+    renderCountChart();
+  }, 5000);
+
+  // Per-pen vitals drift
+  setInterval(() => {
+    Object.values(STATE.pens).forEach(p => {
+      if (!p.occupied) return;
+      const sp = SPECIES[p.species];
+      p.bpm = clamp(Math.round(p.bpm + rand(-1,1)), sp.bpmRange[0]-4, sp.bpmRange[1]+6);
+      if (p.alarm && Math.random()<0.25) p.bpm = Math.round(rand(sp.bpmRange[0]-12, sp.bpmRange[1]+14));
+      // cardiac drift (HR more reactive than RESP)
+      p.hr = clamp(Math.round(p.hr + rand(-2,2)), sp.hrRange[0]-8, sp.hrRange[1]+15);
+      if (p.alarm && Math.random()<0.4) p.hr = Math.round(rand(sp.hrRange[0]-15, sp.hrRange[1]+25));
+      // SpO2 drift
+      p.spo2 = clamp(Math.round(p.spo2 + (Math.random()<0.5?-1:1)*(Math.random()<0.2?1:0)), p.alarm?86:94, 99);
+      // NIBP drift (mild)
+      p.nibpSys = clamp(Math.round(p.nibpSys + rand(-3,3)), sp.nibpSys[0]-15, sp.nibpSys[1]+25);
+      p.nibpDia = clamp(Math.round(p.nibpDia + rand(-2,2)), sp.nibpDia[0]-12, sp.nibpDia[1]+18);
+      p.bodyTemp = clamp(p.bodyTemp + rand(-0.04,0.04), 37.5, 41.0);
+      p.activity = clamp(Math.round(p.activity + rand(-6,6)), 0, 100);
+      p.tempSeries.push({t:new Date(), v:p.bodyTemp});
+      p.actSeries.push({t:new Date(), v:p.activity});
+      if (p.tempSeries.length > 60) p.tempSeries.shift();
+      if (p.actSeries.length > 60) p.actSeries.shift();
+      if (Math.random()<0.2) p.feed = clamp(p.feed - 1, 0, 100);
+      if (Math.random()<0.25) p.water = clamp(p.water - 1, 0, 100);
+      p.lastSeen = new Date();
+    });
+    renderKpis(); renderPens(); renderVitals(); renderPerimeter(); renderProximity();
+  }, 3500);
+
+  // Environment drift
+  setInterval(() => {
+    BARNS.forEach(b => {
+      const env = STATE.env[b.id];
+      const last = env.series[env.series.length-1];
+      env.series.push({
+        t: new Date(),
+        temp: clamp(last.temp + rand(-0.15,0.15), 12, 30),
+        humid: clamp(last.humid + rand(-0.4,0.4), 40, 85),
+        nh3: clamp(last.nh3 + rand(-0.3,0.3), 0, 25),
+        co2: clamp(last.co2 + rand(-25,25), 400, 2000),
+      });
+      if (env.series.length > 120) env.series.shift();
+    });
+    renderEnv();
+  }, 8000);
+
+  // Periodic count events
+  setInterval(() => {
+    if (Math.random()<0.6) pushEvent('count', new Date(), {silent:true});
+    renderEvents(); renderDonut(); renderKpis();
+  }, 11000);
+
+  // Rare anomalies
+  setInterval(() => {
+    const r = Math.random();
+    if (r < 0.16) pushEvent('breathing_anomaly');
+    else if (r < 0.19) pushEvent('escape_detected');
+    else if (r < 0.55) pushEvent('animal_present');
+  }, 15000);
+}
+
+// --------------- Boot ---------------
+function boot(){
+  seedPens();
+  seedEvents();
+  seedCountSeries();
+  seedRidge();
+  seedFenceSegs();
+  seedEnv();
+  buildPenSelector();
+  bindControls();
+  bindNav();
+  initBreath();
+  initMonitor();
+  tickClock();
+  setInterval(tickClock, 1000);
+  let resizeT = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { initBreath(); initMonitor(); renderCountChart(); renderEnv(); renderVitals(); renderRidgeline(); renderPerimeter(); }, 120);
+  });
+  renderAll();
+  focusPen(STATE.focusPen);
+  requestAnimationFrame(now => { last = now; frame(now) });
+  startSimulation();
+}
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>

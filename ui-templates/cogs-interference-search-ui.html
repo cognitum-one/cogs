@@ -1,0 +1,2951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Interference Search — Grover-inspired multi-hypothesis search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --success:142 70% 50%;
+  --warning:35 90% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-quantum:linear-gradient(135deg,hsl(185 80% 50% / 0.28),hsl(185 80% 50% / 0.04) 60%,transparent),hsl(var(--card));
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.85);
+  --shadow-glow:0 0 60px -12px hsl(185 80% 50% / 0.4);
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+  background-image:
+    radial-gradient(ellipse at top,hsl(185 60% 18% / 0.15),transparent 60%);
+  background-attachment:fixed;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.35);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.55)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--accent));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── App bar ─────────────────────────────────────────────────── */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid hsl(var(--border) / 0.6);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:36px;height:36px;border-radius:0.55rem;
+  background:hsl(185 80% 50% / 0.15);
+  border:1px solid hsl(var(--primary) / 0.4);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 20px -6px hsl(var(--primary) / 0.55);
+}
+.brand-mark svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:700;font-size:1rem}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.35rem;font-weight:600}
+.brand-tag{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--accent));margin-left:0.5rem;
+  padding:0.1rem 0.45rem;border-radius:9999px;
+  border:1px solid hsl(var(--accent) / 0.35);
+  background:hsl(var(--accent) / 0.08);
+}
+.nav{display:flex;align-items:center;gap:0.2rem;flex-wrap:wrap}
+.nav a{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.45rem 0.8rem;border-radius:0.45rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary) / 0.7);text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--primary) / 0.12)}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+
+/* ── Page header ─────────────────────────────────────────────── */
+.cog-hero{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.55);
+  border-radius:1rem;padding:1.5rem 1.75rem;margin-bottom:1.25rem;
+  display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:center;
+  position:relative;overflow:hidden;
+}
+.cog-hero::before{display:none}
+.cog-hero-emo{
+  font-size:3.5rem;line-height:1;
+  filter:drop-shadow(0 0 18px hsl(var(--primary) / 0.5));
+  position:relative;z-index:1;
+}
+.cog-hero-info{position:relative;z-index:1;min-width:0}
+.cog-hero-name{
+  font-size:1.75rem;font-weight:700;color:hsl(var(--foreground));
+  line-height:1.15;margin-bottom:0.3rem;
+}
+.cog-hero-desc{
+  font-size:0.9375rem;color:hsl(var(--card-foreground));
+  line-height:1.55;opacity:0.92;max-width:46rem;
+}
+.cog-hero-meta{
+  display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;
+  margin-top:0.6rem;
+}
+.cog-hero-actions{
+  display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;
+  position:relative;z-index:1;
+}
+
+/* Status pill */
+.status-pill{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  padding:0.45rem 0.85rem;border-radius:9999px;
+  font-family:var(--font-mono);font-size:0.75rem;font-weight:500;
+  background:hsl(var(--primary) / 0.15);color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.4);
+}
+.status-pill.idle{background:hsl(var(--muted) / 0.6);color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.status-pill.searching{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.4)}
+.status-pill.paused{background:hsl(var(--warning) / 0.12);color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.35)}
+.status-pill.locked{background:hsl(var(--primary) / 0.2);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.5)}
+.status-pill .pulse{
+  width:0.5rem;height:0.5rem;border-radius:9999px;
+  background:currentColor;
+}
+.status-pill.searching .pulse{animation:pulse 1.4s infinite}
+.status-pill.locked .pulse{box-shadow:0 0 8px currentColor}
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.4;transform:scale(0.85)}
+}
+
+/* Chips */
+.chip{
+  padding:0.18rem 0.55rem;border-radius:9999px;
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.05em;font-size:0.625rem;font-weight:600;
+  display:inline-flex;align-items:center;gap:0.3rem;
+  border:1px solid hsl(var(--border) / 0.5);
+}
+.chip.primary{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.chip.accent{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3)}
+.chip.hard{background:hsl(0 70% 55% / 0.15);color:hsl(0 70% 75%);border-color:hsl(0 65% 55% / 0.3)}
+.chip.medium{background:hsl(35 85% 55% / 0.15);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.3)}
+.chip.easy{background:hsl(var(--success) / 0.15);color:hsl(142 70% 65%);border-color:hsl(var(--success) / 0.3)}
+.chip .mono{font-family:var(--font-mono)}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:0.45rem;
+  padding:0.55rem 0.95rem;
+  border-radius:0.45rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.15s;
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.45;cursor:not-allowed}
+.btn.sm{padding:0.35rem 0.7rem;font-size:0.75rem}
+.btn.lg{padding:0.7rem 1.25rem;font-size:0.875rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 14px -4px hsl(var(--primary) / 0.5);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.92);box-shadow:0 6px 18px -4px hsl(var(--primary) / 0.6)}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.92)}
+.btn.outline{background:transparent}
+.btn.outline:hover:not(:disabled){background:hsl(var(--secondary) / 0.4)}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 75%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+
+/* ── Nav count badge ─────────────────────────────────────────── */
+.nav a .count{
+  font-family:var(--font-mono);font-size:0.625rem;
+  background:hsl(var(--background) / 0.5);padding:0.05rem 0.4rem;
+  border-radius:9999px;margin-left:0.1rem;
+  border:1px solid hsl(var(--border) / 0.5);
+}
+.nav a.active .count{background:hsl(var(--primary) / 0.2);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.4)}
+
+/* ── Panels ──────────────────────────────────────────────────── */
+.panel{display:none}
+.panel.on{display:block}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.55);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.card-actions{display:flex;gap:0.4rem;align-items:center}
+
+.section-title{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+  font-family:var(--font-mono);
+}
+
+/* ── KPI grid ────────────────────────────────────────────────── */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  margin-bottom:1.25rem;
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.55);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+  position:relative;overflow:hidden;
+}
+.kpi::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,hsl(var(--primary) / 0.6),transparent);
+  opacity:0.5;
+}
+.kpi.accent::after{background:linear-gradient(90deg,transparent,hsl(var(--accent) / 0.6),transparent)}
+.kpi.success::after{background:linear-gradient(90deg,transparent,hsl(var(--success) / 0.6),transparent)}
+.kpi.warn::after{background:linear-gradient(90deg,transparent,hsl(var(--warning) / 0.6),transparent)}
+.kpi-ic{
+  width:40px;height:40px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi.accent .kpi-ic{background:hsl(var(--accent) / 0.12)}
+.kpi.accent .kpi-ic svg{stroke:hsl(var(--accent))}
+.kpi.success .kpi-ic{background:hsl(var(--success) / 0.12)}
+.kpi.success .kpi-ic svg{stroke:hsl(var(--success))}
+.kpi.warn .kpi-ic{background:hsl(var(--warning) / 0.12)}
+.kpi.warn .kpi-ic svg{stroke:hsl(var(--warning))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono)}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.15rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem;font-family:var(--font-mono)}
+.kpi-sub.up{color:hsl(var(--success))}
+.kpi-sub.down{color:hsl(var(--destructive))}
+
+/* ── Grids ───────────────────────────────────────────────────── */
+.grid-2{display:grid;gap:1rem;grid-template-columns:1fr 1fr}
+.grid-3{display:grid;gap:1rem;grid-template-columns:repeat(3,1fr)}
+.grid-search{display:grid;gap:1rem;grid-template-columns:2fr 1fr;align-items:start}
+@media (max-width:900px){
+  .grid-2,.grid-3,.grid-search{grid-template-columns:1fr}
+}
+
+/* ── Chart hosts ─────────────────────────────────────────────── */
+.chart-host{
+  width:100%;height:240px;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.5rem;
+  position:relative;overflow:hidden;
+}
+.chart-host canvas{display:block;width:100%;height:100%}
+.chart-host.tall{height:320px}
+.chart-host.short{height:160px}
+.chart-legend{
+  display:flex;gap:0.85rem;flex-wrap:wrap;
+  margin-top:0.5rem;font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.chart-legend .lg-item{display:inline-flex;align-items:center;gap:0.35rem}
+.chart-legend .lg-sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* ── Hypothesis heatmap ──────────────────────────────────────── */
+.hyp-grid{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:3px;padding:4px;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.5rem;
+}
+.hyp-cell{
+  aspect-ratio:1;border-radius:3px;
+  background:hsl(var(--muted));
+  cursor:pointer;transition:transform 0.1s,box-shadow 0.15s;
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:0.5625rem;
+  color:hsl(var(--foreground) / 0.5);
+}
+.hyp-cell:hover{transform:scale(1.08);box-shadow:0 0 0 2px hsl(var(--accent))}
+.hyp-cell.target{box-shadow:0 0 0 2px hsl(var(--warning)),0 0 12px hsl(var(--warning) / 0.5)}
+.hyp-cell.found{box-shadow:0 0 0 2px hsl(var(--success)),0 0 14px hsl(var(--success) / 0.7)}
+
+/* ── Hypothesis list ─────────────────────────────────────────── */
+.hyp-list{
+  display:flex;flex-direction:column;gap:0.4rem;max-height:520px;overflow-y:auto;
+  padding-right:0.25rem;
+}
+.hyp-row{
+  display:grid;grid-template-columns:80px 1fr 100px 90px;gap:0.75rem;
+  align-items:center;padding:0.55rem 0.75rem;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.45rem;cursor:pointer;transition:all 0.15s;
+}
+.hyp-row:hover{border-color:hsl(var(--accent) / 0.5);background:hsl(var(--secondary) / 0.5)}
+.hyp-row.target{border-color:hsl(var(--warning) / 0.5);background:hsl(var(--warning) / 0.06)}
+.hyp-row.found{border-color:hsl(var(--success) / 0.5);background:hsl(var(--success) / 0.06)}
+.hyp-id{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--primary));font-weight:500}
+.hyp-spark{height:28px;width:100%}
+.hyp-amp{
+  font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground));
+  font-variant-numeric:tabular-nums;text-align:right;
+}
+.hyp-conf{
+  display:flex;align-items:center;gap:0.4rem;justify-content:flex-end;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+}
+.hyp-conf-ring{
+  width:18px;height:18px;border-radius:9999px;
+  background:conic-gradient(hsl(var(--accent)) var(--p,0%),hsl(var(--muted)) 0);
+  position:relative;
+}
+.hyp-conf-ring::after{
+  content:'';position:absolute;inset:3px;
+  background:hsl(var(--card));border-radius:9999px;
+}
+
+/* ── Event log ───────────────────────────────────────────────── */
+.event-toolbar{
+  display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;
+  margin-bottom:0.75rem;
+}
+.event-list{
+  display:flex;flex-direction:column;gap:0.3rem;
+  max-height:560px;overflow-y:auto;font-family:var(--font-mono);font-size:0.75rem;
+}
+.event-row{
+  display:grid;grid-template-columns:90px 130px 1fr auto;gap:0.75rem;
+  align-items:center;padding:0.45rem 0.7rem;border-radius:0.35rem;
+  background:hsl(var(--background) / 0.45);
+  border-left:3px solid hsl(var(--muted));
+  transition:background 0.15s;
+}
+.event-row:hover{background:hsl(var(--secondary) / 0.5)}
+.event-row.evt-hypothesis_found{border-left-color:hsl(var(--success))}
+.event-row.evt-search_iterations{border-left-color:hsl(var(--accent))}
+.event-row.evt-amplitude{border-left-color:hsl(var(--primary))}
+.event-row.evt-system{border-left-color:hsl(var(--warning))}
+.evt-ts{color:hsl(var(--muted-foreground));font-size:0.6875rem}
+.evt-name{color:hsl(var(--foreground));font-weight:500;font-size:0.75rem}
+.evt-payload{color:hsl(var(--muted-foreground));font-size:0.6875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evt-icon{
+  width:18px;height:18px;border-radius:9999px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:0.625rem;
+}
+.evt-hypothesis_found .evt-icon{background:hsl(var(--success) / 0.2);color:hsl(var(--success))}
+.evt-search_iterations .evt-icon{background:hsl(var(--accent) / 0.2);color:hsl(var(--accent))}
+.evt-amplitude .evt-icon{background:hsl(var(--primary) / 0.2);color:hsl(var(--primary))}
+.evt-system .evt-icon{background:hsl(var(--warning) / 0.2);color:hsl(var(--warning))}
+
+/* ── Inputs ──────────────────────────────────────────────────── */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.45rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input[type=range]{accent-color:hsl(var(--primary));padding:0}
+.input{
+  width:100%;height:2.5rem;
+  border:1px solid hsl(var(--input));background:hsl(var(--background));
+}
+textarea.input{height:9rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+/* ── Form rows ───────────────────────────────────────────────── */
+.form-row{margin-bottom:0.875rem}
+.form-row label.lbl{
+  display:block;font-size:0.6875rem;text-transform:uppercase;
+  letter-spacing:0.06em;color:hsl(var(--muted-foreground));
+  font-weight:600;font-family:var(--font-mono);margin-bottom:0.35rem;
+}
+.form-row .hint{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.25rem;font-family:var(--font-mono)}
+.range-row{display:flex;align-items:center;gap:0.75rem}
+.range-row input[type=range]{flex:1}
+.range-val{
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--accent));min-width:48px;text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── Schema table ────────────────────────────────────────────── */
+table.schema{width:100%;border-collapse:collapse;font-size:0.8125rem}
+table.schema thead th{
+  text-align:left;padding:0.45rem 0.6rem;
+  font-size:0.625rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
+  color:hsl(var(--muted-foreground));font-family:var(--font-mono);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+table.schema tbody td{
+  padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+table.schema tbody td.k{color:hsl(var(--primary));font-weight:500}
+table.schema tbody td.t{color:hsl(var(--accent))}
+
+/* ── Code box ────────────────────────────────────────────────── */
+pre.codebox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.85rem 1rem;margin:0;
+  font-family:var(--font-mono);font-size:0.75rem;
+  overflow:auto;line-height:1.55;max-height:24rem;color:hsl(var(--foreground));
+  white-space:pre-wrap;word-break:break-word;
+}
+
+/* ── Modal ───────────────────────────────────────────────────── */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.78);backdrop-filter:blur(6px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem 1.75rem;
+  max-width:620px;width:100%;
+  display:flex;flex-direction:column;gap:1rem;
+}
+.modal h3{font-size:1.125rem;font-weight:600}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground))}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+.toast-host{
+  position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;
+  display:flex;flex-direction:column;gap:0.5rem;
+  pointer-events:none;
+}
+.toast{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-left:4px solid hsl(var(--primary));
+  border-radius:0.5rem;padding:0.75rem 1rem;
+  font-size:0.8125rem;color:hsl(var(--foreground));
+  box-shadow:var(--shadow-card);
+  pointer-events:auto;animation:toast-in 0.25s ease-out;
+  display:flex;align-items:center;gap:0.6rem;min-width:240px;
+}
+.toast.success{border-left-color:hsl(var(--success))}
+.toast.warning{border-left-color:hsl(var(--warning))}
+.toast.danger{border-left-color:hsl(var(--destructive))}
+.toast .ti{font-size:1.1rem}
+@keyframes toast-in{
+  from{opacity:0;transform:translateX(20px)}
+  to{opacity:1;transform:translateX(0)}
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+  font-family:var(--font-mono);
+}
+
+/* ── Run list ────────────────────────────────────────────────── */
+.run-list{display:flex;flex-direction:column;gap:0.4rem}
+.run-row{
+  display:grid;grid-template-columns:120px 1fr 90px 80px 80px;gap:0.75rem;
+  align-items:center;padding:0.55rem 0.7rem;
+  background:hsl(var(--background) / 0.4);
+  border-radius:0.4rem;font-family:var(--font-mono);font-size:0.75rem;
+  border:1px solid hsl(var(--border) / 0.4);
+}
+.run-row.head{
+  background:transparent;border:none;
+  color:hsl(var(--muted-foreground));font-size:0.6875rem;
+  text-transform:uppercase;letter-spacing:0.05em;font-weight:600;
+}
+.run-status{display:inline-flex;align-items:center;gap:0.35rem}
+.run-status .dot{width:6px;height:6px;border-radius:9999px;background:hsl(var(--muted-foreground))}
+.run-status.locked .dot{background:hsl(var(--success));box-shadow:0 0 6px hsl(var(--success))}
+.run-status.searching .dot{background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary))}
+.run-status.aborted .dot{background:hsl(var(--destructive))}
+.run-status.timeout .dot{background:hsl(var(--warning))}
+
+/* ── Quick actions ───────────────────────────────────────────── */
+.quick-actions{
+  display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;
+  padding:0.85rem 1rem;background:hsl(var(--background) / 0.45);
+  border:1px solid hsl(var(--border) / 0.45);border-radius:0.55rem;
+  margin-bottom:1rem;
+}
+.qa-label{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-right:0.4rem}
+
+/* ── Sensor pill ─────────────────────────────────────────────── */
+.sensor-pill{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  padding:0.4rem 0.75rem;border-radius:9999px;
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+  cursor:pointer;transition:all 0.15s;
+}
+.sensor-pill:hover{border-color:hsl(var(--accent) / 0.5)}
+.sensor-pill.on{border-color:hsl(var(--success) / 0.5);background:hsl(var(--success) / 0.08)}
+.sensor-pill .dot{width:8px;height:8px;border-radius:9999px;background:hsl(var(--muted-foreground))}
+.sensor-pill.on .dot{background:hsl(var(--success));box-shadow:0 0 8px hsl(var(--success))}
+
+/* ── Hardware fleet ──────────────────────────────────────────── */
+.hw-grid{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.hw-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.55);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+  display:flex;flex-direction:column;gap:0.625rem;
+  position:relative;overflow:hidden;
+}
+.hw-card.on{border-color:hsl(var(--success) / 0.4)}
+.hw-card.off{opacity:0.7}
+.hw-card .hw-h{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem}
+.hw-card .hw-name{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground));font-family:var(--font-display)}
+.hw-card .hw-mac{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.hw-card .hw-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 0.75rem;
+  font-family:var(--font-mono);font-size:0.75rem;
+}
+.hw-card .hw-stat dt{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))}
+.hw-card .hw-stat dd{color:hsl(var(--foreground));font-variant-numeric:tabular-nums;margin-top:0.1rem}
+.hw-card canvas.hw-spark{width:100%;height:36px;display:block}
+.hw-card .hw-actions{display:flex;gap:0.4rem;margin-top:0.25rem}
+.hw-card .hw-actions .btn{flex:1;justify-content:center}
+.hw-card .hw-sig{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.18rem 0.55rem;border-radius:9999px;
+  font-family:var(--font-mono);font-size:0.625rem;
+  background:hsl(var(--muted) / 0.5);color:hsl(var(--muted-foreground));
+  border:1px solid hsl(var(--border) / 0.5);
+}
+.hw-card .hw-sig .level{width:0.5rem;height:0.5rem;border-radius:9999px;background:hsl(var(--muted-foreground));box-shadow:0 0 0 0 currentColor}
+.hw-card .hw-sig.strong{color:hsl(var(--success));border-color:hsl(var(--success) / 0.4)}
+.hw-card .hw-sig.strong .level{background:hsl(var(--success));box-shadow:0 0 6px hsl(var(--success))}
+.hw-card .hw-sig.fair{color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.4)}
+.hw-card .hw-sig.fair .level{background:hsl(var(--warning))}
+.hw-card .hw-sig.weak{color:hsl(var(--destructive));border-color:hsl(var(--destructive) / 0.4)}
+.hw-card .hw-sig.weak .level{background:hsl(var(--destructive))}
+
+/* ── Polar / radar ───────────────────────────────────────────── */
+.polar-host{
+  width:100%;height:360px;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(ellipse at center, hsla(185,70%,18%,0.25), transparent 65%),
+    radial-gradient(circle at 30% 20%, hsla(185,80%,30%,0.08), transparent 50%),
+    hsl(var(--background) / 0.55);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;position:relative;overflow:hidden;
+  box-shadow:inset 0 0 60px hsla(185,80%,40%,0.12), inset 0 0 0 1px hsla(185,80%,55%,0.06);
+}
+.polar-host::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg, transparent 0 3px, hsla(185,80%,55%,0.025) 3px 4px);
+  pointer-events:none;mix-blend-mode:screen;
+}
+.polar-host canvas{display:block;position:relative;z-index:1}
+
+/* ── Detail modal ────────────────────────────────────────────── */
+.dm-stat{
+  display:grid;grid-template-columns:auto 1fr;gap:0.4rem 1rem;
+  font-family:var(--font-mono);font-size:0.8125rem;
+}
+.dm-stat dt{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em}
+.dm-stat dd{color:hsl(var(--foreground));font-variant-numeric:tabular-nums}
+
+@media (max-width:700px){
+  .cog-hero{grid-template-columns:1fr;text-align:center}
+  .cog-hero-actions{align-items:center}
+  .hyp-row{grid-template-columns:60px 1fr 70px;gap:0.4rem}
+  .hyp-row .hyp-conf{display:none}
+  .run-row{grid-template-columns:1fr 1fr 1fr;font-size:0.6875rem}
+  .run-row > :nth-child(n+4){display:none}
+  .event-row{grid-template-columns:70px 1fr;gap:0.4rem}
+  .event-row > :nth-child(n+3){display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 3a9 9 0 1 1-9 9"/>
+          <path d="M12 12 21 3"/>
+          <circle cx="21" cy="3" r="1.4" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="brand-text"><b>Interference Search</b><span class="slash">/</span>Grover hypothesis sweep<span class="brand-tag mono">v0.3.0</span></span>
+    </div>
+    <nav class="nav">
+      <a href="#" data-route="dashboard" class="active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </a>
+      <a href="#" data-route="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        Search
+      </a>
+      <a href="#" data-route="hypotheses">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Hypotheses <span class="count" id="nav-hyp-count">64</span>
+      </a>
+      <a href="#" data-route="hardware">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+        Hardware
+      </a>
+      <a href="#" data-route="events">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Events <span class="count" id="nav-event-count">0</span>
+      </a>
+      <a href="#" data-route="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Settings
+      </a>
+      <a href="#" data-route="export" id="nav-export">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Cog hero -->
+  <div class="cog-hero">
+    <div class="cog-hero-emo">📡</div>
+    <div class="cog-hero-info">
+      <div class="cog-hero-name">Interference Search</div>
+      <div class="cog-hero-desc">
+        Grover-inspired amplitude amplification for parallel hypothesis testing on Channel State Information feature spaces.
+        Probes 64 hypothesis lattice points in superposition and amplifies whichever signature matches the live CSI window.
+      </div>
+      <div class="cog-hero-meta">
+        <span class="chip primary">Inference</span>
+        <span class="chip hard">Hard</span>
+        <span class="chip"><span class="mono">v0.3.0</span></span>
+        <span class="chip"><span class="mono">20 KB</span></span>
+        <span class="chip primary">ESP32-S3</span>
+        <span class="chip"><span class="mono">CSI features</span></span>
+      </div>
+    </div>
+    <div class="cog-hero-actions">
+      <div class="status-pill idle" id="status-pill"><span class="pulse"></span><span id="status-text">Idle</span></div>
+      <button class="btn primary lg" id="hero-toggle">
+        <svg id="hero-toggle-ic" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+        <span id="hero-toggle-lbl">Start search</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Dashboard panel ─────────────────────────────────────── -->
+  <div class="panel on" id="panel-dashboard" role="tabpanel">
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 9 4-18 3 9h4"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Iterations</div>
+          <div class="kpi-val" id="kpi-iter">0</div>
+          <div class="kpi-sub" id="kpi-iter-sub">of 64 optimal</div>
+        </div>
+      </div>
+      <div class="kpi accent">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Peak amplitude</div>
+          <div class="kpi-val" id="kpi-amp">0.125</div>
+          <div class="kpi-sub" id="kpi-amp-sub">uniform · 1/√64</div>
+        </div>
+      </div>
+      <div class="kpi success">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Hypotheses found</div>
+          <div class="kpi-val" id="kpi-found">0</div>
+          <div class="kpi-sub" id="kpi-found-sub">this session</div>
+        </div>
+      </div>
+      <div class="kpi warn">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Search time</div>
+          <div class="kpi-val" id="kpi-time">0.0s</div>
+          <div class="kpi-sub" id="kpi-time-sub">cumulative</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.48"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">CSI window</div>
+          <div class="kpi-val" id="kpi-csi">64</div>
+          <div class="kpi-sub">subcarriers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Live CSI subcarrier magnitudes</div>
+            <div class="card-sub">802.11 HT-LTF · 64 subcarriers · 5 GHz band</div>
+          </div>
+          <span class="chip accent" id="csi-snr">SNR 28.4 dB</span>
+        </div>
+        <div class="chart-host" id="chart-csi"></div>
+        <div class="chart-legend">
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(185 80% 55%)"></span>magnitude</span>
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(220 10% 50% / 0.4);border:1px dashed hsl(220 10% 60%)"></span>noise floor</span>
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(var(--warning))"></span>target band</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Probability landscape</div>
+            <div class="card-sub">Polar projection · 64 hypothesis points</div>
+          </div>
+          <span class="chip" id="polar-target">target: H<span class="mono">42</span></span>
+        </div>
+        <div class="polar-host"><canvas id="chart-polar" width="320" height="280"></canvas></div>
+        <div class="chart-legend">
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(var(--primary))"></span>amplitude</span>
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(var(--warning))"></span>target</span>
+          <span class="lg-item"><span class="lg-sw" style="background:hsl(var(--success))"></span>found</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Recent runs</div>
+          <div class="card-sub" id="runs-sub">In-memory · clear with <code>Reset</code></div>
+        </div>
+        <div class="card-actions">
+          <button class="btn sm outline" id="btn-clear-runs">Clear runs</button>
+        </div>
+      </div>
+      <div class="run-list" id="run-list">
+        <div class="run-row head">
+          <span>Started</span><span>Target → Found</span><span>Iterations</span><span>Amplitude</span><span>Status</span>
+        </div>
+        <div style="color:hsl(var(--muted-foreground));font-style:italic;padding:1rem;text-align:center" id="run-empty">
+          No runs yet. Press <b style="color:hsl(var(--primary))">Start search</b> to begin.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Search panel ────────────────────────────────────────── -->
+  <div class="panel" id="panel-search" role="tabpanel">
+
+    <div class="quick-actions">
+      <span class="qa-label">Iteration controls</span>
+      <button class="btn primary" id="btn-start">
+        <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+        Start
+      </button>
+      <button class="btn" id="btn-pause" disabled>
+        <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>
+        Pause
+      </button>
+      <button class="btn" id="btn-step">
+        <svg viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+        Step
+      </button>
+      <button class="btn danger" id="btn-reset">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Reset
+      </button>
+      <span style="flex:1"></span>
+      <span class="qa-label">Speed</span>
+      <select id="sel-speed" class="input" style="width:auto;height:2.25rem">
+        <option value="200">0.5×</option>
+        <option value="100" selected>1×</option>
+        <option value="50">2×</option>
+        <option value="25">4×</option>
+        <option value="10">10×</option>
+      </select>
+    </div>
+
+    <div class="grid-search">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Amplitude evolution</div>
+            <div class="card-sub">Top-5 hypotheses · sin((2k+1)θ) ideal · live trace</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn sm outline" id="btn-clear-trace">Clear trace</button>
+          </div>
+        </div>
+        <div class="chart-host tall" id="chart-amp"></div>
+        <div class="chart-legend" id="amp-legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Hypothesis lattice</div>
+            <div class="card-sub">8×8 grid · cell brightness = |α|²</div>
+          </div>
+        </div>
+        <div class="hyp-grid" id="hyp-grid"></div>
+        <div style="margin-top:0.6rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          Click any cell to designate as target. Target = <span id="lattice-target" style="color:hsl(var(--warning))">H42</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Iteration rate</div>
+            <div class="card-sub">Grover iterations per second · rolling 60s</div>
+          </div>
+          <span class="chip accent" id="rate-now">— /s</span>
+        </div>
+        <div class="chart-host short" id="chart-rate"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Convergence</div>
+            <div class="card-sub">L¹ distance from uniform distribution</div>
+          </div>
+          <span class="chip primary" id="conv-now">0.000</span>
+        </div>
+        <div class="chart-host short" id="chart-conv"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hypotheses panel ────────────────────────────────────── -->
+  <div class="panel" id="panel-hypotheses" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Hypothesis registry</div>
+          <div class="card-sub">All 64 candidate signatures · sortable · sparkline shows last 32 amplitudes</div>
+        </div>
+        <div class="card-actions">
+          <input type="text" id="hyp-search" placeholder="Filter H ID…" style="width:160px;height:2.25rem">
+          <select id="hyp-sort" class="input" style="width:auto;height:2.25rem">
+            <option value="amp">Sort: amplitude ↓</option>
+            <option value="id">Sort: H-ID</option>
+            <option value="conf">Sort: confidence ↓</option>
+          </select>
+        </div>
+      </div>
+      <div class="hyp-list" id="hyp-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Events panel ────────────────────────────────────────── -->
+  <div class="panel" id="panel-events" role="tabpanel">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event stream</div>
+          <div class="card-sub">Live · MQTT topic <code>cogs/interference-search/events</code></div>
+        </div>
+      </div>
+      <div class="event-toolbar">
+        <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          <input type="checkbox" class="evt-filter" data-evt="hypothesis_found" checked> hypothesis_found
+        </label>
+        <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          <input type="checkbox" class="evt-filter" data-evt="search_iterations" checked> search_iterations
+        </label>
+        <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          <input type="checkbox" class="evt-filter" data-evt="amplitude" checked> amplitude
+        </label>
+        <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          <input type="checkbox" class="evt-filter" data-evt="system" checked> system
+        </label>
+        <span style="flex:1"></span>
+        <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+          <input type="checkbox" id="evt-autoscroll" checked> Auto-scroll
+        </label>
+        <button class="btn sm outline" id="btn-clear-events">Clear</button>
+      </div>
+      <div class="event-list" id="event-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Hardware panel ──────────────────────────────────────── -->
+  <div class="panel" id="panel-hardware" role="tabpanel">
+    <div class="quick-actions">
+      <span class="qa-label">ESP32-S3 fleet</span>
+      <span style="font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)" id="hw-online">— online</span>
+      <span style="flex:1"></span>
+      <button class="btn sm outline" id="btn-add-sensor">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add sensor
+      </button>
+      <button class="btn sm" id="btn-rescan">
+        <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+        Rescan
+      </button>
+    </div>
+    <div class="hw-grid" id="hw-grid"></div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Aggregate RSSI</div>
+          <div class="card-sub">Last 60s · rolling per-sensor signal strength</div>
+        </div>
+        <span class="chip" id="hw-rssi-now">— dBm avg</span>
+      </div>
+      <div class="chart-host tall" id="chart-rssi"></div>
+      <div class="chart-legend" id="hw-rssi-legend"></div>
+    </div>
+  </div>
+
+  <!-- ── Settings panel ──────────────────────────────────────── -->
+  <div class="panel" id="panel-settings" role="tabpanel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Tuning knobs</div>
+            <div class="card-sub">Applied live · saved to localStorage</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Hypothesis count (N)</label>
+          <div class="range-row">
+            <input type="range" id="cfg-n" min="16" max="256" step="16" value="64">
+            <span class="range-val" id="cfg-n-val">64</span>
+          </div>
+          <div class="hint">Lattice size. Optimal iterations grow as ⌊π/4·√N⌋.</div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Iterations cap</label>
+          <div class="range-row">
+            <input type="range" id="cfg-iter" min="1" max="64" value="6">
+            <span class="range-val" id="cfg-iter-val">6</span>
+          </div>
+          <div class="hint">Stop after this many Grover diffusions if no peak detected.</div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Detection threshold</label>
+          <div class="range-row">
+            <input type="range" id="cfg-thresh" min="0.4" max="0.99" step="0.01" value="0.85">
+            <span class="range-val" id="cfg-thresh-val">0.85</span>
+          </div>
+          <div class="hint">Fire <code>hypothesis_found</code> when peak amplitude exceeds this.</div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">CSI window length</label>
+          <div class="range-row">
+            <input type="range" id="cfg-csi" min="16" max="128" step="16" value="64">
+            <span class="range-val" id="cfg-csi-val">64</span>
+          </div>
+          <div class="hint">Subcarriers consumed per oracle query.</div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Noise sigma</label>
+          <div class="range-row">
+            <input type="range" id="cfg-noise" min="0" max="0.3" step="0.01" value="0.08">
+            <span class="range-val" id="cfg-noise-val">0.08</span>
+          </div>
+          <div class="hint">Simulated channel noise injected into oracle.</div>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Oracle mode</label>
+          <select class="input" id="cfg-oracle">
+            <option value="phase">Phase flip (textbook Grover)</option>
+            <option value="amplitude" selected>Amplitude bias (CSI-tuned)</option>
+            <option value="adaptive">Adaptive · QAOA hybrid</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="lbl">Auto-restart on lock</label>
+          <label style="display:inline-flex;align-items:center;gap:0.5rem;font-size:0.8125rem">
+            <input type="checkbox" id="cfg-auto" checked>
+            <span>Continue searching after each hypothesis_found event</span>
+          </label>
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button class="btn outline" id="btn-config-reset">Restore defaults</button>
+          <button class="btn primary" id="btn-config-save">Save & apply</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Config schema</div>
+              <div class="card-sub">cogs/interference-search/manifest.json</div>
+            </div>
+            <button class="btn sm outline" id="btn-copy-schema">Copy JSON</button>
+          </div>
+          <table class="schema">
+            <thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Range</th></tr></thead>
+            <tbody>
+              <tr><td class="k">hypothesis_count</td><td class="t">int</td><td>64</td><td>16…256</td></tr>
+              <tr><td class="k">iterations_cap</td><td class="t">int</td><td>6</td><td>1…64</td></tr>
+              <tr><td class="k">detect_threshold</td><td class="t">float</td><td>0.85</td><td>0.40…0.99</td></tr>
+              <tr><td class="k">csi_window</td><td class="t">int</td><td>64</td><td>16…128</td></tr>
+              <tr><td class="k">noise_sigma</td><td class="t">float</td><td>0.08</td><td>0.00…0.30</td></tr>
+              <tr><td class="k">oracle_mode</td><td class="t">enum</td><td>"amplitude"</td><td>phase | amplitude | adaptive</td></tr>
+              <tr><td class="k">auto_restart</td><td class="t">bool</td><td>true</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Source</div>
+              <div class="card-sub">cognitum-one/cogs/src/cogs/interference-search</div>
+            </div>
+            <button class="btn sm outline" id="btn-copy-source">Copy path</button>
+          </div>
+          <pre class="codebox" id="config-json"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div>cog: <span id="foot-cog">interference-search</span> · <span id="foot-ver">v0.3.0</span> · <span id="foot-runtime">runtime 0s</span></div>
+    <div style="margin-top:0.4rem"><a href="#" data-route="dashboard">dashboard</a> · <a href="#" data-route="hardware">hardware</a> · <a href="#" data-route="events">events</a> · <a href="https://github.com/cognitum-one/cogs" target="_blank" rel="noopener">github</a></div>
+  </footer>
+</div>
+
+<!-- Hypothesis detail modal -->
+<div class="modal-bg" id="hyp-modal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+      <div>
+        <h3>Hypothesis <span class="mono" id="hyp-modal-id">H00</span></h3>
+        <div class="modal-sub" id="hyp-modal-sub">—</div>
+      </div>
+      <button class="btn outline sm" id="hyp-modal-close">Close</button>
+    </div>
+    <dl class="dm-stat">
+      <dt>amplitude</dt><dd id="hm-amp">—</dd>
+      <dt>probability</dt><dd id="hm-prob">—</dd>
+      <dt>last seen</dt><dd id="hm-seen">—</dd>
+      <dt>signature</dt><dd id="hm-sig" style="font-size:0.6875rem;word-break:break-all">—</dd>
+    </dl>
+    <div class="chart-host short" id="hm-spark" style="height:120px"></div>
+    <div class="modal-actions">
+      <button class="btn outline" id="hm-mark-target">Designate as target</button>
+      <button class="btn accent" id="hm-isolate">Isolate trace</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirm modal -->
+<div class="modal-bg" id="reset-modal">
+  <div class="modal">
+    <h3>Reset search?</h3>
+    <div class="modal-sub">All amplitudes return to the uniform 1/√N superposition. Run history is kept; trace is cleared.</div>
+    <div class="modal-actions">
+      <button class="btn outline" id="reset-cancel">Cancel</button>
+      <button class="btn danger" id="reset-confirm">Reset state</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export modal -->
+<div class="modal-bg" id="export-modal">
+  <div class="modal">
+    <h3>Export session</h3>
+    <div class="modal-sub">Snapshot of current state, all runs, and the last 200 events.</div>
+    <pre class="codebox" id="export-body" style="max-height:18rem"></pre>
+    <div class="modal-actions">
+      <button class="btn outline" id="export-cancel">Close</button>
+      <button class="btn outline" id="export-copy">Copy JSON</button>
+      <button class="btn primary" id="export-download">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast host -->
+<div class="toast-host" id="toast-host"></div>
+
+<script>
+'use strict';
+
+// ── tiny helpers ─────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const fmt = (n, d=3) => Number(n).toFixed(d);
+const nowIso = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const hsl = (h, s, l, a=1) => `hsla(${h},${s}%,${l}%,${a})`;
+
+// ── persistent settings ──────────────────────────────────────────
+const DEFAULTS = {
+  hypothesis_count: 64,
+  iterations_cap: 6,
+  detect_threshold: 0.85,
+  csi_window: 64,
+  noise_sigma: 0.08,
+  oracle_mode: 'amplitude',
+  auto_restart: true,
+};
+let CFG = Object.assign({}, DEFAULTS);
+try { const s = localStorage.getItem('gh_interference_cfg'); if (s) CFG = Object.assign({}, DEFAULTS, JSON.parse(s)); } catch (_) {}
+
+// ── state ────────────────────────────────────────────────────────
+const STATE = {
+  route: 'dashboard',
+  running: false,
+  iter: 0,
+  iterTotal: 0,
+  startMs: 0,
+  cumulativeMs: 0,
+  amps: [],            // Float64Array of length N
+  target: 42,
+  found: [],           // [{h, iter, ts}]
+  runs: [],            // [{id, started, target, found, iter, amp, status}]
+  currentRun: null,
+  events: [],          // ring buffer
+  ampHistory: [],      // [[ampSnapshot_top5...]] for chart
+  rateHistory: [],     // {ts, rate}
+  convHistory: [],     // {ts, conv}
+  csiSnapshot: [],     // current CSI magnitudes
+  filterEvents: new Set(['hypothesis_found','search_iterations','amplitude','system']),
+  hypSort: 'amp',
+  hypFilter: '',
+  loopTimer: null,
+  speedMs: 100,
+  csiRotate: 0,
+  isolatedHyp: null,
+  sensors: [
+    { id: 'esp32-s3-a1', mac: '7C:DF:A1:0C:4F:21', loc: 'lab-bench', rssi: -42, pps: 480, on: true,  history: [] },
+    { id: 'esp32-s3-b3', mac: '7C:DF:A1:0C:5B:37', loc: 'cold-rm',   rssi: -47, pps: 412, on: true,  history: [] },
+    { id: 'esp32-s3-c7', mac: '7C:DF:A1:0C:6A:81', loc: 'corridor',  rssi: null, pps: 0,   on: false, history: [] },
+  ],
+};
+
+// ── algorithm ────────────────────────────────────────────────────
+// resetState() — by default ALSO clears the rolling chart histories
+// (manual Reset button). Pass {keepHistory:true} for auto-restart
+// between runs so the Amplitude Evolution chart stays continuous on
+// the iterTotal axis rather than blinking to empty every detection.
+function resetState(opts) {
+  const keepHistory = !!(opts && opts.keepHistory);
+  const n = CFG.hypothesis_count;
+  STATE.amps = new Float64Array(n);
+  const init = 1 / Math.sqrt(n);
+  for (let i = 0; i < n; i++) STATE.amps[i] = init;
+  STATE.iter = 0;
+  if (!keepHistory) {
+    STATE.ampHistory = [];
+    STATE.rateHistory = [];
+    STATE.convHistory = [];
+    STATE.topTraces = null;
+  } else {
+    // New run → re-pick trace set so colours follow the new target.
+    STATE.topTraces = null;
+  }
+  STATE.csiSnapshot = generateCsi();
+  if (STATE.target >= n) STATE.target = Math.floor(Math.random() * n);
+}
+
+function generateCsi() {
+  const w = CFG.csi_window;
+  const arr = new Float64Array(w);
+  // Baseline subcarrier wave + a target-aligned bump that grows
+  // with iterations (this is the signature we're amplifying).
+  const tgtCarrier = Math.floor((STATE.target / CFG.hypothesis_count) * w);
+  for (let i = 0; i < w; i++) {
+    const base = 0.6 + 0.18 * Math.sin(i * 0.32 + STATE.csiRotate * 0.04);
+    const ripple = 0.08 * Math.sin(i * 1.1 + STATE.csiRotate * 0.12);
+    const dist = Math.abs(i - tgtCarrier);
+    const signature = 0.35 * Math.exp(-(dist * dist) / 18) * (STATE.iter > 0 ? Math.min(1, STATE.iter / 5) : 0.3);
+    const noise = (Math.random() - 0.5) * CFG.noise_sigma * 1.5;
+    arr[i] = clamp(base + ripple + signature + noise, 0, 1.2);
+  }
+  return arr;
+}
+
+// One Grover-like iteration: oracle (flip target sign) + diffusion (reflect about mean)
+function groverStep() {
+  const n = CFG.hypothesis_count;
+  const a = STATE.amps;
+  const noise = CFG.noise_sigma;
+
+  // Oracle — depending on mode, bias the target hypothesis
+  const mode = CFG.oracle_mode;
+  if (mode === 'phase') {
+    a[STATE.target] = -a[STATE.target];
+  } else if (mode === 'amplitude') {
+    a[STATE.target] = -a[STATE.target] * 1.08;
+  } else {
+    // adaptive: also bias top-1 if not target
+    a[STATE.target] = -a[STATE.target] * 1.05;
+    let topI = 0, topV = 0;
+    for (let i = 0; i < n; i++) { if (Math.abs(a[i]) > topV) { topV = Math.abs(a[i]); topI = i; } }
+    if (topI !== STATE.target) a[topI] *= 0.97;
+  }
+
+  // Diffusion — reflect about mean
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += a[i];
+  mean /= n;
+  for (let i = 0; i < n; i++) a[i] = 2 * mean - a[i];
+
+  // Add channel noise
+  if (noise > 0) {
+    for (let i = 0; i < n; i++) a[i] += (Math.random() - 0.5) * noise * 0.5;
+  }
+
+  // Renormalize
+  let norm = 0;
+  for (let i = 0; i < n; i++) norm += a[i] * a[i];
+  norm = Math.sqrt(norm) || 1;
+  for (let i = 0; i < n; i++) a[i] /= norm;
+
+  STATE.iter += 1;
+  STATE.iterTotal += 1;
+  STATE.csiRotate += 1;
+  STATE.csiSnapshot = generateCsi();
+}
+
+function probOf(i) {
+  const v = STATE.amps[i] || 0;
+  return v * v;
+}
+function peakHypothesis() {
+  let bi = 0, bv = -1;
+  for (let i = 0; i < STATE.amps.length; i++) {
+    const p = probOf(i);
+    if (p > bv) { bv = p; bi = i; }
+  }
+  return { idx: bi, prob: bv };
+}
+function l1Convergence() {
+  const n = STATE.amps.length;
+  const uniform = 1 / n;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += Math.abs(probOf(i) - uniform);
+  return s / 2; // total variation
+}
+
+// ── events ──────────────────────────────────────────────────────
+function pushEvent(name, payload) {
+  const evt = { ts: nowIso(), name, payload };
+  STATE.events.unshift(evt);
+  if (STATE.events.length > 500) STATE.events.length = 500;
+  if (STATE.route === 'events') renderEvents();
+  const cnt = STATE.events.length;
+  const navCnt = $('#nav-event-count'); if (navCnt) navCnt.textContent = cnt;
+}
+
+// ── runs ────────────────────────────────────────────────────────
+function startRun() {
+  STATE.currentRun = {
+    id: 'run-' + Math.random().toString(36).slice(2, 8),
+    started: nowIso(),
+    target: STATE.target,
+    found: null,
+    iter: 0,
+    amp: 0,
+    status: 'searching',
+  };
+  STATE.runs.unshift(STATE.currentRun);
+  if (STATE.runs.length > 20) STATE.runs.length = 20;
+}
+function finishRun(status, foundIdx, peak) {
+  if (!STATE.currentRun) return;
+  STATE.currentRun.status = status;
+  STATE.currentRun.iter = STATE.iter;
+  STATE.currentRun.amp = peak;
+  if (foundIdx != null) STATE.currentRun.found = foundIdx;
+  STATE.currentRun = null;
+  renderRuns();
+}
+
+// ── main loop ────────────────────────────────────────────────────
+function tick() {
+  if (!STATE.running) return;
+  groverStep();
+  const { idx, prob } = peakHypothesis();
+  const peakAmp = Math.sqrt(prob);
+
+  // Pick top-5 traces. Stays stable within a run so the chart lines
+  // have continuity; resets on run boundaries via resetState().
+  if (!STATE.topTraces || STATE.topTraces.length === 0) {
+    const indices = Array.from({ length: STATE.amps.length }, (_, i) => i);
+    indices.sort((a, b) => probOf(b) - probOf(a));
+    // Always include the target so its line is visible from iter 0.
+    const top = indices.slice(0, 5);
+    if (!top.includes(STATE.target)) { top[top.length - 1] = STATE.target; }
+    STATE.topTraces = top;
+  }
+  // Use cumulative iterTotal so the timeline is continuous across runs.
+  STATE.ampHistory.push({ iter: STATE.iterTotal, vals: STATE.topTraces.map(i => Math.abs(STATE.amps[i])) });
+  if (STATE.ampHistory.length > 480) STATE.ampHistory.shift();
+
+  // Convergence + rate history
+  const conv = l1Convergence();
+  const t = Date.now();
+  STATE.convHistory.push({ ts: t, conv });
+  if (STATE.convHistory.length > 480) STATE.convHistory.shift();
+  STATE.rateHistory.push({ ts: t });
+  STATE.rateHistory = STATE.rateHistory.filter(e => t - e.ts < 60000);
+
+  // Event emission — throttled so the stream is readable even at 10× speed.
+  if (STATE.iterTotal % 16 === 0) pushEvent('amplitude', { peak: idx, amp: +peakAmp.toFixed(4) });
+  if (STATE.iterTotal % 32 === 0) pushEvent('search_iterations', { iter: STATE.iter, total: STATE.iterTotal, conv: +conv.toFixed(3) });
+
+  // Detection
+  if (peakAmp >= CFG.detect_threshold && idx === STATE.target) {
+    STATE.found.unshift({ h: idx, iter: STATE.iter, ts: nowIso(), amp: peakAmp });
+    pushEvent('hypothesis_found', { hypothesis: 'H' + idx, iter: STATE.iter, amp: +peakAmp.toFixed(4) });
+    finishRun('locked', idx, peakAmp);
+    if (CFG.auto_restart) {
+      // Pick a new target — keep history so the chart stays continuous.
+      setTimeout(() => {
+        STATE.target = Math.floor(Math.random() * CFG.hypothesis_count);
+        resetState({ keepHistory: true });
+        startRun();
+        pushEvent('system', { msg: 'auto-restart · new target H' + STATE.target });
+      }, 600);
+    } else {
+      stopRunning();
+    }
+  } else if (STATE.iter >= CFG.iterations_cap) {
+    pushEvent('system', { msg: 'iterations cap reached · ' + STATE.iter });
+    finishRun(peakAmp >= CFG.detect_threshold ? 'locked' : 'timeout', idx, peakAmp);
+    if (CFG.auto_restart) {
+      setTimeout(() => { resetState({ keepHistory: true }); startRun(); }, 400);
+    } else {
+      stopRunning();
+    }
+  }
+
+  renderLive();
+}
+
+// ── start/stop ───────────────────────────────────────────────────
+function startRunning() {
+  if (STATE.running) return;
+  if (STATE.sensors.every(s => !s.on)) {
+    toast('No sensors connected', 'warning');
+    return;
+  }
+  STATE.running = true;
+  STATE.startMs = Date.now();
+  if (STATE.amps.length === 0) resetState();
+  if (!STATE.currentRun) startRun();
+  pushEvent('system', { msg: 'search started · target H' + STATE.target + ' · oracle ' + CFG.oracle_mode });
+  STATE.loopTimer = setInterval(tick, STATE.speedMs);
+  updateRunControls();
+}
+function stopRunning() {
+  if (!STATE.running) return;
+  STATE.running = false;
+  STATE.cumulativeMs += Date.now() - STATE.startMs;
+  if (STATE.loopTimer) clearInterval(STATE.loopTimer);
+  STATE.loopTimer = null;
+  if (STATE.currentRun) {
+    const { idx, prob } = peakHypothesis();
+    finishRun('aborted', idx, Math.sqrt(prob));
+  }
+  pushEvent('system', { msg: 'search paused' });
+  updateRunControls();
+}
+function stepOnce() {
+  if (STATE.amps.length === 0) resetState();
+  if (!STATE.currentRun) startRun();
+  groverStep();
+  const { idx, prob } = peakHypothesis();
+  if (!STATE.topTraces) STATE.topTraces = Array.from({length:5},(_,i)=>i);
+  STATE.ampHistory.push({ iter: STATE.iter, vals: STATE.topTraces.map(i => Math.abs(STATE.amps[i])) });
+  if (STATE.ampHistory.length > 240) STATE.ampHistory.shift();
+  STATE.convHistory.push({ ts: Date.now(), conv: l1Convergence() });
+  pushEvent('search_iterations', { iter: STATE.iter, step: true });
+  renderLive();
+}
+
+function updateRunControls() {
+  $('#btn-start').disabled = STATE.running;
+  $('#btn-pause').disabled = !STATE.running;
+  const heroIc = $('#hero-toggle-ic');
+  const heroLbl = $('#hero-toggle-lbl');
+  if (STATE.running) {
+    heroIc.innerHTML = '<rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/>';
+    heroLbl.textContent = 'Pause search';
+  } else {
+    heroIc.innerHTML = '<path d="M5 3l14 9-14 9V3z" fill="currentColor"/>';
+    heroLbl.textContent = STATE.iter > 0 ? 'Resume search' : 'Start search';
+  }
+  const pill = $('#status-pill');
+  const txt = $('#status-text');
+  pill.className = 'status-pill';
+  if (STATE.running) { pill.classList.add('searching'); txt.textContent = 'Searching · iter ' + STATE.iter; }
+  else if (STATE.found.length && STATE.found[0].iter === STATE.iter) { pill.classList.add('locked'); txt.textContent = 'Locked on H' + STATE.found[0].h; }
+  else if (STATE.iter > 0) { pill.classList.add('paused'); txt.textContent = 'Paused · iter ' + STATE.iter; }
+  else { pill.classList.add('idle'); txt.textContent = 'Idle'; }
+}
+
+// ── renderers ────────────────────────────────────────────────────
+function renderLive() {
+  renderKpis();
+  if (STATE.route === 'dashboard') {
+    // drawPolar() is driven by the raf loop at 60 fps for the sweep.
+    drawCsi(); renderRuns();
+  } else if (STATE.route === 'search') {
+    // drawAmp() is raf-driven; other charts update at sim-tick rate.
+    drawRate(); drawConv(); renderLattice();
+    $('#rate-now').textContent = STATE.rateHistory.length + ' /min';
+    $('#conv-now').textContent = fmt(l1Convergence(), 3);
+  } else if (STATE.route === 'hypotheses') {
+    renderHypList();
+  } else if (STATE.route === 'hardware') {
+    renderHardware(); drawRssi();
+  }
+  updateRunControls();
+}
+
+function renderKpis() {
+  $('#kpi-iter').textContent = STATE.iter;
+  const opt = Math.max(1, Math.floor(Math.PI / 4 * Math.sqrt(CFG.hypothesis_count)));
+  $('#kpi-iter-sub').textContent = 'of ' + opt + ' optimal';
+  const peak = peakHypothesis();
+  $('#kpi-amp').textContent = fmt(Math.sqrt(peak.prob), 3);
+  const init = 1 / Math.sqrt(CFG.hypothesis_count);
+  if (peak.prob > init * init * 1.05) $('#kpi-amp-sub').textContent = 'peak H' + peak.idx;
+  else $('#kpi-amp-sub').textContent = 'uniform · 1/√' + CFG.hypothesis_count;
+  $('#kpi-found').textContent = STATE.found.length;
+  $('#kpi-found-sub').textContent = STATE.found.length ? 'last: H' + STATE.found[0].h : 'this session';
+  const elapsed = (STATE.cumulativeMs + (STATE.running ? Date.now() - STATE.startMs : 0)) / 1000;
+  $('#kpi-time').textContent = elapsed.toFixed(1) + 's';
+  $('#kpi-csi').textContent = CFG.csi_window;
+  $('#csi-snr').textContent = 'SNR ' + (28.4 + Math.sin(STATE.iter * 0.3) * 1.4).toFixed(1) + ' dB';
+  $('#polar-target').innerHTML = 'target: H<span class="mono">' + STATE.target + '</span>';
+  $('#lattice-target').textContent = 'H' + STATE.target;
+  $('#foot-runtime').textContent = 'runtime ' + elapsed.toFixed(1) + 's';
+}
+
+// ── canvas helpers ───────────────────────────────────────────────
+// Only resize the canvas when the actual pixel dimensions change.
+// Setting canvas.width is destructive (clears the canvas + resets state),
+// so doing it on every tick causes a visible white flash → flicker.
+function setupCanvas(host) {
+  let c = host.querySelector('canvas');
+  if (!c) {
+    c = document.createElement('canvas');
+    host.appendChild(c);
+  }
+  const dpr = window.devicePixelRatio || 1;
+  const w = host.clientWidth;
+  const h = host.clientHeight;
+  const tw = Math.round(w * dpr);
+  const th = Math.round(h * dpr);
+  if (c.width !== tw || c.height !== th) {
+    c.width = tw; c.height = th;
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+  }
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+function gridLines(ctx, w, h, padL, padR, padT, padB, xTicks, yTicks) {
+  ctx.strokeStyle = 'hsla(222,20%,18%,0.85)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= yTicks; i++) {
+    const y = padT + ((h - padT - padB) * i) / yTicks;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+  }
+  for (let i = 0; i <= xTicks; i++) {
+    const x = padL + ((w - padL - padR) * i) / xTicks;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+  }
+}
+
+// ── CSI chart ────────────────────────────────────────────────────
+function drawCsi() {
+  const host = $('#chart-csi');
+  if (!host || host.clientWidth === 0) return;
+  const { ctx, w, h } = setupCanvas(host);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 36, padR = 12, padT = 12, padB = 22;
+  gridLines(ctx, w, h, padL, padR, padT, padB, 8, 4);
+
+  // axis labels
+  ctx.fillStyle = 'hsla(215,15%,55%,0.9)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 4; i++) {
+    const v = 1 - i * 0.25;
+    const y = padT + ((h - padT - padB) * i) / 4;
+    ctx.fillText(v.toFixed(2), padL - 6, y);
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let i = 0; i <= 8; i++) {
+    const x = padL + ((w - padL - padR) * i) / 8;
+    ctx.fillText(Math.floor(i * (CFG.csi_window / 8)), x, h - padB + 4);
+  }
+
+  const data = STATE.csiSnapshot;
+  if (!data || data.length === 0) return;
+
+  // noise floor band
+  ctx.fillStyle = 'hsla(220,10%,55%,0.06)';
+  const nfTop = padT + (h - padT - padB) * (1 - 0.25);
+  ctx.fillRect(padL, nfTop, w - padL - padR, h - padB - nfTop);
+  ctx.strokeStyle = 'hsla(220,10%,60%,0.45)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(padL, nfTop); ctx.lineTo(w - padR, nfTop);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // target band
+  const tgtCarrier = Math.floor((STATE.target / CFG.hypothesis_count) * data.length);
+  const tgtX = padL + ((w - padL - padR) * tgtCarrier) / (data.length - 1);
+  ctx.fillStyle = 'hsla(35,90%,60%,0.12)';
+  ctx.fillRect(tgtX - 8, padT, 16, h - padT - padB);
+
+  // magnitude line + fill
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = padL + ((w - padL - padR) * i) / (data.length - 1);
+    const y = padT + (h - padT - padB) * (1 - clamp(data[i], 0, 1));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.lineTo(w - padR, h - padB);
+  ctx.lineTo(padL, h - padB);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, 'hsla(185,80%,55%,0.45)');
+  grad.addColorStop(1, 'hsla(185,80%,55%,0.03)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = padL + ((w - padL - padR) * i) / (data.length - 1);
+    const y = padT + (h - padT - padB) * (1 - clamp(data[i], 0, 1));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'hsl(185,80%,60%)'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ── Polar amplitude chart (futuristic radar) ─────────────────────
+// State for animation: a continuously advancing radar sweep angle
+// plus a per-hypothesis "ping" age so we can pulse hypotheses that
+// were just refreshed by the sweep.
+let _polarSweep = -Math.PI / 2;
+let _polarLastMs = performance.now();
+const _polarPings = new Map(); // h → ms timestamp of last sweep crossing
+function drawPolar() {
+  const c = $('#chart-polar');
+  if (!c) return;
+  const host = c.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const w = host.clientWidth, h = host.clientHeight;
+  if (w === 0 || h === 0) return;
+  const tw = Math.round(w * dpr), th = Math.round(h * dpr);
+  if (c.width !== tw || c.height !== th) {
+    c.width = tw; c.height = th;
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+  }
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  // Advance sweep based on elapsed time → smooth at any framerate.
+  const now = performance.now();
+  const dt = Math.min(80, now - _polarLastMs);
+  _polarLastMs = now;
+  const prevSweep = _polarSweep;
+  _polarSweep = (_polarSweep + (dt / 1000) * Math.PI * 0.8) % (Math.PI * 2);
+  if (_polarSweep < 0) _polarSweep += Math.PI * 2;
+
+  const cx = w / 2, cy = h / 2;
+  const rMax = Math.min(w, h) / 2 - 22;
+
+  // Background radial gradient (deep core, slight vignette).
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rMax * 1.15);
+  bg.addColorStop(0, 'hsla(185,70%,18%,0.45)');
+  bg.addColorStop(0.55, 'hsla(220,30%,8%,0.25)');
+  bg.addColorStop(1, 'hsla(220,30%,5%,0)');
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.arc(cx, cy, rMax + 8, 0, Math.PI * 2); ctx.fill();
+
+  // Concentric grid rings with subtle inner glow.
+  for (let i = 1; i <= 5; i++) {
+    const r = (rMax * i) / 5;
+    ctx.strokeStyle = i === 5 ? 'hsla(185,80%,55%,0.55)' : 'hsla(185,80%,55%,0.15)';
+    ctx.lineWidth = i === 5 ? 1.2 : 0.8;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  }
+  // Outer tick marks every 22.5°.
+  ctx.strokeStyle = 'hsla(185,80%,55%,0.35)';
+  ctx.lineWidth = 1;
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2 - Math.PI / 2;
+    const tickLen = (k % 4 === 0) ? 8 : 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * rMax, cy + Math.sin(a) * rMax);
+    ctx.lineTo(cx + Math.cos(a) * (rMax + tickLen), cy + Math.sin(a) * (rMax + tickLen));
+    ctx.stroke();
+  }
+  // Cardinal labels (0°/90°/180°/270°).
+  ctx.fillStyle = 'hsla(185,80%,65%,0.6)';
+  ctx.font = '9px JetBrains Mono';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('0°',   cx,                cy - rMax - 16);
+  ctx.fillText('90°',  cx + rMax + 16,    cy);
+  ctx.fillText('180°', cx,                cy + rMax + 16);
+  ctx.fillText('270°', cx - rMax - 16,    cy);
+
+  // Cross axes with gradient fade.
+  const axH = ctx.createLinearGradient(cx - rMax, cy, cx + rMax, cy);
+  axH.addColorStop(0, 'hsla(185,80%,55%,0)');
+  axH.addColorStop(0.5, 'hsla(185,80%,55%,0.4)');
+  axH.addColorStop(1, 'hsla(185,80%,55%,0)');
+  ctx.strokeStyle = axH; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx - rMax, cy); ctx.lineTo(cx + rMax, cy); ctx.stroke();
+  const axV = ctx.createLinearGradient(cx, cy - rMax, cx, cy + rMax);
+  axV.addColorStop(0, 'hsla(185,80%,55%,0)');
+  axV.addColorStop(0.5, 'hsla(185,80%,55%,0.4)');
+  axV.addColorStop(1, 'hsla(185,80%,55%,0)');
+  ctx.strokeStyle = axV;
+  ctx.beginPath(); ctx.moveTo(cx, cy - rMax); ctx.lineTo(cx, cy + rMax); ctx.stroke();
+
+  // Radar sweep wedge — fading trail behind the leading edge.
+  const wedge = ctx.createConicGradient
+    ? ctx.createConicGradient(_polarSweep - Math.PI / 2, cx, cy)
+    : null;
+  if (wedge) {
+    wedge.addColorStop(0.00, 'hsla(185,80%,55%,0)');
+    wedge.addColorStop(0.35, 'hsla(185,70%,50%,0.06)');
+    wedge.addColorStop(0.70, 'hsla(185,80%,55%,0.18)');
+    wedge.addColorStop(0.92, 'hsla(185,90%,60%,0.32)');
+    wedge.addColorStop(1.00, 'hsla(185,100%,75%,0.55)');
+    ctx.fillStyle = wedge;
+    ctx.beginPath(); ctx.arc(cx, cy, rMax, 0, Math.PI * 2); ctx.fill();
+  }
+  // Crisp sweep line itself.
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(_polarSweep);
+  const sweepGrad = ctx.createLinearGradient(0, 0, rMax, 0);
+  sweepGrad.addColorStop(0, 'hsla(185,100%,80%,0)');
+  sweepGrad.addColorStop(1, 'hsla(185,100%,80%,0.95)');
+  ctx.strokeStyle = sweepGrad;
+  ctx.lineWidth = 2;
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = 'hsla(185,100%,75%,0.7)';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(rMax, 0); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  const n = STATE.amps.length;
+  if (n === 0) { _drawPolarReticle(ctx, cx, cy); return; }
+
+  // Did the sweep just cross a hypothesis? Mark it for a ping pulse.
+  for (let i = 0; i < n; i++) {
+    let angle = (i / n) * Math.PI * 2;
+    // Normalize sweep span [prev, _polarSweep], handling wrap.
+    let a0 = (prevSweep + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+    let a1 = (_polarSweep + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+    const crossed = a1 >= a0 ? (angle > a0 && angle <= a1) : (angle > a0 || angle <= a1);
+    if (crossed) _polarPings.set(i, now);
+  }
+
+  // Filled polygon of amplitudes.
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const amp = Math.abs(STATE.amps[i]);
+    const r = clamp(amp, 0, 1) * rMax;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  const polyFill = ctx.createRadialGradient(cx, cy, 0, cx, cy, rMax);
+  polyFill.addColorStop(0, 'hsla(185,80%,55%,0.22)');
+  polyFill.addColorStop(1, 'hsla(185,80%,55%,0.08)');
+  ctx.fillStyle = polyFill;
+  ctx.fill();
+  ctx.strokeStyle = 'hsla(185,90%,70%,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = 'hsla(185,90%,70%,0.55)';
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Plot hypotheses as glowing pings.
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const amp = Math.abs(STATE.amps[i]);
+    const r = clamp(amp, 0, 1) * rMax;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    const isTarget = i === STATE.target;
+    const isFound  = STATE.found.some(f => f.h === i);
+    const pingTs = _polarPings.get(i);
+    const age = pingTs ? (now - pingTs) : 9999;
+    const pingStrength = Math.max(0, 1 - age / 900); // fade over 900 ms
+
+    if (pingStrength > 0) {
+      // Expanding halo ring.
+      ctx.beginPath();
+      ctx.arc(x, y, 4 + (1 - pingStrength) * 14, 0, Math.PI * 2);
+      ctx.strokeStyle = 'hsla(185,100%,75%,' + (pingStrength * 0.55) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    let col, sz;
+    if (isTarget) {
+      col = 'hsl(35,95%,62%)'; sz = 5 + pingStrength * 2;
+    } else if (isFound) {
+      col = 'hsl(142,75%,58%)'; sz = 5;
+    } else {
+      col = 'hsla(185,90%,65%,' + (0.45 + amp * 1.1 + pingStrength * 0.4) + ')';
+      sz = 2.4 + amp * 3.5;
+    }
+    ctx.fillStyle = col;
+    ctx.shadowBlur = isTarget ? 14 : (isFound ? 12 : 6);
+    ctx.shadowColor = col;
+    ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // Target gets a rotating reticle.
+  {
+    const angle = (STATE.target / n) * Math.PI * 2 - Math.PI / 2;
+    const amp = Math.abs(STATE.amps[STATE.target] || 0);
+    const r = clamp(amp, 0, 1) * rMax;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(now * 0.0014);
+    ctx.strokeStyle = 'hsla(35,95%,62%,' + (0.55 + 0.35 * Math.sin(now * 0.006)) + ')';
+    ctx.lineWidth = 1.4;
+    const R = 11 + 2.2 * Math.sin(now * 0.005);
+    for (let k = 0; k < 4; k++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, R, k * Math.PI / 2 + 0.15, k * Math.PI / 2 + Math.PI / 2 - 0.15);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _drawPolarReticle(ctx, cx, cy);
+}
+function _drawPolarReticle(ctx, cx, cy) {
+  ctx.strokeStyle = 'hsla(185,80%,65%,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 7, cy); ctx.lineTo(cx - 3, cy);
+  ctx.moveTo(cx + 3, cy); ctx.lineTo(cx + 7, cy);
+  ctx.moveTo(cx, cy - 7); ctx.lineTo(cx, cy - 3);
+  ctx.moveTo(cx, cy + 3); ctx.lineTo(cx, cy + 7);
+  ctx.stroke();
+  ctx.fillStyle = 'hsla(185,80%,75%,0.65)';
+  ctx.font = '9px JetBrains Mono';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('|α|²', cx, cy + 10);
+}
+
+// ── Amplitude evolution chart (dynamic) ──────────────────────────
+const AMP_PALETTE = [
+  { stroke: 'hsl(185,90%,60%)', fill: 'hsla(185,90%,55%,0.22)', glow: 'hsla(185,100%,75%,0.7)' },
+  { stroke: 'hsl(165,75%,55%)', fill: 'hsla(165,75%,50%,0.18)', glow: 'hsla(165,85%,68%,0.65)' },
+  { stroke: 'hsl(142,75%,58%)', fill: 'hsla(142,75%,50%,0.18)', glow: 'hsla(142,90%,70%,0.6)' },
+  { stroke: 'hsl(35,95%,62%)',  fill: 'hsla(35,95%,55%,0.20)',  glow: 'hsla(35,100%,72%,0.7)' },
+  { stroke: 'hsl(0,75%,70%)',   fill: 'hsla(0,75%,60%,0.18)',   glow: 'hsla(0,90%,78%,0.6)'   },
+];
+function drawAmp() {
+  const host = $('#chart-amp');
+  if (!host || host.clientWidth === 0) return;
+  const { ctx, w, h } = setupCanvas(host);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 42, padR = 14, padT = 14, padB = 26;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  // Subtle scanline backdrop for the plot area.
+  const bg = ctx.createLinearGradient(0, padT, 0, h - padB);
+  bg.addColorStop(0, 'hsla(185,50%,20%,0.10)');
+  bg.addColorStop(1, 'hsla(220,30%,8%,0)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(padL, padT, plotW, plotH);
+
+  // Grid.
+  ctx.strokeStyle = 'hsla(222,20%,18%,0.85)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (plotH * i) / 4;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 6; i++) {
+    const x = padL + (plotW * i) / 6;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+  }
+
+  // Axis labels.
+  ctx.fillStyle = 'hsla(215,15%,60%,0.95)'; ctx.font = '500 10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 4; i++) {
+    const v = 1 - i * 0.25;
+    const y = padT + (plotH * i) / 4;
+    ctx.fillText(v.toFixed(2), padL - 6, y);
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const lastIter = STATE.ampHistory.length ? STATE.ampHistory[STATE.ampHistory.length - 1].iter : 0;
+  const minIter = STATE.ampHistory.length ? STATE.ampHistory[0].iter : 0;
+  for (let i = 0; i <= 6; i++) {
+    const x = padL + (plotW * i) / 6;
+    const it = Math.round(minIter + (lastIter - minIter) * i / 6);
+    ctx.fillText('k=' + it, x, h - padB + 6);
+  }
+
+  if (STATE.ampHistory.length < 2) {
+    ctx.fillStyle = 'hsla(215,15%,55%,0.7)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '12px Outfit';
+    ctx.fillText('Step or start to populate trace…', w / 2, h / 2);
+    return;
+  }
+
+  const maxIter = Math.max(lastIter, minIter + 1);
+  const xs = it => padL + (plotW * (it - minIter)) / (maxIter - minIter);
+  const ys = v  => padT + plotH * (1 - clamp(v, 0, 1));
+
+  const traceCount = STATE.topTraces ? STATE.topTraces.length : 5;
+  const targetIdx = STATE.topTraces ? STATE.topTraces.indexOf(STATE.target) : -1;
+
+  // Threshold band first so traces sit on top.
+  const thY = ys(CFG.detect_threshold);
+  const thGrad = ctx.createLinearGradient(0, padT, 0, thY);
+  thGrad.addColorStop(0, 'hsla(35,90%,60%,0.10)');
+  thGrad.addColorStop(1, 'hsla(35,90%,60%,0)');
+  ctx.fillStyle = thGrad;
+  ctx.fillRect(padL, padT, plotW, thY - padT);
+  ctx.setLineDash([4, 5]);
+  ctx.strokeStyle = 'hsla(35,90%,60%,0.6)';
+  ctx.beginPath(); ctx.moveTo(padL, thY); ctx.lineTo(w - padR, thY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'hsla(35,95%,68%,0.95)';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('▸ threshold ' + fmt(CFG.detect_threshold, 2), padL + 6, thY - 9);
+
+  // Draw each trace as gradient-filled area + glowing line.
+  // Skip non-target traces first to keep the target line on top.
+  const drawOrder = [];
+  for (let t = 0; t < traceCount; t++) if (t !== targetIdx) drawOrder.push(t);
+  if (targetIdx >= 0) drawOrder.push(targetIdx);
+
+  drawOrder.forEach(t => {
+    if (STATE.isolatedHyp !== null && (!STATE.topTraces || STATE.topTraces[t] !== STATE.isolatedHyp)) return;
+    const c = AMP_PALETTE[t % AMP_PALETTE.length];
+    const isTgt = STATE.topTraces && STATE.topTraces[t] === STATE.target;
+
+    // Area fill.
+    ctx.beginPath();
+    for (let i = 0; i < STATE.ampHistory.length; i++) {
+      const pt = STATE.ampHistory[i];
+      const x = xs(pt.iter);
+      const y = ys(pt.vals[t] || 0);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    const lastPt = STATE.ampHistory[STATE.ampHistory.length - 1];
+    ctx.lineTo(xs(lastPt.iter), h - padB);
+    ctx.lineTo(xs(STATE.ampHistory[0].iter), h - padB);
+    ctx.closePath();
+    const fillGrad = ctx.createLinearGradient(0, padT, 0, h - padB);
+    fillGrad.addColorStop(0, c.fill);
+    fillGrad.addColorStop(1, 'hsla(220,25%,6%,0)');
+    ctx.fillStyle = fillGrad;
+    ctx.globalAlpha = isTgt ? 1 : 0.6;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Glowing stroke.
+    ctx.shadowBlur = isTgt ? 10 : 5;
+    ctx.shadowColor = c.glow;
+    ctx.beginPath();
+    for (let i = 0; i < STATE.ampHistory.length; i++) {
+      const pt = STATE.ampHistory[i];
+      const x = xs(pt.iter);
+      const y = ys(pt.vals[t] || 0);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = c.stroke;
+    ctx.lineWidth = isTgt ? 2.4 : 1.4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Pulsing dot at the leading edge.
+    const lx = xs(lastPt.iter);
+    const ly = ys(lastPt.vals[t] || 0);
+    const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.005);
+    ctx.fillStyle = c.glow;
+    ctx.beginPath(); ctx.arc(lx, ly, 5 * pulse + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = c.stroke;
+    ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Legend.
+  const legend = $('#amp-legend');
+  if (legend && STATE.topTraces) {
+    const html = STATE.topTraces.map((hh, t) =>
+      '<span class="lg-item" data-iso="' + hh + '" style="cursor:pointer">' +
+      '<span class="lg-sw" style="background:' + AMP_PALETTE[t % AMP_PALETTE.length].stroke +
+      ';box-shadow:0 0 6px ' + AMP_PALETTE[t % AMP_PALETTE.length].glow + '"></span>H' + hh +
+      (hh === STATE.target ? ' ★' : '') + '</span>'
+    ).join('') + (STATE.isolatedHyp !== null
+      ? ' <span class="lg-item" data-iso="clear" style="cursor:pointer;color:hsl(var(--warning))">clear isolation ✕</span>'
+      : '');
+    if (legend.innerHTML !== html) legend.innerHTML = html;
+  }
+}
+
+// ── Rate chart (line, not bars) ──────────────────────────────────
+function drawRate() {
+  const host = $('#chart-rate');
+  if (!host || host.clientWidth === 0) return;
+  const { ctx, w, h } = setupCanvas(host);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 32, padR = 8, padT = 8, padB = 18;
+  gridLines(ctx, w, h, padL, padR, padT, padB, 6, 3);
+
+  const now = Date.now();
+  // bucket into 6 buckets of 10s each over last 60s
+  const buckets = new Array(60).fill(0);
+  STATE.rateHistory.forEach(e => {
+    const idx = Math.floor((now - e.ts) / 1000);
+    if (idx >= 0 && idx < 60) buckets[59 - idx] += 1;
+  });
+  // smooth into a line
+  let maxR = 1;
+  for (let i = 0; i < 60; i++) maxR = Math.max(maxR, buckets[i]);
+
+  ctx.fillStyle = 'hsla(215,15%,55%,0.85)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 3; i++) {
+    const y = padT + ((h - padT - padB) * i) / 3;
+    ctx.fillText(Math.round(maxR * (1 - i / 3)), padL - 4, y);
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < 60; i++) {
+    const x = padL + ((w - padL - padR) * i) / 59;
+    const y = padT + (h - padT - padB) * (1 - buckets[i] / maxR);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.lineTo(w - padR, h - padB); ctx.lineTo(padL, h - padB); ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, 'hsla(185,80%,55%,0.4)');
+  grad.addColorStop(1, 'hsla(185,80%,55%,0.03)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < 60; i++) {
+    const x = padL + ((w - padL - padR) * i) / 59;
+    const y = padT + (h - padT - padB) * (1 - buckets[i] / maxR);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'hsl(185,80%,60%)'; ctx.lineWidth = 1.8; ctx.stroke();
+  $('#rate-now').textContent = STATE.rateHistory.length + ' /min';
+}
+
+// ── Convergence chart (line) ─────────────────────────────────────
+function drawConv() {
+  const host = $('#chart-conv');
+  if (!host || host.clientWidth === 0) return;
+  const { ctx, w, h } = setupCanvas(host);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 32, padR = 8, padT = 8, padB = 18;
+  gridLines(ctx, w, h, padL, padR, padT, padB, 6, 4);
+
+  ctx.fillStyle = 'hsla(215,15%,55%,0.85)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + ((h - padT - padB) * i) / 4;
+    ctx.fillText((1 - i * 0.25).toFixed(2), padL - 4, y);
+  }
+
+  if (STATE.convHistory.length < 2) {
+    ctx.fillStyle = 'hsla(215,15%,55%,0.7)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '11px Outfit';
+    ctx.fillText('Awaiting iterations…', w / 2, h / 2);
+    return;
+  }
+
+  const t0 = STATE.convHistory[0].ts;
+  const t1 = STATE.convHistory[STATE.convHistory.length - 1].ts;
+  const dt = Math.max(1, t1 - t0);
+
+  ctx.beginPath();
+  for (let i = 0; i < STATE.convHistory.length; i++) {
+    const e = STATE.convHistory[i];
+    const x = padL + ((w - padL - padR) * (e.ts - t0)) / dt;
+    const y = padT + (h - padT - padB) * (1 - clamp(e.conv, 0, 1));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'hsl(185,80%,60%)'; ctx.lineWidth = 1.8; ctx.stroke();
+}
+
+// ── Hypothesis lattice (cells, not bars) ─────────────────────────
+// In-place update: build the 64 cells once, then mutate style/class
+// per tick to avoid the innerHTML flicker that comes from rebuilding
+// 64 DOM nodes at 10 Hz.
+function renderLattice() {
+  const grid = $('#hyp-grid');
+  const n = STATE.amps.length;
+  if (n === 0) { grid.innerHTML = ''; return; }
+  if (grid.children.length !== n) {
+    const cells = [];
+    for (let i = 0; i < n; i++) cells.push('<div class="hyp-cell" data-h="' + i + '"></div>');
+    grid.innerHTML = cells.join('');
+  }
+  for (let i = 0; i < n; i++) {
+    const cell = grid.children[i];
+    const p = probOf(i);
+    const intensity = clamp(Math.pow(p / 0.5, 0.6), 0, 1);
+    cell.style.background = 'hsla(185, ' + (40 + intensity * 50) + '%, ' + (12 + intensity * 45) + '%, ' + (0.4 + intensity * 0.6) + ')';
+    cell.title = 'H' + i + ' · ' + fmt(p, 4);
+    const isTarget = i === STATE.target;
+    const isFound = STATE.found.some(f => f.h === i);
+    if (cell.classList.contains('target') !== isTarget) cell.classList.toggle('target', isTarget);
+    if (cell.classList.contains('found') !== isFound) cell.classList.toggle('found', isFound);
+    const wantText = isTarget ? '◎' : '';
+    if (cell.textContent !== wantText) cell.textContent = wantText;
+  }
+}
+
+// ── Hypothesis list (with sparklines, no bars) ───────────────────
+// Two-phase render to avoid flicker:
+//   (1) Build rows once (or when sort/filter/N change) — sets up
+//       64 DOM rows with stable data-h keys.
+//   (2) Per tick, update amp/confidence/sparkline IN PLACE.
+// When sort=amp the order changes naturally; we re-sort at most
+// every ~700ms so rows don't jitter from frame to frame.
+let _hypListKey = '';
+let _hypLastSortMs = 0;
+function renderHypList(force) {
+  const list = $('#hyp-list');
+  if (!list) return;
+  const n = STATE.amps.length;
+  if (n === 0) { resetState(); }
+  const q = (STATE.hypFilter || '').trim().toLowerCase();
+  const now = Date.now();
+  const sortDue = STATE.hypSort !== 'amp' && STATE.hypSort !== 'conf'
+    ? false
+    : (now - _hypLastSortMs > 700);
+
+  // Decide whether to do a full DOM rebuild.
+  const wantKey = n + '|' + STATE.hypSort + '|' + q;
+  const needsRebuild = force || _hypListKey !== wantKey || list.children.length === 0 || sortDue;
+
+  if (needsRebuild) {
+    _hypListKey = wantKey;
+    _hypLastSortMs = now;
+    const arr = [];
+    for (let i = 0; i < n; i++) {
+      arr.push({ i, p: probOf(i), amp: Math.abs(STATE.amps[i]) });
+    }
+    if (STATE.hypSort === 'amp') arr.sort((a, b) => b.amp - a.amp);
+    else if (STATE.hypSort === 'id') arr.sort((a, b) => a.i - b.i);
+    else if (STATE.hypSort === 'conf') arr.sort((a, b) => b.p - a.p);
+    const filtered = q ? arr.filter(x => ('h' + x.i).includes(q)) : arr;
+
+    list.innerHTML = filtered.map(({ i }) =>
+      '<div class="hyp-row" data-h="' + i + '">' +
+        '<span class="hyp-id">H' + String(i).padStart(2, '0') + '</span>' +
+        '<canvas class="hyp-spark" data-h="' + i + '"></canvas>' +
+        '<span class="hyp-amp"></span>' +
+        '<span class="hyp-conf">' +
+          '<span class="hyp-conf-ring"></span>' +
+          '<span class="hyp-conf-pct"></span>' +
+        '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  // In-place per-row update.
+  list.querySelectorAll('.hyp-row').forEach(row => {
+    const i = parseInt(row.dataset.h, 10);
+    const amp = Math.abs(STATE.amps[i] || 0);
+    const p = amp * amp;
+    const isTarget = i === STATE.target;
+    const isFound = STATE.found.some(f => f.h === i);
+    if (row.classList.contains('target') !== isTarget) row.classList.toggle('target', isTarget);
+    if (row.classList.contains('found') !== isFound) row.classList.toggle('found', isFound);
+    const ampEl = row.querySelector('.hyp-amp');
+    const ampTxt = fmt(amp, 4);
+    if (ampEl.textContent !== ampTxt) ampEl.textContent = ampTxt;
+    const ring = row.querySelector('.hyp-conf-ring');
+    const pctEl = row.querySelector('.hyp-conf-pct');
+    const conf = clamp(p, 0, 1);
+    ring.style.setProperty('--p', (conf * 100).toFixed(1) + '%');
+    const pctTxt = (conf * 100).toFixed(1) + '%';
+    if (pctEl.textContent !== pctTxt) pctEl.textContent = pctTxt;
+    drawSpark(row.querySelector('canvas.hyp-spark'), i);
+  });
+
+  if (needsRebuild) {
+    list.querySelectorAll('.hyp-row').forEach(r => {
+      r.addEventListener('click', () => openHypModal(parseInt(r.dataset.h, 10)));
+    });
+  }
+  const nh = $('#nav-hyp-count'); if (nh) nh.textContent = n;
+}
+function drawSpark(canvas, h) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, hh = canvas.clientHeight;
+  const tw = Math.round(w * dpr), th = Math.round(hh * dpr);
+  if (canvas.width !== tw || canvas.height !== th) {
+    canvas.width = tw; canvas.height = th;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, hh);
+  // pull last 32 amplitudes if available
+  const idx = STATE.topTraces ? STATE.topTraces.indexOf(h) : -1;
+  let series = [];
+  if (idx >= 0) {
+    series = STATE.ampHistory.slice(-32).map(p => p.vals[idx] || 0);
+  } else {
+    // synthesise small trace from current amp
+    const a = Math.abs(STATE.amps[h] || 0);
+    for (let i = 0; i < 16; i++) series.push(a * (0.85 + Math.random() * 0.3));
+  }
+  if (series.length < 2) {
+    ctx.fillStyle = 'hsla(215,15%,55%,0.6)';
+    ctx.font = '9px JetBrains Mono'; ctx.textBaseline = 'middle';
+    ctx.fillText('—', 0, hh / 2);
+    return;
+  }
+  const min = Math.min(...series, 0);
+  const max = Math.max(...series, 0.5);
+  ctx.beginPath();
+  for (let i = 0; i < series.length; i++) {
+    const x = (w * i) / (series.length - 1);
+    const y = hh - ((series[i] - min) / (max - min || 1)) * (hh - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  const isTgt = h === STATE.target;
+  const isFound = STATE.found.some(f => f.h === h);
+  ctx.strokeStyle = isFound ? 'hsl(142,70%,60%)' : isTgt ? 'hsl(35,90%,60%)' : 'hsl(185,80%,60%)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// ── Events ───────────────────────────────────────────────────────
+// To avoid wholesale rebuild flicker we keep an _eventCursor that
+// remembers the newest already-rendered event. Per render pass we
+// only prepend events newer than the cursor and trim the tail.
+const EVT_ICONS = { hypothesis_found: '✓', search_iterations: '↻', amplitude: '∿', system: '◆' };
+let _eventCursor = 0; // STATE.events length at last render
+function eventRowHtml(e, payloadStr) {
+  return '<div class="event-row evt-' + e.name + '" data-evt="' + e.name + '">' +
+    '<span class="evt-ts">' + e.ts.split(' ')[1] + '</span>' +
+    '<span class="evt-name">' + e.name + '</span>' +
+    '<span class="evt-payload" title="' + payloadStr.replace(/"/g, '&quot;') + '">' + payloadStr + '</span>' +
+    '<span class="evt-icon">' + (EVT_ICONS[e.name] || '•') + '</span>' +
+  '</div>';
+}
+function renderEvents(forceFull) {
+  const list = $('#event-list');
+  if (!list) return;
+  // Filter-only re-render: just toggle row visibility.
+  const applyFilter = () => {
+    list.querySelectorAll('.event-row').forEach(r => {
+      r.style.display = STATE.filterEvents.has(r.dataset.evt) ? '' : 'none';
+    });
+  };
+  if (forceFull) {
+    list.innerHTML = '';
+    _eventCursor = 0;
+  }
+  // Newest events are at index 0 of STATE.events (we unshift).
+  // We've already rendered events[_eventCursor..]. New ones are
+  // events[0.._newDelta), which we prepend in reverse so the
+  // visible order stays newest-first.
+  const newDelta = STATE.events.length - _eventCursor;
+  if (newDelta > 0 && newDelta < STATE.events.length) {
+    const frag = document.createDocumentFragment();
+    const tmp = document.createElement('div');
+    for (let i = newDelta - 1; i >= 0; i--) {
+      const e = STATE.events[i];
+      const payloadStr = Object.entries(e.payload || {}).map(([k, v]) => k + '=' + JSON.stringify(v)).join(' · ');
+      tmp.innerHTML = eventRowHtml(e, payloadStr);
+      const node = tmp.firstChild;
+      if (!STATE.filterEvents.has(node.dataset.evt)) node.style.display = 'none';
+      frag.appendChild(node);
+    }
+    list.insertBefore(frag, list.firstChild);
+  } else if (newDelta >= STATE.events.length) {
+    // First render (or after clear) — full build.
+    list.innerHTML = STATE.events.map(e => {
+      const payloadStr = Object.entries(e.payload || {}).map(([k, v]) => k + '=' + JSON.stringify(v)).join(' · ');
+      return eventRowHtml(e, payloadStr);
+    }).join('');
+    applyFilter();
+  }
+  _eventCursor = STATE.events.length;
+  // Trim to 200 visible rows.
+  while (list.children.length > 200) list.removeChild(list.lastChild);
+  // Empty state.
+  const anyVisible = Array.from(list.children).some(r => r.style.display !== 'none');
+  let empty = list.querySelector('.evt-empty');
+  if (!anyVisible) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'evt-empty';
+      empty.style.cssText = 'padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));font-style:italic';
+      empty.textContent = STATE.events.length === 0 ? 'No events yet.' : 'No events match current filter.';
+      list.appendChild(empty);
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+  // Auto-scroll: only when at top already, so we don't fight the user.
+  const auto = $('#evt-autoscroll');
+  if (auto && auto.checked && list.scrollTop < 8) list.scrollTop = 0;
+}
+
+// ── Runs ─────────────────────────────────────────────────────────
+function renderRuns() {
+  const list = $('#run-list');
+  if (!list) return;
+  const head = '<div class="run-row head"><span>Started</span><span>Target → Found</span><span>Iterations</span><span>Amplitude</span><span>Status</span></div>';
+  if (STATE.runs.length === 0) {
+    list.innerHTML = head + '<div style="color:hsl(var(--muted-foreground));font-style:italic;padding:1rem;text-align:center" id="run-empty">No runs yet. Press <b style="color:hsl(var(--primary))">Start search</b> to begin.</div>';
+    return;
+  }
+  list.innerHTML = head + STATE.runs.map(r => {
+    const status = r.status || 'searching';
+    const foundStr = r.found != null ? ('H' + r.target + ' → H' + r.found) : ('H' + r.target + ' → —');
+    return '<div class="run-row">' +
+      '<span>' + r.started.split(' ')[1] + '</span>' +
+      '<span>' + foundStr + '</span>' +
+      '<span>' + (r.iter || 0) + '</span>' +
+      '<span>' + fmt(r.amp || 0, 3) + '</span>' +
+      '<span class="run-status ' + status + '"><span class="dot"></span>' + status + '</span>' +
+    '</div>';
+  }).join('');
+  $('#runs-sub').textContent = STATE.runs.length + ' run' + (STATE.runs.length === 1 ? '' : 's') + ' · in-memory';
+}
+
+// ── Hypothesis modal ─────────────────────────────────────────────
+function openHypModal(h) {
+  const amp = Math.abs(STATE.amps[h] || 0);
+  const prob = amp * amp;
+  $('#hyp-modal-id').textContent = 'H' + String(h).padStart(2, '0');
+  $('#hyp-modal-sub').textContent = (h === STATE.target ? 'Target hypothesis · ' : '') + (STATE.found.some(f => f.h === h) ? 'Marked as found · ' : '') + 'lattice index ' + h;
+  $('#hm-amp').textContent = fmt(amp, 5);
+  $('#hm-prob').textContent = fmt(prob, 5) + '  (' + (prob * 100).toFixed(2) + '%)';
+  const lastSeen = STATE.events.find(e => e.payload && (e.payload.peak === h || e.payload.hypothesis === ('H' + h)));
+  $('#hm-seen').textContent = lastSeen ? lastSeen.ts : '—';
+  $('#hm-sig').textContent = '0x' + Array.from({ length: 8 }, (_, k) => ((h * 17 + k * 31) & 0xff).toString(16).padStart(2, '0')).join('');
+  $('#hyp-modal').classList.add('show');
+  $('#hyp-modal').dataset.h = h;
+  // draw bigger sparkline
+  setTimeout(() => {
+    const host = $('#hm-spark');
+    if (!host) return;
+    const { ctx, w, hh } = (function() { const h2 = host; const dpr = window.devicePixelRatio||1; const cnv = h2.querySelector('canvas') || (function(){const c=document.createElement('canvas'); h2.appendChild(c); return c;})(); const w = h2.clientWidth, hh = h2.clientHeight; cnv.width=w*dpr; cnv.height=hh*dpr; cnv.style.width=w+'px'; cnv.style.height=hh+'px'; const c2=cnv.getContext('2d'); c2.setTransform(dpr,0,0,dpr,0,0); return { ctx: c2, w, hh }; })();
+    ctx.clearRect(0, 0, w, hh);
+    const idx = STATE.topTraces ? STATE.topTraces.indexOf(h) : -1;
+    const series = idx >= 0 ? STATE.ampHistory.map(p => p.vals[idx] || 0) : new Array(20).fill(amp);
+    if (series.length < 2) {
+      ctx.fillStyle = 'hsla(215,15%,55%,0.6)';
+      ctx.font = '11px Outfit'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('No history yet', w / 2, hh / 2);
+      return;
+    }
+    const min = Math.min(...series, 0);
+    const max = Math.max(...series, 1);
+    // grid baseline
+    ctx.strokeStyle = 'hsla(222,20%,18%,0.85)'; ctx.beginPath();
+    for (let i = 1; i < 4; i++) {
+      const y = (hh * i) / 4;
+      ctx.moveTo(0, y); ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < series.length; i++) {
+      const x = (w * i) / (series.length - 1);
+      const y = hh - ((series[i] - min) / (max - min || 1)) * (hh - 8) - 4;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = h === STATE.target ? 'hsl(35,90%,60%)' : 'hsl(185,80%,60%)';
+    ctx.lineWidth = 2; ctx.stroke();
+  }, 30);
+}
+function closeHypModal() { $('#hyp-modal').classList.remove('show'); }
+
+// ── nav routing ──────────────────────────────────────────────────
+function routeTo(r) {
+  if (r === 'export') { openExport(); return; }
+  STATE.route = r;
+  $$('.nav a[data-route]').forEach(a => a.classList.toggle('active', a.dataset.route === r));
+  $$('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + r));
+  // Force redraw on next frame so canvases pick up correct sizes
+  requestAnimationFrame(() => {
+    renderLive();
+    if (r === 'hypotheses') renderHypList();
+    if (r === 'events') renderEvents();
+    if (r === 'hardware') { renderHardware(); drawRssi(); }
+    if (r === 'settings') $('#config-json').textContent = JSON.stringify(CFG, null, 2);
+  });
+}
+
+// ── toasts ───────────────────────────────────────────────────────
+function toast(msg, kind) {
+  const host = $('#toast-host');
+  const icons = { success: '✓', warning: '⚠', danger: '✕', info: 'ℹ' };
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || 'info');
+  el.innerHTML = '<span class="ti">' + (icons[kind] || icons.info) + '</span><span>' + msg + '</span>';
+  host.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'all 0.25s'; }, 2400);
+  setTimeout(() => el.remove(), 2700);
+}
+
+// ── Hardware page ────────────────────────────────────────────────
+function rssiLevel(rssi) {
+  if (rssi == null) return 'off';
+  if (rssi >= -50) return 'strong';
+  if (rssi >= -65) return 'fair';
+  return 'weak';
+}
+function renderHardware() {
+  const grid = $('#hw-grid');
+  if (!grid) return;
+  const n = STATE.sensors.length;
+  // Rebuild card scaffolding only when the sensor set changes (add/remove).
+  if (grid.children.length !== n) {
+    grid.innerHTML = STATE.sensors.map((s, i) =>
+      '<div class="hw-card" data-i="' + i + '">' +
+        '<div class="hw-h">' +
+          '<div><div class="hw-name"></div><div class="hw-mac"></div></div>' +
+          '<span class="hw-sig"><span class="level"></span><span class="hw-sig-lbl"></span></span>' +
+        '</div>' +
+        '<canvas class="hw-spark" data-i="' + i + '"></canvas>' +
+        '<dl class="hw-stats">' +
+          '<div class="hw-stat"><dt>PPS</dt><dd class="d-pps"></dd></div>' +
+          '<div class="hw-stat"><dt>SoC</dt><dd>ESP32-S3</dd></div>' +
+          '<div class="hw-stat"><dt>Mode</dt><dd class="d-mode"></dd></div>' +
+          '<div class="hw-stat"><dt>Firmware</dt><dd>1.4.2</dd></div>' +
+        '</dl>' +
+        '<div class="hw-actions">' +
+          '<button class="btn sm" data-act="toggle"></button>' +
+          '<button class="btn sm outline" data-act="probe">Probe</button>' +
+          '<button class="btn sm outline" data-act="remove">Remove</button>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+  // In-place per-card update — no innerHTML thrash, canvases survive.
+  STATE.sensors.forEach((s, i) => {
+    const card = grid.children[i];
+    if (!card) return;
+    card.dataset.i = i;
+    const wantClass = 'hw-card ' + (s.on ? 'on' : 'off');
+    if (card.className !== wantClass) card.className = wantClass;
+    const name = card.querySelector('.hw-name');
+    if (name.textContent !== s.id) name.textContent = s.id;
+    const mac = card.querySelector('.hw-mac');
+    const macTxt = s.mac + ' · ' + s.loc;
+    if (mac.textContent !== macTxt) mac.textContent = macTxt;
+    const sig = s.on ? rssiLevel(s.rssi) : 'off';
+    const sigEl = card.querySelector('.hw-sig');
+    const sigWant = 'hw-sig ' + sig;
+    if (sigEl.className !== sigWant) sigEl.className = sigWant;
+    const sigLblText = s.on
+      ? ((sig === 'strong' ? 'Strong' : sig === 'fair' ? 'Fair' : 'Weak') + ' · ' + s.rssi + ' dBm')
+      : 'Offline';
+    const sigLbl = card.querySelector('.hw-sig-lbl');
+    if (sigLbl.textContent !== sigLblText) sigLbl.textContent = sigLblText;
+    const pps = card.querySelector('.d-pps');
+    const ppsTxt = s.on ? String(s.pps) : '—';
+    if (pps.textContent !== ppsTxt) pps.textContent = ppsTxt;
+    const mode = card.querySelector('.d-mode');
+    const modeTxt = s.on ? 'CSI · HT-LTF' : 'idle';
+    if (mode.textContent !== modeTxt) mode.textContent = modeTxt;
+    const toggleBtn = card.querySelector('button[data-act="toggle"]');
+    const wantBtnClass = 'btn sm ' + (s.on ? 'danger' : 'primary');
+    if (toggleBtn.className !== wantBtnClass) toggleBtn.className = wantBtnClass;
+    const wantBtnTxt = s.on ? 'Disconnect' : 'Connect';
+    if (toggleBtn.textContent !== wantBtnTxt) toggleBtn.textContent = wantBtnTxt;
+    card.querySelectorAll('button').forEach(b => { b.dataset.i = i; });
+    card.querySelector('canvas.hw-spark').dataset.i = i;
+    drawSensorSpark(card.querySelector('canvas.hw-spark'), s);
+  });
+  const online = STATE.sensors.filter(s => s.on).length;
+  const el = $('#hw-online');
+  if (el) el.textContent = online + ' online · ' + n + ' total';
+}
+function drawSensorSpark(canvas, sensor) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const tw = Math.round(w * dpr), th = Math.round(h * dpr);
+  if (canvas.width !== tw || canvas.height !== th) {
+    canvas.width = tw; canvas.height = th;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const series = sensor.history.slice(-60);
+  if (series.length < 2) {
+    ctx.fillStyle = 'hsla(215,15%,55%,0.6)';
+    ctx.font = '10px JetBrains Mono'; ctx.textBaseline = 'middle';
+    ctx.fillText(sensor.on ? 'collecting…' : 'offline', 4, h / 2);
+    return;
+  }
+  const min = -90, max = -30;
+  ctx.beginPath();
+  for (let i = 0; i < series.length; i++) {
+    const x = (w * i) / (series.length - 1);
+    const y = h - ((series[i] - min) / (max - min)) * (h - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  const lvl = rssiLevel(series[series.length - 1]);
+  ctx.strokeStyle = lvl === 'strong' ? 'hsl(142,70%,55%)' : lvl === 'fair' ? 'hsl(35,90%,60%)' : 'hsl(0,65%,60%)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+}
+function drawRssi() {
+  const host = $('#chart-rssi');
+  if (!host || host.clientWidth === 0) return;
+  const { ctx, w, h } = setupCanvas(host);
+  ctx.clearRect(0, 0, w, h);
+  // Left pad has to fit "-90 dBm" plus a gap; old 38px clipped the labels.
+  const padL = 58, padR = 14, padT = 16, padB = 24;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  // Background bands — strong / fair / weak zones for context.
+  const min = -90, max = -30;
+  const yFor = v => padT + plotH * (1 - (v - min) / (max - min));
+  const zones = [
+    { from: -30, to: -55, col: 'hsla(142,70%,50%,0.06)' },  // strong
+    { from: -55, to: -70, col: 'hsla(35,90%,55%,0.06)'  },  // fair
+    { from: -70, to: -90, col: 'hsla(0,65%,55%,0.06)'   },  // weak
+  ];
+  zones.forEach(z => {
+    const y1 = yFor(z.from), y2 = yFor(z.to);
+    ctx.fillStyle = z.col;
+    ctx.fillRect(padL, Math.min(y1, y2), plotW, Math.abs(y2 - y1));
+  });
+
+  // Grid.
+  ctx.strokeStyle = 'hsla(222,20%,18%,0.85)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (plotH * i) / 4;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 6; i++) {
+    const x = padL + (plotW * i) / 6;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+  }
+
+  // Axis labels.
+  ctx.fillStyle = 'hsla(215,15%,60%,0.95)';
+  ctx.font = '500 10px JetBrains Mono';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  const vals = [-30, -45, -60, -75, -90];
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (plotH * i) / 4;
+    ctx.fillText(vals[i] + ' dBm', padL - 8, y);
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'hsla(215,15%,55%,0.8)';
+  for (let i = 0; i <= 6; i++) {
+    const x = padL + (plotW * i) / 6;
+    ctx.fillText((i === 6 ? 'now' : '-' + (60 - i * 10) + 's'), x, h - padB + 6);
+  }
+
+  // Zone labels on the right edge.
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillStyle = 'hsla(142,70%,55%,0.7)'; ctx.fillText('strong', padL + 6, yFor(-42));
+  ctx.fillStyle = 'hsla(35,90%,60%,0.7)';  ctx.fillText('fair',   padL + 6, yFor(-62));
+  ctx.fillStyle = 'hsla(0,70%,65%,0.7)';   ctx.fillText('weak',   padL + 6, yFor(-80));
+
+  // Series — line + gradient fill + glowing latest-point marker.
+  const palette = [
+    { stroke: 'hsl(185,80%,60%)', fill: 'hsla(185,80%,55%,0.22)', glow: 'hsla(185,80%,60%,0.7)' },
+    { stroke: 'hsl(165,75%,55%)', fill: 'hsla(165,75%,50%,0.20)', glow: 'hsla(165,85%,68%,0.7)' },
+    { stroke: 'hsl(142,70%,58%)', fill: 'hsla(142,70%,50%,0.20)', glow: 'hsla(142,70%,58%,0.7)' },
+    { stroke: 'hsl(35,90%,62%)',  fill: 'hsla(35,90%,55%,0.20)',  glow: 'hsla(35,90%,62%,0.7)'  },
+    { stroke: 'hsl(0,70%,68%)',   fill: 'hsla(0,70%,55%,0.20)',   glow: 'hsla(0,70%,68%,0.7)'   },
+  ];
+  let avgSum = 0, avgN = 0;
+  STATE.sensors.forEach((s, idx) => {
+    if (!s.on || s.history.length < 2) return;
+    const series = s.history.slice(-60);
+    const c = palette[idx % palette.length];
+    const xs = i => padL + (plotW * i) / Math.max(1, series.length - 1);
+
+    // Area fill.
+    ctx.beginPath();
+    for (let i = 0; i < series.length; i++) {
+      const x = xs(i), y = yFor(series[i]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.lineTo(xs(series.length - 1), h - padB);
+    ctx.lineTo(xs(0), h - padB);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, padT, 0, h - padB);
+    g.addColorStop(0, c.fill);
+    g.addColorStop(1, 'hsla(220,25%,6%,0)');
+    ctx.fillStyle = g; ctx.fill();
+
+    // Stroke (with subtle glow).
+    ctx.shadowBlur = 8; ctx.shadowColor = c.glow;
+    ctx.beginPath();
+    for (let i = 0; i < series.length; i++) {
+      const x = xs(i), y = yFor(series[i]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = c.stroke; ctx.lineWidth = 2; ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Latest-point marker with pulse halo.
+    const lastV = series[series.length - 1];
+    const lx = xs(series.length - 1), ly = yFor(lastV);
+    ctx.fillStyle = c.glow;
+    ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = c.stroke;
+    ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
+
+    // Inline label next to the latest point.
+    ctx.fillStyle = c.stroke;
+    ctx.font = '500 10px JetBrains Mono';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(Math.round(lastV) + ' dBm', lx - 8, ly - 4);
+
+    series.forEach(v => { avgSum += v; avgN++; });
+  });
+
+  if (avgN > 0) $('#hw-rssi-now').textContent = Math.round(avgSum / avgN) + ' dBm avg';
+  else $('#hw-rssi-now').textContent = 'no signal';
+
+  const legend = $('#hw-rssi-legend');
+  if (legend) {
+    legend.innerHTML = STATE.sensors.map((s, idx) => {
+      const c = palette[idx % palette.length];
+      return '<span class="lg-item" style="opacity:' + (s.on ? 1 : 0.4) + '">' +
+        '<span class="lg-sw" style="background:' + c.stroke + ';box-shadow:0 0 6px ' + c.glow + '"></span>' +
+        s.id + (s.on ? ' · ' + s.rssi + ' dBm' : ' · off') +
+      '</span>';
+    }).join('');
+  }
+}
+function sampleSensors() {
+  STATE.sensors.forEach(s => {
+    if (!s.on) { s.history.push(-95); }
+    else {
+      const target = s.rssi + (Math.random() - 0.5) * 4;
+      s.rssi = clamp(target, -85, -30);
+      s.pps = Math.round(380 + Math.random() * 160);
+      s.history.push(s.rssi);
+    }
+    if (s.history.length > 120) s.history.shift();
+  });
+}
+
+// ── Export modal helper ──────────────────────────────────────────
+function openExport() {
+  const exp = {
+    cog: 'interference-search',
+    version: 'v0.3.0',
+    exported_at: new Date().toISOString(),
+    config: CFG,
+    state: {
+      target: STATE.target,
+      iter: STATE.iter,
+      amplitudes: Array.from(STATE.amps).map(v => +v.toFixed(5)),
+      found: STATE.found,
+    },
+    sensors: STATE.sensors.map(s => ({ id: s.id, mac: s.mac, loc: s.loc, rssi: s.rssi, pps: s.pps, on: s.on })),
+    runs: STATE.runs,
+    events: STATE.events.slice(0, 200),
+  };
+  $('#export-body').textContent = JSON.stringify(exp, null, 2);
+  $('#export-modal').classList.add('show');
+}
+
+// ── wire up controls ─────────────────────────────────────────────
+function wire() {
+  // Top-nav routing
+  $$('.nav a[data-route]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      routeTo(a.dataset.route);
+    });
+  });
+
+  $('#hero-toggle').addEventListener('click', () => STATE.running ? stopRunning() : startRunning());
+  $('#btn-start').addEventListener('click', () => { startRunning(); routeTo('search'); });
+  $('#btn-pause').addEventListener('click', stopRunning);
+  $('#btn-step').addEventListener('click', stepOnce);
+  $('#btn-reset').addEventListener('click', () => $('#reset-modal').classList.add('show'));
+  $('#reset-cancel').addEventListener('click', () => $('#reset-modal').classList.remove('show'));
+  $('#reset-confirm').addEventListener('click', () => {
+    stopRunning();
+    resetState();
+    $('#reset-modal').classList.remove('show');
+    pushEvent('system', { msg: 'state reset · uniform superposition restored' });
+    renderLive();
+    toast('Search state reset', 'success');
+  });
+  $('#btn-clear-trace').addEventListener('click', () => {
+    STATE.ampHistory = []; STATE.convHistory = []; STATE.rateHistory = [];
+    renderLive(); toast('Trace cleared', 'info');
+  });
+  $('#btn-clear-runs').addEventListener('click', () => {
+    STATE.runs = []; renderRuns(); toast('Runs cleared', 'info');
+  });
+  $('#sel-speed').addEventListener('change', () => {
+    STATE.speedMs = parseInt($('#sel-speed').value, 10);
+    if (STATE.running) { clearInterval(STATE.loopTimer); STATE.loopTimer = setInterval(tick, STATE.speedMs); }
+    toast('Speed → ' + ({200:'0.5×',100:'1×',50:'2×',25:'4×',10:'10×'}[STATE.speedMs]), 'info');
+  });
+
+  // Hardware actions (delegated)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.hw-card .hw-actions button[data-act]');
+    if (!btn) return;
+    const i = parseInt(btn.dataset.i, 10);
+    const s = STATE.sensors[i];
+    if (!s) return;
+    const act = btn.dataset.act;
+    if (act === 'toggle') {
+      s.on = !s.on;
+      if (s.on) s.rssi = -(40 + Math.floor(Math.random() * 20));
+      pushEvent('system', { msg: 'sensor ' + s.id + ' ' + (s.on ? 'connected' : 'disconnected') });
+      toast('Sensor ' + s.id + ' ' + (s.on ? 'connected' : 'disconnected'), s.on ? 'success' : 'warning');
+    } else if (act === 'probe') {
+      pushEvent('system', { msg: 'probe ' + s.id + ' → rssi ' + s.rssi + ' dBm · pps ' + s.pps });
+      toast('Probed ' + s.id, 'info');
+    } else if (act === 'remove') {
+      pushEvent('system', { msg: 'sensor ' + s.id + ' removed' });
+      STATE.sensors.splice(i, 1);
+      toast('Removed ' + s.id, 'warning');
+    }
+    renderHardware();
+    drawRssi();
+  });
+  $('#btn-rescan').addEventListener('click', () => {
+    toast('Rescanning fleet…', 'info');
+    setTimeout(() => {
+      STATE.sensors.forEach(s => {
+        if (s.on) s.rssi = -(35 + Math.floor(Math.random() * 30));
+      });
+      renderHardware(); drawRssi();
+      const on = STATE.sensors.filter(s => s.on).length;
+      toast('Rescan complete · ' + on + ' online', 'success');
+    }, 500);
+  });
+  $('#btn-add-sensor').addEventListener('click', () => {
+    const n = STATE.sensors.length + 1;
+    const id = 'esp32-s3-' + String.fromCharCode(96 + n) + Math.floor(Math.random() * 9);
+    const mac = '7C:DF:A1:0C:' + Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase() + ':' + Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+    STATE.sensors.push({ id, mac, loc: 'unassigned', rssi: -(45 + Math.floor(Math.random() * 20)), pps: 400, on: true, history: [] });
+    pushEvent('system', { msg: 'sensor ' + id + ' added' });
+    toast('Added ' + id, 'success');
+    renderHardware(); drawRssi();
+  });
+
+  // Hypothesis interactions
+  document.addEventListener('click', e => {
+    const cell = e.target.closest('.hyp-cell');
+    if (cell) {
+      const h = parseInt(cell.dataset.h, 10);
+      STATE.target = h;
+      STATE.topTraces = null; // reset top traces to refresh
+      pushEvent('system', { msg: 'target → H' + h });
+      toast('Target → H' + h, 'info');
+      renderLive();
+      return;
+    }
+    const lgItem = e.target.closest('.lg-item[data-iso]');
+    if (lgItem) {
+      const v = lgItem.dataset.iso;
+      if (v === 'clear') STATE.isolatedHyp = null;
+      else STATE.isolatedHyp = parseInt(v, 10);
+      drawAmp();
+      return;
+    }
+  });
+
+  $('#hyp-search').addEventListener('input', e => {
+    STATE.hypFilter = e.target.value;
+    renderHypList();
+  });
+  $('#hyp-sort').addEventListener('change', e => {
+    STATE.hypSort = e.target.value;
+    renderHypList();
+  });
+
+  // Event filters — toggle row visibility in place (no rebuild).
+  $$('.evt-filter').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) STATE.filterEvents.add(cb.dataset.evt);
+    else STATE.filterEvents.delete(cb.dataset.evt);
+    const list = $('#event-list');
+    if (list) {
+      list.querySelectorAll('.event-row').forEach(r => {
+        r.style.display = STATE.filterEvents.has(r.dataset.evt) ? '' : 'none';
+      });
+    }
+  }));
+  $('#btn-clear-events').addEventListener('click', () => {
+    STATE.events = [];
+    const navCnt = $('#nav-event-count'); if (navCnt) navCnt.textContent = 0;
+    renderEvents(true);
+    toast('Event log cleared', 'info');
+  });
+
+  // Config form
+  const bindRange = (id, key, parse) => {
+    const inp = $('#' + id);
+    const lbl = $('#' + id + '-val');
+    inp.addEventListener('input', () => {
+      const v = parse(inp.value);
+      CFG[key] = v;
+      lbl.textContent = v;
+    });
+    lbl.textContent = inp.value;
+  };
+  bindRange('cfg-n', 'hypothesis_count', v => parseInt(v, 10));
+  bindRange('cfg-iter', 'iterations_cap', v => parseInt(v, 10));
+  bindRange('cfg-thresh', 'detect_threshold', v => parseFloat(v));
+  bindRange('cfg-csi', 'csi_window', v => parseInt(v, 10));
+  bindRange('cfg-noise', 'noise_sigma', v => parseFloat(v));
+  $('#cfg-oracle').addEventListener('change', e => CFG.oracle_mode = e.target.value);
+  $('#cfg-auto').addEventListener('change', e => CFG.auto_restart = e.target.checked);
+
+  $('#btn-config-save').addEventListener('click', () => {
+    try { localStorage.setItem('gh_interference_cfg', JSON.stringify(CFG)); } catch (_) {}
+    // If hypothesis_count changed, reset state
+    if (CFG.hypothesis_count !== STATE.amps.length) {
+      stopRunning();
+      resetState();
+    }
+    $('#config-json').textContent = JSON.stringify(CFG, null, 2);
+    pushEvent('system', { msg: 'config saved · N=' + CFG.hypothesis_count + ' · cap=' + CFG.iterations_cap });
+    toast('Config saved & applied', 'success');
+    renderLive();
+  });
+  $('#btn-config-reset').addEventListener('click', () => {
+    CFG = Object.assign({}, DEFAULTS);
+    Object.entries(CFG).forEach(([k, v]) => {
+      const mapId = { hypothesis_count: 'cfg-n', iterations_cap: 'cfg-iter', detect_threshold: 'cfg-thresh', csi_window: 'cfg-csi', noise_sigma: 'cfg-noise', oracle_mode: 'cfg-oracle', auto_restart: 'cfg-auto' }[k];
+      if (!mapId) return;
+      const el = $('#' + mapId);
+      if (el.type === 'checkbox') el.checked = v;
+      else el.value = v;
+      const lbl = $('#' + mapId + '-val');
+      if (lbl) lbl.textContent = v;
+    });
+    $('#config-json').textContent = JSON.stringify(CFG, null, 2);
+    toast('Defaults restored', 'info');
+  });
+  $('#btn-copy-schema').addEventListener('click', () => {
+    const schema = [
+      { key: 'hypothesis_count', type: 'int', default: 64, min: 16, max: 256 },
+      { key: 'iterations_cap', type: 'int', default: 6, min: 1, max: 64 },
+      { key: 'detect_threshold', type: 'float', default: 0.85, min: 0.4, max: 0.99 },
+      { key: 'csi_window', type: 'int', default: 64, min: 16, max: 128 },
+      { key: 'noise_sigma', type: 'float', default: 0.08, min: 0, max: 0.3 },
+      { key: 'oracle_mode', type: 'enum', default: 'amplitude', options: ['phase', 'amplitude', 'adaptive'] },
+      { key: 'auto_restart', type: 'bool', default: true },
+    ];
+    try { navigator.clipboard.writeText(JSON.stringify(schema, null, 2)); toast('Schema copied', 'success'); }
+    catch (_) { toast('Copy failed', 'danger'); }
+  });
+  $('#btn-copy-source').addEventListener('click', () => {
+    try { navigator.clipboard.writeText('cognitum-one/cogs/src/cogs/interference-search'); toast('Source path copied', 'success'); }
+    catch (_) { toast('Copy failed', 'danger'); }
+  });
+
+  // Export modal close + actions (open is via nav-export → openExport())
+  $('#export-cancel').addEventListener('click', () => $('#export-modal').classList.remove('show'));
+  $('#export-copy').addEventListener('click', () => {
+    try { navigator.clipboard.writeText($('#export-body').textContent); toast('Snapshot copied', 'success'); }
+    catch (_) { toast('Copy failed', 'danger'); }
+  });
+  $('#export-download').addEventListener('click', () => {
+    const blob = new Blob([$('#export-body').textContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'interference-search-' + Date.now() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Snapshot downloaded', 'success');
+  });
+
+  // Modal close (background click + close button)
+  $('#hyp-modal-close').addEventListener('click', closeHypModal);
+  $('#hyp-modal').addEventListener('click', e => { if (e.target.id === 'hyp-modal') closeHypModal(); });
+  $('#reset-modal').addEventListener('click', e => { if (e.target.id === 'reset-modal') $('#reset-modal').classList.remove('show'); });
+  $('#export-modal').addEventListener('click', e => { if (e.target.id === 'export-modal') $('#export-modal').classList.remove('show'); });
+  $('#hm-mark-target').addEventListener('click', () => {
+    const h = parseInt($('#hyp-modal').dataset.h, 10);
+    STATE.target = h;
+    STATE.topTraces = null;
+    pushEvent('system', { msg: 'target → H' + h });
+    toast('Target → H' + h, 'info');
+    closeHypModal();
+    renderLive();
+  });
+  $('#hm-isolate').addEventListener('click', () => {
+    const h = parseInt($('#hyp-modal').dataset.h, 10);
+    STATE.isolatedHyp = h;
+    toast('Isolated trace for H' + h, 'info');
+    closeHypModal();
+    if (STATE.route !== 'search') routeTo('search');
+    else drawAmp();
+  });
+
+  // Footer routing links
+  $$('.appfoot a[data-route]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      routeTo(a.dataset.route);
+    });
+  });
+
+  // Initialize config inputs from CFG
+  ['cfg-n','cfg-iter','cfg-thresh','cfg-csi','cfg-noise'].forEach(id => {
+    const key = { 'cfg-n':'hypothesis_count','cfg-iter':'iterations_cap','cfg-thresh':'detect_threshold','cfg-csi':'csi_window','cfg-noise':'noise_sigma' }[id];
+    const el = $('#' + id); if (el) el.value = CFG[key];
+    const lbl = $('#' + id + '-val'); if (lbl) lbl.textContent = CFG[key];
+  });
+  $('#cfg-oracle').value = CFG.oracle_mode;
+  $('#cfg-auto').checked = CFG.auto_restart;
+  $('#config-json').textContent = JSON.stringify(CFG, null, 2);
+}
+
+// ── window resize ────────────────────────────────────────────────
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderLive, 80);
+});
+
+// ── Animation loop (60fps redraw for the radar + amp pulse) ─────
+// Decoupled from the sim tick (which only fires every speedMs).
+// Reads STATE directly so charts always reflect latest amplitudes.
+function animLoop() {
+  if (STATE.route === 'dashboard') {
+    drawPolar();
+  } else if (STATE.route === 'search') {
+    drawAmp();
+  }
+  requestAnimationFrame(animLoop);
+}
+
+// ── boot ─────────────────────────────────────────────────────────
+resetState();
+// Seed sensor RSSI history so charts populate on first render.
+for (let i = 0; i < 30; i++) sampleSensors();
+wire();
+renderLive();
+renderRuns();
+renderEvents();
+renderHypList();
+renderHardware();
+requestAnimationFrame(animLoop);
+// Live sampling tick — keeps RSSI sparklines moving even when search is paused.
+setInterval(() => {
+  sampleSensors();
+  if (STATE.route === 'hardware') { renderHardware(); drawRssi(); }
+}, 1200);
+// Seed one initial event
+pushEvent('system', { msg: 'cog loaded · interference-search v0.3.0 · N=' + CFG.hypothesis_count });
+</script>
+
+</body>
+</html>

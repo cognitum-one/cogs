@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Energy Audit — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;--foreground:210 20% 92%;
+  --card:220 20% 10%;--card-foreground:210 20% 92%;
+  --primary:185 80% 50%;--primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;--secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;--accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;--muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;--destructive-foreground:210 20% 92%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;--input:220 15% 18%;--ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;cursor:pointer;transition:all 0.2s}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.split{display:grid;gap:0.75rem;grid-template-columns:2fr 1fr}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.pending{background:hsl(var(--warn) / 0.12);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.25)}
+.badge.applied{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.dismissed{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.high{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.med{background:hsl(var(--warn) / 0.12);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.25)}
+.badge.low{background:hsl(var(--accent) / 0.1);color:hsl(142 70% 60%);border-color:hsl(var(--accent) / 0.25)}
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(var(--warn))}
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.5rem 0.625rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.625rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));vertical-align:middle}
+tbody tr:hover{background:hsl(var(--secondary) / 0.3)}
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.accent{background:hsl(var(--accent));color:hsl(var(--accent-foreground));border-color:hsl(var(--accent));font-weight:600}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.85)}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+.input{width:100%;height:2.4rem}
+.row{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+footer.appfoot .mono{font-size:0.6875rem}
+.modal-bg{display:none;position:fixed;inset:0;z-index:200;background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.5rem;max-width:560px;width:100%}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{display:block;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.5);border-radius:0.5rem;padding:0.75rem 1rem;font-size:0.8125rem;box-shadow:var(--shadow-card);display:none;max-width:360px}
+.toast.show{display:block;animation:slideIn 0.2s ease}
+.toast.ok{border-color:hsl(var(--accent) / 0.6)}
+.toast.err{border-color:hsl(var(--destructive) / 0.6)}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Gauge cluster */
+.gauge-grid{display:grid;gap:0.625rem;grid-template-columns:repeat(auto-fit,minmax(126px,1fr))}
+.gauge{position:relative;background:hsl(var(--secondary) / 0.35);border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;padding:0.75rem 0.5rem 0.6rem;text-align:center;cursor:pointer;font:inherit;color:inherit;transition:all 0.2s;width:100%}
+.gauge:hover{background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.4);transform:translateY(-1px)}
+.gauge:hover .gauge-arc{filter:drop-shadow(0 0 6px currentColor)}
+.gauge svg{width:88px;height:88px;display:block;margin:0 auto}
+.gauge-track{stroke:hsl(var(--muted));opacity:0.6}
+.gauge-arc{transition:stroke-dasharray 0.6s ease}
+.gauge-arc.learned{color:hsl(var(--primary))}
+.gauge-arc.learning{color:hsl(var(--warn))}
+.gauge-arc.nosens{color:hsl(var(--muted-foreground))}
+.gauge-val{font:600 1.125rem var(--font-mono);fill:hsl(var(--foreground))}
+.gauge-val.muted{fill:hsl(var(--muted-foreground))}
+.gauge-tick{stroke:hsl(var(--border));stroke-width:1}
+.gauge-name{font-size:0.75rem;color:hsl(var(--foreground));margin-top:0.4rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.gauge-meta{font-size:0.625rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.15rem;display:flex;align-items:center;justify-content:center;gap:0.25rem}
+.gauge-meta .dot{width:6px;height:6px}
+.hm-legend{display:flex;align-items:center;gap:1rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.75rem;flex-wrap:wrap}
+.hm-legend .lg{display:inline-flex;align-items:center;gap:0.35rem}
+.hm-legend .lg-ring{width:14px;height:14px;border-radius:50%;border:3px solid hsl(var(--muted))}
+.hm-legend .lg-ring.learned{border-color:hsl(var(--primary))}
+.hm-legend .lg-ring.learning{border-color:hsl(var(--warn))}
+.hm-legend .lg-ring.nosens{border-color:hsl(var(--muted-foreground));opacity:0.6}
+/* Event feed */
+.feed{max-height:380px;overflow-y:auto}
+.feed-item{display:flex;gap:0.625rem;padding:0.5rem 0.25rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-size:0.8125rem}
+.feed-item:last-child{border-bottom:none}
+.feed-ic{width:28px;height:28px;border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:hsl(var(--secondary))}
+.feed-ic svg{width:14px;height:14px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.feed-ic.accent svg{stroke:hsl(var(--accent))}
+.feed-ic.warn svg{stroke:hsl(var(--warn))}
+.feed-body{flex:1;min-width:0}
+.feed-title{font-size:0.8125rem;color:hsl(var(--foreground))}
+.feed-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+/* Progress bar */
+.bar{width:100%;height:6px;background:hsl(var(--muted));border-radius:9999px;overflow:hidden}
+.bar > span{display:block;height:100%;background:hsl(var(--primary));border-radius:9999px;transition:width 0.4s}
+.bar.accent > span{background:hsl(var(--accent))}
+.bar.warn > span{background:hsl(var(--warn))}
+/* Tabs panel */
+.panel{display:none}
+.panel.active{display:block}
+/* Radial schedule */
+.sr-wrap{display:flex;justify-content:center;align-items:center;padding:0.5rem 0 0.25rem}
+.sr-chart{width:100%;max-width:520px;height:auto;display:block}
+.sr-cells path{cursor:default;stroke:hsl(var(--background));stroke-width:0.6;transition:fill 0.35s ease,opacity 0.2s,filter 0.2s,transform 0.15s;transform-box:fill-box;transform-origin:center}
+.sr-cells.editing path{cursor:pointer}
+.sr-cells path:hover{filter:brightness(1.45) drop-shadow(0 0 6px currentColor)}
+.sr-occ{fill:hsl(var(--primary));color:hsl(var(--primary))}
+.sr-occ.weekend{fill:hsl(var(--accent));color:hsl(var(--accent))}
+.sr-un{fill:hsl(var(--muted));opacity:0.55}
+.sr-over{fill:url(#sr-stripe);color:hsl(var(--warn))}
+.sr-spokes line{stroke:hsl(var(--border));stroke-width:0.5;stroke-dasharray:2,3;opacity:0.7}
+.sr-hr-tick{stroke:hsl(var(--muted-foreground));stroke-width:1;opacity:0.5}
+.sr-hr{font:600 10px var(--font-mono);fill:hsl(var(--muted-foreground));letter-spacing:0.04em}
+.sr-day{font:600 8.5px var(--font-mono);fill:hsl(var(--foreground));opacity:0.65;letter-spacing:0.05em}
+.sr-day.weekend{fill:hsl(var(--accent));opacity:0.85}
+.sr-center-bg{fill:hsl(var(--card));stroke:hsl(var(--border));stroke-width:1}
+.sr-center-val{font:600 30px var(--font-display);fill:hsl(var(--foreground))}
+.sr-center-lbl{font:600 8px var(--font-display);fill:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.12em}
+.sr-center-sub{font:500 9.5px var(--font-mono);fill:hsl(var(--muted-foreground))}
+.sr-meridian{font:600 8px var(--font-mono);fill:hsl(var(--muted-foreground));letter-spacing:0.1em;text-transform:uppercase}
+/* Day occupancy strip below radial */
+.sr-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:0.4rem;margin-top:0.875rem;padding:0 0.25rem}
+.sr-day-card{background:hsl(var(--secondary) / 0.4);border:1px solid hsl(var(--border) / 0.4);border-radius:0.4rem;padding:0.4rem 0.4rem 0.5rem;text-align:center}
+.sr-day-card.weekend{background:hsl(var(--accent) / 0.06);border-color:hsl(var(--accent) / 0.2)}
+.sr-day-lbl{font:600 0.625rem var(--font-mono);color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.1em}
+.sr-day-hrs{font:600 0.875rem var(--font-display);color:hsl(var(--foreground));margin-top:0.15rem}
+.sr-day-bar{height:3px;background:hsl(var(--muted));border-radius:2px;margin-top:0.4rem;overflow:hidden}
+.sr-day-bar > span{display:block;height:100%;background:hsl(var(--primary));border-radius:2px;transition:width 0.5s}
+.sr-day-card.weekend .sr-day-bar > span{background:hsl(var(--accent))}
+.zone-list-item{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.625rem;border-radius:0.4rem;cursor:pointer;font-size:0.8125rem;border:1px solid transparent;gap:0.5rem;transition:all 0.15s;position:relative}
+.zone-list-item:hover{background:hsl(var(--secondary) / 0.5)}
+.zone-list-item.on{background:hsl(var(--primary) / 0.1);border-color:hsl(var(--primary) / 0.3);color:hsl(var(--primary))}
+.zone-list-item.on::before{content:"";position:absolute;left:-1px;top:18%;bottom:18%;width:3px;background:hsl(var(--primary));border-radius:2px}
+.zli-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zli-meta{display:inline-flex;align-items:center;gap:0.45rem;flex-shrink:0}
+.zli-val{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));min-width:26px;text-align:right}
+.zone-list-item.on .zli-val{color:hsl(var(--primary))}
+.zone-group-h{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));padding:0.7rem 0.625rem 0.3rem;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.zone-group-h:first-child{padding-top:0.15rem}
+.zone-group-h .count{font-family:var(--font-mono);font-size:0.625rem;background:hsl(var(--muted));padding:0.05rem 0.35rem;border-radius:0.25rem;letter-spacing:0}
+.sig{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.sig span{width:3px;background:hsl(var(--muted));border-radius:1px;transition:background 0.3s}
+.sig span:nth-child(1){height:4px}
+.sig span:nth-child(2){height:7px}
+.sig span:nth-child(3){height:10px}
+.sig span:nth-child(4){height:13px}
+.sig span:nth-child(5){height:14px}
+.sig.t1 span:nth-child(-n+1){background:hsl(var(--destructive))}
+.sig.t2 span:nth-child(-n+2){background:hsl(var(--warn))}
+.sig.t3 span:nth-child(-n+3){background:hsl(var(--warn))}
+.sig.t4 span:nth-child(-n+4){background:hsl(var(--accent))}
+.sig.t5 span{background:hsl(var(--primary))}
+.sig.none span{opacity:0.35}
+.tag{display:inline-flex;align-items:center;padding:0.1rem 0.45rem;font-size:0.625rem;border-radius:0.3rem;background:hsl(var(--muted));color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-weight:600;font-family:var(--font-display)}
+.tag.primary{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary))}
+.tag.accent{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent))}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:0.5rem 1rem;font-size:0.8125rem;font-family:var(--font-mono);line-height:1.7}
+.kv dt{color:hsl(var(--muted-foreground) / 0.8)}
+.kv dd{color:hsl(var(--foreground))}
+.switch{position:relative;display:inline-block;width:36px;height:20px}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;cursor:pointer;inset:0;background:hsl(var(--muted));border-radius:9999px;transition:0.2s;border:1px solid hsl(var(--border))}
+.slider::before{content:"";position:absolute;height:14px;width:14px;left:2px;top:2px;background:hsl(var(--foreground));border-radius:50%;transition:0.2s}
+.switch input:checked + .slider{background:hsl(var(--primary))}
+.switch input:checked + .slider::before{transform:translateX(16px);background:hsl(var(--primary-foreground))}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Energy Audit<span class="brand-ver mono">v1.0.0</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-route="dashboard" class="active">Dashboard</a>
+      <a data-route="schedules">Schedules</a>
+      <a data-route="recommendations">Recommendations</a>
+      <a data-route="zones">Zones</a>
+      <a data-route="sensors">Sensors</a>
+      <a data-route="bms">BMS</a>
+      <a data-route="events">Events</a>
+      <a data-route="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ DASHBOARD ============ -->
+<div class="panel active" data-panel="dashboard">
+  <h1 class="page">Building energy overview</h1>
+  <p class="lede">Occupancy schedules are being learned from CSI presence sensors. The longer the system runs, the tighter HVAC and lighting follow real usage.</p>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Saved today</div><div class="kpi-val" id="kpi-saved">142 kWh</div><div class="kpi-sub">≈ $18.46 · vs baseline</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></div><div class="kpi-info"><div class="kpi-label">Avg occupancy</div><div class="kpi-val" id="kpi-occ">62%</div><div class="kpi-sub">across 12 zones · live</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="kpi-info"><div class="kpi-label">Schedules learned</div><div class="kpi-val" id="kpi-sched">9 / 12</div><div class="kpi-sub">≥ 14 day confidence</div></div></div>
+      <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div><div class="kpi-info"><div class="kpi-label">Open actions</div><div class="kpi-val" id="kpi-acts">5</div><div class="kpi-sub">recommendations pending</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="kpi-info"><div class="kpi-label">CSI sensors</div><div class="kpi-val" id="kpi-sens">14 / 16</div><div class="kpi-sub">online · ESP32-S3</div></div></div>
+    </div>
+  </div>
+
+  <div class="section split">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Live occupancy — this hour</div>
+          <div class="card-sub">All zones · arc fill = current occupancy · click to drill in</div>
+        </div>
+        <button class="btn sm outline" id="btn-refresh-heat">Refresh</button>
+      </div>
+      <div id="heatmap"></div>
+      <div class="hm-legend">
+        <span class="lg"><span class="lg-ring learned"></span>learned</span>
+        <span class="lg"><span class="lg-ring learning"></span>still learning</span>
+        <span class="lg"><span class="lg-ring nosens"></span>no sensors</span>
+        <span class="spacer"></span>
+        <span class="mono" id="hm-stamp">updated —</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Recent events</div>
+          <div class="card-sub">schedule_learned · energy_recommendation · occupancy_pattern</div>
+        </div>
+        <button class="btn sm outline" data-goto="events">View all</button>
+      </div>
+      <div class="feed" id="feed-mini"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span>Top recommendations</span> <button class="btn sm outline" data-goto="recommendations">Manage all</button></h2>
+    <div class="grid-2" id="reco-top"></div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">BMS integration</div>
+          <div class="card-sub">Building management system bridge</div>
+        </div>
+        <button class="btn sm outline" data-goto="bms">Configure</button>
+      </div>
+      <div class="grid">
+        <div><div class="kpi-label">Protocol</div><div style="font-weight:600;margin-top:0.25rem">BACnet/IP</div></div>
+        <div><div class="kpi-label">Controller</div><div class="mono" style="margin-top:0.25rem;font-size:0.8125rem">10.0.4.18:47808</div></div>
+        <div><div class="kpi-label">Mapped points</div><div style="font-weight:600;margin-top:0.25rem">38 <span class="tag accent">writable</span></div></div>
+        <div><div class="kpi-label">Last sync</div><div class="mono" style="margin-top:0.25rem;font-size:0.8125rem" id="bms-sync">2 min ago</div></div>
+        <div><div class="kpi-label">Status</div><div style="margin-top:0.25rem"><span class="dot up"></span> <span style="font-weight:600">connected</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCHEDULES ============ -->
+<div class="panel" data-panel="schedules">
+  <h1 class="page">Learned occupancy schedules</h1>
+  <p class="lede">Each zone is fit to a weekly schedule once 14+ days of CSI presence are recorded. Override generated schedules manually when needed.</p>
+
+  <div class="section grid-3" style="grid-template-columns:240px 1fr">
+    <div class="card" style="padding:0.75rem">
+      <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.5rem;font-weight:600;padding:0 0.25rem">Zones</div>
+      <div id="zone-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title" id="sched-zone-name">—</div>
+          <div class="card-sub" id="sched-zone-sub">—</div>
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-sched-relearn">Relearn</button>
+          <button class="btn sm primary" id="btn-sched-edit">Edit override</button>
+        </div>
+      </div>
+      <div id="sched-grid"></div>
+      <div class="hm-legend" style="margin-top:0.875rem">
+        <span style="display:inline-flex;gap:0.4rem;align-items:center"><span style="width:14px;height:14px;background:hsl(var(--primary) / 0.7);border-radius:2px"></span> occupied</span>
+        <span style="display:inline-flex;gap:0.4rem;align-items:center"><span style="width:14px;height:14px;background:hsl(var(--muted));border-radius:2px"></span> unoccupied</span>
+        <span style="display:inline-flex;gap:0.4rem;align-items:center"><span style="width:14px;height:14px;background:repeating-linear-gradient(45deg,hsl(var(--warn) / 0.6),hsl(var(--warn) / 0.6) 3px,hsl(var(--warn) / 0.3) 3px,hsl(var(--warn) / 0.3) 6px);border-radius:2px"></span> manual override</span>
+        <span class="spacer"></span>
+        <span class="mono" id="sched-conf">confidence —</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RECOMMENDATIONS ============ -->
+<div class="panel" data-panel="recommendations">
+  <h1 class="page">Energy recommendations</h1>
+  <p class="lede">Actionable savings derived from occupancy patterns and BMS telemetry. Apply to push setpoints/schedules directly to the BMS.</p>
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="row">
+          <select id="reco-filter">
+            <option value="all">All categories</option>
+            <option value="HVAC">HVAC</option>
+            <option value="Lighting">Lighting</option>
+            <option value="Plug load">Plug load</option>
+            <option value="Setpoint">Setpoint</option>
+          </select>
+          <select id="reco-status">
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="applied">Applied</option>
+            <option value="dismissed">Dismissed</option>
+          </select>
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-reco-export">Export CSV</button>
+          <button class="btn sm primary" id="btn-reco-rescan">Re-scan</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="reco-table">
+          <thead><tr><th>#</th><th>Category</th><th>Zone</th><th>Action</th><th>Est. savings</th><th>Confidence</th><th>Impact</th><th>Status</th><th></th></tr></thead>
+          <tbody id="reco-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ZONES ============ -->
+<div class="panel" data-panel="zones">
+  <h1 class="page">Building zones</h1>
+  <p class="lede">Logical groupings of CSI sensors that share a thermal/lighting setpoint.</p>
+  <div class="section">
+    <div class="row" style="margin-bottom:0.75rem">
+      <input class="input" id="zone-search" placeholder="Filter zones…" style="max-width:280px">
+      <span class="spacer"></span>
+      <button class="btn sm outline" id="btn-zones-export">Export</button>
+      <button class="btn primary" id="btn-zones-add">+ Add zone</button>
+    </div>
+    <div class="grid-2" id="zones-grid"></div>
+  </div>
+</div>
+
+<!-- ============ SENSORS ============ -->
+<div class="panel" data-panel="sensors">
+  <h1 class="page">CSI presence sensors</h1>
+  <p class="lede">ESP32-S3 devices reporting WiFi channel-state-information features. Each device contributes to one zone's presence signal.</p>
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Fleet</div>
+          <div class="card-sub" id="sens-summary">—</div>
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-sens-pair">Pair device</button>
+          <button class="btn sm primary" id="btn-sens-refresh">Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Device</th><th>MAC</th><th>Zone</th><th>RSSI</th><th>CSI quality</th><th>Firmware</th><th>Status</th><th></th></tr></thead>
+          <tbody id="sens-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BMS ============ -->
+<div class="panel" data-panel="bms">
+  <h1 class="page">BMS integration</h1>
+  <p class="lede">Push learned schedules and recommendations directly to the building management system.</p>
+  <div class="section grid-2">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Connection</div>
+          <div class="card-sub">BACnet/IP · last sync <span id="bms-sync2">—</span></div>
+        </div>
+        <span class="badge online" id="bms-status-badge"><span class="dot up"></span>connected</span>
+      </div>
+      <dl class="kv">
+        <dt>Protocol</dt><dd>BACnet/IP</dd>
+        <dt>Address</dt><dd>10.0.4.18:47808</dd>
+        <dt>Device ID</dt><dd>2104</dd>
+        <dt>Vendor</dt><dd>Schneider Electric (10)</dd>
+        <dt>Encryption</dt><dd>BACnet/SC TLS 1.3</dd>
+      </dl>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn outline" id="btn-bms-test">Test connection</button>
+        <button class="btn outline" id="btn-bms-discover">Discover points</button>
+        <button class="btn danger sm" id="btn-bms-disc">Disconnect</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Push schedules</div>
+          <div class="card-sub">Sync learned schedules to BACnet calendar objects</div>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">Auto-sync</div><div class="card-sub">push every change once confidence ≥ 85%</div></div>
+        <label class="switch"><input type="checkbox" id="bms-auto" checked><span class="slider"></span></label>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">Apply recommendations</div><div class="card-sub">setpoint changes require operator approval</div></div>
+        <label class="switch"><input type="checkbox" id="bms-apply"><span class="slider"></span></label>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.5rem 0">
+        <div><div style="font-weight:500">Dry-run mode</div><div class="card-sub">log writes without committing</div></div>
+        <label class="switch"><input type="checkbox" id="bms-dry"><span class="slider"></span></label>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn primary" id="btn-bms-push">Push now</button>
+        <button class="btn outline" id="btn-bms-log">View sync log</button>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title">Mapped points</div>
+        <input class="input" id="pts-search" placeholder="Filter points…" style="max-width:260px">
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Name</th><th>Object</th><th>Zone</th><th>Type</th><th>Last value</th><th>Writable</th></tr></thead>
+          <tbody id="pts-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EVENTS ============ -->
+<div class="panel" data-panel="events">
+  <h1 class="page">Events</h1>
+  <p class="lede">Audit log of schedule learning, occupancy pattern detection, and recommendation generation.</p>
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="row">
+          <select id="ev-type">
+            <option value="all">All types</option>
+            <option value="schedule_learned">schedule_learned</option>
+            <option value="energy_recommendation">energy_recommendation</option>
+            <option value="occupancy_pattern">occupancy_pattern</option>
+          </select>
+          <input class="input" id="ev-search" placeholder="Search…" style="max-width:240px">
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-ev-clear">Clear log</button>
+          <button class="btn sm primary" id="btn-ev-emit">Emit test event</button>
+        </div>
+      </div>
+      <div class="feed" id="feed-full" style="max-height:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="panel" data-panel="settings">
+  <h1 class="page">Settings</h1>
+  <p class="lede">Tune the learning model, energy rates, and notification rules.</p>
+  <div class="section grid-2" style="grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">Learning</div>
+      <div class="modal-row"><label>Minimum days before commit</label><input class="input" id="set-mindays" value="14"></div>
+      <div class="modal-row"><label>Confidence threshold</label><input class="input" id="set-conf" value="0.85"></div>
+      <div class="modal-row"><label>CSI sampling rate (Hz)</label><input class="input" id="set-rate" value="10"></div>
+      <div class="modal-row"><label>Occupancy decay (minutes)</label><input class="input" id="set-decay" value="8"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">Energy rates</div>
+      <div class="modal-row"><label>Currency</label><select id="set-cur"><option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option></select></div>
+      <div class="modal-row"><label>Peak rate ($/kWh)</label><input class="input" id="set-peak" value="0.18"></div>
+      <div class="modal-row"><label>Off-peak rate ($/kWh)</label><input class="input" id="set-off" value="0.09"></div>
+      <div class="modal-row"><label>Demand charge ($/kW)</label><input class="input" id="set-dem" value="14.50"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">Notifications</div>
+      <div class="row" style="justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">Schedule changes</div><div class="card-sub">alert when a learned schedule shifts &gt; 30 min</div></div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">High-impact recommendations</div><div class="card-sub">notify when est. savings &gt; 10 kWh/day</div></div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.4rem 0">
+        <div><div style="font-weight:500">Sensor outages</div><div class="card-sub">alert after 10 min offline</div></div>
+        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">Cog metadata</div>
+      <dl class="kv">
+        <dt>Cog ID</dt><dd>energy-audit</dd>
+        <dt>Version</dt><dd>1.0.0</dd>
+        <dt>Size</dt><dd>22 KB</dd>
+        <dt>Hardware</dt><dd>ESP32-S3</dd>
+        <dt>Input</dt><dd>CSI presence</dd>
+        <dt>Source</dt><dd>cogs/energy-audit</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">Holiday &amp; exceptions</div>
+      <div class="row" style="justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">Skip US federal holidays</div><div class="card-sub">exclude from learning · auto-disable HVAC/lighting</div></div>
+        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+        <div><div style="font-weight:500">Treat weekends as occupied</div><div class="card-sub">never auto-disable on Sat/Sun</div></div>
+        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+      </div>
+      <div style="margin-top:0.75rem">
+        <div class="kpi-label" style="margin-bottom:0.4rem">Custom blackouts</div>
+        <div id="set-blackouts" class="row" style="flex-wrap:wrap;margin-bottom:0.5rem;gap:0.35rem;min-height:1.75rem"></div>
+        <div class="row" style="gap:0.35rem">
+          <input class="input" id="set-blackout-date" type="date" style="flex:1;height:2.4rem">
+          <button class="btn sm primary" id="btn-blackout-add">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.875rem">API &amp; webhooks</div>
+      <div class="modal-row">
+        <label>Outbound webhook URL</label>
+        <input class="input" id="set-hook" placeholder="https://hooks.example.com/energy" value="https://hooks.example.com/energy">
+      </div>
+      <div class="modal-row">
+        <label>Signing secret</label>
+        <div class="row" style="gap:0.35rem">
+          <input class="input" id="set-secret" value="whsec_4a8f7c2e0b1d39ad" style="flex:1;font-family:var(--font-mono);font-size:0.75rem" readonly>
+          <button class="btn sm outline" id="btn-secret-regen">Regenerate</button>
+        </div>
+      </div>
+      <div style="margin-top:0.5rem">
+        <div class="kpi-label" style="margin-bottom:0.35rem">Event subscriptions</div>
+        <div class="row" style="justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+          <span class="mono" style="font-size:0.75rem">schedule_learned</span>
+          <label class="switch"><input type="checkbox" id="hook-ev-sched" checked><span class="slider"></span></label>
+        </div>
+        <div class="row" style="justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid hsl(var(--border)/0.3)">
+          <span class="mono" style="font-size:0.75rem">energy_recommendation</span>
+          <label class="switch"><input type="checkbox" id="hook-ev-reco" checked><span class="slider"></span></label>
+        </div>
+        <div class="row" style="justify-content:space-between;padding:0.3rem 0">
+          <span class="mono" style="font-size:0.75rem">occupancy_pattern</span>
+          <label class="switch"><input type="checkbox" id="hook-ev-occ"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn sm primary" id="btn-hook-test">Send test event</button>
+        <button class="btn sm outline" id="btn-hook-log">View deliveries</button>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:1rem">
+    <button class="btn outline" id="btn-set-reset">Reset to defaults</button>
+    <button class="btn primary" id="btn-set-save">Save changes</button>
+  </div>
+</div>
+
+<footer class="appfoot">
+  <div><span class="mono">cog: energy-audit</span> &middot; <span class="mono">v1.0.0</span> &middot; <span class="mono">ESP32-S3 · CSI presence</span></div>
+  <div style="margin-top:0.4rem"><a data-goto="dashboard">dashboard</a> &middot; <a data-goto="events">events</a> &middot; <a data-goto="settings">settings</a></div>
+</footer>
+</div>
+
+<!-- Generic modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3 id="m-title">Title</h3>
+    <p class="modal-sub" id="m-sub">Subtitle</p>
+    <div id="m-body"></div>
+    <div class="modal-actions">
+      <button class="btn outline" id="m-cancel">Cancel</button>
+      <button class="btn primary" id="m-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtRel = (t) => {
+  const s = Math.round((Date.now()-t)/1000);
+  if (s<5) return 'just now';
+  if (s<60) return s+' sec ago';
+  const m = Math.round(s/60); if (m<60) return m+' min ago';
+  const h = Math.round(m/60); if (h<24) return h+' hr ago';
+  return Math.round(h/24)+' day ago';
+};
+const toast = (msg, kind='ok') => {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show '+kind;
+  clearTimeout(toast._); toast._ = setTimeout(()=>t.classList.remove('show'), 2400);
+};
+const rand = (a,b) => a + Math.random()*(b-a);
+
+// ---- Mock data ----
+const ZONES = [
+  { id:'z1', name:'Open office — North', sensors:3, occ:78, schedConf:0.94, sqft:1820, learned:true },
+  { id:'z2', name:'Open office — South', sensors:3, occ:64, schedConf:0.89, sqft:1640, learned:true },
+  { id:'z3', name:'Conference room A',   sensors:1, occ:0,  schedConf:0.71, sqft:340,  learned:true },
+  { id:'z4', name:'Conference room B',   sensors:1, occ:42, schedConf:0.83, sqft:360,  learned:true },
+  { id:'z5', name:'Lobby / reception',   sensors:1, occ:55, schedConf:0.92, sqft:520,  learned:true },
+  { id:'z6', name:'Kitchen / break room',sensors:1, occ:88, schedConf:0.86, sqft:280,  learned:true },
+  { id:'z7', name:'Executive offices',   sensors:2, occ:35, schedConf:0.78, sqft:780,  learned:true },
+  { id:'z8', name:'Server room',         sensors:1, occ:5,  schedConf:0.96, sqft:160,  learned:true },
+  { id:'z9', name:'Training room',       sensors:1, occ:0,  schedConf:0.62, sqft:620,  learned:true },
+  { id:'z10', name:'East wing — flex',   sensors:1, occ:48, schedConf:0.41, sqft:880,  learned:false },
+  { id:'z11', name:'Lab — wet',          sensors:1, occ:60, schedConf:0.31, sqft:520,  learned:false },
+  { id:'z12', name:'Storage',            sensors:0, occ:0,  schedConf:0.0,  sqft:380,  learned:false },
+];
+
+const RECOS = [
+  { id:'r1', cat:'HVAC',     zone:'Conference room A', action:'Shift HVAC start 18:00 → 19:30 (no occupancy detected after 18:15)', kwh:8.4,  conf:0.92, impact:'med',  status:'pending' },
+  { id:'r2', cat:'Lighting', zone:'Open office — North', action:'Dim to 60% during 12:00–13:00 lunch lull',                          kwh:3.2,  conf:0.88, impact:'low',  status:'pending' },
+  { id:'r3', cat:'Setpoint', zone:'Executive offices',  action:'Raise cooling setpoint 72°F → 74°F when vacancy > 30 min',          kwh:12.1, conf:0.86, impact:'high', status:'pending' },
+  { id:'r4', cat:'HVAC',     zone:'Training room',     action:'Disable Friday afternoon HVAC (0% occupancy 3 weeks)',                kwh:22.6, conf:0.94, impact:'high', status:'pending' },
+  { id:'r5', cat:'Plug load',zone:'Open office — South', action:'Auto-power monitors off after 20 min vacancy',                       kwh:5.7,  conf:0.81, impact:'med',  status:'pending' },
+  { id:'r6', cat:'Lighting', zone:'Lobby / reception', action:'Use circadian schedule, dim 17:00 onward',                            kwh:2.1,  conf:0.79, impact:'low',  status:'applied' },
+  { id:'r7', cat:'HVAC',     zone:'Kitchen / break room', action:'Pre-cool at 11:30 (occupancy spike 12:00)',                          kwh:4.2,  conf:0.83, impact:'med',  status:'applied' },
+  { id:'r8', cat:'Setpoint', zone:'Conference room B', action:'Increase heating deadband to 3°F when unoccupied',                     kwh:6.8,  conf:0.74, impact:'med',  status:'dismissed' },
+];
+
+const SENSORS = [
+  { id:'s1',  mac:'34:85:18:3A:1F:01', zone:'Open office — North', rssi:-48, csi:0.94, fw:'1.0.0', status:'online' },
+  { id:'s2',  mac:'34:85:18:3A:1F:02', zone:'Open office — North', rssi:-52, csi:0.91, fw:'1.0.0', status:'online' },
+  { id:'s3',  mac:'34:85:18:3A:1F:03', zone:'Open office — North', rssi:-61, csi:0.88, fw:'1.0.0', status:'online' },
+  { id:'s4',  mac:'34:85:18:3A:1F:04', zone:'Open office — South', rssi:-49, csi:0.93, fw:'1.0.0', status:'online' },
+  { id:'s5',  mac:'34:85:18:3A:1F:05', zone:'Open office — South', rssi:-55, csi:0.90, fw:'1.0.0', status:'online' },
+  { id:'s6',  mac:'34:85:18:3A:1F:06', zone:'Open office — South', rssi:-67, csi:0.82, fw:'0.9.4', status:'online' },
+  { id:'s7',  mac:'34:85:18:3A:1F:07', zone:'Conference room A', rssi:-50, csi:0.95, fw:'1.0.0', status:'online' },
+  { id:'s8',  mac:'34:85:18:3A:1F:08', zone:'Conference room B', rssi:-58, csi:0.89, fw:'1.0.0', status:'online' },
+  { id:'s9',  mac:'34:85:18:3A:1F:09', zone:'Lobby / reception', rssi:-44, csi:0.96, fw:'1.0.0', status:'online' },
+  { id:'s10', mac:'34:85:18:3A:1F:0A', zone:'Kitchen / break room', rssi:-51, csi:0.92, fw:'1.0.0', status:'online' },
+  { id:'s11', mac:'34:85:18:3A:1F:0B', zone:'Executive offices', rssi:-63, csi:0.84, fw:'1.0.0', status:'online' },
+  { id:'s12', mac:'34:85:18:3A:1F:0C', zone:'Executive offices', rssi:-69, csi:0.78, fw:'1.0.0', status:'online' },
+  { id:'s13', mac:'34:85:18:3A:1F:0D', zone:'Server room', rssi:-46, csi:0.97, fw:'1.0.0', status:'online' },
+  { id:'s14', mac:'34:85:18:3A:1F:0E', zone:'Training room', rssi:-72, csi:0.74, fw:'1.0.0', status:'online' },
+  { id:'s15', mac:'34:85:18:3A:1F:0F', zone:'East wing — flex', rssi:-81, csi:0.51, fw:'0.9.4', status:'offline' },
+  { id:'s16', mac:'34:85:18:3A:1F:10', zone:'Lab — wet', rssi:-78, csi:0.55, fw:'0.9.4', status:'offline' },
+];
+
+const POINTS = [
+  { name:'AHU-1 OccupiedStart', obj:'SCH:1', zone:'Open office — North', type:'BACnetSchedule', val:'08:00', w:true },
+  { name:'AHU-1 OccupiedEnd',   obj:'SCH:2', zone:'Open office — North', type:'BACnetSchedule', val:'18:30', w:true },
+  { name:'VAV-12 CoolingSP',    obj:'AV:14', zone:'Open office — South', type:'AnalogValue',    val:'74.0 °F', w:true },
+  { name:'CR-A Lighting',       obj:'BO:7',  zone:'Conference room A',   type:'BinaryOutput',   val:'off',     w:true },
+  { name:'CR-A HVAC Enable',    obj:'BV:3',  zone:'Conference room A',   type:'BinaryValue',    val:'off',     w:true },
+  { name:'Kitchen Plug Bus',    obj:'BO:11', zone:'Kitchen / break room', type:'BinaryOutput',  val:'on',      w:true },
+  { name:'Server Rm Temp',      obj:'AI:22', zone:'Server room',         type:'AnalogInput',    val:'68.4 °F', w:false },
+  { name:'Bldg Power kW',       obj:'AI:99', zone:'(building)',          type:'AnalogInput',    val:'214.3 kW', w:false },
+];
+
+let EVENTS = [
+  { type:'schedule_learned', t:Date.now()-3*60*1000,   msg:'Conference room A — fitted Mon-Fri 08:00-18:15 (conf 0.92)' },
+  { type:'energy_recommendation', t:Date.now()-12*60*1000, msg:'Training room — disable Friday afternoon HVAC (22.6 kWh/day)' },
+  { type:'occupancy_pattern', t:Date.now()-22*60*1000, msg:'Open office — South — lunch lull detected 12:05-12:55' },
+  { type:'schedule_learned', t:Date.now()-44*60*1000,  msg:'Lobby / reception — schedule unchanged, weekend variance flagged' },
+  { type:'energy_recommendation', t:Date.now()-72*60*1000, msg:'Executive offices — raise cooling SP 72°F → 74°F (12.1 kWh/day)' },
+  { type:'occupancy_pattern', t:Date.now()-2*60*60*1000, msg:'Kitchen — occupancy spike 12:00 detected (avg 4.2× baseline)' },
+  { type:'schedule_learned', t:Date.now()-5*60*60*1000, msg:'Open office — North — confidence improved to 0.94 (28 days)' },
+  { type:'energy_recommendation', t:Date.now()-26*60*60*1000, msg:'Open office — North — dim lighting 12:00-13:00 (3.2 kWh/day)' },
+];
+
+// ---- Routing ----
+const routes = ['dashboard','schedules','recommendations','zones','sensors','bms','events','settings'];
+function go(route){
+  if (!routes.includes(route)) route = 'dashboard';
+  $$('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === route));
+  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.route === route));
+  window.scrollTo({top:0, behavior:'instant'});
+  history.replaceState(null,'','#'+route);
+  if (route === 'schedules' && !State.activeZone) selectZone(ZONES[0].id);
+}
+document.addEventListener('click', e => {
+  const navA = e.target.closest('#nav a'); if (navA) { go(navA.dataset.route); return; }
+  const gt = e.target.closest('[data-goto]'); if (gt) { e.preventDefault(); go(gt.dataset.goto); return; }
+});
+
+// ---- Gauge cluster ----
+const GAUGE_R = 40;
+const GAUGE_C = 2 * Math.PI * GAUGE_R;
+function renderHeatmap(){
+  const root = $('#heatmap');
+  root.innerHTML = '<div class="gauge-grid">' + ZONES.map(z => {
+    let cls, status, dotCls;
+    if (z.sensors === 0) { cls = 'nosens'; status = 'no sensors'; dotCls = ''; }
+    else if (z.learned)  { cls = 'learned';  status = 'learned · ' + (z.schedConf*100).toFixed(0) + '%'; dotCls = 'up'; }
+    else                 { cls = 'learning'; status = 'learning · ' + (z.schedConf*100).toFixed(0) + '%'; dotCls = 'warn'; }
+    const pct = z.sensors === 0 ? 0 : z.occ;
+    const dash = (pct/100) * GAUGE_C;
+    const valTxt = z.sensors === 0 ? '—' : pct + '%';
+    return `
+      <button class="gauge" data-zone-view="${z.id}" title="${esc(z.name)} — ${pct}% live · ${status}">
+        <svg viewBox="0 0 100 100">
+          <circle class="gauge-track" cx="50" cy="50" r="${GAUGE_R}" stroke-width="9" fill="none"></circle>
+          <circle class="gauge-arc ${cls}" cx="50" cy="50" r="${GAUGE_R}" stroke="currentColor" stroke-width="9" fill="none"
+                  stroke-dasharray="${dash.toFixed(2)} ${GAUGE_C.toFixed(2)}" stroke-linecap="round"
+                  transform="rotate(-90 50 50)"></circle>
+          <text class="gauge-val ${z.sensors===0?'muted':''}" x="50" y="52" text-anchor="middle" dominant-baseline="central">${valTxt}</text>
+        </svg>
+        <div class="gauge-name">${esc(z.name)}</div>
+        <div class="gauge-meta">${dotCls?'<span class="dot '+dotCls+'"></span>':''}${esc(status)}</div>
+      </button>
+    `;
+  }).join('') + '</div>';
+  $('#hm-stamp').textContent = 'updated ' + new Date().toLocaleTimeString();
+}
+
+// ---- Events feed ----
+function renderFeed(target, items, limit){
+  const iconFor = (type) => {
+    if (type === 'schedule_learned')      return ['','<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'];
+    if (type === 'energy_recommendation') return ['accent','<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'];
+    return ['warn','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'];
+  };
+  const html = items.slice(0, limit||items.length).map(e => {
+    const [cls, ic] = iconFor(e.type);
+    return `<div class="feed-item">
+      <div class="feed-ic ${cls}">${ic}</div>
+      <div class="feed-body">
+        <div class="feed-title">${esc(e.msg)}</div>
+        <div class="feed-meta">${esc(e.type)} · ${fmtRel(e.t)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  $(target).innerHTML = html || '<div style="padding:1rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.8125rem">No events</div>';
+}
+
+// ---- Recommendations card (top) ----
+function renderRecoTop(){
+  const pending = RECOS.filter(r => r.status === 'pending').sort((a,b) => b.kwh-a.kwh).slice(0,4);
+  $('#reco-top').innerHTML = pending.map(r => `
+    <div class="card" style="padding:1rem">
+      <div class="row" style="margin-bottom:0.5rem">
+        <span class="tag primary">${esc(r.cat)}</span>
+        <span class="badge ${r.impact}">${esc(r.impact)} impact</span>
+        <span class="spacer"></span>
+        <span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">conf ${(r.conf*100).toFixed(0)}%</span>
+      </div>
+      <div style="font-size:0.875rem;color:hsl(var(--foreground));margin-bottom:0.4rem">${esc(r.action)}</div>
+      <div class="card-sub">${esc(r.zone)} · est. <b style="color:hsl(var(--accent))">${r.kwh.toFixed(1)} kWh/day</b></div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn sm primary" data-act="apply" data-id="${r.id}">Apply</button>
+        <button class="btn sm outline" data-act="defer" data-id="${r.id}">Defer</button>
+        <button class="btn sm danger" data-act="dismiss" data-id="${r.id}">Dismiss</button>
+      </div>
+    </div>
+  `).join('') || '<div class="card" style="text-align:center;padding:2rem;color:hsl(var(--muted-foreground))">No pending recommendations.</div>';
+}
+
+// ---- Recommendations table ----
+function renderRecoTable(){
+  const cat = $('#reco-filter').value, st = $('#reco-status').value;
+  const rows = RECOS.filter(r => (cat==='all'||r.cat===cat) && (st==='all'||r.status===st));
+  $('#reco-tbody').innerHTML = rows.map((r,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><span class="tag primary">${esc(r.cat)}</span></td>
+      <td>${esc(r.zone)}</td>
+      <td style="font-family:var(--font-display);font-size:0.8125rem;white-space:normal;max-width:380px">${esc(r.action)}</td>
+      <td><b style="color:hsl(var(--accent))">${r.kwh.toFixed(1)}</b> kWh/d</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <div class="bar" style="width:60px"><span style="width:${(r.conf*100).toFixed(0)}%"></span></div>
+          <span>${(r.conf*100).toFixed(0)}%</span>
+        </div>
+      </td>
+      <td><span class="badge ${r.impact}">${esc(r.impact)}</span></td>
+      <td><span class="badge ${r.status}">${esc(r.status)}</span></td>
+      <td>
+        ${r.status==='pending' ? `<button class="btn sm primary" data-act="apply" data-id="${r.id}">Apply</button> <button class="btn sm outline" data-act="dismiss" data-id="${r.id}">Skip</button>` :
+          r.status==='applied' ? `<button class="btn sm outline" data-act="revert" data-id="${r.id}">Revert</button>` :
+          `<button class="btn sm outline" data-act="restore" data-id="${r.id}">Restore</button>`}
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="9" style="text-align:center;color:hsl(var(--muted-foreground));padding:2rem">No recommendations match these filters.</td></tr>';
+}
+
+// Reco actions
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act][data-id]'); if (!b) return;
+  const r = RECOS.find(x => x.id === b.dataset.id); if (!r) return;
+  const a = b.dataset.act;
+  if (a === 'apply')   { r.status = 'applied'; toast('Applied: '+r.zone+' — '+r.kwh.toFixed(1)+' kWh/day saved'); EVENTS.unshift({ type:'energy_recommendation', t:Date.now(), msg:r.zone+' — applied: '+r.action }); }
+  else if (a === 'dismiss') { r.status = 'dismissed'; toast('Dismissed: '+r.zone, 'err'); }
+  else if (a === 'defer')   { toast('Deferred 24 hours', 'ok'); }
+  else if (a === 'revert')  { r.status = 'pending'; toast('Reverted: '+r.zone); }
+  else if (a === 'restore') { r.status = 'pending'; toast('Restored to pending'); }
+  renderRecoTop(); renderRecoTable(); renderFeedMini(); updateKpis();
+});
+
+// ---- Zones ----
+function renderZones(){
+  const q = ($('#zone-search').value || '').toLowerCase();
+  const rows = ZONES.filter(z => z.name.toLowerCase().includes(q));
+  $('#zones-grid').innerHTML = rows.map(z => {
+    const conf = (z.schedConf*100).toFixed(0);
+    return `
+    <div class="card" style="padding:1rem">
+      <div class="row" style="margin-bottom:0.5rem">
+        <span style="font-weight:600">${esc(z.name)}</span>
+        <span class="spacer"></span>
+        ${z.learned ? '<span class="badge applied">learned</span>' : '<span class="badge pending">learning</span>'}
+      </div>
+      <div class="card-sub" style="margin-bottom:0.625rem">${z.sensors} sensor${z.sensors===1?'':'s'} · ${z.sqft.toLocaleString()} sqft</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.625rem">
+        <div><div class="kpi-label">Live occupancy</div><div style="font-weight:600;margin-top:0.2rem">${z.occ}%</div><div class="bar" style="margin-top:0.3rem"><span style="width:${z.occ}%"></span></div></div>
+        <div><div class="kpi-label">Schedule conf</div><div style="font-weight:600;margin-top:0.2rem">${conf}%</div><div class="bar accent" style="margin-top:0.3rem"><span style="width:${conf}%"></span></div></div>
+      </div>
+      <div class="row">
+        <button class="btn sm outline" data-zone-view="${z.id}">View schedule</button>
+        <button class="btn sm outline" data-zone-edit="${z.id}">Edit</button>
+        <span class="spacer"></span>
+        <button class="btn sm danger" data-zone-del="${z.id}">Remove</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="card" style="text-align:center;padding:2rem;color:hsl(var(--muted-foreground))">No zones match.</div>';
+}
+
+// Zone actions
+document.addEventListener('click', e => {
+  const v = e.target.closest('[data-zone-view]'); if (v) { selectZone(v.dataset.zoneView); go('schedules'); return; }
+  const ed = e.target.closest('[data-zone-edit]'); if (ed) { const z = ZONES.find(x=>x.id===ed.dataset.zoneEdit); openEditZone(z); return; }
+  const del = e.target.closest('[data-zone-del]'); if (del) { const z = ZONES.find(x=>x.id===del.dataset.zoneDel); confirmDel(z); return; }
+});
+
+function confirmDel(z){
+  openModal({
+    title:'Remove zone?',
+    sub:'Sensors stay paired but lose their zone assignment. Learned schedule will be archived.',
+    body:`<div class="kv"><dt>Zone</dt><dd>${esc(z.name)}</dd><dt>Sensors</dt><dd>${z.sensors}</dd></div>`,
+    okLabel:'Remove',
+    okClass:'btn danger',
+    onOk(){
+      const i = ZONES.indexOf(z); if (i>=0) ZONES.splice(i,1);
+      renderZones(); renderZoneList(); toast('Zone removed', 'err');
+    }
+  });
+}
+function openEditZone(z){
+  openModal({
+    title:'Edit zone',
+    sub:'Rename and adjust footprint',
+    body:`<div class="modal-row"><label>Name</label><input class="input" id="ez-name" value="${esc(z.name)}"></div>
+          <div class="modal-row"><label>Square feet</label><input class="input" id="ez-sqft" value="${z.sqft}"></div>`,
+    okLabel:'Save',
+    onOk(){
+      z.name = $('#ez-name').value.trim() || z.name;
+      z.sqft = Number($('#ez-sqft').value) || z.sqft;
+      renderZones(); renderZoneList(); selectZone(State.activeZone || z.id); toast('Zone updated');
+    }
+  });
+}
+
+// ---- Schedule view ----
+const State = { activeZone:null, override: {} };
+function renderZoneList(){
+  const ready    = ZONES.filter(z => z.learned).sort((a,b) => b.schedConf - a.schedConf);
+  const learning = ZONES.filter(z => !z.learned && z.sensors > 0).sort((a,b) => b.schedConf - a.schedConf);
+  const nodata   = ZONES.filter(z => z.sensors === 0);
+  const tierFor = (pct) => pct >= 90 ? 5 : pct >= 75 ? 4 : pct >= 60 ? 3 : pct >= 40 ? 2 : 1;
+  const sigHtml = (z) => {
+    if (z.sensors === 0) return '<span class="sig none"><span></span><span></span><span></span><span></span><span></span></span>';
+    return '<span class="sig t'+tierFor(z.schedConf*100)+'"><span></span><span></span><span></span><span></span><span></span></span>';
+  };
+  const item = (z) => {
+    const val = z.sensors === 0 ? '—' : (z.schedConf*100).toFixed(0)+'%';
+    return `<div class="zone-list-item ${State.activeZone===z.id?'on':''}" data-pick="${z.id}" title="${esc(z.name)} · ${val}">
+      <span class="zli-name">${esc(z.name)}</span>
+      <span class="zli-meta">${sigHtml(z)}<span class="zli-val">${val}</span></span>
+    </div>`;
+  };
+  const group = (label, items) => items.length ? `<div class="zone-group-h"><span>${label}</span><span class="count">${items.length}</span></div>` + items.map(item).join('') : '';
+  $('#zone-list').innerHTML = group('Ready', ready) + group('Learning', learning) + group('Awaiting sensors', nodata);
+}
+$('#zone-list').addEventListener('click', e => {
+  const p = e.target.closest('[data-pick]'); if (p) selectZone(p.dataset.pick);
+});
+function selectZone(id){
+  State.activeZone = id;
+  const z = ZONES.find(x => x.id === id); if (!z) return;
+  renderZoneList();
+  $('#sched-zone-name').textContent = z.name;
+  $('#sched-zone-sub').textContent = `${z.sensors} sensor${z.sensors===1?'':'s'} · ${z.sqft} sqft · weekly view`;
+  $('#sched-conf').textContent = z.learned ? `confidence ${(z.schedConf*100).toFixed(0)}%` : `still learning · ${(z.schedConf*100).toFixed(0)}%`;
+  renderSchedGrid(z);
+}
+function isLearnedOcc(z, di, h){
+  const weekend = di>=5;
+  switch(z.id){
+    case 'z1': // Open office — North: M-F 8-18 + Sat morning visitors
+      if (!weekend && h>=8 && h<=18) return true;
+      if (di===5 && h>=9 && h<=12) return true;
+      return false;
+    case 'z2': // Open office — South: M-F 8-18, light lunch dip 12-13
+      if (!weekend && (h>=8 && h<=11 || h>=13 && h<=18)) return true;
+      return false;
+    case 'z3': // Conference room A: scattered meetings only
+      if (di===1 && (h===10 || h===14)) return true;
+      if (di===2 && h>=13 && h<=15) return true;
+      if (di===3 && (h===11 || h===15)) return true;
+      if (di===4 && h===10) return true;
+      return false;
+    case 'z4': // Conference room B: heavier meeting load
+      if (di===0 && h>=9 && h<=10) return true;
+      if (di===2 && h>=14 && h<=16) return true;
+      if (di===3 && h>=10 && h<=12) return true;
+      if (di===4 && h>=13 && h<=15) return true;
+      return false;
+    case 'z5': // Lobby: extended hours, Sat coverage
+      if (!weekend && h>=7 && h<=19) return true;
+      if (di===5 && h>=9 && h<=15) return true;
+      return false;
+    case 'z6': // Kitchen: meal-time bands, every day
+      if (h>=7 && h<=9) return true;
+      if (h>=11 && h<=14) return true;
+      if (!weekend && h>=15 && h<=16) return true;
+      return false;
+    case 'z7': // Exec offices: M-F 9-17, Tue/Thu late
+      if (!weekend && h>=9 && h<=17) return true;
+      if ((di===1 || di===3) && h>=18 && h<=19) return true;
+      return false;
+    case 'z8': // Server room: 24/7
+      return true;
+    case 'z9': // Training room: discrete sessions
+      if (di===0 && h>=14 && h<=16) return true;
+      if (di===2 && h>=9 && h<=12) return true;
+      if (di===3 && h>=13 && h<=17) return true;
+      return false;
+    case 'z10': // East wing flex (learning): mid-day weekdays only
+      if (!weekend && h>=10 && h<=16) return true;
+      return false;
+    case 'z11': // Lab wet (learning): MWF early window
+      if ((di===0 || di===2 || di===4) && h>=7 && h<=10) return true;
+      return false;
+    case 'z12': // Storage: no occupancy
+      return false;
+    default:
+      return !weekend && h>=8 && h<=18;
+  }
+}
+function renderSchedGrid(z){
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const CX = 200, CY = 200;
+  const innerR = 64, outerR = 184;
+  const ringW = (outerR - innerR) / 7;
+  const arc = (r1, r2, a1, a2) => {
+    const rad = a => (a - 90) * Math.PI / 180;
+    const p = (r,a) => [CX + r*Math.cos(rad(a)), CY + r*Math.sin(rad(a))];
+    const [x1,y1] = p(r2, a1), [x2,y2] = p(r2, a2);
+    const [x3,y3] = p(r1, a2), [x4,y4] = p(r1, a1);
+    const lg = (a2 - a1) > 180 ? 1 : 0;
+    return `M${x1.toFixed(2)} ${y1.toFixed(2)}A${r2} ${r2} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}L${x3.toFixed(2)} ${y3.toFixed(2)}A${r1} ${r1} 0 ${lg} 0 ${x4.toFixed(2)} ${y4.toFixed(2)}Z`;
+  };
+  const cells = [];
+  const dayHours = [0,0,0,0,0,0,0];
+  let totalOcc = 0, overrides = 0;
+  days.forEach((d, di) => {
+    const weekend = di >= 5;
+    const r1 = innerR + di * ringW + 0.6;
+    const r2 = r1 + ringW - 1.2;
+    for (let h = 0; h < 24; h++){
+      const a1 = h * 15, a2 = a1 + 15;
+      const key = z.id+':'+di+':'+h;
+      const overridden = State.override[key] !== undefined;
+      const learned = isLearnedOcc(z, di, h);
+      const final = overridden ? State.override[key] : learned;
+      if (final){ totalOcc++; dayHours[di]++; }
+      if (overridden) overrides++;
+      const cls = overridden ? 'sr-over' : (final ? (weekend ? 'sr-occ weekend' : 'sr-occ') : 'sr-un');
+      cells.push(`<path class="${cls}" data-cell="${key}" d="${arc(r1, r2, a1, a2)}"><title>${d} ${String(h).padStart(2,'0')}:00 — ${overridden?'override · ':''}${final?'occupied':'unoccupied'}</title></path>`);
+    }
+  });
+  // Hour ticks + labels every 3 hours
+  const ticks = [];
+  for (let h = 0; h < 24; h++){
+    const a = (h * 15 - 90) * Math.PI / 180;
+    const x1 = CX + (outerR + 2) * Math.cos(a), y1 = CY + (outerR + 2) * Math.sin(a);
+    const x2 = CX + (outerR + (h % 3 === 0 ? 8 : 4)) * Math.cos(a), y2 = CY + (outerR + (h % 3 === 0 ? 8 : 4)) * Math.sin(a);
+    ticks.push(`<line class="sr-hr-tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" style="opacity:${h%3===0?0.7:0.3}"/>`);
+  }
+  const hourLabels = [0,3,6,9,12,15,18,21].map(h => {
+    const a = (h * 15 - 90) * Math.PI / 180;
+    const r = outerR + 18;
+    const x = (CX + r * Math.cos(a)).toFixed(1);
+    const y = (CY + r * Math.sin(a)).toFixed(1);
+    const lbl = h===0?'12a':h===12?'12p':(h<12?h+'a':(h-12)+'p');
+    return `<text class="sr-hr" x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${lbl}</text>`;
+  }).join('');
+  // Spokes at 0, 6, 12, 18
+  const spokes = [0,6,12,18].map(h => {
+    const a = (h * 15 - 90) * Math.PI / 180;
+    const x1 = (CX + (innerR - 2) * Math.cos(a)).toFixed(1);
+    const y1 = (CY + (innerR - 2) * Math.sin(a)).toFixed(1);
+    const x2 = (CX + outerR * Math.cos(a)).toFixed(1);
+    const y2 = (CY + outerR * Math.sin(a)).toFixed(1);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join('');
+  // Day labels at outer edge of each ring at 12 o'clock (top), as initials
+  const dayLabels = days.map((d, di) => {
+    const r = innerR + di * ringW + ringW/2;
+    return `<text class="sr-day ${di>=5?'weekend':''}" x="${CX}" y="${(CY - r).toFixed(1)}" text-anchor="middle" dominant-baseline="central">${d.charAt(0)}</text>`;
+  }).join('');
+  const pct = ((totalOcc / 168) * 100).toFixed(0);
+  const editingCls = State.editMode ? 'editing' : '';
+  $('#sched-grid').innerHTML = `
+    <div class="sr-wrap">
+      <svg class="sr-chart" viewBox="0 0 400 400">
+        <defs>
+          <pattern id="sr-stripe" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+            <rect width="5" height="5" fill="hsl(var(--warn) / 0.45)"/>
+            <line x1="0" y1="0" x2="0" y2="5" stroke="hsl(var(--warn))" stroke-width="2"/>
+          </pattern>
+        </defs>
+        <g class="sr-cells ${editingCls}">${cells.join('')}</g>
+        <g class="sr-spokes">${spokes}</g>
+        <g>${ticks.join('')}</g>
+        <g>${hourLabels}</g>
+        <g>${dayLabels}</g>
+        <circle class="sr-center-bg" cx="${CX}" cy="${CY}" r="${innerR - 4}"/>
+        <text class="sr-meridian" x="${CX}" y="${(CY - innerR + 18).toFixed(1)}" text-anchor="middle">midnight</text>
+        <text class="sr-center-val" x="${CX}" y="${CY - 4}" text-anchor="middle" dominant-baseline="central">${pct}%</text>
+        <text class="sr-center-lbl" x="${CX}" y="${CY + 15}" text-anchor="middle">week occupied</text>
+        <text class="sr-center-sub" x="${CX}" y="${CY + 30}" text-anchor="middle">${totalOcc}h / 168h${overrides?` · ${overrides} ovr`:''}</text>
+        <text class="sr-meridian" x="${CX}" y="${(CY + innerR - 12).toFixed(1)}" text-anchor="middle">noon</text>
+      </svg>
+    </div>
+    <div class="sr-strip">
+      ${days.map((d, di) => `
+        <div class="sr-day-card ${di>=5?'weekend':''}">
+          <div class="sr-day-lbl">${d}</div>
+          <div class="sr-day-hrs">${dayHours[di]}<span style="color:hsl(var(--muted-foreground));font-size:0.6875rem;font-weight:500"> h</span></div>
+          <div class="sr-day-bar"><span style="width:${(dayHours[di]/24*100).toFixed(0)}%"></span></div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+$('#sched-grid').addEventListener('click', e => {
+  if (!State.editMode) return;
+  const c = e.target.closest('[data-cell]'); if (!c) return;
+  const key = c.dataset.cell;
+  const cur = c.classList.contains('sr-occ');
+  State.override[key] = !cur;
+  const z = ZONES.find(x => x.id === State.activeZone);
+  renderSchedGrid(z);
+});
+$('#btn-sched-edit').onclick = () => {
+  State.editMode = !State.editMode;
+  $('#btn-sched-edit').textContent = State.editMode ? 'Done editing' : 'Edit override';
+  $('#btn-sched-edit').classList.toggle('accent', State.editMode);
+  const z = ZONES.find(x => x.id === State.activeZone); if (z) renderSchedGrid(z);
+  toast(State.editMode ? 'Edit mode — click an arc to toggle' : 'Override saved');
+};
+$('#btn-sched-relearn').onclick = () => {
+  const z = ZONES.find(x => x.id === State.activeZone); if (!z) return;
+  openModal({
+    title:'Relearn schedule?',
+    sub:'Discards manual overrides and refits the model from the past 28 days of CSI presence.',
+    body:`<div class="kv"><dt>Zone</dt><dd>${esc(z.name)}</dd><dt>Current confidence</dt><dd>${(z.schedConf*100).toFixed(0)}%</dd></div>`,
+    okLabel:'Relearn',
+    onOk(){
+      Object.keys(State.override).filter(k=>k.startsWith(z.id+':')).forEach(k=>delete State.override[k]);
+      z.schedConf = Math.min(0.99, z.schedConf + 0.03);
+      EVENTS.unshift({ type:'schedule_learned', t:Date.now(), msg:z.name+' — relearned (conf '+(z.schedConf*100).toFixed(0)+'%)' });
+      renderSchedGrid(z); selectZone(z.id); renderFeedMini(); renderFeedFull(); toast('Schedule relearned');
+    }
+  });
+};
+
+// ---- Sensors ----
+function renderSensors(){
+  const online = SENSORS.filter(s => s.status==='online').length;
+  $('#sens-summary').textContent = `${online} / ${SENSORS.length} online · ESP32-S3 · CSI presence`;
+  $('#sens-tbody').innerHTML = SENSORS.map(s => `
+    <tr>
+      <td>${esc(s.id)}</td>
+      <td>${esc(s.mac)}</td>
+      <td style="font-family:var(--font-display)">${esc(s.zone)}</td>
+      <td>${s.rssi} dBm</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <div class="bar ${s.csi<0.7?'warn':'accent'}" style="width:60px"><span style="width:${(s.csi*100).toFixed(0)}%"></span></div>
+          ${(s.csi*100).toFixed(0)}%
+        </div>
+      </td>
+      <td>${esc(s.fw)}</td>
+      <td><span class="badge ${s.status==='online'?'online':'offline'}"><span class="dot ${s.status==='online'?'up':'down'}"></span>${s.status}</span></td>
+      <td>
+        <button class="btn sm outline" data-sens-id="${s.id}" data-sens-act="reassign">Reassign</button>
+        ${s.status==='online' ? `<button class="btn sm danger" data-sens-id="${s.id}" data-sens-act="remove">Remove</button>` : `<button class="btn sm primary" data-sens-id="${s.id}" data-sens-act="reconnect">Reconnect</button>`}
+      </td>
+    </tr>
+  `).join('');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-sens-id]'); if (!b) return;
+  const s = SENSORS.find(x => x.id === b.dataset.sensId); if (!s) return;
+  const a = b.dataset.sensAct;
+  if (a === 'reconnect') { s.status = 'online'; s.csi = Math.max(0.7, s.csi); toast(s.id+' reconnected'); renderSensors(); }
+  else if (a === 'remove') {
+    openModal({
+      title:'Remove sensor?',
+      sub:'Removes the device from the fleet. Re-pair to add it back.',
+      body:`<div class="kv"><dt>Device</dt><dd>${esc(s.id)}</dd><dt>MAC</dt><dd>${esc(s.mac)}</dd></div>`,
+      okLabel:'Remove', okClass:'btn danger',
+      onOk(){ const i=SENSORS.indexOf(s); if (i>=0) SENSORS.splice(i,1); renderSensors(); toast('Sensor removed','err'); }
+    });
+  }
+  else if (a === 'reassign') {
+    openModal({
+      title:'Reassign sensor',
+      sub:'Move device to a different zone',
+      body:`<div class="modal-row"><label>Zone</label><select class="input" id="rs-zone">${ZONES.map(z=>`<option ${z.name===s.zone?'selected':''}>${esc(z.name)}</option>`).join('')}</select></div>`,
+      okLabel:'Reassign',
+      onOk(){ s.zone = $('#rs-zone').value; renderSensors(); toast(s.id+' moved to '+s.zone); }
+    });
+  }
+});
+$('#btn-sens-refresh').onclick = () => {
+  SENSORS.forEach(s => { s.rssi = Math.max(-95, Math.min(-40, s.rssi + Math.round(rand(-3,3)))); });
+  renderSensors(); toast('Sensor stats refreshed');
+};
+$('#btn-sens-pair').onclick = () => {
+  openModal({
+    title:'Pair new device',
+    sub:'Hold the boot button on the ESP32-S3 until the LED pulses, then enter its MAC.',
+    body:`<div class="modal-row"><label>MAC address</label><input class="input" id="pair-mac" placeholder="34:85:18:3A:1F:11"></div>
+          <div class="modal-row"><label>Zone</label><select class="input" id="pair-zone">${ZONES.map(z=>`<option>${esc(z.name)}</option>`).join('')}</select></div>`,
+    okLabel:'Pair',
+    onOk(){
+      const mac = $('#pair-mac').value.trim();
+      if (!mac) { toast('MAC required', 'err'); return false; }
+      const id = 's'+(SENSORS.length+1);
+      SENSORS.push({ id, mac, zone:$('#pair-zone').value, rssi:-55, csi:0.9, fw:'1.0.0', status:'online' });
+      renderSensors(); toast('Paired '+id);
+    }
+  });
+};
+
+// ---- BMS ----
+function renderPoints(){
+  const q = ($('#pts-search').value || '').toLowerCase();
+  const rows = POINTS.filter(p => p.name.toLowerCase().includes(q) || p.zone.toLowerCase().includes(q));
+  $('#pts-tbody').innerHTML = rows.map(p => `
+    <tr>
+      <td style="font-family:var(--font-display);font-size:0.8125rem">${esc(p.name)}</td>
+      <td>${esc(p.obj)}</td>
+      <td style="font-family:var(--font-display)">${esc(p.zone)}</td>
+      <td>${esc(p.type)}</td>
+      <td>${esc(p.val)}</td>
+      <td>${p.w?'<span class="badge applied">yes</span>':'<span class="badge dismissed">read-only</span>'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:hsl(var(--muted-foreground));padding:1.5rem">No matching points.</td></tr>';
+}
+$('#btn-bms-test').onclick = () => {
+  const btn = $('#btn-bms-test'); btn.disabled = true; btn.textContent = 'Testing…';
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Test connection'; toast('BACnet/IP reached · 12 ms round-trip'); $('#bms-sync').textContent = 'just now'; $('#bms-sync2').textContent = 'just now'; }, 900);
+};
+$('#btn-bms-discover').onclick = () => {
+  toast('Discovering objects…');
+  setTimeout(() => toast('Discovered 38 mapped points + 4 new candidates'), 700);
+};
+$('#btn-bms-disc').onclick = () => {
+  openModal({
+    title:'Disconnect from BMS?',
+    sub:'No further writes will be sent until reconnected.',
+    body:'',
+    okLabel:'Disconnect', okClass:'btn danger',
+    onOk(){
+      $('#bms-status-badge').className = 'badge offline'; $('#bms-status-badge').innerHTML = '<span class="dot down"></span>disconnected';
+      toast('BMS disconnected', 'err');
+    }
+  });
+};
+$('#btn-bms-push').onclick = () => {
+  const btn = $('#btn-bms-push'); btn.disabled = true; btn.textContent = 'Pushing…';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = 'Push now';
+    $('#bms-sync').textContent = 'just now'; $('#bms-sync2').textContent = 'just now';
+    EVENTS.unshift({ type:'schedule_learned', t:Date.now(), msg:'Pushed 9 schedules to BACnet calendar objects' });
+    renderFeedMini(); renderFeedFull(); toast('Pushed 9 schedules · 38 points written');
+  }, 900);
+};
+$('#btn-bms-log').onclick = () => {
+  openModal({
+    title:'BMS sync log',
+    sub:'Most recent writes (last 50)',
+    body:`<pre style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;max-height:300px;overflow:auto;line-height:1.55">
+2026-05-20T10:14:02Z  write SCH:1 OccupiedStart  08:00 -> 07:45  ok
+2026-05-20T10:14:02Z  write SCH:2 OccupiedEnd    18:30 -> 18:15  ok
+2026-05-20T10:14:03Z  write AV:14 CoolingSP      72.0 -> 74.0    ok
+2026-05-20T10:14:03Z  write BV:3  CR-A HVAC      on   -> off     ok
+2026-05-20T10:14:04Z  write BO:7  CR-A Lighting  on   -> off     ok
+2026-05-20T10:13:58Z  read  AI:99 BldgPower      214.3 kW
+2026-05-20T10:13:55Z  read  AI:22 ServerRmTemp   68.4 °F
+2026-05-20T09:58:01Z  write SCH:5 TR OccEnd      17:00 -> dropped Fri-PM  ok
+        </pre>`,
+    okLabel:'Close', okClass:'btn primary',
+    hideCancel:true
+  });
+};
+
+// ---- Events full ----
+function renderFeedMini(){ renderFeed('#feed-mini', EVENTS, 6); }
+function renderFeedFull(){
+  const t = $('#ev-type').value, q = ($('#ev-search').value || '').toLowerCase();
+  const items = EVENTS.filter(e => (t==='all'||e.type===t) && (!q||e.msg.toLowerCase().includes(q)));
+  renderFeed('#feed-full', items);
+}
+$('#btn-ev-clear').onclick = () => {
+  openModal({
+    title:'Clear event log?', sub:'Removes the local audit history. Already-applied changes are not reverted.',
+    body:'', okLabel:'Clear', okClass:'btn danger',
+    onOk(){ EVENTS = []; renderFeedMini(); renderFeedFull(); toast('Event log cleared','err'); }
+  });
+};
+$('#btn-ev-emit').onclick = () => {
+  const types = ['schedule_learned','energy_recommendation','occupancy_pattern'];
+  const t = types[Math.floor(Math.random()*types.length)];
+  const z = ZONES[Math.floor(Math.random()*ZONES.length)].name;
+  const msgs = {
+    schedule_learned: z+' — schedule refit (test)',
+    energy_recommendation: z+' — test recommendation: '+(rand(2,15)).toFixed(1)+' kWh/day',
+    occupancy_pattern: z+' — test pattern detected'
+  };
+  EVENTS.unshift({ type:t, t:Date.now(), msg:msgs[t] });
+  renderFeedMini(); renderFeedFull(); toast('Emitted '+t);
+};
+
+// ---- Settings ----
+const DEFAULTS = { mindays:14, conf:0.85, rate:10, decay:8, cur:'USD', peak:0.18, off:0.09, dem:14.50 };
+$('#btn-set-save').onclick = () => {
+  try {
+    const cfg = {
+      mindays: Number($('#set-mindays').value),
+      conf: Number($('#set-conf').value),
+      rate: Number($('#set-rate').value),
+      decay: Number($('#set-decay').value),
+      cur: $('#set-cur').value,
+      peak: Number($('#set-peak').value),
+      off: Number($('#set-off').value),
+      dem: Number($('#set-dem').value),
+    };
+    localStorage.setItem('ea-settings', JSON.stringify(cfg));
+    toast('Settings saved');
+  } catch(_){ toast('Failed to save','err'); }
+};
+$('#btn-set-reset').onclick = () => {
+  $('#set-mindays').value = DEFAULTS.mindays;
+  $('#set-conf').value = DEFAULTS.conf;
+  $('#set-rate').value = DEFAULTS.rate;
+  $('#set-decay').value = DEFAULTS.decay;
+  $('#set-cur').value = DEFAULTS.cur;
+  $('#set-peak').value = DEFAULTS.peak;
+  $('#set-off').value = DEFAULTS.off;
+  $('#set-dem').value = DEFAULTS.dem;
+  toast('Reset to defaults');
+};
+
+// ---- Holiday blackouts ----
+const BLACKOUTS = ['2026-07-03','2026-12-24','2026-12-31'];
+function renderBlackouts(){
+  $('#set-blackouts').innerHTML = BLACKOUTS.length
+    ? BLACKOUTS.map((d,i) => `<span class="tag primary" style="font-size:0.6875rem;padding:0.2rem 0.45rem 0.2rem 0.55rem;display:inline-flex;gap:0.4rem;align-items:center">${esc(d)}<button type="button" data-blackout-rm="${i}" style="background:transparent;border:none;color:hsl(var(--primary));cursor:pointer;font-size:0.95rem;line-height:1;padding:0" aria-label="remove">×</button></span>`).join('')
+    : '<span class="card-sub">no custom blackouts</span>';
+}
+$('#btn-blackout-add').onclick = () => {
+  const d = $('#set-blackout-date').value;
+  if (!d) { toast('Pick a date first', 'err'); return; }
+  if (BLACKOUTS.includes(d)) { toast('Date already added', 'err'); return; }
+  BLACKOUTS.push(d); BLACKOUTS.sort();
+  $('#set-blackout-date').value = '';
+  renderBlackouts(); toast('Blackout added · '+d);
+};
+$('#set-blackouts').addEventListener('click', e => {
+  const b = e.target.closest('[data-blackout-rm]'); if (!b) return;
+  const removed = BLACKOUTS.splice(Number(b.dataset.blackoutRm), 1)[0];
+  renderBlackouts(); toast('Removed '+removed, 'err');
+});
+
+// ---- Webhooks ----
+$('#btn-secret-regen').onclick = () => {
+  const hex = Array.from({length:32}, () => Math.floor(Math.random()*16).toString(16)).join('');
+  $('#set-secret').value = 'whsec_' + hex.slice(0,16);
+  toast('New signing secret generated · copy before leaving');
+};
+$('#btn-hook-test').onclick = () => {
+  const url = $('#set-hook').value.trim();
+  if (!url) { toast('Set webhook URL first', 'err'); return; }
+  const btn = $('#btn-hook-test'); btn.disabled = true; btn.textContent = 'Sending…';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = 'Send test event';
+    toast('Test event delivered · 200 OK · 184 ms');
+  }, 700);
+};
+$('#btn-hook-log').onclick = () => {
+  openModal({
+    title:'Webhook deliveries',
+    sub:'Last 10 outbound POSTs',
+    body:`<pre style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;max-height:280px;overflow:auto;line-height:1.55;margin:0">
+2026-05-20T10:14:02Z  schedule_learned       200  184ms
+2026-05-20T09:58:41Z  energy_recommendation  200  192ms
+2026-05-20T09:42:11Z  schedule_learned       200  167ms
+2026-05-20T08:17:55Z  occupancy_pattern      200  201ms
+2026-05-20T07:55:02Z  energy_recommendation  200  178ms
+2026-05-19T22:14:38Z  schedule_learned       200  155ms
+2026-05-19T18:30:12Z  energy_recommendation  500  retry
+2026-05-19T18:30:18Z  energy_recommendation  200  204ms
+2026-05-19T15:11:09Z  schedule_learned       200  198ms
+2026-05-19T11:02:44Z  occupancy_pattern      200  173ms
+</pre>`,
+    okLabel:'Close', okClass:'btn primary', hideCancel:true
+  });
+};
+
+// ---- Add zone ----
+$('#btn-zones-add').onclick = () => {
+  openModal({
+    title:'Add zone',
+    sub:'Create a new logical grouping. You can assign sensors after creation.',
+    body:`<div class="modal-row"><label>Name</label><input class="input" id="az-name" placeholder="e.g. Mezzanine"></div>
+          <div class="modal-row"><label>Square feet</label><input class="input" id="az-sqft" placeholder="500"></div>`,
+    okLabel:'Create',
+    onOk(){
+      const name = $('#az-name').value.trim(); if (!name) { toast('Name required','err'); return false; }
+      const id = 'z'+(ZONES.length+1);
+      ZONES.push({ id, name, sensors:0, occ:0, schedConf:0, sqft: Number($('#az-sqft').value)||500, learned:false });
+      renderZones(); renderZoneList(); toast('Zone created');
+    }
+  });
+};
+$('#btn-zones-export').onclick = () => exportCsv('zones.csv', ['id','name','sensors','sqft','occupancy','schedule_confidence','learned'], ZONES.map(z=>[z.id,z.name,z.sensors,z.sqft,z.occ,z.schedConf,z.learned]));
+$('#btn-reco-export').onclick = () => exportCsv('recommendations.csv', ['id','category','zone','action','kwh_per_day','confidence','impact','status'], RECOS.map(r=>[r.id,r.cat,r.zone,r.action,r.kwh,r.conf,r.impact,r.status]));
+$('#btn-reco-rescan').onclick = () => {
+  const btn = $('#btn-reco-rescan'); btn.disabled = true; btn.textContent = 'Scanning…';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = 'Re-scan';
+    EVENTS.unshift({ type:'energy_recommendation', t:Date.now(), msg:'Re-scan complete · 5 pending recommendations' });
+    renderFeedMini(); renderFeedFull(); toast('Re-scan complete · no new findings');
+  }, 1100);
+};
+
+// Filters
+$('#reco-filter').onchange = renderRecoTable;
+$('#reco-status').onchange = renderRecoTable;
+$('#zone-search').oninput = renderZones;
+$('#pts-search').oninput = renderPoints;
+$('#ev-type').onchange = renderFeedFull;
+$('#ev-search').oninput = renderFeedFull;
+$('#btn-refresh-heat').onclick = () => { renderHeatmap(); toast('Heatmap refreshed'); };
+
+function exportCsv(filename, headers, rows){
+  const csv = [headers.join(',')].concat(rows.map(r => r.map(v => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(','))).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url); toast('Exported '+filename);
+}
+
+// ---- Modal ----
+function openModal(opts){
+  $('#m-title').textContent = opts.title || '';
+  $('#m-sub').textContent = opts.sub || '';
+  $('#m-body').innerHTML = opts.body || '';
+  const ok = $('#m-ok'); ok.textContent = opts.okLabel || 'Confirm';
+  ok.className = opts.okClass || 'btn primary';
+  $('#m-cancel').style.display = opts.hideCancel ? 'none' : '';
+  ok.onclick = () => {
+    const r = opts.onOk ? opts.onOk() : undefined;
+    if (r !== false) closeModal();
+  };
+  $('#modal-bg').classList.add('show');
+}
+function closeModal(){ $('#modal-bg').classList.remove('show'); }
+$('#m-cancel').onclick = closeModal;
+$('#modal-bg').onclick = e => { if (e.target.id === 'modal-bg') closeModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ---- KPI live tick ----
+function updateKpis(){
+  $('#kpi-acts').textContent = RECOS.filter(r => r.status==='pending').length;
+  const learned = ZONES.filter(z => z.learned).length;
+  $('#kpi-sched').textContent = learned + ' / ' + ZONES.length;
+  const onlineSens = SENSORS.filter(s => s.status==='online').length;
+  $('#kpi-sens').textContent = onlineSens + ' / ' + SENSORS.length;
+}
+
+function tickLive(){
+  ZONES.forEach(z => {
+    const drift = rand(-4, 4);
+    z.occ = Math.max(0, Math.min(100, Math.round(z.occ + drift)));
+  });
+  const saved = 120 + Math.round(rand(0, 30));
+  $('#kpi-saved').textContent = saved + ' kWh';
+  $('#kpi-saved').nextElementSibling.textContent = '≈ $' + (saved*0.13).toFixed(2) + ' · vs baseline';
+  const avg = Math.round(ZONES.reduce((a,z)=>a+z.occ,0) / ZONES.length);
+  $('#kpi-occ').textContent = avg + '%';
+}
+
+// ---- Init ----
+function init(){
+  renderHeatmap();
+  renderFeedMini();
+  renderFeedFull();
+  renderRecoTop();
+  renderRecoTable();
+  renderZones();
+  renderZoneList();
+  selectZone(ZONES[0].id);
+  renderSensors();
+  renderPoints();
+  renderBlackouts();
+  updateKpis();
+  // honour hash
+  const initial = (location.hash || '').slice(1);
+  if (initial) go(initial);
+  setInterval(() => { tickLive(); updateKpis(); renderHeatmap(); }, 6000);
+}
+init();
+</script>
+</body>
+</html>

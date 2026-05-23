@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Happiness Score — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warning:35 90% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-score:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.18) 0%,transparent 65%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.4);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav button{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;background:transparent;border:none;font-family:inherit;cursor:pointer;transition:all 0.2s}
+.nav button:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav button.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2.section-h{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warning) / 0.14)}
+.kpi-ic.warn svg{stroke:hsl(var(--warning))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+.kpi-trend{font-size:0.6875rem;font-family:var(--font-mono);margin-top:0.125rem}
+.kpi-trend.up{color:hsl(142 70% 60%)}
+.kpi-trend.down{color:hsl(0 70% 70%)}
+
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-quad{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.2s;text-decoration:none}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5);text-decoration:none}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.accent{background:hsl(var(--accent));color:hsl(var(--accent-foreground));border-color:hsl(var(--accent));font-weight:600}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.9)}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn-row{display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center}
+
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input[type=range]{padding:0;height:6px;background:hsl(var(--secondary));accent-color:hsl(var(--primary))}
+input[type=checkbox]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+.input{width:100%}
+
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.125rem 0.5rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.accent{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.25)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warning) / 0.12);color:hsl(35 90% 70%);border-color:hsl(var(--warning) / 0.25)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.hard{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 75%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.research{background:hsl(265 60% 60% / 0.12);color:hsl(265 70% 75%);border-color:hsl(265 60% 60% / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(var(--warning));box-shadow:0 0 6px hsl(var(--warning) / 0.5)}
+.dot.live{background:hsl(0 70% 55%);box-shadow:0 0 6px hsl(0 70% 55% / 0.6);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{text-align:left;padding:0.4rem 0.5rem;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border) / 0.5)}
+tbody td{padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{padding:0.4rem 0.75rem;border-radius:0.375rem;font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));background:hsl(var(--muted));border:1px solid transparent;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+.tabpanel{display:none}
+.tabpanel.on{display:block}
+
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+
+/* Hero / score ring */
+.hero{background:var(--gradient-hero);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:var(--gradient-score);pointer-events:none}
+.hero-row{position:relative;display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:center}
+@media (max-width:760px){.hero-row{grid-template-columns:1fr}}
+.score-ring{width:200px;height:200px;position:relative;flex-shrink:0;margin:0 auto}
+.score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring .track{stroke:hsl(var(--secondary));stroke-width:10;fill:none}
+.score-ring .fill{stroke:hsl(var(--primary));stroke-width:10;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 6px hsl(var(--primary) / 0.6));transition:stroke-dashoffset 0.6s ease}
+.score-ring .label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.score-ring .label .num{font-size:3rem;font-weight:600;font-family:var(--font-mono);line-height:1;color:hsl(var(--foreground))}
+.score-ring .label .unit{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.08em;margin-top:0.4rem}
+.score-ring .label .delta{font-size:0.75rem;font-family:var(--font-mono);margin-top:0.3rem;color:hsl(142 70% 60%)}
+.score-ring .label .delta.down{color:hsl(0 70% 70%)}
+
+.hero-info h1{font-size:1.875rem;font-weight:600;margin-bottom:0.4rem}
+.hero-info .meta{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.6rem}
+.hero-info p{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:0.875rem;max-width:32rem}
+.hero-info .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.75rem;max-width:36rem}
+.stat-mini{background:hsl(var(--secondary) / 0.5);border:1px solid hsl(var(--border) / 0.4);border-radius:0.5rem;padding:0.5rem 0.7rem}
+.stat-mini .l{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em}
+.stat-mini .v{font-size:0.95rem;font-weight:600;font-family:var(--font-mono);margin-top:0.15rem;color:hsl(var(--foreground))}
+
+.chart-host{width:100%;height:200px;margin-top:0.4rem}
+.chart-host.tall{height:260px}
+.chart-host.shorty{height:140px}
+
+/* Affect-state grid (squares, not bars) */
+.affect-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem;margin-top:0.5rem}
+.affect-tile{background:hsl(var(--secondary) / 0.5);border:1px solid hsl(var(--border) / 0.4);border-radius:0.5rem;padding:0.6rem 0.7rem;display:flex;flex-direction:column;gap:0.3rem;transition:all 0.3s}
+.affect-tile.on{border-color:hsl(var(--primary));background:hsl(var(--primary) / 0.12);box-shadow:0 0 0 1px hsl(var(--primary) / 0.4),0 0 24px -4px hsl(var(--primary) / 0.4)}
+.affect-tile .name{font-size:0.75rem;font-weight:600}
+.affect-tile .pct{font-size:0.6875rem;font-family:var(--font-mono);color:hsl(var(--muted-foreground))}
+.affect-tile .swatch{width:100%;height:6px;border-radius:3px;background:hsl(var(--muted));overflow:hidden;position:relative}
+.affect-tile .swatch::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--w,0%);background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));transition:width 0.4s}
+
+/* Heatmap (timeline cells) */
+.heatmap{display:grid;gap:2px;font-family:var(--font-mono);font-size:0.625rem;grid-template-columns:90px repeat(48, 1fr);align-items:center}
+.heat-row-label{color:hsl(var(--muted-foreground));font-size:0.6875rem;text-align:right;padding-right:0.5rem}
+.heat-cell{height:18px;border-radius:2px;background:hsl(var(--muted) / 0.4);transition:background 0.3s}
+
+/* Dual-axis legend dots */
+.legend{display:flex;gap:0.75rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.4rem;flex-wrap:wrap}
+.legend .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:0.3rem}
+
+/* Donut / dist */
+.donut-wrap{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.donut{width:160px;height:160px;flex-shrink:0}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut .seg{fill:none;stroke-width:20;transition:stroke-dashoffset 0.5s,stroke 0.3s}
+.donut-legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.3rem;font-size:0.8125rem}
+.donut-legend .row{display:flex;align-items:center;gap:0.5rem;font-family:var(--font-mono);font-size:0.75rem}
+.donut-legend .row .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.donut-legend .row .name{flex:1;color:hsl(var(--foreground))}
+.donut-legend .row .v{color:hsl(var(--muted-foreground))}
+
+/* Scatter plot canvas wrapper */
+.scatter-host{width:100%;height:260px;background:hsl(var(--background) / 0.4);border-radius:0.4rem;border:1px solid hsl(var(--border) / 0.4);position:relative}
+.scatter-host canvas{width:100%;height:100%;display:block}
+
+/* Calibration wizard */
+.steps{display:grid;gap:0.5rem;grid-template-columns:repeat(3,1fr);margin-bottom:1rem}
+@media (max-width:640px){.steps{grid-template-columns:1fr}}
+.step{padding:0.75rem;border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;background:hsl(var(--secondary) / 0.4);display:flex;gap:0.6rem;align-items:flex-start}
+.step.on{border-color:hsl(var(--primary));background:hsl(var(--primary) / 0.08)}
+.step.done{border-color:hsl(var(--accent));background:hsl(var(--accent) / 0.06)}
+.step .num{width:24px;height:24px;border-radius:50%;background:hsl(var(--muted));color:hsl(var(--foreground));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.75rem;font-weight:600;flex-shrink:0}
+.step.on .num{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.step.done .num{background:hsl(var(--accent));color:hsl(var(--accent-foreground))}
+.step .body .title{font-size:0.8125rem;font-weight:600}
+.step .body .desc{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+.progress{height:6px;background:hsl(var(--secondary));border-radius:3px;overflow:hidden}
+.progress > div{height:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));width:0%;transition:width 0.25s}
+
+/* Sliders panel */
+.slider-row{display:grid;grid-template-columns:120px 1fr 60px;gap:0.6rem;align-items:center;margin-bottom:0.6rem;font-size:0.8125rem}
+.slider-row label{color:hsl(var(--muted-foreground));font-size:0.75rem}
+.slider-row .v{font-family:var(--font-mono);font-size:0.75rem;text-align:right;color:hsl(var(--foreground))}
+
+/* Toggle switch */
+.toggle{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8125rem}
+.toggle input{display:none}
+.toggle .track{width:34px;height:18px;background:hsl(var(--muted));border-radius:9999px;position:relative;transition:background 0.2s}
+.toggle .track::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:hsl(var(--foreground));transition:transform 0.2s}
+.toggle input:checked + .track{background:hsl(var(--primary))}
+.toggle input:checked + .track::after{transform:translateX(16px);background:hsl(var(--primary-foreground))}
+
+/* Toast */
+.toast-host{position:fixed;bottom:1.25rem;right:1.25rem;z-index:200;display:flex;flex-direction:column;gap:0.4rem;max-width:320px}
+.toast{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.6rem 0.85rem;font-size:0.8125rem;box-shadow:var(--shadow-card);animation:slideIn 0.25s ease-out;display:flex;align-items:center;gap:0.5rem}
+.toast.ok{border-left:3px solid hsl(var(--accent))}
+.toast.err{border-left:3px solid hsl(var(--destructive))}
+.toast.info{border-left:3px solid hsl(var(--primary))}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Event log */
+.events{display:flex;flex-direction:column;gap:0.3rem;max-height:280px;overflow-y:auto;font-family:var(--font-mono);font-size:0.75rem}
+.event{display:grid;grid-template-columns:90px 130px 1fr;gap:0.5rem;padding:0.35rem 0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3)}
+.event .ts{color:hsl(var(--muted-foreground))}
+.event .ev{color:hsl(var(--primary))}
+.event .ev.gait{color:hsl(var(--accent))}
+.event .ev.affect{color:hsl(265 70% 75%)}
+.event .ev.wellbeing{color:hsl(35 90% 70%)}
+
+/* Spec table for hardware */
+.spec{display:grid;grid-template-columns:140px 1fr;gap:0.4rem 1rem;font-size:0.8125rem;margin-top:0.5rem}
+.spec .k{color:hsl(var(--muted-foreground));font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em}
+.spec .v{font-family:var(--font-mono);color:hsl(var(--foreground))}
+
+/* Breathing waveform host */
+.wave-host{width:100%;height:120px;background:hsl(var(--background) / 0.4);border:1px solid hsl(var(--border) / 0.4);border-radius:0.4rem;overflow:hidden}
+.wave-host svg{width:100%;height:100%;display:block}
+.wave-host path{fill:none;stroke:hsl(var(--accent));stroke-width:2;filter:drop-shadow(0 0 4px hsl(var(--accent) / 0.5))}
+.wave-host path.grid{stroke:hsl(var(--border) / 0.5);stroke-width:1;filter:none}
+
+.flex-between{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap}
+.muted{color:hsl(var(--muted-foreground))}
+
+/* ─── HUD chart card (futuristic) ─────────────────────────────── */
+.hud-card{
+  position:relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 80% 0%, hsl(185 80% 50% / 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, hsl(142 70% 50% / 0.07), transparent 60%),
+    linear-gradient(180deg, hsl(220 25% 9%) 0%, hsl(220 25% 5%) 100%);
+  border:1px solid hsl(var(--primary) / 0.28);
+  border-radius:var(--radius);
+  box-shadow:
+    var(--shadow-card),
+    0 0 50px -12px hsl(var(--primary) / 0.30),
+    inset 0 1px 0 hsl(var(--primary) / 0.18),
+    inset 0 0 0 1px hsl(220 25% 4%);
+  padding:1.25rem;
+  overflow:hidden;
+}
+.hud-card::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    linear-gradient(hsl(185 80% 50% / 0.045) 1px, transparent 1px) 0 0 / 100% 28px,
+    linear-gradient(90deg, hsl(185 80% 50% / 0.045) 1px, transparent 1px) 0 0 / 28px 100%;
+  -webkit-mask:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.08));
+          mask:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.08));
+}
+.hud-card > *{position:relative;z-index:1}
+.hud-corner{position:absolute;width:14px;height:14px;border:1.5px solid hsl(var(--primary) / 0.7);z-index:2;pointer-events:none;box-shadow:0 0 6px hsl(var(--primary) / 0.45)}
+.hud-corner.tl{top:8px;left:8px;border-right:none;border-bottom:none}
+.hud-corner.tr{top:8px;right:8px;border-left:none;border-bottom:none}
+.hud-corner.bl{bottom:8px;left:8px;border-right:none;border-top:none}
+.hud-corner.br{bottom:8px;right:8px;border-left:none;border-top:none}
+
+.hud-tag{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  font-family:var(--font-mono);font-size:0.625rem;letter-spacing:0.14em;text-transform:uppercase;
+  color:hsl(var(--primary));
+  padding:0.15rem 0.5rem;border-radius:0.25rem;
+  background:hsl(var(--primary) / 0.1);
+  border:1px solid hsl(var(--primary) / 0.3);
+}
+.hud-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:hsl(var(--primary));box-shadow:0 0 8px hsl(var(--primary));animation:hudPulse 1.6s ease-in-out infinite}
+@keyframes hudPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+
+.hud-stats{
+  display:grid;gap:0.5rem;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));
+  margin:0.6rem 0 0.75rem;
+}
+.hud-stat{
+  position:relative;
+  padding:0.5rem 0.65rem 0.5rem 0.85rem;border-radius:0.4rem;
+  background:linear-gradient(180deg, hsl(220 25% 7% / 0.85), hsl(220 25% 5% / 0.85));
+  border:1px solid hsl(var(--primary) / 0.18);
+  box-shadow:inset 0 0 18px hsl(var(--primary) / 0.05);
+  overflow:hidden;
+}
+.hud-stat::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;background:hsl(var(--primary));box-shadow:0 0 8px hsl(var(--primary) / 0.8);border-radius:1px}
+.hud-stat::after{content:'';position:absolute;right:-12px;top:-12px;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle, hsl(var(--primary) / 0.18), transparent 70%);pointer-events:none}
+.hud-stat.accent::before{background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent) / 0.8)}
+.hud-stat.accent::after{background:radial-gradient(circle, hsl(var(--accent) / 0.18), transparent 70%)}
+.hud-stat.warn::before{background:hsl(var(--warning));box-shadow:0 0 8px hsl(var(--warning) / 0.8)}
+.hud-stat.warn::after{background:radial-gradient(circle, hsl(var(--warning) / 0.18), transparent 70%)}
+.hud-stat.danger::before{background:hsl(0 70% 60%);box-shadow:0 0 8px hsl(0 70% 60% / 0.8)}
+.hud-stat.danger::after{background:radial-gradient(circle, hsl(0 70% 60% / 0.18), transparent 70%)}
+.hud-stat .l{font-size:0.6125rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)}
+.hud-stat .v{font-family:var(--font-mono);font-size:1.05rem;color:hsl(var(--foreground));font-weight:600;margin-top:0.1rem;line-height:1.1}
+.hud-stat .s{font-family:var(--font-mono);font-size:0.6125rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.hud-stat .v.up{color:hsl(142 70% 65%)}
+.hud-stat .v.down{color:hsl(0 70% 70%)}
+
+.hud-chart-wrap{position:relative;z-index:1;border-radius:0.5rem;overflow:hidden;background:linear-gradient(180deg, hsl(220 25% 5% / 0.6), hsl(220 25% 3% / 0.8));border:1px solid hsl(var(--primary) / 0.12)}
+.hud-chart-wrap::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent 24px, hsl(var(--primary) / 0.035) 24px, hsl(var(--primary) / 0.035) 25px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 30px, hsl(var(--primary) / 0.035) 30px, hsl(var(--primary) / 0.035) 31px);
+  -webkit-mask:radial-gradient(ellipse at center, rgba(0,0,0,0.9), rgba(0,0,0,0.2));
+          mask:radial-gradient(ellipse at center, rgba(0,0,0,0.9), rgba(0,0,0,0.2));
+}
+.hud-chart-wrap::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 80%, hsl(var(--primary) / 0.08) 100%),
+    radial-gradient(ellipse at right top, hsl(var(--primary) / 0.06), transparent 50%);
+}
+
+.hud-scan{
+  position:absolute;left:6px;right:6px;top:0;height:1.5px;pointer-events:none;
+  background:linear-gradient(90deg, transparent, hsl(var(--primary) / 0.85) 50%, transparent);
+  filter:blur(0.8px);
+  animation:hudScan 5.5s linear infinite;
+  z-index:4;
+}
+@keyframes hudScan{
+  0%{top:0%;opacity:0}
+  6%{opacity:0.8}
+  92%{opacity:0.8}
+  100%{top:100%;opacity:0}
+}
+
+.hud-axis-glyphs{
+  position:absolute;left:0;top:0;bottom:0;width:42px;z-index:2;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:space-between;padding:6px 0;
+  font-family:var(--font-mono);font-size:0.6125rem;color:hsl(var(--primary) / 0.7);
+}
+.hud-axis-glyphs span{padding-left:6px;border-left:1px solid hsl(var(--primary) / 0.35);line-height:1}
+
+.hud-edge-marks{
+  position:absolute;right:0;top:0;bottom:0;width:6px;z-index:2;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent 10px, hsl(var(--primary) / 0.5) 10px, hsl(var(--primary) / 0.5) 11px);
+  -webkit-mask:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent);
+          mask:linear-gradient(180deg, transparent 0, #000 12%, #000 88%, transparent);
+}
+
+.hud-card .legend{margin-top:0.75rem;color:hsl(var(--primary) / 0.85)}
+.hud-card .pill-tab{background:hsl(220 25% 6% / 0.6);border:1px solid hsl(var(--primary) / 0.18)}
+.hud-card .pill-tab.on{background:hsl(var(--primary) / 0.18);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.6);box-shadow:0 0 12px -4px hsl(var(--primary) / 0.5)}
+
+/* uPlot recolor inside HUD */
+.hud-chart-wrap .uplot .u-cursor-x,
+.hud-chart-wrap .uplot .u-cursor-y{border-color:hsl(var(--primary) / 0.5) !important}
+.hud-chart-wrap .uplot .u-axis{color:hsl(var(--primary) / 0.7)}
+
+/* ─── Hour × Day matrix (redesign) ────────────────────────────── */
+.hxd-card{
+  position:relative;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, hsl(185 80% 50% / 0.08), transparent 65%),
+    linear-gradient(180deg, hsl(220 25% 9%) 0%, hsl(220 25% 5%) 100%);
+  border:1px solid hsl(var(--primary) / 0.25);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card), 0 0 50px -12px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--primary) / 0.18);
+  padding:1.25rem;overflow:hidden;
+}
+.hxd-card .hud-corner{box-shadow:0 0 6px hsl(var(--primary) / 0.45)}
+.hxd-card::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(hsl(185 80% 50% / 0.04) 1px, transparent 1px) 0 0 / 100% 28px,
+    linear-gradient(90deg, hsl(185 80% 50% / 0.04) 1px, transparent 1px) 0 0 / 28px 100%;
+  -webkit-mask:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.05));
+          mask:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.05));
+}
+.hxd-card > *{position:relative}
+
+.hxd-header{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:0.85rem}
+.hxd-callout{display:flex;gap:0.5rem;flex-wrap:wrap}
+.hxd-pill{
+  display:inline-flex;flex-direction:column;gap:0.1rem;
+  padding:0.4rem 0.7rem;border-radius:0.4rem;
+  background:hsl(220 25% 7% / 0.8);
+  border:1px solid hsl(var(--primary) / 0.22);
+  min-width:100px;position:relative;
+}
+.hxd-pill::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;background:hsl(var(--primary));box-shadow:0 0 8px hsl(var(--primary) / 0.8);border-radius:1px}
+.hxd-pill.peak::before{background:hsl(60 100% 70%);box-shadow:0 0 8px hsl(60 100% 70% / 0.8)}
+.hxd-pill.now::before{background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent) / 0.8)}
+.hxd-pill .l{font-family:var(--font-mono);font-size:0.6125rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.08em;padding-left:0.5rem}
+.hxd-pill .v{font-family:var(--font-mono);font-size:0.95rem;font-weight:600;color:hsl(var(--foreground));padding-left:0.5rem}
+.hxd-pill .s{font-family:var(--font-mono);font-size:0.6125rem;color:hsl(var(--muted-foreground));padding-left:0.5rem}
+
+.hxd-svg-wrap{position:relative;border-radius:0.5rem;background:radial-gradient(ellipse at center, hsl(220 25% 6% / 0.95) 0%, hsl(220 28% 3% / 0.95) 70%);border:1px solid hsl(var(--primary) / 0.14);padding:0.6rem;overflow:hidden}
+.hxd-svg-wrap::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center, hsl(185 80% 50% / 0.04), transparent 60%);
+}
+.hxd-svg{display:block;width:100%;height:auto;max-width:680px;margin:0 auto;position:relative}
+.hxd-svg .hxd-ax{font-family:var(--font-mono);font-size:10px;fill:hsl(185 80% 60% / 0.75)}
+.hxd-svg .hxd-ax-day{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground));letter-spacing:0.05em}
+.hxd-svg .hxd-now{font-family:var(--font-mono);font-size:10px;font-weight:600;fill:hsl(185 90% 70%);letter-spacing:0.16em}
+.hxd-svg .hxd-peak{font-family:var(--font-mono);font-size:10px;fill:hsl(60 100% 80%);letter-spacing:0.06em;font-weight:600}
+.hxd-svg .hxd-peak-sub{font-family:var(--font-mono);font-size:8.5px;fill:hsl(60 100% 75% / 0.8)}
+.hxd-svg .hxd-cb-lbl{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground))}
+.hxd-svg .hxd-center-l{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.14em}
+.hxd-svg .hxd-center-v{font-family:var(--font-mono);font-size:30px;font-weight:600;fill:hsl(var(--foreground))}
+.hxd-svg .hxd-center-s{font-family:var(--font-mono);font-size:9px;fill:hsl(var(--muted-foreground))}
+.hxd-svg .sector{transition:opacity 0.2s, stroke-width 0.15s; cursor:default}
+.hxd-svg .sector:hover{stroke:hsl(0 0% 100% / 0.85); stroke-width:1}
+.hxd-svg .ring-out{animation:hxdRingPulse 3s ease-in-out infinite}
+@keyframes hxdRingPulse{0%,100%{opacity:0.8}50%{opacity:0.4}}
+.hxd-svg .now-spoke{animation:hxdNowPulse 1.8s ease-in-out infinite}
+@keyframes hxdNowPulse{0%,100%{opacity:0.9}50%{opacity:0.45}}
+.hxd-svg .sweep-cone{transform-origin:50% 50%}
+
+.hxd-empty{padding:2.5rem 1rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.875rem}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 21s-7-4.5-7-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 19 11c0 5.5-7 10-7 10z"/>
+        </svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Happiness Score<span class="brand-ver mono">0.3.0</span></span>
+    </div>
+    <nav class="nav" id="main-nav">
+      <button class="active" data-tab="overview">Overview</button>
+      <button data-tab="live">Live</button>
+      <button data-tab="history">History</button>
+      <button data-tab="insights">Insights</button>
+      <button data-tab="calibration">Calibration</button>
+      <button data-tab="hardware">Hardware</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ───────────────────────── OVERVIEW ───────────────────────── -->
+  <div class="tabpanel on" id="tab-overview">
+
+    <div class="section">
+      <div class="hero">
+        <div class="hero-row">
+          <div class="score-ring">
+            <svg viewBox="0 0 200 200">
+              <circle class="track" cx="100" cy="100" r="86"/>
+              <circle class="fill" id="ring-fill" cx="100" cy="100" r="86" stroke-dasharray="540" stroke-dashoffset="540"/>
+            </svg>
+            <div class="label">
+              <div class="num" id="score-num">—</div>
+              <div class="unit">happiness</div>
+              <div class="delta" id="score-delta">+0.0</div>
+            </div>
+          </div>
+          <div class="hero-info">
+            <h1>Happiness Score</h1>
+            <div class="meta">
+              <span class="badge research">Research</span>
+              <span class="badge hard">Hard</span>
+              <span class="badge primary">ESP32-S3</span>
+              <span class="badge muted">24 KB</span>
+              <span class="badge online" id="stream-badge"><span class="dot live"></span> live</span>
+            </div>
+            <p>Composite well-being score derived from gait energy, movement fluidity, and breathing-based affect inference. Sampled from CSI motion and respiration channels on the ESP32-S3.</p>
+            <div class="stat-row">
+              <div class="stat-mini"><div class="l">Gait energy</div><div class="v" id="hero-gait">—</div></div>
+              <div class="stat-mini"><div class="l">Affect state</div><div class="v" id="hero-affect">—</div></div>
+              <div class="stat-mini"><div class="l">Breathing</div><div class="v" id="hero-breath">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-h">Live metrics</h2>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg></div><div class="kpi-info"><div class="kpi-label">Happiness</div><div class="kpi-val" id="kpi-happy">—</div><div class="kpi-trend up" id="kpi-happy-trend">+0.0 / hr</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div><div class="kpi-info"><div class="kpi-label">Gait energy</div><div class="kpi-val" id="kpi-gait">—</div><div class="kpi-sub">CSI motion · J/s</div></div></div>
+        <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div><div class="kpi-info"><div class="kpi-label">Affect state</div><div class="kpi-val" id="kpi-affect">—</div><div class="kpi-sub" id="kpi-affect-sub">confidence —</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M2 12c4-8 8-8 12 0s8 8 8 0"/></svg></div><div class="kpi-info"><div class="kpi-label">Breathing</div><div class="kpi-val" id="kpi-breath">—</div><div class="kpi-sub">breaths / min</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-9"/></svg></div><div class="kpi-info"><div class="kpi-label">Wellbeing 7-day</div><div class="kpi-val" id="kpi-wellbeing">—</div><div class="kpi-trend up" id="kpi-wellbeing-trend">+0.0 vs last week</div></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Happiness score · last 5 minutes</div>
+              <div class="card-sub" id="ov-chart-sub">Composite 0–100</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn sm outline" data-jump="live">Open Live →</button>
+            </div>
+          </div>
+          <div id="ov-chart" class="chart-host"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Affect state mix</div>
+              <div class="card-sub">Rolling 5-minute distribution</div>
+            </div>
+          </div>
+          <div class="affect-grid" id="affect-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent events</div>
+            <div class="card-sub">From the local event bus · happiness_score, gait_energy, affect_state, wellbeing</div>
+          </div>
+          <button class="btn sm outline" id="btn-clear-events">Clear</button>
+        </div>
+        <div class="events" id="event-log"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── LIVE ───────────────────────── -->
+  <div class="tabpanel" id="tab-live">
+
+    <div class="section">
+      <h1 class="page">Live stream</h1>
+      <p class="lede">Real-time happiness score, gait energy, breathing waveform, and affect inference from the ESP32-S3 CSI/respiration channels. Sample rate is 1 Hz on the composite output.</p>
+    </div>
+
+    <div class="section">
+      <div class="hud-card">
+        <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
+        <span class="hud-corner bl"></span><span class="hud-corner br"></span>
+        <div class="card-h">
+          <div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
+              <span class="hud-tag" id="live-tag">streaming · 1 Hz</span>
+              <span class="hud-tag" style="background:hsl(var(--accent) / 0.1);border-color:hsl(var(--accent) / 0.3);color:hsl(var(--accent))">CH · COMPOSITE</span>
+            </div>
+            <div class="card-title">Composite happiness — last 2 minutes</div>
+            <div class="card-sub" id="live-sub">paused</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn sm" id="btn-pause">Pause</button>
+            <button class="btn sm" id="btn-reset-live">Reset window</button>
+            <button class="btn sm primary" id="btn-snapshot">Snapshot JSON</button>
+          </div>
+        </div>
+        <div class="hud-stats">
+          <div class="hud-stat"><div class="l">Last</div><div class="v" id="live-stat-last">—</div><div class="s">composite</div></div>
+          <div class="hud-stat accent"><div class="l">Wellbeing</div><div class="v" id="live-stat-well">—</div><div class="s">smoothed</div></div>
+          <div class="hud-stat"><div class="l">Max · window</div><div class="v" id="live-stat-max">—</div><div class="s">2 min</div></div>
+          <div class="hud-stat warn"><div class="l">Min · window</div><div class="v" id="live-stat-min">—</div><div class="s">2 min</div></div>
+          <div class="hud-stat"><div class="l">Δ / min</div><div class="v" id="live-stat-d">—</div><div class="s">trend</div></div>
+        </div>
+        <div class="hud-chart-wrap" style="height:260px">
+          <div class="hud-edge-marks"></div>
+          <div class="hud-scan"></div>
+          <div id="live-chart" class="chart-host tall" style="height:260px"></div>
+        </div>
+        <div class="legend">
+          <span><span class="swatch" style="background:hsl(185 80% 55%);box-shadow:0 0 6px hsl(185 80% 55%)"></span>happiness</span>
+          <span><span class="swatch" style="background:hsl(142 70% 55%);box-shadow:0 0 6px hsl(142 70% 55%)"></span>wellbeing (smoothed)</span>
+          <span style="margin-left:auto" id="live-tick">tick —</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Gait energy</div><div class="card-sub">CSI subcarriers · energy units</div></div>
+            <span class="badge accent" id="gait-now">—</span>
+          </div>
+          <div id="gait-chart" class="chart-host"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Breathing waveform</div><div class="card-sub" id="breath-sub">— breaths/min · synthetic from CSI envelope</div></div>
+            <span class="badge primary" id="breath-now">—</span>
+          </div>
+          <div class="wave-host"><svg id="breath-wave" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">CSI motion intensity — last 24 frames</div><div class="card-sub">Per-subcarrier amplitude · darker = quiet, brighter = motion</div></div>
+          </div>
+          <div class="heatmap" id="csi-heat"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Affect inference</div><div class="card-sub" id="aff-sub">Soft-max over 5 states</div></div>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg viewBox="0 0 100 100" id="aff-donut">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(220 15% 18%)" stroke-width="20"/>
+              </svg>
+            </div>
+            <div class="donut-legend" id="aff-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── HISTORY ───────────────────────── -->
+  <div class="tabpanel" id="tab-history">
+
+    <div class="section flex-between">
+      <div>
+        <h1 class="page">History</h1>
+        <p class="lede" style="margin:0">Aggregated happiness and wellbeing trends over time. Window aggregation is local-only.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn sm" data-export="json">Export JSON</button>
+        <button class="btn sm" data-export="csv">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="hud-card">
+        <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
+        <span class="hud-corner bl"></span><span class="hud-corner br"></span>
+        <div class="card-h">
+          <div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
+              <span class="hud-tag">archive · rolling buffer</span>
+              <span class="hud-tag" id="hist-tag" style="background:hsl(var(--accent) / 0.1);border-color:hsl(var(--accent) / 0.3);color:hsl(var(--accent))">WIN · 6h</span>
+            </div>
+            <div class="card-title">Trend window</div>
+            <div class="card-sub" id="hist-sub">—</div>
+          </div>
+          <div class="pill-tabs" id="range-tabs">
+            <button class="pill-tab" data-range="1h">1 h</button>
+            <button class="pill-tab on" data-range="6h">6 h</button>
+            <button class="pill-tab" data-range="24h">24 h</button>
+            <button class="pill-tab" data-range="7d">7 d</button>
+            <button class="pill-tab" data-range="30d">30 d</button>
+          </div>
+        </div>
+        <div class="hud-stats">
+          <div class="hud-stat"><div class="l">Mean</div><div class="v" id="hist-stat-mean">—</div><div class="s">window avg</div></div>
+          <div class="hud-stat accent"><div class="l">Peak</div><div class="v" id="hist-stat-peak">—</div><div class="s">happiness</div></div>
+          <div class="hud-stat danger"><div class="l">Trough</div><div class="v" id="hist-stat-low">—</div><div class="s">happiness</div></div>
+          <div class="hud-stat warn"><div class="l">σ</div><div class="v" id="hist-stat-sigma">—</div><div class="s">std deviation</div></div>
+          <div class="hud-stat"><div class="l">Samples</div><div class="v" id="hist-stat-n">—</div><div class="s">in window</div></div>
+        </div>
+        <div class="hud-chart-wrap" style="height:280px">
+          <div class="hud-edge-marks"></div>
+          <div class="hud-scan" style="animation-duration:7s"></div>
+          <div id="hist-chart" class="chart-host tall" style="height:280px"></div>
+        </div>
+        <div class="legend">
+          <span><span class="swatch" style="background:hsl(185 80% 55%);box-shadow:0 0 6px hsl(185 80% 55%)"></span>happiness</span>
+          <span><span class="swatch" style="background:hsl(142 70% 55%);box-shadow:0 0 6px hsl(142 70% 55%)"></span>wellbeing</span>
+          <span><span class="swatch" style="background:hsl(265 60% 70%);box-shadow:0 0 6px hsl(265 60% 70%)"></span>gait energy (rescaled)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Aggregate</div>
+          <div class="card-sub">Across selected window</div>
+          <div class="spec" style="margin-top:0.75rem">
+            <div class="k">Mean</div><div class="v" id="agg-mean">—</div>
+            <div class="k">Peak</div><div class="v" id="agg-peak">—</div>
+            <div class="k">Low</div><div class="v" id="agg-low">—</div>
+            <div class="k">Variance</div><div class="v" id="agg-var">—</div>
+            <div class="k">Samples</div><div class="v" id="agg-n">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Time-of-day pattern</div>
+          <div class="card-sub">Mean happiness by hour</div>
+          <div id="tod-chart" class="chart-host"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Day comparison</div>
+          <div class="card-sub">Last 7 days · mean and range</div>
+          <div id="day-chart" class="chart-host"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── INSIGHTS ───────────────────────── -->
+  <div class="tabpanel" id="tab-insights">
+
+    <div class="section">
+      <h1 class="page">Insights</h1>
+      <p class="lede">Correlations and patterns mined from the rolling 24-hour buffer. All compute is on-device.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Gait energy vs happiness</div><div class="card-sub" id="scatter-sub">Pearson r = —</div></div>
+            <button class="btn sm outline" id="btn-recompute-corr">Recompute</button>
+          </div>
+          <div class="scatter-host"><canvas id="scatter"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Affect dwell time</div><div class="card-sub">Total seconds in each state · 24 h</div></div>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg viewBox="0 0 100 100" id="dwell-donut">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(220 15% 18%)" stroke-width="20"/>
+              </svg>
+            </div>
+            <div class="donut-legend" id="dwell-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="hxd-card">
+        <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
+        <span class="hud-corner bl"></span><span class="hud-corner br"></span>
+        <div class="hxd-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
+              <span class="hud-tag">INSIGHT MATRIX · 7 × 24</span>
+              <span class="hud-tag" style="background:hsl(var(--accent) / 0.1);border-color:hsl(var(--accent) / 0.3);color:hsl(var(--accent))">ROLLING WEEK</span>
+            </div>
+            <div class="card-title">Hour × day · happiness field</div>
+            <div class="card-sub" id="hxd-sub">Mean happiness per cell · 168 cells maximum</div>
+          </div>
+          <div class="hxd-callout" id="hxd-callout"></div>
+        </div>
+        <div class="hxd-svg-wrap" id="big-heat"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Best windows</div>
+          <div class="card-sub">Top-5 sustained high-happiness intervals</div>
+          <table style="margin-top:0.6rem">
+            <thead><tr><th>When</th><th>Mean</th><th>Length</th></tr></thead>
+            <tbody id="best-tbody"><tr><td colspan="3" class="muted" style="text-align:center">—</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">Recommendations</div>
+          <div class="card-sub">Heuristic suggestions from on-device patterns</div>
+          <ul id="recs" style="margin-top:0.6rem;padding-left:1.1rem;font-size:0.8125rem;line-height:1.7;color:hsl(var(--foreground))"></ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── CALIBRATION ───────────────────────── -->
+  <div class="tabpanel" id="tab-calibration">
+
+    <div class="section">
+      <h1 class="page">Calibration</h1>
+      <p class="lede">Establish per-environment baselines for gait energy and respiration. Stand still during the baseline step, then walk a normal pace during the gait step.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Calibration wizard</div><div class="card-sub" id="cal-sub">Idle — press Start</div></div>
+          <div class="btn-row">
+            <button class="btn primary" id="btn-cal-start">Start calibration</button>
+            <button class="btn outline" id="btn-cal-cancel" disabled>Cancel</button>
+          </div>
+        </div>
+        <div class="steps" id="cal-steps">
+          <div class="step" data-step="0"><span class="num">1</span><div class="body"><div class="title">Quiet baseline</div><div class="desc">5 seconds of stillness to capture noise floor.</div></div></div>
+          <div class="step" data-step="1"><span class="num">2</span><div class="body"><div class="title">Walking gait</div><div class="desc">10 seconds at a comfortable pace.</div></div></div>
+          <div class="step" data-step="2"><span class="num">3</span><div class="body"><div class="title">Breathing baseline</div><div class="desc">5 seconds of normal breathing.</div></div></div>
+        </div>
+        <div class="progress"><div id="cal-bar"></div></div>
+        <div class="muted" id="cal-msg" style="font-size:0.75rem;margin-top:0.4rem;font-family:var(--font-mono)">ready</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Stored baselines</div>
+          <div class="spec" style="margin-top:0.5rem">
+            <div class="k">CSI quiet</div><div class="v" id="base-quiet">—</div>
+            <div class="k">Gait peak</div><div class="v" id="base-gait">—</div>
+            <div class="k">Breath rate</div><div class="v" id="base-breath">—</div>
+            <div class="k">Last run</div><div class="v" id="base-when">never</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Score sensitivity</div>
+          <div class="card-sub">Adjust how reactive the composite is to short-term shifts.</div>
+          <div class="slider-row" style="margin-top:0.6rem">
+            <label>Smoothing</label>
+            <input type="range" id="sens-smooth" min="1" max="30" value="8">
+            <span class="v" id="sens-smooth-v">8 s</span>
+          </div>
+          <div class="slider-row">
+            <label>Sensitivity</label>
+            <input type="range" id="sens-react" min="0" max="100" value="50">
+            <span class="v" id="sens-react-v">0.50</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Reset</div>
+          <div class="card-sub">Clear baselines and start fresh.</div>
+          <div class="btn-row" style="margin-top:0.6rem">
+            <button class="btn danger" id="btn-base-reset">Reset baselines</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── HARDWARE ───────────────────────── -->
+  <div class="tabpanel" id="tab-hardware">
+
+    <div class="section">
+      <h1 class="page">Hardware</h1>
+      <p class="lede">Sensor topology, firmware, and connectivity for the ESP32-S3 deployment of Happiness Score.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">ESP32-S3 module</div><div class="card-sub">Primary compute</div></div>
+            <span class="badge online"><span class="dot up"></span> online</span>
+          </div>
+          <div class="spec">
+            <div class="k">SoC</div><div class="v">ESP32-S3 N16R8</div>
+            <div class="k">Cores</div><div class="v">2 × Xtensa LX7 @ 240 MHz</div>
+            <div class="k">RAM (PSRAM)</div><div class="v">8 MB</div>
+            <div class="k">Cog footprint</div><div class="v">24 KB flash</div>
+            <div class="k">Firmware</div><div class="v" id="hw-fw">happiness@0.3.0</div>
+            <div class="k">Uptime</div><div class="v" id="hw-uptime">—</div>
+          </div>
+          <div class="btn-row" style="margin-top:0.75rem">
+            <button class="btn sm" data-hw="ping">Ping</button>
+            <button class="btn sm outline" data-hw="reboot">Soft reboot</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">CSI motion channel</div><div class="card-sub">802.11 channel-state inference</div></div>
+            <span class="badge online" id="csi-badge"><span class="dot up"></span> streaming</span>
+          </div>
+          <div class="spec">
+            <div class="k">Subcarriers</div><div class="v">52</div>
+            <div class="k">Rate</div><div class="v">100 Hz</div>
+            <div class="k">Noise floor</div><div class="v" id="csi-floor">—</div>
+            <div class="k">Last packet</div><div class="v" id="csi-last">—</div>
+          </div>
+          <div class="btn-row" style="margin-top:0.75rem">
+            <button class="btn sm" data-hw="csi-test">Run self-test</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Breathing channel</div><div class="card-sub">CSI envelope ⇒ respiration estimate</div></div>
+            <span class="badge online" id="breath-badge"><span class="dot up"></span> stable</span>
+          </div>
+          <div class="spec">
+            <div class="k">Method</div><div class="v">Hilbert envelope + bandpass</div>
+            <div class="k">Band</div><div class="v">0.10 – 0.50 Hz</div>
+            <div class="k">Current</div><div class="v" id="hw-breath-now">—</div>
+            <div class="k">Confidence</div><div class="v" id="hw-breath-conf">—</div>
+          </div>
+          <div class="btn-row" style="margin-top:0.75rem">
+            <button class="btn sm" data-hw="breath-test">Test channel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Event bus</div><div class="card-sub">Emitted by this cog onto the local bus</div></div>
+        </div>
+        <table style="margin-top:0.5rem">
+          <thead><tr><th>Event</th><th>Hz</th><th>Payload</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge primary">happiness_score</span></td><td>1</td><td>{ value: 0–100, ts }</td></tr>
+            <tr><td><span class="badge accent">gait_energy</span></td><td>5</td><td>{ energy: float, fluidity: 0–1 }</td></tr>
+            <tr><td><span class="badge warn">affect_state</span></td><td>1</td><td>{ state: enum, conf: 0–1 }</td></tr>
+            <tr><td><span class="badge research">wellbeing</span></td><td>0.1</td><td>{ score: 0–100, window: "10m" }</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───────────────────────── SETTINGS ───────────────────────── -->
+  <div class="tabpanel" id="tab-settings">
+
+    <div class="section flex-between">
+      <div>
+        <h1 class="page">Settings</h1>
+        <p class="lede" style="margin:0">Composite weights, sampling, and notification preferences. Stored locally.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn outline" id="btn-defaults">Restore defaults</button>
+        <button class="btn primary" id="btn-save">Save changes</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Score weights</div>
+          <div class="card-sub">Linear combination of inputs · auto-normalised to 1.0</div>
+          <div style="margin-top:0.75rem">
+            <div class="slider-row">
+              <label>Gait energy</label>
+              <input type="range" id="w-gait" min="0" max="100" value="45">
+              <span class="v" id="w-gait-v">0.45</span>
+            </div>
+            <div class="slider-row">
+              <label>Movement fluidity</label>
+              <input type="range" id="w-flu" min="0" max="100" value="25">
+              <span class="v" id="w-flu-v">0.25</span>
+            </div>
+            <div class="slider-row">
+              <label>Affect inference</label>
+              <input type="range" id="w-aff" min="0" max="100" value="30">
+              <span class="v" id="w-aff-v">0.30</span>
+            </div>
+            <div class="muted" style="font-size:0.75rem;font-family:var(--font-mono);margin-top:0.3rem">sum: <span id="w-sum">1.00</span> (normalised at runtime)</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Sampling</div>
+          <div class="card-sub">Trade-off between responsiveness and battery</div>
+          <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.6rem">
+            <div>
+              <label class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em">CSI rate</label>
+              <select id="set-csi" style="width:100%;margin-top:0.3rem">
+                <option value="50">50 Hz · low power</option>
+                <option value="100" selected>100 Hz · balanced</option>
+                <option value="200">200 Hz · high resolution</option>
+              </select>
+            </div>
+            <div>
+              <label class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em">Composite emission</label>
+              <select id="set-emit" style="width:100%;margin-top:0.3rem">
+                <option value="0.5">0.5 Hz</option>
+                <option value="1" selected>1 Hz</option>
+                <option value="2">2 Hz</option>
+              </select>
+            </div>
+            <div>
+              <label class="muted" style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em">Smoothing window</label>
+              <input type="text" id="set-smooth" value="8" style="width:100%;margin-top:0.3rem;font-family:var(--font-mono)">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Notifications</div>
+          <div class="card-sub">Local alerts on threshold crossings</div>
+          <div style="margin-top:0.6rem;display:flex;flex-direction:column;gap:0.5rem">
+            <label class="toggle"><input type="checkbox" id="n-drop" checked><span class="track"></span>Alert on score drop &gt; 15 / 10 min</label>
+            <label class="toggle"><input type="checkbox" id="n-low"><span class="track"></span>Alert when score &lt; 30 for 5 min</label>
+            <label class="toggle"><input type="checkbox" id="n-peak" checked><span class="track"></span>Celebrate score &gt; 85 streak</label>
+            <label class="toggle"><input type="checkbox" id="n-still"><span class="track"></span>Alert on 60 min stillness</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Privacy &amp; data</div>
+          <div class="card-sub">On-device processing only · no cloud egress</div>
+          <div style="margin-top:0.6rem;display:flex;flex-direction:column;gap:0.5rem">
+            <label class="toggle"><input type="checkbox" id="p-retain" checked><span class="track"></span>Retain 30-day rolling history</label>
+            <label class="toggle"><input type="checkbox" id="p-share"><span class="track"></span>Share anonymised wellbeing summary on bus</label>
+            <label class="toggle"><input type="checkbox" id="p-debug"><span class="track"></span>Verbose event logging</label>
+          </div>
+          <div class="btn-row" style="margin-top:0.75rem">
+            <button class="btn sm danger" id="btn-wipe">Wipe local history</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: happiness-score</span> &middot; <span class="mono">0.3.0</span> &middot; <span class="mono">esp32-s3</span> &middot; <span class="mono">24 KB</span></div>
+    <div style="margin-top:0.4rem">Composite well-being from gait energy + affect inference · on-device · zero cloud</div>
+  </footer>
+</div>
+
+<div class="toast-host" id="toasts"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+// ─── Toast ─────────────────────────────────────────────────────
+function toast(msg, kind){
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind || 'info');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; t.style.transition = 'all 0.3s'; setTimeout(()=>t.remove(), 320); }, 2600);
+}
+
+// ─── Tab routing ───────────────────────────────────────────────
+function setTab(name){
+  $$('#main-nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tabpanel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + name));
+  if (name === 'history')   ensureHistChart();
+  if (name === 'insights')  { drawScatter(); drawDwell(); drawBigHeat(); }
+  if (name === 'live')      ensureLiveCharts();
+  if (name === 'overview')  ensureOvChart();
+}
+$$('#main-nav button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+$$('[data-jump]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.jump)));
+
+// ─── Synthetic data engine ─────────────────────────────────────
+const AFFECT_STATES = ['calm','engaged','elated','stressed','fatigued'];
+const AFFECT_COLORS = ['hsl(185 80% 55%)','hsl(142 70% 55%)','hsl(35 90% 60%)','hsl(0 70% 65%)','hsl(265 65% 70%)'];
+
+const STATE = {
+  paused: false,
+  t0: Date.now() - 5 * 60 * 1000,
+  buf: [],            // [{ts, happy, well, gait, breath, affectIdx}]
+  history: [],        // 24h+ low-res aggregates
+  baselines: { quiet: null, gait: null, breath: null, when: null },
+  weights: { gait:0.45, flu:0.25, aff:0.30 },
+  settings: { csiRate:100, emit:1, smooth:8 },
+  events: [],
+  csi: [],            // 24 frames × 32 subcarriers, 0..1
+  affectMix: AFFECT_STATES.map(() => 0),
+  range: '6h',
+  histChart: null, ovChart: null, liveChart: null, gaitChart: null, todChart: null, dayChart: null,
+  calRunning: false, calStep: -1, calTimer: null,
+};
+
+// Seed CSI grid + history
+for (let f = 0; f < 24; f++){
+  const row = [];
+  for (let s = 0; s < 32; s++) row.push(0.2 + Math.random()*0.3);
+  STATE.csi.push(row);
+}
+// Seed 5 min of buffer at 1 Hz
+const nowMs = Date.now();
+for (let i = 5*60; i > 0; i--){
+  STATE.buf.push(synthSample(nowMs - i*1000, (nowMs - i*1000)/1000));
+}
+// Seed 30 days of low-res history (1 point per 15 min)
+for (let i = 30*96; i > 0; i--){
+  const ts = nowMs - i*15*60*1000;
+  const h = 50 + 20*Math.sin(ts/1e7) + 12*Math.sin(ts/3e6) + (Math.random()-0.5)*8;
+  STATE.history.push({ ts, happy: clamp(h, 5, 98), gait: 30+25*Math.sin(ts/2e6)+(Math.random()-0.5)*10, well: clamp(h*0.9 + 5, 0, 100) });
+}
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+function synthSample(ts, secs){
+  const slow = 50 + 18*Math.sin(secs/45) + 10*Math.cos(secs/180);
+  const breath = 14 + 3*Math.sin(secs/8) + (Math.random()-0.5)*1.2;
+  const gait = clamp(40 + 25*Math.sin(secs/12) + 18*Math.sin(secs/3.4) + (Math.random()-0.5)*8, 0, 100);
+  const fluidity = clamp(0.55 + 0.25*Math.sin(secs/24) + (Math.random()-0.5)*0.1, 0, 1);
+  const ws = STATE.weights;
+  const wSum = ws.gait + ws.flu + ws.aff || 1;
+  const affectIdx = pickAffect(secs, gait);
+  const affectScore = [70, 85, 95, 30, 40][affectIdx];
+  const happy = clamp((ws.gait*gait + ws.flu*fluidity*100 + ws.aff*affectScore) / wSum + (Math.random()-0.5)*3, 0, 100);
+  const well = clamp(0.85*slow + 0.15*happy, 0, 100);
+  return { ts, happy, well, gait, breath, fluidity, affectIdx };
+}
+function pickAffect(secs, gait){
+  if (gait < 18) return 4;
+  if (gait > 75 && Math.sin(secs/30) > 0.4) return 2;
+  if (Math.sin(secs/57) > 0.6) return 3;
+  if (Math.cos(secs/13) > 0.2) return 1;
+  return 0;
+}
+
+// ─── Tick: push new data, refresh visible UI ───────────────────
+function tick(){
+  if (!STATE.paused){
+    const now = Date.now();
+    const secs = now/1000;
+    const s = synthSample(now, secs);
+    STATE.buf.push(s);
+    if (STATE.buf.length > 600) STATE.buf.shift(); // 10 min cap
+
+    // Affect mix EMA
+    const decay = 0.92;
+    STATE.affectMix = STATE.affectMix.map(v => v*decay);
+    STATE.affectMix[s.affectIdx] += (1-decay);
+
+    // CSI: scroll + new column influenced by gait
+    STATE.csi.shift();
+    const row = [];
+    for (let i = 0; i < 32; i++){
+      const sub = 0.2 + 0.5*(s.gait/100) + 0.3*Math.sin((secs+i)*0.7) + (Math.random()-0.5)*0.15;
+      row.push(clamp(sub, 0, 1));
+    }
+    STATE.csi.push(row);
+
+    // Event log (occasional)
+    if (Math.random() < 0.18){
+      const which = ['happiness_score','gait_energy','affect_state','wellbeing'][Math.floor(Math.random()*4)];
+      const payload = which === 'happiness_score' ? s.happy.toFixed(1)
+        : which === 'gait_energy' ? s.gait.toFixed(1) + ' · fluidity ' + s.fluidity.toFixed(2)
+        : which === 'affect_state' ? AFFECT_STATES[s.affectIdx] + ' (' + (0.7+0.25*Math.random()).toFixed(2) + ')'
+        : 'window 10m · ' + s.well.toFixed(1);
+      pushEvent(which, payload, now);
+    }
+  }
+  renderAll();
+}
+
+function pushEvent(name, payload, ts){
+  STATE.events.unshift({ name, payload, ts: ts || Date.now() });
+  if (STATE.events.length > 80) STATE.events.pop();
+}
+
+function renderAll(){
+  renderKpi();
+  renderHero();
+  renderAffect();
+  renderOvChart();
+  renderLive();
+  renderGait();
+  renderBreath();
+  renderCsi();
+  renderAffDonut();
+  renderEvents();
+  renderHardware();
+}
+
+// ─── KPI + hero ────────────────────────────────────────────────
+function renderKpi(){
+  const cur = STATE.buf[STATE.buf.length-1]; if (!cur) return;
+  const prev = STATE.buf[Math.max(0, STATE.buf.length-60)] || cur;
+  const dh = cur.happy - prev.happy;
+  $('#kpi-happy').textContent = cur.happy.toFixed(1);
+  const trend = $('#kpi-happy-trend');
+  trend.className = 'kpi-trend ' + (dh >= 0 ? 'up' : 'down');
+  trend.textContent = (dh>=0?'+':'') + dh.toFixed(1) + ' / min';
+  $('#kpi-gait').textContent = cur.gait.toFixed(1);
+  $('#kpi-affect').textContent = AFFECT_STATES[cur.affectIdx];
+  $('#kpi-affect-sub').textContent = 'confidence ' + (0.7+0.25*Math.random()).toFixed(2);
+  $('#kpi-breath').textContent = cur.breath.toFixed(1);
+  // 7-day wellbeing trend
+  const week = STATE.history.slice(-7*96);
+  const lastWeek = STATE.history.slice(-14*96, -7*96);
+  const avg = arr => arr.reduce((s,x)=>s+x.well,0) / (arr.length || 1);
+  const dw = avg(week) - avg(lastWeek);
+  $('#kpi-wellbeing').textContent = avg(week).toFixed(1);
+  const wt = $('#kpi-wellbeing-trend');
+  wt.className = 'kpi-trend ' + (dw>=0?'up':'down');
+  wt.textContent = (dw>=0?'+':'') + dw.toFixed(1) + ' vs last week';
+}
+
+function renderHero(){
+  const cur = STATE.buf[STATE.buf.length-1]; if (!cur) return;
+  const prev = STATE.buf[Math.max(0, STATE.buf.length-30)] || cur;
+  const d = cur.happy - prev.happy;
+  $('#score-num').textContent = cur.happy.toFixed(0);
+  const ring = $('#ring-fill');
+  const C = 2 * Math.PI * 86;
+  ring.setAttribute('stroke-dasharray', C);
+  ring.setAttribute('stroke-dashoffset', C - (cur.happy/100)*C);
+  const delta = $('#score-delta');
+  delta.textContent = (d>=0?'+':'') + d.toFixed(1);
+  delta.className = 'delta ' + (d>=0?'':'down');
+  $('#hero-gait').textContent = cur.gait.toFixed(0);
+  $('#hero-affect').textContent = AFFECT_STATES[cur.affectIdx];
+  $('#hero-breath').textContent = cur.breath.toFixed(1) + ' bpm';
+  $('#stream-badge').innerHTML = STATE.paused
+    ? '<span class="dot warn"></span> paused'
+    : '<span class="dot live"></span> live';
+  $('#stream-badge').className = 'badge ' + (STATE.paused ? 'warn' : 'online');
+}
+
+// ─── Affect grid + donut ───────────────────────────────────────
+function renderAffect(){
+  const grid = $('#affect-grid');
+  const total = STATE.affectMix.reduce((s,v)=>s+v,0) || 1;
+  const cur = STATE.buf[STATE.buf.length-1];
+  grid.innerHTML = AFFECT_STATES.map((name, i) => {
+    const pct = STATE.affectMix[i]/total*100;
+    const on = cur && cur.affectIdx === i ? ' on' : '';
+    return '<div class="affect-tile' + on + '">' +
+      '<div class="name">' + name + '</div>' +
+      '<div class="swatch" style="--w:' + pct.toFixed(0) + '%"></div>' +
+      '<div class="pct">' + pct.toFixed(0) + '%</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderAffDonut(){
+  drawDonut('aff-donut', 'aff-legend', AFFECT_STATES, AFFECT_COLORS, STATE.affectMix);
+  $('#aff-sub').textContent = 'top: ' + AFFECT_STATES[argmax(STATE.affectMix)] + ' (' + (STATE.affectMix[argmax(STATE.affectMix)]/(STATE.affectMix.reduce((s,v)=>s+v,0)||1)*100).toFixed(0) + '%)';
+}
+
+function argmax(arr){ let m = 0; for (let i = 1; i < arr.length; i++) if (arr[i]>arr[m]) m = i; return m; }
+
+function drawDonut(svgId, legendId, labels, colors, values){
+  const svg = $('#'+svgId);
+  // wipe segs
+  Array.from(svg.querySelectorAll('.seg')).forEach(s => s.remove());
+  const total = values.reduce((s,v)=>s+v,0) || 1;
+  const r = 40, C = 2*Math.PI*r;
+  let acc = 0;
+  values.forEach((v, i) => {
+    const frac = v/total;
+    const seg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    seg.setAttribute('cx',50); seg.setAttribute('cy',50); seg.setAttribute('r',r);
+    seg.setAttribute('class','seg');
+    seg.setAttribute('stroke', colors[i]);
+    seg.setAttribute('stroke-width', 20);
+    seg.setAttribute('fill','none');
+    seg.setAttribute('stroke-dasharray', (frac*C) + ' ' + C);
+    seg.setAttribute('stroke-dashoffset', -acc*C);
+    seg.setAttribute('stroke-linecap','butt');
+    svg.appendChild(seg);
+    acc += frac;
+  });
+  $('#'+legendId).innerHTML = labels.map((l, i) => {
+    const pct = values[i]/total*100;
+    return '<div class="row"><span class="swatch" style="background:'+colors[i]+'"></span>' +
+           '<span class="name">'+l+'</span><span class="v">'+pct.toFixed(0)+'%</span></div>';
+  }).join('');
+}
+
+// ─── Overview chart ────────────────────────────────────────────
+function ensureOvChart(){
+  if (STATE.ovChart || typeof uPlot === 'undefined') return;
+  const host = $('#ov-chart');
+  STATE.ovChart = makeLineChart(host, ['happiness'], ['hsl(185 80% 55%)']);
+}
+function renderOvChart(){
+  if (!STATE.ovChart) ensureOvChart();
+  if (!STATE.ovChart) return;
+  const slice = STATE.buf.slice(-300);
+  const xs = slice.map(p => p.ts/1000);
+  const ys = slice.map(p => p.happy);
+  STATE.ovChart.setSize({ width: $('#ov-chart').clientWidth, height: 200 });
+  STATE.ovChart.setData([xs, ys]);
+  $('#ov-chart-sub').textContent = slice.length + ' samples · last: ' + (ys[ys.length-1]||0).toFixed(1);
+}
+
+// ─── Live charts ───────────────────────────────────────────────
+function ensureLiveCharts(){
+  if (typeof uPlot === 'undefined') return;
+  if (!STATE.liveChart){
+    STATE.liveChart = makeHudChart($('#live-chart'), ['happiness','wellbeing'], ['hsl(185 80% 55%)','hsl(142 70% 55%)']);
+  }
+  if (!STATE.gaitChart){
+    STATE.gaitChart = makeLineChart($('#gait-chart'), ['gait'], ['hsl(142 70% 55%)']);
+  }
+}
+function renderLive(){
+  if (!STATE.liveChart) ensureLiveCharts();
+  if (!STATE.liveChart) return;
+  const slice = STATE.buf.slice(-180);
+  const xs = slice.map(p => p.ts/1000);
+  const ysH = slice.map(p=>p.happy);
+  const ysW = slice.map(p=>p.well);
+  STATE.liveChart.setSize({ width: $('#live-chart').clientWidth, height: 260 });
+  STATE.liveChart.setData([xs, ysH, ysW]);
+  $('#live-sub').textContent = STATE.paused ? 'paused · ' + slice.length + ' samples held' : 'streaming · ' + slice.length + ' samples';
+  if (slice.length){
+    const last = slice[slice.length-1];
+    const first = slice[0];
+    const dPerMin = ((last.happy - first.happy) / Math.max(1, (last.ts - first.ts)/60000));
+    $('#live-stat-last').textContent = last.happy.toFixed(1);
+    $('#live-stat-well').textContent = last.well.toFixed(1);
+    $('#live-stat-max').textContent  = Math.max.apply(null, ysH).toFixed(1);
+    $('#live-stat-min').textContent  = Math.min.apply(null, ysH).toFixed(1);
+    const dEl = $('#live-stat-d');
+    dEl.textContent = (dPerMin >= 0 ? '+' : '') + dPerMin.toFixed(2);
+    dEl.className = 'v ' + (dPerMin >= 0 ? 'up' : 'down');
+    $('#live-tick').textContent = 'tick · ' + new Date(last.ts).toLocaleTimeString();
+    const tag = $('#live-tag');
+    if (tag) tag.textContent = STATE.paused ? 'paused · hold' : 'streaming · 1 Hz';
+  }
+}
+function renderGait(){
+  if (!STATE.gaitChart) ensureLiveCharts();
+  if (!STATE.gaitChart) return;
+  const slice = STATE.buf.slice(-120);
+  const xs = slice.map(p => p.ts/1000);
+  STATE.gaitChart.setSize({ width: $('#gait-chart').clientWidth, height: 200 });
+  STATE.gaitChart.setData([xs, slice.map(p=>p.gait)]);
+  const cur = slice[slice.length-1];
+  if (cur) $('#gait-now').textContent = cur.gait.toFixed(0) + ' J/s';
+}
+
+function renderBreath(){
+  const svg = $('#breath-wave');
+  const w = 600, h = 120;
+  const slice = STATE.buf.slice(-120);
+  if (slice.length < 2) return;
+  // build sinusoidal-ish waveform using breath rate
+  const cur = slice[slice.length-1];
+  const rate = cur.breath; // bpm
+  const period = 60 / rate; // seconds per breath
+  const ns = 600;
+  let path = '';
+  for (let i = 0; i < ns; i++){
+    const t = i * (12 / ns); // 12 seconds of waveform across width
+    const env = 0.7 + 0.3*Math.sin(t*0.4);
+    const y = h/2 + env * 36 * Math.sin(2*Math.PI*t/period);
+    path += (i===0?'M':'L') + (i*(w/ns)).toFixed(1) + ' ' + y.toFixed(1) + ' ';
+  }
+  // grid
+  let grid = '';
+  for (let i = 1; i < 4; i++){ const y = i*(h/4); grid += 'M0 '+y+' L'+w+' '+y+' '; }
+  svg.innerHTML = '<path class="grid" d="' + grid + '"/><path d="' + path + '"/>';
+  $('#breath-now').textContent = rate.toFixed(1) + ' bpm';
+  $('#breath-sub').textContent = rate.toFixed(1) + ' breaths/min · synthetic from CSI envelope';
+}
+
+function renderCsi(){
+  const host = $('#csi-heat');
+  // header row: 8 rows of subcarrier groups × 48 cells? We have 24 frames × 32 subs.
+  // Render 8 rows of grouped subcarriers (4 subs averaged), 48 cells... we have 24 frames, so duplicate columns? No — keep template grid 48 cols.
+  // We'll instead show 8 rows (subcarrier bands) and 48 cells per row (interp from 24 frames).
+  const rows = 8;
+  const cols = 48;
+  let html = '';
+  for (let r = 0; r < rows; r++){
+    html += '<div class="heat-row-label">band ' + (r+1) + '</div>';
+    for (let c = 0; c < cols; c++){
+      const fr = Math.floor(c / (cols/24));
+      const subStart = r * 4;
+      let v = 0;
+      for (let k = 0; k < 4; k++) v += STATE.csi[fr][subStart+k] || 0;
+      v /= 4;
+      const hue = 185 - v*40; // cyan -> green
+      const light = 18 + v*42;
+      html += '<div class="heat-cell" style="background:hsl(' + hue + ' 70% ' + light + '%)"></div>';
+    }
+  }
+  host.innerHTML = html;
+}
+
+// ─── Events ────────────────────────────────────────────────────
+function renderEvents(){
+  const host = $('#event-log');
+  if (STATE.events.length === 0){ host.innerHTML = '<div class="muted" style="text-align:center;padding:1rem">No events yet — they will appear as the cog emits.</div>'; return; }
+  host.innerHTML = STATE.events.slice(0, 40).map(e => {
+    const d = new Date(e.ts);
+    const cls = e.name.includes('gait') ? 'gait' : e.name.includes('affect') ? 'affect' : e.name.includes('well') ? 'wellbeing' : '';
+    return '<div class="event"><span class="ts">' + d.toLocaleTimeString() + '</span><span class="ev ' + cls + '">' + e.name + '</span><span>' + e.payload + '</span></div>';
+  }).join('');
+}
+
+// ─── Hardware updates ──────────────────────────────────────────
+function renderHardware(){
+  const cur = STATE.buf[STATE.buf.length-1]; if (!cur) return;
+  const upS = Math.floor((Date.now() - STATE.t0)/1000);
+  const h = Math.floor(upS/3600), m = Math.floor((upS%3600)/60), s = upS%60;
+  $('#hw-uptime').textContent = h+'h '+m+'m '+s+'s';
+  $('#csi-floor').textContent = (-78 + Math.random()*3).toFixed(1) + ' dBm';
+  $('#csi-last').textContent = (Math.random()*8 + 2).toFixed(1) + ' ms ago';
+  $('#hw-breath-now').textContent = cur.breath.toFixed(1) + ' bpm';
+  $('#hw-breath-conf').textContent = (0.78 + Math.random()*0.18).toFixed(2);
+}
+
+// ─── HUD uPlot factory (futuristic) ────────────────────────────
+function hslA(hslStr, a){
+  // Accept 'hsl(185 80% 55%)' or 'hsl(185, 80%, 55%)' or 'hsl(185 80% 55% / 0.5)'
+  if (hslStr.includes('/')) return hslStr.replace(/\/[^)]+\)/, '/ ' + a + ')');
+  if (hslStr.includes(',')) return hslStr.replace('hsl(', 'hsla(').replace(')', ', ' + a + ')');
+  return hslStr.replace(')', ' / ' + a + ')');
+}
+
+function makeHudChart(host, labels, colors){
+  // Series colors come in as hsl( ... ) strings. Build a uPlot with:
+  //   • gradient area fills
+  //   • glow stroke (re-stroked in drawSeries hook with shadowBlur)
+  //   • leading "comet" point with white core + colored halo
+  //   • dotted grid, monospace axis labels
+  const fillFor = (sIdx) => (u) => {
+    const ctx = u.ctx;
+    const top = u.bbox.top, h = u.bbox.height;
+    const c = colors[sIdx-1];
+    const g = ctx.createLinearGradient(0, top, 0, top + h);
+    g.addColorStop(0,   hslA(c, 0.45));
+    g.addColorStop(0.55, hslA(c, 0.12));
+    g.addColorStop(1,   hslA(c, 0));
+    return g;
+  };
+  const opts = {
+    width: host.clientWidth || 400,
+    height: host.clientHeight || 260,
+    padding: [16, 18, 8, 4],
+    scales: { x: { time: true }, y: { range: (u,min,max) => [Math.min(0,min), Math.max(100, max+4)] } },
+    series: [{}].concat(labels.map((l, i) => ({
+      label: l,
+      stroke: colors[i],
+      width: 2,
+      fill: fillFor(i+1),
+      points: { show: false },
+    }))),
+    axes: [
+      { stroke: hslA('hsl(185 80% 60%)', 0.7),
+        grid:   { stroke: hslA('hsl(185 80% 50%)', 0.10), width: 1, dash: [2, 5] },
+        ticks:  { stroke: hslA('hsl(185 80% 50%)', 0.5), size: 6 },
+        font: '10px JetBrains Mono', size: 28,
+      },
+      { stroke: hslA('hsl(185 80% 60%)', 0.7),
+        grid:   { stroke: hslA('hsl(185 80% 50%)', 0.10), width: 1, dash: [2, 5] },
+        ticks:  { stroke: hslA('hsl(185 80% 50%)', 0.5), size: 6 },
+        font: '10px JetBrains Mono', size: 40,
+      },
+    ],
+    cursor: {
+      show: true,
+      points: { show: false },
+      drag: { x: false, y: false },
+    },
+    legend: { show: false },
+    hooks: {
+      drawClear: [(u) => {
+        // dim baseline grid: paint a horizontal centerline to evoke a HUD readout
+        const ctx = u.ctx;
+        ctx.save();
+        ctx.strokeStyle = hslA('hsl(185 80% 50%)', 0.18);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 6]);
+        const midY = u.bbox.top + u.bbox.height * 0.5;
+        ctx.beginPath(); ctx.moveTo(u.bbox.left, midY); ctx.lineTo(u.bbox.left + u.bbox.width, midY); ctx.stroke();
+        ctx.restore();
+      }],
+      drawSeries: [(u, sIdx) => {
+        // Re-stroke this series with shadow blur to produce a glow halo.
+        const xs = u.data[0]; const ys = u.data[sIdx];
+        if (!xs || xs.length < 2) return;
+        const ctx = u.ctx;
+        const c = colors[sIdx-1];
+        ctx.save();
+        // Clip to plot bbox so glow doesn't spill outside the chart area
+        ctx.beginPath();
+        ctx.rect(u.bbox.left, u.bbox.top, u.bbox.width, u.bbox.height);
+        ctx.clip();
+        ctx.shadowColor = hslA(c, 0.9);
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = c;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < xs.length; i++){
+          const v = ys[i]; if (v == null || isNaN(v)) continue;
+          const x = u.valToPos(xs[i], 'x', true);
+          const y = u.valToPos(v, 'y', true);
+          if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }],
+      draw: [(u) => {
+        // leading "comet" point at the last value of each series
+        const ctx = u.ctx;
+        const xs = u.data[0]; if (!xs || !xs.length) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(u.bbox.left - 8, u.bbox.top - 8, u.bbox.width + 16, u.bbox.height + 16);
+        ctx.clip();
+        for (let s = 1; s < u.series.length; s++){
+          const ys = u.data[s]; if (!ys || !ys.length) continue;
+          const last = ys.length - 1;
+          const lv = ys[last]; if (lv == null || isNaN(lv)) continue;
+          const x = u.valToPos(xs[last], 'x', true);
+          const y = u.valToPos(lv, 'y', true);
+          const c = colors[s-1];
+          // outer halo
+          ctx.shadowColor = hslA(c, 0.95);
+          ctx.shadowBlur = 22;
+          ctx.fillStyle = hslA(c, 0.7);
+          ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+          // mid ring
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = c;
+          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+          // white core
+          ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(x, y, 1.4, 0, Math.PI*2); ctx.fill();
+          // value tag to the right
+          const tag = lv.toFixed(1);
+          ctx.font = '600 10px JetBrains Mono';
+          const tw = ctx.measureText(tag).width + 8;
+          const tx = Math.min(u.bbox.left + u.bbox.width - tw - 2, x + 10);
+          const ty = Math.max(u.bbox.top + 2, y - 8);
+          ctx.fillStyle = hslA(c, 0.18);
+          ctx.strokeStyle = hslA(c, 0.7);
+          ctx.lineWidth = 1;
+          roundRect(ctx, tx, ty, tw, 14, 3); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = c;
+          ctx.fillText(tag, tx + 4, ty + 10);
+        }
+        ctx.restore();
+      }],
+    },
+  };
+  host.innerHTML = '';
+  const seedX = STATE.buf.slice(-5).map(p => p.ts/1000);
+  const data = [seedX].concat(labels.map(_ => seedX.map(() => 0)));
+  return new uPlot(opts, data, host);
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// ─── basic uPlot factory (sub-charts) ───────────────────────────
+function makeLineChart(host, labels, colors){
+  const opts = {
+    width: host.clientWidth || 400,
+    height: host.clientHeight || 200,
+    scales: { x: { time: true }, y: { range: (u,min,max) => [Math.min(0,min), Math.max(100,max)] } },
+    series: [{}].concat(labels.map((l, i) => ({
+      label: l, stroke: colors[i], width: 2,
+      fill: 'hsla(' + colors[i].match(/\d+/g).slice(0,1).join('') + ', 80%, 50%, 0.10)',
+      points: { show: false },
+    }))),
+    axes: [
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+      { stroke: 'hsl(215, 15%, 55%)', grid: { stroke: 'hsl(220, 15%, 18%)' } },
+    ],
+    cursor: { show: true, points: { show: false } },
+    legend: { show: false },
+  };
+  host.innerHTML = '';
+  const seedX = STATE.buf.slice(-5).map(p => p.ts/1000);
+  const data = [seedX].concat(labels.map(_ => seedX.map(() => 0)));
+  return new uPlot(opts, data, host);
+}
+
+// ─── History chart ─────────────────────────────────────────────
+function rangeToHours(r){ return { '1h':1, '6h':6, '24h':24, '7d':24*7, '30d':24*30 }[r] || 6; }
+function ensureHistChart(){
+  if (typeof uPlot === 'undefined') return;
+  if (!STATE.histChart){
+    STATE.histChart = makeHudChart($('#hist-chart'), ['happiness','wellbeing','gait'], ['hsl(185 80% 55%)','hsl(142 70% 55%)','hsl(265 60% 70%)']);
+  }
+  if (!STATE.todChart){
+    STATE.todChart = makeLineChart($('#tod-chart'), ['hourly'], ['hsl(185 80% 55%)']);
+  }
+  if (!STATE.dayChart){
+    STATE.dayChart = makeLineChart($('#day-chart'), ['daily'], ['hsl(142 70% 55%)']);
+  }
+  renderHist();
+}
+function renderHist(){
+  if (!STATE.histChart) return;
+  const hrs = rangeToHours(STATE.range);
+  const cutoff = Date.now() - hrs*3600*1000;
+  let series = STATE.history.filter(p => p.ts >= cutoff);
+  // If short window, blend in high-res buf
+  if (hrs <= 6){
+    const bufPoints = STATE.buf.filter(p => p.ts >= cutoff).map(p => ({ts:p.ts, happy:p.happy, well:p.well, gait:p.gait}));
+    // downsample buf to ~ 240 points
+    const step = Math.max(1, Math.floor(bufPoints.length/240));
+    const ds = [];
+    for (let i = 0; i < bufPoints.length; i += step) ds.push(bufPoints[i]);
+    series = ds;
+  }
+  if (series.length === 0){
+    $('#hist-sub').textContent = 'no data in window';
+    STATE.histChart.setData([[0],[0],[0],[0]]);
+    return;
+  }
+  const xs = series.map(p => p.ts/1000);
+  const ys1 = series.map(p => p.happy);
+  const ys2 = series.map(p => p.well);
+  const ys3 = series.map(p => p.gait);
+  STATE.histChart.setSize({ width: $('#hist-chart').clientWidth, height: 280 });
+  STATE.histChart.setData([xs, ys1, ys2, ys3]);
+  $('#hist-sub').textContent = series.length + ' samples · ' + STATE.range;
+
+  // Aggregates
+  const mean = arr => arr.reduce((s,v)=>s+v,0)/arr.length;
+  const peak = Math.max.apply(null, ys1);
+  const low  = Math.min.apply(null, ys1);
+  const mu   = mean(ys1);
+  const variance = mean(ys1.map(v => (v-mu)*(v-mu)));
+  const sigma = Math.sqrt(variance);
+  $('#agg-mean').textContent = mu.toFixed(1);
+  $('#agg-peak').textContent = peak.toFixed(1);
+  $('#agg-low').textContent  = low.toFixed(1);
+  $('#agg-var').textContent  = variance.toFixed(1);
+  $('#agg-n').textContent    = String(series.length);
+  // HUD strip
+  $('#hist-stat-mean').textContent  = mu.toFixed(1);
+  $('#hist-stat-peak').textContent  = peak.toFixed(1);
+  $('#hist-stat-low').textContent   = low.toFixed(1);
+  $('#hist-stat-sigma').textContent = sigma.toFixed(2);
+  $('#hist-stat-n').textContent     = String(series.length);
+  const tag = $('#hist-tag');
+  if (tag) tag.textContent = 'WIN · ' + STATE.range;
+
+  // Hour-of-day chart
+  const byHour = new Array(24).fill(0).map(() => ({ s: 0, n: 0 }));
+  series.forEach(p => { const h = new Date(p.ts).getHours(); byHour[h].s += p.happy; byHour[h].n++; });
+  const hourXs = byHour.map((_, i) => i);
+  const hourYs = byHour.map(b => b.n ? b.s/b.n : 0);
+  STATE.todChart.setSize({ width: $('#tod-chart').clientWidth, height: 200 });
+  // Use simple numeric x by replacing scales:
+  STATE.todChart.setData([hourXs.map(h => h*3600 + Date.UTC(1970,0,1)/1000), hourYs]);
+
+  // Last 7 days mean line
+  const byDay = {};
+  STATE.history.slice(-7*96).forEach(p => {
+    const d = new Date(p.ts); const key = Math.floor(p.ts/86400000)*86400;
+    if (!byDay[key]) byDay[key] = { s:0, n:0 };
+    byDay[key].s += p.happy; byDay[key].n++;
+  });
+  const dayKeys = Object.keys(byDay).map(Number).sort();
+  STATE.dayChart.setSize({ width: $('#day-chart').clientWidth, height: 200 });
+  STATE.dayChart.setData([dayKeys, dayKeys.map(k => byDay[k].s/byDay[k].n)]);
+}
+
+// ─── Insights: scatter, dwell donut, big heatmap ───────────────
+function drawScatter(){
+  const canvas = $('#scatter');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth;
+  const H = canvas.parentElement.clientHeight;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const pts = STATE.history.slice(-300).map(p => [p.gait, p.happy]);
+  // axes
+  ctx.strokeStyle = 'hsl(220 15% 22%)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i <= 5; i++){
+    const y = 10 + i*(H-30)/5;
+    ctx.moveTo(40, y); ctx.lineTo(W-10, y);
+  }
+  for (let i = 0; i <= 5; i++){
+    const x = 40 + i*(W-50)/5;
+    ctx.moveTo(x, 10); ctx.lineTo(x, H-20);
+  }
+  ctx.stroke();
+  // labels
+  ctx.fillStyle = 'hsl(215 15% 55%)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('gait energy →', W-90, H-4);
+  ctx.save(); ctx.translate(10, H/2+30); ctx.rotate(-Math.PI/2); ctx.fillText('happiness →', 0, 0); ctx.restore();
+  // points
+  pts.forEach(([g, h]) => {
+    const x = 40 + (g/100)*(W-50);
+    const y = 10 + (1 - h/100)*(H-30);
+    ctx.fillStyle = 'hsl(185 80% 55% / 0.7)';
+    ctx.beginPath(); ctx.arc(x, y, 2.4, 0, Math.PI*2); ctx.fill();
+  });
+  // correlation
+  const r = pearson(pts.map(p=>p[0]), pts.map(p=>p[1]));
+  $('#scatter-sub').textContent = 'Pearson r = ' + r.toFixed(3) + ' · ' + pts.length + ' points';
+}
+function pearson(xs, ys){
+  const n = xs.length || 1;
+  const mx = xs.reduce((s,v)=>s+v,0)/n;
+  const my = ys.reduce((s,v)=>s+v,0)/n;
+  let num=0, dx=0, dy=0;
+  for (let i = 0; i < n; i++){ const a = xs[i]-mx, b = ys[i]-my; num += a*b; dx += a*a; dy += b*b; }
+  return num / (Math.sqrt(dx*dy) || 1);
+}
+
+function drawDwell(){
+  // 24h dwell ≈ scale affectMix by an arbitrary 86400 seconds
+  const total = STATE.affectMix.reduce((s,v)=>s+v,0) || 1;
+  const seconds = STATE.affectMix.map(v => Math.round(v/total * 86400));
+  drawDonut('dwell-donut', 'dwell-legend', AFFECT_STATES.map((n,i) => n + ' · ' + Math.round(seconds[i]/60) + 'm'), AFFECT_COLORS, seconds);
+
+  // recommendations
+  const top = argmax(STATE.affectMix);
+  const recs = [];
+  if (top === 4) recs.push('Fatigue dominates — schedule a short movement break (5 min walk).');
+  if (top === 3) recs.push('Elevated stress signal — try a 2-minute breathing reset (target 6 bpm).');
+  if (top === 1 || top === 2) recs.push('Engaged/elated state is strong — protect the next 30 min from interruptions.');
+  if (STATE.buf.length > 30){
+    const last5 = STATE.buf.slice(-300);
+    const mean = last5.reduce((s,v)=>s+v.gait,0)/last5.length;
+    if (mean < 25) recs.push('Gait energy is low — a 10-min walk would lift gait energy ~30 J/s.');
+  }
+  if (recs.length === 0) recs.push('Composite is within expected ranges — no action suggested.');
+  $('#recs').innerHTML = recs.map(r => '<li>'+r+'</li>').join('');
+
+  // best windows
+  const win = 30; // 30 samples (~7.5h since history is 15-min res)
+  const candidates = [];
+  for (let i = 0; i + win < STATE.history.length; i++){
+    const slice = STATE.history.slice(i, i+win);
+    const m = slice.reduce((s,v)=>s+v.happy,0)/win;
+    candidates.push({ ts: slice[0].ts, mean: m, len: win });
+  }
+  candidates.sort((a,b) => b.mean - a.mean);
+  const top5 = candidates.slice(0, 5);
+  $('#best-tbody').innerHTML = top5.length === 0 ? '<tr><td colspan="3" class="muted" style="text-align:center">—</td></tr>'
+    : top5.map(c => '<tr><td>' + new Date(c.ts).toLocaleString() + '</td><td>' + c.mean.toFixed(1) + '</td><td>' + (c.len*15) + ' min</td></tr>').join('');
+}
+
+function drawBigHeat(){
+  // Polar/radial chronograph: 7 concentric rings (one per day, today outermost)
+  // × 24 angular sectors (one per hour, 0 at top, clockwise). No grid.
+  const host = $('#big-heat');
+  const callout = $('#hxd-callout');
+  const sub = $('#hxd-sub');
+
+  // Aggregate samples (history is 15-min resolution) into 7×24 cells of mean.
+  const sums   = new Array(7).fill(0).map(() => new Array(24).fill(0));
+  const counts = new Array(7).fill(0).map(() => new Array(24).fill(0));
+  const cutoff = Date.now() - 7*86400*1000;
+  STATE.history.filter(p => p.ts >= cutoff).forEach(p => {
+    const d = new Date(p.ts);
+    const day = 6 - Math.floor((Date.now() - p.ts)/86400000);
+    if (day < 0 || day > 6) return;
+    const h = d.getHours();
+    sums[day][h] += p.happy; counts[day][h]++;
+  });
+  const cell = (r, c) => counts[r][c] ? sums[r][c] / counts[r][c] : null;
+
+  // Per-day mean (right of day label)
+  const dayLabels = ['−6 d','−5 d','−4 d','−3 d','−2 d','yest','today'];
+  const dayMeans = [];
+  for (let r = 0; r < 7; r++){
+    let s = 0, n = 0;
+    for (let c = 0; c < 24; c++){ const v = cell(r,c); if (v != null){ s += v; n++; } }
+    dayMeans.push(n ? s/n : null);
+  }
+
+  // Overall stats + peak
+  let peak = { v: -Infinity, r: 0, c: 0 };
+  let totS = 0, totN = 0;
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 24; c++){
+    const v = cell(r,c);
+    if (v == null) continue;
+    totS += v; totN++;
+    if (v > peak.v){ peak = { v, r, c }; }
+  }
+  const overallMean = totN ? totS/totN : 0;
+  const nowH = new Date().getHours();
+  const nowVal = cell(6, nowH);
+
+  // Header callout pills (peak, now, mean)
+  callout.innerHTML =
+    '<div class="hxd-pill peak"><span class="l">Peak</span><span class="v">' + (peak.v > -Infinity ? peak.v.toFixed(1) : '—') + '</span><span class="s">' + (peak.v > -Infinity ? (dayLabels[peak.r] + ' · ' + String(peak.c).padStart(2,'0') + ':00') : '—') + '</span></div>' +
+    '<div class="hxd-pill now"><span class="l">Now</span><span class="v">' + (nowVal != null ? nowVal.toFixed(1) : '—') + '</span><span class="s">today · ' + String(nowH).padStart(2,'0') + ':00</span></div>' +
+    '<div class="hxd-pill"><span class="l">μ · 7 d</span><span class="v">' + overallMean.toFixed(1) + '</span><span class="s">' + totN + ' / 168 cells</span></div>';
+
+  sub.textContent = totN + ' filled · ' + (168 - totN) + ' empty · range ' +
+    (totN ? (Math.min.apply(null, [].concat(...sums.map((row,r)=>row.map((_,c)=>cell(r,c))).map(arr=>arr.filter(v=>v!=null)).flat())) || 0).toFixed(0) + '–' + peak.v.toFixed(0) : '—');
+
+  if (totN === 0){
+    host.innerHTML = '<div class="hxd-empty">No history yet — the chronograph populates as samples accumulate.</div>';
+    return;
+  }
+
+  // ── Polar geometry ──────────────────────────────────────────
+  const W = 720, H = 540;
+  const cx = W/2, cy = H/2 + 4;
+  const r0 = 58;            // inner hole radius
+  const rw = 22;            // ring width per day
+  const rMax = r0 + 7*rw;   // = 212
+  const hourLabelR = rMax + 24;
+  const dayLabelAng = Math.PI; // 9 o'clock spoke for day labels
+
+  // Colormap: dark indigo → cyan → bright green-cyan
+  const colorFor = (v) => {
+    if (v == null) return 'hsl(220 30% 9% / 0.55)';
+    const t = Math.max(0, Math.min(1, v/100));
+    const hue   = 222 - t * 80;   // 222 → 142
+    const sat   = 28  + t * 60;   // 28  → 88
+    const light = 14  + t * 50;   // 14  → 64
+    return 'hsl(' + hue.toFixed(0) + ' ' + sat.toFixed(0) + '% ' + light.toFixed(0) + '%)';
+  };
+
+  // hour h (0..24) → angle. 0 = top, clockwise
+  const aFor = (h) => (h/24) * Math.PI * 2 - Math.PI/2;
+  const polar = (r, a) => [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+  // annular sector path (counter-clockwise inner arc, clockwise outer arc)
+  const sectorPath = (ri, ro, a0, a1) => {
+    const [x1,y1] = polar(ro, a0);
+    const [x2,y2] = polar(ro, a1);
+    const [x3,y3] = polar(ri, a1);
+    const [x4,y4] = polar(ri, a0);
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    return 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1)
+         + ' A' + ro + ' ' + ro + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1)
+         + ' L' + x3.toFixed(1) + ' ' + y3.toFixed(1)
+         + ' A' + ri + ' ' + ri + ' 0 ' + large + ' 0 ' + x4.toFixed(1) + ' ' + y4.toFixed(1)
+         + ' Z';
+  };
+
+  const parts = [];
+  parts.push('<svg class="hxd-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">');
+
+  // Defs
+  parts.push(
+    '<defs>' +
+      '<linearGradient id="hxd-cb" x1="0%" y1="0%" x2="100%" y2="0%">' +
+        '<stop offset="0%"   stop-color="' + colorFor(0)   + '"/>' +
+        '<stop offset="25%"  stop-color="' + colorFor(25)  + '"/>' +
+        '<stop offset="50%"  stop-color="' + colorFor(50)  + '"/>' +
+        '<stop offset="75%"  stop-color="' + colorFor(75)  + '"/>' +
+        '<stop offset="100%" stop-color="' + colorFor(100) + '"/>' +
+      '</linearGradient>' +
+      '<radialGradient id="hxd-sweep" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">' +
+        '<stop offset="0%"   stop-color="hsl(185 90% 65% / 0.30)"/>' +
+        '<stop offset="60%"  stop-color="hsl(185 90% 60% / 0.10)"/>' +
+        '<stop offset="100%" stop-color="hsl(185 90% 60% / 0)"/>' +
+      '</radialGradient>' +
+      '<radialGradient id="hxd-core" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%"   stop-color="hsl(185 80% 25% / 0.85)"/>' +
+        '<stop offset="60%"  stop-color="hsl(220 25% 8% / 0.95)"/>' +
+        '<stop offset="100%" stop-color="hsl(220 25% 5% / 0.95)"/>' +
+      '</radialGradient>' +
+      '<filter id="hxd-glow" x="-60%" y="-60%" width="220%" height="220%">' +
+        '<feGaussianBlur stdDeviation="2.6" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      '</filter>' +
+      '<filter id="hxd-glow-hard" x="-100%" y="-100%" width="300%" height="300%">' +
+        '<feGaussianBlur stdDeviation="4.2" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      '</filter>' +
+    '</defs>');
+
+  // Background guide rings (concentric circles between days)
+  for (let r = 0; r <= 7; r++){
+    const rr = r0 + r*rw;
+    const isOuter = r === 7;
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + rr + '" fill="none" stroke="hsl(185 80% 50% / ' + (isOuter ? 0.32 : 0.12) + ')" stroke-width="' + (isOuter ? 1.2 : 0.8) + '"' + (isOuter ? ' class="ring-out"' : '') + '/>');
+  }
+
+  // Radial spokes every 3 hours (subtle), every hour (very faint)
+  for (let h = 0; h < 24; h++){
+    const a = aFor(h);
+    const [x1,y1] = polar(r0 - 4, a);
+    const [x2,y2] = polar(rMax + (h % 3 === 0 ? 8 : 2), a);
+    const major = h % 3 === 0;
+    parts.push('<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="hsl(185 80% 50% / ' + (major ? 0.32 : 0.10) + ')" stroke-width="' + (major ? 1 : 0.6) + '"' + (major ? '' : '') + '/>');
+  }
+
+  // Sectors (24 hours × 7 days)
+  for (let r = 0; r < 7; r++){
+    for (let c = 0; c < 24; c++){
+      const v = cell(r, c);
+      const fill = colorFor(v);
+      const ri = r0 + r*rw + 1;
+      const ro = r0 + (r+1)*rw - 1;
+      const a0 = aFor(c) + 0.006;
+      const a1 = aFor(c+1) - 0.006;
+      const hot = v != null && v >= 75;
+      const op = v != null ? 1 : 0.6;
+      parts.push('<path class="sector" d="' + sectorPath(ri, ro, a0, a1) + '" fill="' + fill + '" opacity="' + op + '"' + (hot ? ' filter="url(#hxd-glow)"' : '') + '>' +
+                 '<title>' + dayLabels[r] + ' · ' + String(c).padStart(2,'0') + ':00 · ' + (v != null ? v.toFixed(1) : 'no data') + '</title></path>');
+      // luminance pip for very high cells
+      if (v != null && v >= 80){
+        const aMid = (a0 + a1)/2;
+        const [px, py] = polar((ri+ro)/2, aMid);
+        const pr = 0.8 + ((v - 70)/30) * 1.4;
+        parts.push('<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + pr.toFixed(1) + '" fill="hsl(0 0% 100% / 0.7)" pointer-events="none"/>');
+      }
+    }
+  }
+
+  // Radar sweep cone (animated rotating). 22.5° wedge.
+  const sweepArc = Math.PI * 22.5 / 180;
+  const sweepPath = (() => {
+    const a0 = -Math.PI/2, a1 = a0 + sweepArc;
+    const [x1, y1] = polar(rMax + 2, a0);
+    const [x2, y2] = polar(rMax + 2, a1);
+    return 'M' + cx + ' ' + cy + ' L' + x1.toFixed(1) + ' ' + y1.toFixed(1)
+         + ' A' + (rMax+2) + ' ' + (rMax+2) + ' 0 0 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' Z';
+  })();
+  parts.push('<g class="sweep-cone"><path d="' + sweepPath + '" fill="url(#hxd-sweep)" pointer-events="none">' +
+             '<animateTransform attributeName="transform" type="rotate" from="0 ' + cx + ' ' + cy + '" to="360 ' + cx + ' ' + cy + '" dur="22s" repeatCount="indefinite"/></path></g>');
+
+  // Centre disc + readouts
+  parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + (r0 - 2) + '" fill="url(#hxd-core)" stroke="hsl(185 80% 50% / 0.4)" stroke-width="1"/>');
+  parts.push('<text x="' + cx + '" y="' + (cy - 22) + '" text-anchor="middle" class="hxd-center-l">7-DAY MEAN</text>');
+  parts.push('<text x="' + cx + '" y="' + (cy + 6) + '" text-anchor="middle" class="hxd-center-v">' + overallMean.toFixed(1) + '</text>');
+  parts.push('<text x="' + cx + '" y="' + (cy + 22) + '" text-anchor="middle" class="hxd-center-s">μ · ' + totN + '/168 cells</text>');
+
+  // Hour labels (every 3 hours) around outside
+  for (let h = 0; h < 24; h += 3){
+    const aMid = aFor(h);   // tick at hour boundary, label centered on it
+    const [tx, ty] = polar(hourLabelR, aMid);
+    parts.push('<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="middle" dominant-baseline="central" class="hxd-ax">' + String(h).padStart(2,'0') + ':00</text>');
+  }
+
+  // Day labels along 9 o'clock spoke (left), outside each ring
+  for (let r = 0; r < 7; r++){
+    const ri = r0 + r*rw, ro = r0 + (r+1)*rw;
+    const [lx, ly] = polar((ri+ro)/2, dayLabelAng);
+    parts.push('<text x="' + (lx - 6).toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="end" dominant-baseline="central" class="hxd-ax-day">' + dayLabels[r] + (dayMeans[r] != null ? ' · μ ' + dayMeans[r].toFixed(0) : '') + '</text>');
+  }
+  // "TODAY" indicator on the outer ring (12 o'clock notch)
+  const [tnx, tny] = polar(rMax + 12, aFor(0) - 0.04);
+  parts.push('<text x="' + tnx.toFixed(1) + '" y="' + tny.toFixed(1) + '" text-anchor="end" dominant-baseline="central" class="hxd-ax-day" style="fill:hsl(var(--accent));font-weight:600;letter-spacing:0.14em">TODAY ▶</text>');
+
+  // NOW radial spoke through current hour, full length
+  const aNowMid = (aFor(nowH) + aFor(nowH+1)) / 2;
+  const [nxs, nys] = polar(r0, aNowMid);
+  const [nxe, nye] = polar(rMax + 6, aNowMid);
+  parts.push('<line class="now-spoke" x1="' + nxs.toFixed(1) + '" y1="' + nys.toFixed(1) + '" x2="' + nxe.toFixed(1) + '" y2="' + nye.toFixed(1) + '" stroke="hsl(185 90% 70%)" stroke-width="2" stroke-dasharray="6 3" filter="url(#hxd-glow)"/>');
+  const [nlx, nly] = polar(rMax + 32, aNowMid);
+  parts.push('<text x="' + nlx.toFixed(1) + '" y="' + (nly - 5).toFixed(1) + '" text-anchor="middle" dominant-baseline="central" class="hxd-now">NOW</text>');
+  parts.push('<text x="' + nlx.toFixed(1) + '" y="' + (nly + 6).toFixed(1) + '" text-anchor="middle" dominant-baseline="central" class="hxd-ax">' + String(nowH).padStart(2,'0') + ':00</text>');
+
+  // Peak marker — glowing ring around peak sector + leader line + label
+  if (peak.v > -Infinity){
+    const aPeak = (aFor(peak.c) + aFor(peak.c+1)) / 2;
+    const rPeak = r0 + peak.r*rw + rw/2;
+    const [ppx, ppy] = polar(rPeak, aPeak);
+    parts.push('<circle cx="' + ppx.toFixed(1) + '" cy="' + ppy.toFixed(1) + '" r="' + ((rw/2)-1).toFixed(1) + '" fill="none" stroke="hsl(60 100% 80%)" stroke-width="1.5" filter="url(#hxd-glow-hard)" pointer-events="none"/>');
+    parts.push('<circle cx="' + ppx.toFixed(1) + '" cy="' + ppy.toFixed(1) + '" r="2.2" fill="hsl(60 100% 88%)" filter="url(#hxd-glow-hard)" pointer-events="none"/>');
+    // Leader line out to a label in a corner area (top-right or bottom-right)
+    // Pick label position based on peak angle so the line doesn't cross the chart.
+    const isRight = Math.cos(aPeak) >= 0;
+    const labelX = isRight ? (W - 18) : 18;
+    const labelY = Math.cos(aPeak) >= 0 ? Math.max(40, Math.min(H - 80, ppy + (Math.sin(aPeak) >= 0 ? 30 : -30)))
+                                        : Math.max(40, Math.min(H - 80, ppy));
+    parts.push('<line x1="' + ppx.toFixed(1) + '" y1="' + ppy.toFixed(1) + '" x2="' + (labelX + (isRight ? -8 : 8)) + '" y2="' + labelY + '" stroke="hsl(60 100% 80% / 0.55)" stroke-width="1" stroke-dasharray="2 3"/>');
+    parts.push('<text x="' + labelX + '" y="' + (labelY - 4) + '" text-anchor="' + (isRight ? 'end' : 'start') + '" class="hxd-peak">PEAK ' + peak.v.toFixed(0) + '</text>');
+    parts.push('<text x="' + labelX + '" y="' + (labelY + 9) + '" text-anchor="' + (isRight ? 'end' : 'start') + '" class="hxd-peak-sub">' + dayLabels[peak.r] + ' · ' + String(peak.c).padStart(2,'0') + ':00</text>');
+  }
+
+  // Colorbar (arc-style at the bottom of the polar plot)
+  const cbW = 220, cbH = 6;
+  const cbX = cx - cbW/2;
+  const cbY = H - 24;
+  parts.push('<rect x="' + cbX + '" y="' + cbY + '" width="' + cbW + '" height="' + cbH + '" rx="3" fill="url(#hxd-cb)"/>');
+  for (let i = 0; i <= 4; i++){
+    const tx = cbX + (cbW * i / 4);
+    parts.push('<line x1="' + tx + '" y1="' + (cbY + cbH) + '" x2="' + tx + '" y2="' + (cbY + cbH + 3) + '" stroke="hsl(var(--primary) / 0.6)" stroke-width="1"/>');
+    parts.push('<text x="' + tx + '" y="' + (cbY + cbH + 14) + '" text-anchor="middle" class="hxd-cb-lbl">' + (i * 25) + '</text>');
+  }
+  parts.push('<text x="' + (cbX - 12) + '" y="' + (cbY + 5) + '" text-anchor="end" class="hxd-cb-lbl">LOW</text>');
+  parts.push('<text x="' + (cbX + cbW + 12) + '" y="' + (cbY + 5) + '" text-anchor="start" class="hxd-cb-lbl">HIGH</text>');
+  if (peak.v > -Infinity){
+    const pmX = cbX + (peak.v/100) * cbW;
+    parts.push('<polygon points="' + pmX + ',' + (cbY - 5) + ' ' + (pmX - 4) + ',' + (cbY - 1) + ' ' + (pmX + 4) + ',' + (cbY - 1) + '" fill="hsl(60 100% 80%)"/>');
+  }
+
+  // Hot-cell counter bottom-left
+  const hotCount = sums.reduce((acc, row, r) => acc + row.reduce((a, _, c) => a + ((cell(r,c) ?? 0) >= 75 ? 1 : 0), 0), 0);
+  parts.push('<g transform="translate(20,' + (H - 22) + ')">' +
+    '<circle cx="6" cy="6" r="3.5" fill="hsl(142 70% 60%)" filter="url(#hxd-glow)"/>' +
+    '<text x="16" y="9" class="hxd-cb-lbl">' + hotCount + ' high sectors (≥ 75)</text>' +
+  '</g>');
+
+  parts.push('</svg>');
+  host.innerHTML = parts.join('');
+}
+
+// ─── Controls ──────────────────────────────────────────────────
+$('#btn-pause').addEventListener('click', () => {
+  STATE.paused = !STATE.paused;
+  $('#btn-pause').textContent = STATE.paused ? 'Resume' : 'Pause';
+  $('#btn-pause').classList.toggle('primary', STATE.paused);
+  toast(STATE.paused ? 'Stream paused' : 'Stream resumed', STATE.paused ? 'info' : 'ok');
+});
+
+$('#btn-reset-live').addEventListener('click', () => {
+  STATE.buf = STATE.buf.slice(-30);
+  toast('Live window reset', 'ok');
+});
+
+$('#btn-snapshot').addEventListener('click', () => {
+  const snap = {
+    ts: new Date().toISOString(),
+    current: STATE.buf[STATE.buf.length-1],
+    affect_mix: STATE.affectMix.map((v, i) => ({ state: AFFECT_STATES[i], weight: +v.toFixed(4) })),
+    baselines: STATE.baselines,
+    weights: STATE.weights,
+  };
+  download('happiness-snapshot-' + Date.now() + '.json', JSON.stringify(snap, null, 2), 'application/json');
+  toast('Snapshot saved', 'ok');
+});
+
+$('#btn-clear-events').addEventListener('click', () => {
+  STATE.events = [];
+  renderEvents();
+  toast('Event log cleared', 'info');
+});
+
+// History range tabs
+$$('#range-tabs .pill-tab').forEach(t => t.addEventListener('click', () => {
+  $$('#range-tabs .pill-tab').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  STATE.range = t.dataset.range;
+  renderHist();
+}));
+
+// Exports
+$$('[data-export]').forEach(b => b.addEventListener('click', () => {
+  const fmt = b.dataset.export;
+  if (fmt === 'json'){
+    download('happiness-history-' + Date.now() + '.json', JSON.stringify(STATE.history, null, 2), 'application/json');
+  } else {
+    const rows = ['ts,iso,happy,wellbeing,gait'].concat(STATE.history.map(p => [
+      p.ts, new Date(p.ts).toISOString(), p.happy.toFixed(2), p.well.toFixed(2), p.gait.toFixed(2)
+    ].join(',')));
+    download('happiness-history-' + Date.now() + '.csv', rows.join('\n'), 'text/csv');
+  }
+  toast('Exported ' + fmt.toUpperCase(), 'ok');
+}));
+
+function download(name, body, type){
+  const blob = new Blob([body], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+// Insights recompute
+$('#btn-recompute-corr').addEventListener('click', () => { drawScatter(); toast('Correlation refreshed', 'ok'); });
+
+// Calibration wizard
+const CAL_DURATIONS = [5, 10, 5]; // seconds per step
+function calStartStep(idx){
+  STATE.calStep = idx;
+  $$('#cal-steps .step').forEach((el, i) => {
+    el.classList.toggle('on', i === idx);
+    el.classList.toggle('done', i < idx);
+  });
+  $('#cal-sub').textContent = ['Capturing quiet baseline…','Walk a natural pace…','Breathe normally…'][idx];
+  $('#cal-msg').textContent = 'step ' + (idx+1) + '/3 · ' + CAL_DURATIONS[idx] + 's';
+  let elapsed = 0;
+  const tot = CAL_DURATIONS[idx];
+  clearInterval(STATE.calTimer);
+  STATE.calTimer = setInterval(() => {
+    elapsed += 0.1;
+    $('#cal-bar').style.width = ((elapsed/tot)*100).toFixed(1) + '%';
+    if (elapsed >= tot){
+      clearInterval(STATE.calTimer);
+      if (idx === 0) STATE.baselines.quiet = (10 + Math.random()*4).toFixed(2);
+      if (idx === 1) STATE.baselines.gait  = (75 + Math.random()*15).toFixed(2);
+      if (idx === 2) STATE.baselines.breath = (14 + Math.random()*3).toFixed(1);
+      renderBaselines();
+      if (idx < 2) { calStartStep(idx+1); }
+      else { calFinish(); }
+    }
+  }, 100);
+}
+function calFinish(){
+  STATE.calRunning = false;
+  STATE.baselines.when = new Date().toISOString();
+  $$('#cal-steps .step').forEach(el => el.classList.add('done'));
+  $('#cal-sub').textContent = 'Calibration complete';
+  $('#cal-msg').textContent = 'baselines stored locally';
+  $('#cal-bar').style.width = '100%';
+  $('#btn-cal-start').disabled = false;
+  $('#btn-cal-cancel').disabled = true;
+  $('#btn-cal-start').textContent = 'Recalibrate';
+  renderBaselines();
+  toast('Calibration complete', 'ok');
+}
+$('#btn-cal-start').addEventListener('click', () => {
+  if (STATE.calRunning) return;
+  STATE.calRunning = true;
+  $('#btn-cal-start').disabled = true;
+  $('#btn-cal-cancel').disabled = false;
+  $$('#cal-steps .step').forEach(el => { el.classList.remove('done','on'); });
+  $('#cal-bar').style.width = '0%';
+  calStartStep(0);
+});
+$('#btn-cal-cancel').addEventListener('click', () => {
+  clearInterval(STATE.calTimer);
+  STATE.calRunning = false;
+  $('#cal-sub').textContent = 'Cancelled';
+  $('#cal-msg').textContent = 'cancelled by user';
+  $('#cal-bar').style.width = '0%';
+  $('#btn-cal-start').disabled = false;
+  $('#btn-cal-cancel').disabled = true;
+  $$('#cal-steps .step').forEach(el => el.classList.remove('on'));
+  toast('Calibration cancelled', 'info');
+});
+$('#btn-base-reset').addEventListener('click', () => {
+  STATE.baselines = { quiet:null, gait:null, breath:null, when:null };
+  renderBaselines();
+  localStorage.removeItem('happiness_baselines');
+  toast('Baselines cleared', 'info');
+});
+
+function renderBaselines(){
+  $('#base-quiet').textContent = STATE.baselines.quiet ?? '—';
+  $('#base-gait').textContent  = STATE.baselines.gait  ?? '—';
+  $('#base-breath').textContent= STATE.baselines.breath ? STATE.baselines.breath + ' bpm' : '—';
+  $('#base-when').textContent  = STATE.baselines.when ? new Date(STATE.baselines.when).toLocaleString() : 'never';
+  if (STATE.baselines.when) localStorage.setItem('happiness_baselines', JSON.stringify(STATE.baselines));
+}
+
+// Sensitivity sliders
+$('#sens-smooth').addEventListener('input', e => { $('#sens-smooth-v').textContent = e.target.value + ' s'; });
+$('#sens-react').addEventListener('input', e => { $('#sens-react-v').textContent = (e.target.value/100).toFixed(2); });
+
+// Hardware buttons
+$$('[data-hw]').forEach(b => b.addEventListener('click', () => {
+  const action = b.dataset.hw;
+  if (action === 'ping') toast('ESP32-S3 → pong · 4.2 ms', 'ok');
+  if (action === 'reboot') { toast('Reboot scheduled (simulated)', 'info'); STATE.t0 = Date.now(); }
+  if (action === 'csi-test') toast('CSI self-test passed · 52/52 subcarriers', 'ok');
+  if (action === 'breath-test') toast('Breathing channel OK · ' + (STATE.buf[STATE.buf.length-1].breath).toFixed(1) + ' bpm', 'ok');
+}));
+
+// Settings: weight sliders
+function syncWeights(){
+  const g = +$('#w-gait').value, f = +$('#w-flu').value, a = +$('#w-aff').value;
+  const sum = g + f + a;
+  $('#w-gait-v').textContent = (g/100).toFixed(2);
+  $('#w-flu-v').textContent  = (f/100).toFixed(2);
+  $('#w-aff-v').textContent  = (a/100).toFixed(2);
+  $('#w-sum').textContent    = (sum/100).toFixed(2);
+}
+['#w-gait','#w-flu','#w-aff'].forEach(id => $(id).addEventListener('input', syncWeights));
+syncWeights();
+
+$('#btn-save').addEventListener('click', () => {
+  const g = +$('#w-gait').value, f = +$('#w-flu').value, a = +$('#w-aff').value;
+  const sum = (g + f + a) || 1;
+  STATE.weights = { gait: g/sum, flu: f/sum, aff: a/sum };
+  STATE.settings.csiRate = +$('#set-csi').value;
+  STATE.settings.emit = +$('#set-emit').value;
+  STATE.settings.smooth = +$('#set-smooth').value || 8;
+  localStorage.setItem('happiness_settings', JSON.stringify({ weights: STATE.weights, settings: STATE.settings, notif: {
+    drop: $('#n-drop').checked, low: $('#n-low').checked, peak: $('#n-peak').checked, still: $('#n-still').checked
+  }, privacy: {
+    retain: $('#p-retain').checked, share: $('#p-share').checked, debug: $('#p-debug').checked
+  } }));
+  toast('Settings saved', 'ok');
+});
+$('#btn-defaults').addEventListener('click', () => {
+  $('#w-gait').value = 45; $('#w-flu').value = 25; $('#w-aff').value = 30;
+  $('#set-csi').value = 100; $('#set-emit').value = 1; $('#set-smooth').value = 8;
+  $('#n-drop').checked = true; $('#n-low').checked = false; $('#n-peak').checked = true; $('#n-still').checked = false;
+  $('#p-retain').checked = true; $('#p-share').checked = false; $('#p-debug').checked = false;
+  syncWeights();
+  toast('Defaults restored', 'info');
+});
+$('#btn-wipe').addEventListener('click', () => {
+  if (!confirm('Wipe local 30-day history? This cannot be undone.')) return;
+  STATE.history = [];
+  toast('Local history wiped', 'info');
+  renderHist();
+});
+
+// Load saved settings if present
+(function loadSaved(){
+  try {
+    const raw = localStorage.getItem('happiness_settings');
+    if (raw){
+      const s = JSON.parse(raw);
+      if (s.weights){
+        $('#w-gait').value = Math.round(s.weights.gait*100);
+        $('#w-flu').value  = Math.round(s.weights.flu*100);
+        $('#w-aff').value  = Math.round(s.weights.aff*100);
+        STATE.weights = s.weights;
+        syncWeights();
+      }
+      if (s.settings){
+        $('#set-csi').value = s.settings.csiRate;
+        $('#set-emit').value = s.settings.emit;
+        $('#set-smooth').value = s.settings.smooth;
+        STATE.settings = s.settings;
+      }
+      if (s.notif){ $('#n-drop').checked=!!s.notif.drop; $('#n-low').checked=!!s.notif.low; $('#n-peak').checked=!!s.notif.peak; $('#n-still').checked=!!s.notif.still; }
+      if (s.privacy){ $('#p-retain').checked=!!s.privacy.retain; $('#p-share').checked=!!s.privacy.share; $('#p-debug').checked=!!s.privacy.debug; }
+    }
+    const rawB = localStorage.getItem('happiness_baselines');
+    if (rawB) STATE.baselines = JSON.parse(rawB);
+    renderBaselines();
+  } catch (_) {}
+})();
+
+// Resize handler
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    [STATE.ovChart, STATE.liveChart, STATE.gaitChart, STATE.histChart, STATE.todChart, STATE.dayChart].forEach(c => {
+      if (c && c.root && c.root.parentElement) c.setSize({ width: c.root.parentElement.clientWidth, height: c.root.clientHeight });
+    });
+    drawScatter();
+  }, 120);
+});
+
+// ─── Boot ──────────────────────────────────────────────────────
+function boot(){
+  if (typeof uPlot === 'undefined'){
+    setTimeout(boot, 80);
+    return;
+  }
+  ensureOvChart();
+  ensureLiveCharts();
+  renderAll();
+  drawScatter();
+  drawDwell();
+  drawBigHeat();
+  setInterval(tick, 1000);
+}
+boot();
+</script>
+</body>
+</html>

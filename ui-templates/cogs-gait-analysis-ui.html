@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gait Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover,.nav a.active{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active{color:hsl(var(--primary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.page-head .lede{margin-bottom:0}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.empty-card{
+  background:var(--gradient-card);
+  border:1px dashed hsl(var(--border));
+  border-radius:var(--radius);
+  padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));
+}
+.empty-card h3{font-size:1rem;font-weight:600;color:hsl(var(--primary));margin-bottom:0.5rem;letter-spacing:-0.01em}
+.empty-card p{font-size:0.875rem;line-height:1.6;max-width:36rem;margin:0 auto 0.75rem}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 65%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.split-2{display:grid;gap:0.75rem;grid-template-columns:2fr 1fr}
+@media(max-width:900px){.split-2{grid-template-columns:1fr}}
+
+.node{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem}
+.node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+.node-name{font-size:0.875rem;font-weight:600}
+.node-meta{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;border:1px solid transparent;
+}
+.badge.role-master{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.2)}
+.badge.role-worker{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.2)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.12);color:hsl(35 85% 70%);border-color:hsl(var(--warn) / 0.25)}
+.badge.info{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.ok{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.55rem 0.5rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.6rem 0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.3)}
+tbody tr.clickable{cursor:pointer}
+
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.accent{background:hsl(var(--accent));color:hsl(var(--accent-foreground));border-color:hsl(var(--accent));font-weight:600}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.9)}
+.btn-row{display:flex;gap:0.5rem;flex-wrap:wrap}
+
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+.input{width:100%;height:2.4rem;border:1px solid hsl(var(--input));background:hsl(var(--background))}
+.input-row{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+label.field{display:block;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-radius:var(--radius);box-shadow:var(--shadow-card);
+  padding:1.5rem;max-width:680px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+.modal-result{margin-top:0.875rem;padding:0.625rem 0.75rem;font-family:var(--font-mono);font-size:0.75rem;border-radius:0.4rem;display:none}
+.modal-result.ok{display:block;background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border:1px solid hsl(142 70% 50% / 0.25)}
+.modal-result.err{display:block;background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border:1px solid hsl(0 65% 50% / 0.25)}
+
+pre.logbox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));
+  white-space:pre-wrap;word-break:break-word;
+}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+}
+
+.view{display:none}
+.view.active{display:block}
+
+.metric-row{display:grid;gap:0.5rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0.875rem}
+.metric{padding:0.625rem 0.75rem;background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem}
+.metric-l{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))}
+.metric-v{font-family:var(--font-mono);font-size:1rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.15rem}
+.metric-sub{font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+
+.score-ring{position:relative;width:120px;height:120px;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring .ring-bg{fill:none;stroke:hsl(var(--border));stroke-width:8}
+.score-ring .ring-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s}
+.score-ring .ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-ring .ring-num{font-size:1.875rem;font-weight:600;line-height:1;letter-spacing:-0.02em}
+.score-ring .ring-cap{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-top:0.25rem}
+
+.signal-canvas{width:100%;height:200px;border-radius:0.5rem;background:hsl(var(--background));border:1px solid hsl(var(--border))}
+.event-row{display:flex;align-items:center;gap:0.625rem;padding:0.625rem 0.75rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-size:0.8125rem}
+.event-row:last-child{border-bottom:0}
+.event-time{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));flex-shrink:0;width:5.5rem}
+.event-icon{width:28px;height:28px;border-radius:0.4rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.event-icon svg{width:14px;height:14px;fill:none;stroke-width:2}
+.event-icon.warn{background:hsl(var(--warn) / 0.12)}
+.event-icon.warn svg{stroke:hsl(var(--warn))}
+.event-icon.danger{background:hsl(var(--destructive) / 0.12)}
+.event-icon.danger svg{stroke:hsl(0 70% 70%)}
+.event-icon.info{background:hsl(var(--primary) / 0.12)}
+.event-icon.info svg{stroke:hsl(var(--primary))}
+.event-icon.ok{background:hsl(var(--accent) / 0.12)}
+.event-icon.ok svg{stroke:hsl(var(--accent))}
+.event-body{flex:1;min-width:0}
+.event-title{font-weight:500;color:hsl(var(--foreground))}
+.event-sub{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.toggle{position:relative;display:inline-block;width:38px;height:22px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;cursor:pointer;inset:0;
+  background:hsl(var(--muted));border:1px solid hsl(var(--border));
+  border-radius:11px;transition:0.2s;
+}
+.toggle-slider::before{
+  content:"";position:absolute;height:14px;width:14px;left:3px;top:50%;
+  transform:translateY(-50%);background:hsl(var(--foreground));
+  border-radius:50%;transition:0.2s;
+}
+.toggle input:checked + .toggle-slider{background:hsl(var(--primary));border-color:hsl(var(--primary))}
+.toggle input:checked + .toggle-slider::before{transform:translate(16px,-50%);background:hsl(var(--primary-foreground))}
+
+.gauge-bar{height:8px;background:hsl(var(--muted));border-radius:4px;overflow:hidden;margin-top:0.5rem}
+.gauge-fill{height:100%;border-radius:4px;transition:width 0.4s}
+.gauge-fill.low{background:linear-gradient(90deg,hsl(142 70% 50%),hsl(142 70% 60%))}
+.gauge-fill.mid{background:linear-gradient(90deg,hsl(var(--warn)),hsl(35 85% 65%))}
+.gauge-fill.high{background:linear-gradient(90deg,hsl(0 65% 50%),hsl(0 70% 65%))}
+
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;
+  background:hsl(var(--card));border:1px solid hsl(var(--accent) / 0.5);
+  border-radius:0.5rem;padding:0.75rem 1rem;
+  box-shadow:var(--shadow-card);font-size:0.8125rem;
+  display:flex;align-items:center;gap:0.5rem;
+  transform:translateY(100px);opacity:0;transition:all 0.3s;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-color:hsl(var(--destructive) / 0.5)}
+
+.banner{
+  padding:0.75rem 1rem;border-radius:0.5rem;
+  background:hsl(var(--warn) / 0.08);border:1px solid hsl(var(--warn) / 0.3);
+  color:hsl(35 85% 80%);font-size:0.8125rem;margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:0.625rem;
+}
+.banner svg{width:16px;height:16px;stroke:hsl(var(--warn));fill:none;stroke-width:2;flex-shrink:0}
+
+.foot-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.875rem;flex-wrap:wrap}
+.legend-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.5rem;font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.legend-item{display:inline-flex;align-items:center;gap:0.35rem}
+.legend-swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+.density-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;
+  margin-top:0.625rem;padding-top:0.625rem;
+  border-top:1px solid hsl(var(--border) / 0.4);
+}
+.density-stat{font-family:var(--font-mono);min-width:0}
+.density-stat-l{color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-size:0.6rem}
+.density-stat-v{font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.125rem}
+.radial-wrap{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:center}
+.legend-list{flex:1;min-width:150px;display:flex;flex-direction:column;gap:0.45rem}
+.legend-list .lrow{display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;font-family:var(--font-mono)}
+.legend-list .lrow .sw{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-list .lrow .lbl{flex:1;color:hsl(var(--foreground))}
+.legend-list .lrow .val{font-weight:600}
+.legend-list .lrow .pct{color:hsl(var(--muted-foreground));min-width:2.75rem;text-align:right}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M6 3c.6 0 1 .4 1 1v3l3 3-1 5 3 4v2"/><path d="M14 11l4-1 1-4"/><circle cx="14" cy="4" r="1.5"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Gait Analysis<span class="brand-ver mono">v1.3.0</span></span>
+    </div>
+    <nav class="nav" id="main-nav">
+      <a data-view="dashboard" class="active">Dashboard</a>
+      <a data-view="live">Live Monitor</a>
+      <a data-view="patients">Patients</a>
+      <a data-view="sessions">Sessions</a>
+      <a data-view="analytics">Analytics</a>
+      <a data-view="alerts">Alerts</a>
+      <a data-view="devices">Devices</a>
+      <a data-view="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============================== DASHBOARD ============================== -->
+<section class="view active" id="view-dashboard">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Gait Analysis Overview</h1>
+      <p class="lede">CSI-based walking pattern analysis for Parkinsonian gait, post-stroke asymmetry, and fall-risk scoring across the patient cohort.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn outline" id="btn-export">Export report</button>
+      <button class="btn primary" id="btn-new-session">+ New session</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Active patients</div><div class="kpi-val" id="k-patients">24</div><div class="kpi-sub">3 new this week</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Sessions today</div><div class="kpi-val" id="k-sessions">17</div><div class="kpi-sub">+22% vs avg</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Avg gait score</div><div class="kpi-val" id="k-score">72</div><div class="kpi-sub">↑ 4 pts (7d)</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">High fall risk</div><div class="kpi-val" id="k-fall">5</div><div class="kpi-sub">need follow-up</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic danger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Active alerts</div><div class="kpi-val" id="k-alerts">3</div><div class="kpi-sub">unacknowledged</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Sensors online</div><div class="kpi-val" id="k-sensors">8 / 9</div><div class="kpi-sub">ESP32-S3 fleet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section split-2">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Cohort gait score — 30d trend</div>
+          <div class="card-sub">Median, P25–P75 envelope across all active patients</div>
+        </div>
+        <div class="pill-tabs" id="trend-tabs">
+          <button class="pill-tab" data-range="7">7d</button>
+          <button class="pill-tab on" data-range="30">30d</button>
+          <button class="pill-tab" data-range="90">90d</button>
+        </div>
+      </div>
+      <svg id="cohort-chart" viewBox="0 0 800 240" preserveAspectRatio="none" style="width:100%;height:240px"></svg>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-swatch" style="background:hsl(185 80% 50%)"></span>Median score</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:hsl(185 80% 50% / 0.2)"></span>P25–P75 range</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:hsl(142 70% 50%)"></span>Sessions / day</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Condition distribution</div>
+          <div class="card-sub">Active classifications</div>
+        </div>
+      </div>
+      <div id="condition-bars" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Recent alerts</div>
+          <div class="card-sub">Last 24 hours</div>
+        </div>
+        <a class="btn sm outline" data-view="alerts">View all →</a>
+      </div>
+      <div id="dash-alerts"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== LIVE MONITOR ============================== -->
+<section class="view" id="view-live">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Live Monitor</h1>
+      <p class="lede">Real-time CSI motion + presence stream from a paired sensor with per-stride gait parameters and live scoring.</p>
+    </div>
+    <div class="btn-row">
+      <select id="live-patient" style="min-width:200px">
+        <option value="p001">P-001 · Margaret Wills (72)</option>
+        <option value="p002">P-002 · David Cho (68)</option>
+        <option value="p003">P-003 · Hiroshi Tanaka (74)</option>
+        <option value="p004">P-004 · Linda Park (81)</option>
+      </select>
+      <button class="btn outline" id="live-stop">Pause</button>
+      <button class="btn primary" id="live-record">● Record session</button>
+    </div>
+  </div>
+
+  <div class="section split-2">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">CSI signal — channel state response</div>
+          <div class="card-sub">ESP32-S3 · sensor S-04 living-room · 100 Hz</div>
+        </div>
+        <span class="badge online"><span class="dot up pulse"></span>streaming</span>
+      </div>
+      <canvas id="signal-canvas" class="signal-canvas"></canvas>
+      <div class="metric-row">
+        <div class="metric"><div class="metric-l">Cadence</div><div class="metric-v" id="m-cadence">108</div><div class="metric-sub">steps / min</div></div>
+        <div class="metric"><div class="metric-l">Stride length</div><div class="metric-v" id="m-stride">1.18</div><div class="metric-sub">m</div></div>
+        <div class="metric"><div class="metric-l">Gait velocity</div><div class="metric-v" id="m-vel">1.06</div><div class="metric-sub">m/s</div></div>
+        <div class="metric"><div class="metric-l">Stride time CV</div><div class="metric-v" id="m-cv">3.2</div><div class="metric-sub">%</div></div>
+        <div class="metric"><div class="metric-l">Asymmetry idx</div><div class="metric-v" id="m-asym">0.04</div><div class="metric-sub">0 = symmetric</div></div>
+        <div class="metric"><div class="metric-l">Double support</div><div class="metric-v" id="m-dbl">22.4</div><div class="metric-sub">% of cycle</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Current scores</div>
+          <div class="card-sub">Computed every 10 strides</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:center;align-items:center;padding:0.75rem 0">
+        <div class="score-ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="50"/>
+            <circle id="ring-gait" class="ring-fg" cx="60" cy="60" r="50" stroke="hsl(185 80% 50%)" stroke-dasharray="314" stroke-dashoffset="88"/>
+          </svg>
+          <div class="ring-label"><div class="ring-num" id="ring-gait-num">72</div><div class="ring-cap">gait_score</div></div>
+        </div>
+        <div class="score-ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="50"/>
+            <circle id="ring-fall" class="ring-fg" cx="60" cy="60" r="50" stroke="hsl(var(--warn))" stroke-dasharray="314" stroke-dashoffset="220"/>
+          </svg>
+          <div class="ring-label"><div class="ring-num" id="ring-fall-num">30</div><div class="ring-cap">fall_risk</div></div>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem"><span style="color:hsl(var(--muted-foreground))">Parkinsonian likelihood</span><span class="mono" id="lbl-pk">12%</span></div>
+        <div class="gauge-bar"><div class="gauge-fill low" id="gauge-pk" style="width:12%"></div></div>
+      </div>
+      <div style="margin-top:0.875rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem"><span style="color:hsl(var(--muted-foreground))">Post-stroke asymmetry</span><span class="mono" id="lbl-as">8%</span></div>
+        <div class="gauge-bar"><div class="gauge-fill low" id="gauge-as" style="width:8%"></div></div>
+      </div>
+      <div style="margin-top:0.875rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem"><span style="color:hsl(var(--muted-foreground))">Freezing-of-gait events</span><span class="mono" id="lbl-fog">0 / session</span></div>
+        <div class="gauge-bar"><div class="gauge-fill low" style="width:5%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event stream</div>
+          <div class="card-sub">Cog events emitted during this session</div>
+        </div>
+        <button class="btn sm outline" id="btn-clear-events">Clear</button>
+      </div>
+      <pre class="logbox" id="live-log">[ready] waiting for first stride window…</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PATIENTS ============================== -->
+<section class="view" id="view-patients">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Patients</h1>
+      <p class="lede">Cohort overview with latest gait score, fall risk, and primary classification.</p>
+    </div>
+    <div class="btn-row">
+      <input id="patient-search" placeholder="Search by name or ID…" style="min-width:240px">
+      <button class="btn primary" id="btn-add-patient">+ Add patient</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="pill-tabs" id="patient-filter">
+      <button class="pill-tab on" data-filter="all">All</button>
+      <button class="pill-tab" data-filter="parkinsonian">Parkinsonian</button>
+      <button class="pill-tab" data-filter="stroke">Post-stroke</button>
+      <button class="pill-tab" data-filter="risk">High fall risk</button>
+      <button class="pill-tab" data-filter="normal">Normal</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table id="patients-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Patient</th><th>Age</th><th>Classification</th>
+              <th>Gait score</th><th>Fall risk</th><th>Last session</th><th>Sensor</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="patients-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SESSIONS ============================== -->
+<section class="view" id="view-sessions">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Sessions</h1>
+      <p class="lede">Recorded walking sessions across the cohort with computed gait parameters and classifications.</p>
+    </div>
+    <div class="btn-row">
+      <select id="session-range">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="all">All time</option>
+      </select>
+      <button class="btn outline" id="btn-export-sessions">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table id="sessions-table">
+          <thead>
+            <tr><th>When</th><th>Patient</th><th>Duration</th><th>Strides</th><th>Cadence</th><th>Velocity</th><th>Asymmetry</th><th>Score</th><th>Events</th><th></th></tr>
+          </thead>
+          <tbody id="sessions-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ANALYTICS ============================== -->
+<section class="view" id="view-analytics">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Analytics</h1>
+      <p class="lede">Aggregate trends and per-parameter distributions for clinical reporting.</p>
+    </div>
+    <div class="btn-row">
+      <select id="analytics-cohort">
+        <option>All patients</option>
+        <option>Parkinsonian</option>
+        <option>Post-stroke</option>
+        <option>High fall risk</option>
+      </select>
+      <button class="btn outline" id="btn-print">Print summary</button>
+    </div>
+  </div>
+
+  <div class="section grid-3">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Velocity distribution</div><div class="card-sub">m/s across cohort</div></div></div>
+      <svg viewBox="0 0 320 160" style="width:100%;height:160px" id="chart-velocity"></svg>
+      <div class="density-stats" id="stats-velocity"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Cadence distribution</div><div class="card-sub">steps/min</div></div></div>
+      <svg viewBox="0 0 320 160" style="width:100%;height:160px" id="chart-cadence"></svg>
+      <div class="density-stats" id="stats-cadence"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Asymmetry index</div><div class="card-sub">0 = symmetric</div></div></div>
+      <svg viewBox="0 0 320 160" style="width:100%;height:160px" id="chart-asym"></svg>
+      <div class="density-stats" id="stats-asym"></div>
+    </div>
+  </div>
+
+  <div class="section split-2">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Fall risk by age band</div><div class="card-sub">Concentric arcs · mean fall_risk per cohort</div></div></div>
+      <div class="radial-wrap">
+        <svg viewBox="0 0 220 220" style="width:220px;height:220px;flex-shrink:0" id="chart-age"></svg>
+        <div class="legend-list" id="age-legend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Event counts (7d)</div><div class="card-sub">Cog events triggered</div></div></div>
+      <div class="radial-wrap">
+        <svg viewBox="0 0 200 200" style="width:200px;height:200px;flex-shrink:0" id="event-donut"></svg>
+        <div class="legend-list" id="event-legend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ALERTS ============================== -->
+<section class="view" id="view-alerts">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Alerts</h1>
+      <p class="lede">Real-time gait events emitted by the cog. Acknowledge to dismiss; escalate to notify clinical staff.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn outline" id="btn-ack-all">Acknowledge all</button>
+      <button class="btn outline" id="btn-test-alert">Test alert</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="pill-tabs" id="alert-filter">
+      <button class="pill-tab on" data-type="all">All</button>
+      <button class="pill-tab" data-type="fall_risk">fall_risk</button>
+      <button class="pill-tab" data-type="parkinsonian_gait">parkinsonian_gait</button>
+      <button class="pill-tab" data-type="asymmetry_detected">asymmetry_detected</button>
+      <button class="pill-tab" data-type="gait_score">gait_score</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card" id="alerts-list" style="padding:0"></div>
+  </div>
+</section>
+
+<!-- ============================== DEVICES ============================== -->
+<section class="view" id="view-devices">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Devices</h1>
+      <p class="lede">ESP32-S3 sensors providing CSI motion and presence input to the gait analysis cog.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn outline" id="btn-pair">Pair new sensor</button>
+      <button class="btn primary" id="btn-rescan">Rescan</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="grid" id="devices-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Hardware requirements</div><div class="card-sub">Per ADR cog spec</div></div></div>
+      <div class="metric-row">
+        <div class="metric"><div class="metric-l">SoC</div><div class="metric-v">ESP32-S3</div><div class="metric-sub">required</div></div>
+        <div class="metric"><div class="metric-l">Input</div><div class="metric-v">CSI</div><div class="metric-sub">motion · presence</div></div>
+        <div class="metric"><div class="metric-l">Sample rate</div><div class="metric-v">100 Hz</div><div class="metric-sub">CSI frames</div></div>
+        <div class="metric"><div class="metric-l">Image</div><div class="metric-v">32 KB</div><div class="metric-sub">compressed</div></div>
+        <div class="metric"><div class="metric-l">Difficulty</div><div class="metric-v">Hard</div><div class="metric-sub">deployment</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SETTINGS ============================== -->
+<section class="view" id="view-settings">
+  <div class="page-head">
+    <div>
+      <h1 class="page">Settings</h1>
+      <p class="lede">Cog configuration, event thresholds, and integration endpoints.</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn outline" id="btn-reset-settings">Reset to defaults</button>
+      <button class="btn primary" id="btn-save-settings">Save changes</button>
+    </div>
+  </div>
+
+  <div class="section grid-2">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Event thresholds</div><div class="card-sub">When to emit cog events</div></div></div>
+      <div class="modal-row">
+        <label class="field">Fall risk — emit fall_risk above</label>
+        <div class="input-row"><input type="range" min="0" max="100" value="65" id="th-fall" style="flex:1"><span class="mono" id="th-fall-v" style="min-width:3rem;text-align:right">65</span></div>
+      </div>
+      <div class="modal-row">
+        <label class="field">Parkinsonian likelihood — emit parkinsonian_gait above</label>
+        <div class="input-row"><input type="range" min="0" max="100" value="60" id="th-pk" style="flex:1"><span class="mono" id="th-pk-v" style="min-width:3rem;text-align:right">60</span></div>
+      </div>
+      <div class="modal-row">
+        <label class="field">Asymmetry index — emit asymmetry_detected above</label>
+        <div class="input-row"><input type="range" min="0" max="50" value="15" id="th-asym" style="flex:1"><span class="mono" id="th-asym-v" style="min-width:3rem;text-align:right">0.15</span></div>
+      </div>
+      <div class="modal-row">
+        <label class="field">gait_score window</label>
+        <select class="input" id="set-window"><option>10 strides</option><option selected>20 strides</option><option>30 strides</option><option>60 strides</option></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Classification model</div><div class="card-sub">Temporal gait parameters → label</div></div></div>
+      <div class="modal-row">
+        <label class="field">Model</label>
+        <select class="input"><option selected>gait-tcn-v1.3 (default)</option><option>gait-tcn-v1.2</option><option>gait-lstm-clinical-2024</option></select>
+      </div>
+      <div class="modal-row">
+        <label class="field">Inference mode</label>
+        <div class="input-row" style="gap:1rem">
+          <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.8125rem"><input type="radio" name="inf" checked>On-device</label>
+          <label style="display:inline-flex;gap:0.4rem;align-items:center;font-size:0.8125rem"><input type="radio" name="inf">Cloud relay</label>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label class="field">Calibration</label>
+        <div class="input-row">
+          <span style="font-size:0.8125rem;color:hsl(var(--muted-foreground))">Last calibrated 2026-05-08</span>
+          <button class="btn sm" id="btn-calibrate">Recalibrate now</button>
+        </div>
+      </div>
+      <div class="modal-row">
+        <label class="field">Privacy</label>
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;padding:0.5rem 0">
+          <span>Store raw CSI frames</span>
+          <span class="toggle"><input type="checkbox"><span class="toggle-slider"></span></span>
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;padding:0.5rem 0;border-top:1px solid hsl(var(--border) / 0.3)">
+          <span>Share aggregate metrics with clinician portal</span>
+          <span class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></span>
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;padding:0.5rem 0;border-top:1px solid hsl(var(--border) / 0.3)">
+          <span>Notify caregiver on fall_risk event</span>
+          <span class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Cog manifest</div><div class="card-sub">Source: cognitum-one/cogs/src/cogs/gait-analysis</div></div></div>
+      <pre class="logbox">name: gait-analysis
+version: 1.3.0
+category: health
+hardware: ESP32-S3
+inputs: [csi_motion, presence]
+events:
+  - gait_score
+  - fall_risk
+  - asymmetry_detected
+  - parkinsonian_gait
+size: 32 KB
+difficulty: hard
+description: |
+  Analyzes walking patterns to detect Parkinsonian gait, post-stroke
+  asymmetry, and generates fall-risk scores using temporal gait parameters.</pre>
+    </div>
+  </div>
+</section>
+
+<footer class="appfoot">
+  <div><span class="mono" id="foot-tag">cog: gait-analysis@1.3.0</span> · <span class="mono">32 KB</span> · <span class="mono">hardware: ESP32-S3</span></div>
+  <div style="margin-top:0.4rem">events: <span class="mono">gait_score</span> · <span class="mono">fall_risk</span> · <span class="mono">asymmetry_detected</span> · <span class="mono">parkinsonian_gait</span></div>
+</footer>
+
+</div>
+
+<!-- ============================== MODALS ============================== -->
+<div class="modal-bg" id="m-patient">
+  <div class="modal">
+    <h3 id="mp-title">Patient detail</h3>
+    <div class="modal-sub" id="mp-sub">—</div>
+    <div class="grid-3" style="margin:1rem 0">
+      <div class="metric"><div class="metric-l">Gait score</div><div class="metric-v" id="mp-score">—</div></div>
+      <div class="metric"><div class="metric-l">Fall risk</div><div class="metric-v" id="mp-fall">—</div></div>
+      <div class="metric"><div class="metric-l">Sessions (30d)</div><div class="metric-v" id="mp-sess">—</div></div>
+    </div>
+    <div class="modal-row">
+      <label class="field">Trend (last 14 sessions)</label>
+      <svg id="mp-spark" viewBox="0 0 400 80" style="width:100%;height:80px;background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.5rem"></svg>
+    </div>
+    <div class="modal-row">
+      <label class="field">Notes</label>
+      <textarea id="mp-notes" placeholder="Clinical notes…" style="width:100%;height:5rem;resize:vertical"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close>Close</button>
+      <button class="btn outline" id="mp-start">Start session</button>
+      <button class="btn primary" id="mp-save">Save notes</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-new-session">
+  <div class="modal">
+    <h3>Start new session</h3>
+    <div class="modal-sub">Begin a CSI-based walking capture with the selected patient and sensor.</div>
+    <div class="modal-row"><label class="field">Patient</label><select class="input" id="ns-patient"></select></div>
+    <div class="modal-row"><label class="field">Sensor</label><select class="input" id="ns-sensor"></select></div>
+    <div class="modal-row"><label class="field">Target duration</label>
+      <select class="input"><option>1 min · short walk</option><option selected>3 min · standard</option><option>6 min · 6-minute walk test</option><option>Custom</option></select>
+    </div>
+    <div class="modal-row"><label class="field">Notes (optional)</label><textarea placeholder="e.g. shoes off, post-medication" style="width:100%;height:4rem;resize:vertical"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close>Cancel</button>
+      <button class="btn primary" id="ns-start">Start recording</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-add-patient">
+  <div class="modal">
+    <h3>Add patient</h3>
+    <div class="modal-sub">Register a new patient profile in this cohort.</div>
+    <div class="modal-row"><label class="field">Full name</label><input class="input" id="ap-name" placeholder="e.g. Jane Doe"></div>
+    <div class="grid-3" style="gap:0.5rem">
+      <div class="modal-row"><label class="field">Age</label><input class="input" id="ap-age" type="number" min="0" max="120"></div>
+      <div class="modal-row"><label class="field">Sex</label><select class="input"><option>F</option><option>M</option><option>Other</option></select></div>
+      <div class="modal-row"><label class="field">Sensor</label><select class="input" id="ap-sensor"></select></div>
+    </div>
+    <div class="modal-row"><label class="field">Initial classification</label>
+      <select class="input" id="ap-class">
+        <option>Normal / baseline</option>
+        <option>Parkinsonian</option>
+        <option>Post-stroke</option>
+        <option>Other neurological</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close>Cancel</button>
+      <button class="btn primary" id="ap-save">Add patient</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-pair">
+  <div class="modal">
+    <h3>Pair new sensor</h3>
+    <div class="modal-sub">Power on the ESP32-S3 and place it within 2 metres of the gateway.</div>
+    <div class="modal-row">
+      <label class="field">Discovery</label>
+      <pre class="logbox" id="pair-log">scanning for ESP32-S3 advertisements on local mDNS…</pre>
+    </div>
+    <div class="modal-row"><label class="field">Pairing PIN (shown on sensor)</label><input class="input" id="pair-pin" placeholder="6-digit PIN"></div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close>Cancel</button>
+      <button class="btn primary" id="pair-confirm">Pair</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-confirm">
+  <div class="modal" style="max-width:440px">
+    <h3 id="cm-title">Confirm</h3>
+    <div class="modal-sub" id="cm-msg">—</div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close>Cancel</button>
+      <button class="btn primary" id="cm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg">—</span></div>
+
+<script>
+/* ============================ DATA ============================ */
+const PATIENTS = [
+  { id:'P-001', name:'Margaret Wills',  age:72, sex:'F', cls:'parkinsonian', score:64, fall:58, sessions:14, sensor:'S-04', last:'2h ago' },
+  { id:'P-002', name:'David Cho',       age:68, sex:'M', cls:'normal',       score:82, fall:18, sessions:9,  sensor:'S-01', last:'1d ago' },
+  { id:'P-003', name:'Hiroshi Tanaka',  age:74, sex:'M', cls:'stroke',       score:58, fall:64, sessions:21, sensor:'S-07', last:'3h ago' },
+  { id:'P-004', name:'Linda Park',      age:81, sex:'F', cls:'risk',         score:49, fall:78, sessions:30, sensor:'S-02', last:'30m ago' },
+  { id:'P-005', name:'Wendy Schmidt',   age:66, sex:'F', cls:'normal',       score:88, fall:12, sessions:6,  sensor:'S-05', last:'2d ago' },
+  { id:'P-006', name:'Antoine Mercier', age:70, sex:'M', cls:'parkinsonian', score:61, fall:48, sessions:12, sensor:'S-03', last:'5h ago' },
+  { id:'P-007', name:'Yelena Volkov',   age:77, sex:'F', cls:'stroke',       score:54, fall:66, sessions:18, sensor:'S-06', last:'4h ago' },
+  { id:'P-008', name:'Patrick O\'Brien',age:64, sex:'M', cls:'normal',       score:79, fall:22, sessions:8,  sensor:'S-08', last:'1d ago' },
+  { id:'P-009', name:'Sofia Ramirez',   age:79, sex:'F', cls:'risk',         score:46, fall:81, sessions:25, sensor:'S-09', last:'1h ago' },
+  { id:'P-010', name:'Kenji Watanabe',  age:73, sex:'M', cls:'parkinsonian', score:67, fall:42, sessions:11, sensor:'S-04', last:'6h ago' },
+  { id:'P-011', name:'Beatrice Lambert',age:69, sex:'F', cls:'normal',       score:85, fall:15, sessions:5,  sensor:'S-01', last:'3d ago' },
+  { id:'P-012', name:'Ahmed Khalifa',   age:75, sex:'M', cls:'stroke',       score:55, fall:60, sessions:16, sensor:'S-07', last:'8h ago' },
+];
+const CLS_META = {
+  parkinsonian:{ label:'Parkinsonian', badge:'warn' },
+  stroke:      { label:'Post-stroke',  badge:'info' },
+  risk:        { label:'High fall risk', badge:'danger' },
+  normal:      { label:'Normal',       badge:'ok' },
+};
+const DEVICES = [
+  { id:'S-01', loc:'Hallway',     room:'Clinic — A wing', up:true,  rssi:-52, batt:null, fw:'1.4.2', patients:2 },
+  { id:'S-02', loc:'Living room', room:'Patient 004 home', up:true, rssi:-61, batt:78,   fw:'1.4.2', patients:1 },
+  { id:'S-03', loc:'Kitchen',     room:'Patient 006 home', up:true, rssi:-67, batt:54,   fw:'1.4.1', patients:1 },
+  { id:'S-04', loc:'Living room', room:'Clinic — B wing', up:true,  rssi:-49, batt:null, fw:'1.4.2', patients:2 },
+  { id:'S-05', loc:'Bedroom',     room:'Patient 005 home', up:true, rssi:-58, batt:65,   fw:'1.4.2', patients:1 },
+  { id:'S-06', loc:'Lab — gait',  room:'Clinic — A wing', up:true,  rssi:-44, batt:null, fw:'1.4.2', patients:1 },
+  { id:'S-07', loc:'Living room', room:'Patient 003 home', up:true, rssi:-72, batt:31,   fw:'1.4.1', patients:2 },
+  { id:'S-08', loc:'Hallway',     room:'Patient 008 home', up:true, rssi:-65, batt:48,   fw:'1.4.2', patients:1 },
+  { id:'S-09', loc:'Living room', room:'Patient 009 home', up:false,rssi:null,batt:0,    fw:'1.4.0', patients:1 },
+];
+let ALERTS = [
+  { ts:'13:42:11', type:'fall_risk',         patient:'P-009', sev:'danger', msg:'Fall-risk score 81 (threshold 65). Recommend clinical follow-up.' },
+  { ts:'12:08:47', type:'parkinsonian_gait', patient:'P-006', sev:'warn',   msg:'Parkinsonian likelihood 68% over 30-stride window.' },
+  { ts:'10:55:02', type:'asymmetry_detected',patient:'P-003', sev:'warn',   msg:'Left/right asymmetry index 0.19 — sustained.' },
+  { ts:'09:14:30', type:'gait_score',        patient:'P-001', sev:'info',   msg:'Daily gait_score 64 (▼3 vs 7d avg).' },
+  { ts:'08:02:55', type:'fall_risk',         patient:'P-004', sev:'warn',   msg:'Fall-risk score 78 reaching elevated band.' },
+  { ts:'yesterday 21:30', type:'asymmetry_detected', patient:'P-007', sev:'info', msg:'Asymmetry index 0.17.' },
+  { ts:'yesterday 18:11', type:'gait_score', patient:'P-002', sev:'ok',     msg:'Daily gait_score 82 (▲2 vs 7d avg).' },
+];
+const SESSIONS = (() => {
+  const out = [];
+  const pids = PATIENTS.map(p=>p.id);
+  for (let i = 0; i < 40; i++){
+    const pid = pids[i % pids.length];
+    const p = PATIENTS.find(x=>x.id===pid);
+    const v = (0.7 + Math.random()*0.7).toFixed(2);
+    const cad = Math.round(85 + Math.random()*40);
+    const asy = (Math.random()*0.25).toFixed(2);
+    const score = Math.max(35, Math.min(95, Math.round(p.score + (Math.random()-0.5)*16)));
+    const dur = (1 + Math.random()*5).toFixed(1);
+    const strides = Math.round(cad * parseFloat(dur) / 1);
+    const events = Math.random() < 0.3 ? Math.ceil(Math.random()*3) : 0;
+    out.push({ when:relPast(i*5), patient:p.id, name:p.name, dur, strides, cad, vel:v, asy, score, events });
+  }
+  return out;
+})();
+function relPast(min){
+  if (min < 60) return min + 'm ago';
+  const h = Math.floor(min/60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h/24);
+  return d + 'd ago';
+}
+
+/* ============================ NAV ============================ */
+function showView(v){
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-'+v));
+  document.querySelectorAll('#main-nav a').forEach(a => a.classList.toggle('active', a.dataset.view === v));
+  window.scrollTo({top:0,behavior:'instant'});
+  if (v === 'live') startLive();
+  else stopLive();
+  if (v === 'analytics') renderAnalytics();
+}
+document.addEventListener('click', e => {
+  const navLink = e.target.closest('[data-view]');
+  if (navLink){ e.preventDefault(); showView(navLink.dataset.view); }
+});
+
+/* ============================ TOAST ============================ */
+const toast = document.getElementById('toast');
+const toastMsg = document.getElementById('toast-msg');
+let toastT;
+function showToast(msg, err){
+  toastMsg.textContent = msg;
+  toast.classList.toggle('err', !!err);
+  toast.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+
+/* ============================ MODAL ============================ */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-bg')) e.target.classList.remove('show');
+  if (e.target.dataset.close !== undefined) e.target.closest('.modal-bg').classList.remove('show');
+});
+
+/* ============================ DASHBOARD ============================ */
+function renderCohortChart(range){
+  const days = parseInt(range, 10);
+  const w = 800, h = 240, pad = 28;
+  const pts = [];
+  for (let i = 0; i < days; i++){
+    const base = 70 + Math.sin(i/4) * 6 + (Math.random()-0.5)*4;
+    pts.push({ d:i, med:base, p25:base-7-Math.random()*3, p75:base+7+Math.random()*3, sessions: 10+Math.round(Math.random()*15) });
+  }
+  const yMin = 40, yMax = 95;
+  const xs = i => pad + i * (w - pad*2) / (days-1);
+  const ys = v => h - pad - (v - yMin)/(yMax - yMin) * (h - pad*2);
+  let envelope = '';
+  envelope += pts.map((p,i)=>(i?'L':'M')+xs(i)+','+ys(p.p75)).join('');
+  envelope += pts.slice().reverse().map((p,i)=>'L'+xs(pts.length-1-i)+','+ys(p.p25)).join('') + 'Z';
+  const med = pts.map((p,i)=>(i?'L':'M')+xs(i)+','+ys(p.med)).join('');
+  const maxSess = Math.max(...pts.map(p=>p.sessions));
+  const barW = (w - pad*2) / days * 0.7;
+  let bars = '';
+  pts.forEach((p,i)=>{
+    const bh = p.sessions / maxSess * 36;
+    bars += `<rect x="${xs(i)-barW/2}" y="${h-pad-bh}" width="${barW}" height="${bh}" fill="hsl(142 70% 50% / 0.35)" rx="2"/>`;
+  });
+  const grid = [50,60,70,80,90].map(g=>`<line x1="${pad}" x2="${w-pad}" y1="${ys(g)}" y2="${ys(g)}" stroke="hsl(220 15% 18%)" stroke-dasharray="2 4"/><text x="${pad-6}" y="${ys(g)+3}" text-anchor="end" font-size="10" fill="hsl(215 15% 55%)" font-family="JetBrains Mono">${g}</text>`).join('');
+  document.getElementById('cohort-chart').innerHTML =
+    grid + bars +
+    `<path d="${envelope}" fill="hsl(185 80% 50% / 0.18)"/>` +
+    `<path d="${med}" fill="none" stroke="hsl(185 80% 50%)" stroke-width="2"/>`;
+}
+
+function renderConditionBars(){
+  const counts = {};
+  PATIENTS.forEach(p => counts[p.cls] = (counts[p.cls]||0)+1);
+  const total = PATIENTS.length;
+  const order = ['parkinsonian','stroke','risk','normal'];
+  const colors = { parkinsonian:'hsl(35 85% 55%)', stroke:'hsl(185 80% 50%)', risk:'hsl(0 65% 55%)', normal:'hsl(142 70% 50%)' };
+  document.getElementById('condition-bars').innerHTML = order.map(k => {
+    const n = counts[k] || 0;
+    const pct = total ? Math.round(n/total*100) : 0;
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:0.8125rem"><span>${CLS_META[k].label}</span><span class="mono" style="color:hsl(var(--muted-foreground))">${n} · ${pct}%</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" style="width:${pct}%;background:${colors[k]}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashAlerts(){
+  const recent = ALERTS.slice(0, 4);
+  document.getElementById('dash-alerts').innerHTML = recent.map(renderEventRow).join('') || '<div class="empty-card compact"><p>No alerts in the last 24 hours.</p></div>';
+}
+
+function renderEventRow(a){
+  const sev = a.sev;
+  const icon = sev === 'danger'
+    ? '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>'
+    : sev === 'warn'
+    ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    : sev === 'ok'
+    ? '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>'
+    : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+  return `<div class="event-row">
+    <div class="event-time">${a.ts}</div>
+    <div class="event-icon ${sev}">${icon}</div>
+    <div class="event-body">
+      <div class="event-title">${a.msg}</div>
+      <div class="event-sub">event: ${a.type} · patient: ${a.patient}</div>
+    </div>
+    <span class="badge ${sev === 'ok' ? 'ok' : sev}">${a.type.replace(/_/g,' ')}</span>
+  </div>`;
+}
+
+/* ============================ PATIENTS ============================ */
+let patientFilter = 'all';
+let patientSearch = '';
+
+function renderPatients(){
+  const q = patientSearch.trim().toLowerCase();
+  const rows = PATIENTS.filter(p => {
+    if (patientFilter !== 'all' && p.cls !== patientFilter) return false;
+    if (q && !(p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const tbody = document.getElementById('patients-tbody');
+  if (!rows.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:hsl(var(--muted-foreground));padding:1.5rem">No patients match.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(p => {
+    const m = CLS_META[p.cls];
+    const fb = p.fall >= 65 ? 'danger' : p.fall >= 40 ? 'warn' : 'ok';
+    return `<tr class="clickable" data-pid="${p.id}">
+      <td>${p.id}</td>
+      <td style="font-family:var(--font-display);font-size:0.875rem">${p.name}</td>
+      <td>${p.age}</td>
+      <td><span class="badge ${m.badge}">${m.label}</span></td>
+      <td><b style="font-family:var(--font-display);font-size:0.9375rem">${p.score}</b></td>
+      <td><span class="badge ${fb}">${p.fall}</span></td>
+      <td>${p.last}</td>
+      <td>${p.sensor}</td>
+      <td style="text-align:right"><button class="btn sm outline" data-pid="${p.id}" data-act="open">View →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('patients-tbody').addEventListener('click', e => {
+  const t = e.target.closest('[data-pid]');
+  if (t) openPatient(t.dataset.pid);
+});
+document.getElementById('patient-search').addEventListener('input', e => { patientSearch = e.target.value; renderPatients(); });
+document.getElementById('patient-filter').addEventListener('click', e => {
+  const b = e.target.closest('.pill-tab'); if (!b) return;
+  document.querySelectorAll('#patient-filter .pill-tab').forEach(t => t.classList.remove('on'));
+  b.classList.add('on');
+  patientFilter = b.dataset.filter;
+  renderPatients();
+});
+
+function openPatient(pid){
+  const p = PATIENTS.find(x => x.id === pid); if (!p) return;
+  document.getElementById('mp-title').textContent = p.name + ' · ' + p.id;
+  const m = CLS_META[p.cls];
+  document.getElementById('mp-sub').innerHTML = `${p.age} ${p.sex} · <span class="badge ${m.badge}">${m.label}</span> · sensor ${p.sensor}`;
+  document.getElementById('mp-score').textContent = p.score;
+  document.getElementById('mp-fall').textContent = p.fall;
+  document.getElementById('mp-sess').textContent = p.sessions;
+  document.getElementById('mp-notes').value = p.notes || '';
+  const w = 400, h = 80, pad = 8;
+  const series = Array.from({length:14}, (_,i) => p.score + Math.sin(i*0.7) * 6 + (Math.random()-0.5) * 6);
+  const yMin = Math.min(...series) - 4, yMax = Math.max(...series) + 4;
+  const xs = i => pad + i * (w - pad*2) / (series.length - 1);
+  const ys = v => h - pad - (v - yMin)/(yMax - yMin) * (h - pad*2);
+  const d = series.map((v,i)=>(i?'L':'M')+xs(i)+','+ys(v)).join('');
+  const dots = series.map((v,i)=>`<circle cx="${xs(i)}" cy="${ys(v)}" r="2.5" fill="hsl(185 80% 50%)"/>`).join('');
+  document.getElementById('mp-spark').innerHTML =
+    `<path d="${d}" fill="none" stroke="hsl(185 80% 50%)" stroke-width="2"/>${dots}`;
+  document.getElementById('mp-save').onclick = () => { p.notes = document.getElementById('mp-notes').value; closeModal('m-patient'); showToast('Notes saved for ' + p.name); };
+  document.getElementById('mp-start').onclick = () => { closeModal('m-patient'); document.getElementById('live-patient').value = p.id.toLowerCase().replace('-',''); showView('live'); showToast('Live monitor opened — start recording'); };
+  openModal('m-patient');
+}
+
+/* ============================ SESSIONS ============================ */
+function renderSessions(){
+  const range = document.getElementById('session-range').value;
+  const tbody = document.getElementById('sessions-tbody');
+  tbody.innerHTML = SESSIONS.map(s => `<tr>
+    <td>${s.when}</td>
+    <td style="font-family:var(--font-display);font-size:0.8125rem">${s.name} <span style="color:hsl(var(--muted-foreground))">· ${s.patient}</span></td>
+    <td>${s.dur} min</td>
+    <td>${s.strides}</td>
+    <td>${s.cad} <span style="color:hsl(var(--muted-foreground))">spm</span></td>
+    <td>${s.vel} <span style="color:hsl(var(--muted-foreground))">m/s</span></td>
+    <td>${s.asy}</td>
+    <td><b style="font-family:var(--font-display);font-size:0.9375rem">${s.score}</b></td>
+    <td>${s.events ? `<span class="badge warn">${s.events}</span>` : '<span style="color:hsl(var(--muted-foreground))">—</span>'}</td>
+    <td style="text-align:right"><button class="btn sm outline" data-sid="${s.patient}-${s.when}">Open</button></td>
+  </tr>`).join('');
+}
+document.getElementById('sessions-tbody').addEventListener('click', e => {
+  const b = e.target.closest('[data-sid]'); if (!b) return;
+  showToast('Session ' + b.dataset.sid + ' opened');
+});
+document.getElementById('session-range').addEventListener('change', renderSessions);
+
+/* ============================ ANALYTICS ============================ */
+function renderAnalytics(){
+  drawDensity('chart-velocity','stats-velocity','grd-vel','hsl(185 80% 55%)',
+    () => 0.55 + Math.random()*0.85 + (Math.random()<0.2 ? Math.random()*0.35 : 0), 0.4, 1.8, v=>v.toFixed(2));
+  drawDensity('chart-cadence','stats-cadence','grd-cad','hsl(142 70% 55%)',
+    () => 80 + Math.random()*55 + (Math.random()<0.15 ? -10 : 0), 70, 140, v=>v.toFixed(0));
+  drawDensity('chart-asym','stats-asym','grd-asy','hsl(35 85% 60%)',
+    () => Math.pow(Math.random(), 2) * 0.28, 0, 0.3, v=>v.toFixed(2));
+  drawRadialAge();
+  drawEventDonut();
+}
+
+function drawDensity(svgId, statsId, gradId, color, gen, lo, hi, fmt){
+  const N = 700;
+  const samples = new Array(N);
+  for (let i = 0; i < N; i++) samples[i] = Math.max(lo, Math.min(hi, gen()));
+  samples.sort((a,b)=>a-b);
+  const mean = samples.reduce((s,v)=>s+v, 0) / N;
+  const pct = p => samples[Math.max(0, Math.min(N-1, Math.floor(N*p)))];
+  const p25 = pct(0.25), p50 = pct(0.5), p75 = pct(0.75);
+
+  const w = 320, h = 160, padX = 16, padTop = 14, padBot = 26;
+  const NPTS = 80;
+  const bw = (hi - lo) * 0.055;
+  const ys = new Array(NPTS);
+  let maxY = 0;
+  for (let i = 0; i < NPTS; i++){
+    const x = lo + (hi - lo) * i / (NPTS - 1);
+    let d = 0;
+    for (let j = 0; j < N; j++){
+      const z = (x - samples[j]) / bw;
+      d += Math.exp(-0.5 * z * z);
+    }
+    ys[i] = d;
+    if (d > maxY) maxY = d;
+  }
+  const xs = i => padX + i * (w - padX*2) / (NPTS - 1);
+  const yp = d => (h - padBot) - (d / maxY) * (h - padTop - padBot);
+  const xAt = v => padX + (v - lo) / (hi - lo) * (w - padX*2);
+
+  // Smooth path using quadratic Bezier through midpoints
+  let line = `M ${xs(0)} ${yp(ys[0])}`;
+  for (let i = 1; i < NPTS - 1; i++){
+    const mx = (xs(i) + xs(i+1)) / 2;
+    const my = (yp(ys[i]) + yp(ys[i+1])) / 2;
+    line += ` Q ${xs(i)} ${yp(ys[i])} ${mx} ${my}`;
+  }
+  line += ` T ${xs(NPTS-1)} ${yp(ys[NPTS-1])}`;
+  const area = `${line} L ${xs(NPTS-1)} ${h - padBot} L ${xs(0)} ${h - padBot} Z`;
+
+  const iqrBand = `<rect x="${xAt(p25)}" y="${padTop}" width="${xAt(p75) - xAt(p25)}" height="${h - padTop - padBot}" fill="${color}" opacity="0.07" rx="3"/>`;
+  const meanLine = `<line x1="${xAt(mean)}" x2="${xAt(mean)}" y1="${padTop + 4}" y2="${h - padBot}" stroke="${color}" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.85"/>`;
+  const meanDot = `<circle cx="${xAt(mean)}" cy="${yp(ys[Math.round((mean - lo)/(hi - lo) * (NPTS-1))] || 0)}" r="3.5" fill="${color}"/>`;
+  const baseline = `<line x1="${padX}" x2="${w - padX}" y1="${h - padBot}" y2="${h - padBot}" stroke="hsl(220 15% 22%)"/>`;
+
+  const ticks = [lo, (lo + hi)/2, hi].map((v, i) => {
+    const xp = padX + i * (w - padX*2) / 2;
+    return `<text x="${xp}" y="${h - 9}" text-anchor="middle" font-size="9" fill="hsl(215 15% 55%)" font-family="JetBrains Mono">${fmt(v)}</text>`;
+  }).join('');
+  const pTick = v => `<line x1="${xAt(v)}" x2="${xAt(v)}" y1="${h - padBot}" y2="${h - padBot + 5}" stroke="${color}" stroke-width="2"/>`;
+
+  const defs = `<defs>
+    <linearGradient id="${gradId}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient>
+  </defs>`;
+
+  document.getElementById(svgId).innerHTML =
+    defs + iqrBand + baseline +
+    `<path d="${area}" fill="url(#${gradId})"/>` +
+    `<path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` +
+    meanLine + meanDot + pTick(p25) + pTick(p75) + ticks;
+
+  document.getElementById(statsId).innerHTML = `
+    <div class="density-stat"><div class="density-stat-l">μ mean</div><div class="density-stat-v">${fmt(mean)}</div></div>
+    <div class="density-stat"><div class="density-stat-l">P25</div><div class="density-stat-v">${fmt(p25)}</div></div>
+    <div class="density-stat"><div class="density-stat-l">P50</div><div class="density-stat-v">${fmt(p50)}</div></div>
+    <div class="density-stat"><div class="density-stat-l">P75</div><div class="density-stat-v">${fmt(p75)}</div></div>`;
+}
+
+function drawRadialAge(){
+  const bands = [
+    { l:'60-64', v:22 }, { l:'65-69', v:31 }, { l:'70-74', v:42 },
+    { l:'75-79', v:54 }, { l:'80-84', v:67 }, { l:'85+',   v:74 },
+  ];
+  const cx = 110, cy = 110;
+  const innerR = 28, ringW = 8, ringGap = 4;
+  const startA = -Math.PI * 3 / 4;
+  const totalArc = Math.PI * 3 / 2;
+  const colorFor = v => v >= 60 ? 'hsl(0 65% 60%)' : v >= 40 ? 'hsl(35 85% 60%)' : 'hsl(142 70% 55%)';
+
+  function arc(r, a1, sweep){
+    const a2 = a1 + sweep;
+    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    const x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+    const large = sweep > Math.PI ? 1 : 0;
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  }
+
+  let svg = '';
+  bands.forEach((b, i) => {
+    const r = innerR + (i + 1) * (ringW + ringGap);
+    svg += `<path d="${arc(r, startA, totalArc)}" fill="none" stroke="hsl(220 15% 18%)" stroke-width="${ringW}" stroke-linecap="round"/>`;
+    const sweep = Math.max(0.04, totalArc * (b.v / 100));
+    svg += `<path d="${arc(r, startA, sweep)}" fill="none" stroke="${colorFor(b.v)}" stroke-width="${ringW}" stroke-linecap="round" opacity="0.95"/>`;
+  });
+
+  const mean = Math.round(bands.reduce((s, b) => s + b.v, 0) / bands.length);
+  svg += `<text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="26" font-weight="600" fill="hsl(210 20% 92%)" font-family="Outfit" letter-spacing="-0.5">${mean}</text>`;
+  svg += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="8" fill="hsl(215 15% 55%)" font-family="JetBrains Mono" letter-spacing="1">MEAN RISK</text>`;
+
+  document.getElementById('chart-age').innerHTML = svg;
+
+  document.getElementById('age-legend').innerHTML = bands.map(b => `
+    <div class="lrow">
+      <span class="sw" style="background:${colorFor(b.v)}"></span>
+      <span class="lbl">${b.l}</span>
+      <span class="val" style="color:${colorFor(b.v)}">${b.v}</span>
+      <span class="pct">${b.v >= 60 ? 'elevated' : b.v >= 40 ? 'moderate' : 'low'}</span>
+    </div>`).join('');
+}
+
+function drawEventDonut(){
+  const counts = [
+    { type:'gait_score',         n:412, color:'hsl(185 80% 55%)' },
+    { type:'fall_risk',          n:18,  color:'hsl(0 65% 60%)' },
+    { type:'asymmetry_detected', n:34,  color:'hsl(35 85% 60%)' },
+    { type:'parkinsonian_gait',  n:11,  color:'hsl(265 60% 65%)' },
+  ];
+  const total = counts.reduce((s, c) => s + c.n, 0);
+  const cx = 100, cy = 100, rOuter = 78, rInner = 54;
+  let a = -Math.PI / 2;
+  let svg = '';
+
+  // Background ring
+  svg += `<circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner)/2}" fill="none" stroke="hsl(220 15% 14%)" stroke-width="${rOuter - rInner}"/>`;
+
+  counts.forEach(c => {
+    const sweep = (c.n / total) * Math.PI * 2;
+    const a2 = a + sweep;
+    // gap between segments: shrink each segment slightly
+    const gap = 0.015;
+    const sa = a + gap, ea = a2 - gap;
+    if (ea <= sa){ a = a2; return; }
+    const large = (ea - sa) > Math.PI ? 1 : 0;
+    const x1o = cx + rOuter * Math.cos(sa), y1o = cy + rOuter * Math.sin(sa);
+    const x2o = cx + rOuter * Math.cos(ea), y2o = cy + rOuter * Math.sin(ea);
+    const x2i = cx + rInner * Math.cos(ea), y2i = cy + rInner * Math.sin(ea);
+    const x1i = cx + rInner * Math.cos(sa), y1i = cy + rInner * Math.sin(sa);
+    svg += `<path d="M ${x1o.toFixed(2)} ${y1o.toFixed(2)}
+                    A ${rOuter} ${rOuter} 0 ${large} 1 ${x2o.toFixed(2)} ${y2o.toFixed(2)}
+                    L ${x2i.toFixed(2)} ${y2i.toFixed(2)}
+                    A ${rInner} ${rInner} 0 ${large} 0 ${x1i.toFixed(2)} ${y1i.toFixed(2)} Z"
+                  fill="${c.color}" opacity="0.95"/>`;
+    a = a2;
+  });
+
+  svg += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="28" font-weight="600" fill="hsl(210 20% 92%)" font-family="Outfit" letter-spacing="-0.5">${total}</text>`;
+  svg += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="8" fill="hsl(215 15% 55%)" font-family="JetBrains Mono" letter-spacing="1">TOTAL EVENTS</text>`;
+
+  document.getElementById('event-donut').innerHTML = svg;
+
+  document.getElementById('event-legend').innerHTML = counts.map(c => `
+    <div class="lrow">
+      <span class="sw" style="background:${c.color}"></span>
+      <span class="lbl">${c.type}</span>
+      <span class="val">${c.n}</span>
+      <span class="pct">${Math.round(c.n / total * 100)}%</span>
+    </div>`).join('');
+}
+
+/* ============================ ALERTS ============================ */
+let alertFilter = 'all';
+function renderAlerts(){
+  const list = ALERTS.filter(a => alertFilter === 'all' || a.type === alertFilter);
+  document.getElementById('alerts-list').innerHTML = list.length
+    ? list.map(renderEventRow).join('')
+    : '<div class="empty-card compact"><p>No alerts of this type.</p></div>';
+}
+document.getElementById('alert-filter').addEventListener('click', e => {
+  const b = e.target.closest('.pill-tab'); if (!b) return;
+  document.querySelectorAll('#alert-filter .pill-tab').forEach(t => t.classList.remove('on'));
+  b.classList.add('on'); alertFilter = b.dataset.type; renderAlerts();
+});
+document.getElementById('btn-ack-all').addEventListener('click', () => {
+  if (!ALERTS.length){ showToast('Nothing to acknowledge'); return; }
+  ALERTS = []; renderAlerts(); renderDashAlerts();
+  document.getElementById('k-alerts').textContent = '0';
+  showToast('All alerts acknowledged');
+});
+document.getElementById('btn-test-alert').addEventListener('click', () => {
+  const now = new Date(); const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0'); const ss = String(now.getSeconds()).padStart(2,'0');
+  ALERTS.unshift({ ts:`${hh}:${mm}:${ss}`, type:'gait_score', patient:'P-test', sev:'info', msg:'Test alert — synthetic gait_score 75.' });
+  renderAlerts(); renderDashAlerts();
+  document.getElementById('k-alerts').textContent = String(parseInt(document.getElementById('k-alerts').textContent,10)+1);
+  showToast('Test alert pushed');
+});
+
+/* ============================ DEVICES ============================ */
+function renderDevices(){
+  document.getElementById('devices-grid').innerHTML = DEVICES.map(d => {
+    const battHtml = d.batt == null
+      ? '<div><span class="l">power</span>wired</div>'
+      : `<div><span class="l">battery</span>${d.batt}%</div>`;
+    return `<div class="node">
+      <div class="node-h">
+        <span class="node-name">${d.id} · ${d.loc}</span>
+        <span style="display:flex;gap:0.25rem">
+          ${d.up ? '<span class="badge online"><span class="dot up"></span>online</span>' : '<span class="badge offline"><span class="dot down"></span>offline</span>'}
+        </span>
+      </div>
+      <div class="node-meta">
+        <div><span class="l">where</span>${d.room}</div>
+        <div><span class="l">rssi</span>${d.rssi == null ? '—' : d.rssi + ' dBm'}</div>
+        ${battHtml}
+        <div><span class="l">fw</span>${d.fw}</div>
+        <div><span class="l">patients</span>${d.patients}</div>
+      </div>
+      <div class="foot-actions">
+        <button class="btn sm outline" data-dev="${d.id}" data-act="ping">Ping</button>
+        <button class="btn sm outline" data-dev="${d.id}" data-act="cal">Calibrate</button>
+        <button class="btn sm danger" data-dev="${d.id}" data-act="unpair">Unpair</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('devices-grid').addEventListener('click', e => {
+  const b = e.target.closest('[data-dev]'); if (!b) return;
+  const act = b.dataset.act, id = b.dataset.dev;
+  if (act === 'ping') showToast('Ping ' + id + ' · round-trip 14 ms');
+  if (act === 'cal') showToast('Calibration started for ' + id);
+  if (act === 'unpair'){
+    confirmAction('Unpair sensor ' + id + '?', 'The sensor will need a fresh pairing PIN to rejoin.', () => {
+      const i = DEVICES.findIndex(x => x.id === id);
+      if (i >= 0){ DEVICES.splice(i,1); renderDevices(); showToast('Unpaired ' + id); }
+    });
+  }
+});
+
+/* ============================ LIVE MONITOR ============================ */
+const canvas = document.getElementById('signal-canvas');
+const ctx = canvas.getContext('2d');
+let liveT = null, livePaused = false, recording = false;
+function resizeCanvas(){
+  const ratio = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = r.width * ratio; canvas.height = r.height * ratio;
+  ctx.scale(ratio, ratio);
+}
+const sig = { a:Array(240).fill(0.5), b:Array(240).fill(0.5), t:0 };
+function tickSignal(){
+  if (livePaused) return;
+  sig.t += 0.06;
+  const stride = Math.sin(sig.t) * 0.35;
+  const tremor = Math.sin(sig.t * 11) * 0.05 * (Math.random()*0.5+0.5);
+  const noise = (Math.random()-0.5) * 0.04;
+  sig.a.push(0.5 + stride + tremor + noise); sig.a.shift();
+  sig.b.push(0.5 + Math.sin(sig.t + 0.6) * 0.32 + (Math.random()-0.5)*0.05); sig.b.shift();
+
+  const r = canvas.getBoundingClientRect(); const W = r.width, H = r.height;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.lineWidth = 1; ctx.strokeStyle = 'hsl(220 15% 18%)';
+  for (let g = 0; g < 5; g++){
+    const y = H * (g/4);
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+  drawSeries(sig.a, W, H, 'hsl(185 80% 55%)');
+  drawSeries(sig.b, W, H, 'hsl(142 70% 55%)');
+  if (Math.random() < 0.04){
+    const x = W - 8;
+    ctx.fillStyle = 'hsl(185 80% 55% / 0.8)';
+    ctx.fillRect(x-1, 4, 2, 8);
+  }
+  updateMetrics();
+}
+function drawSeries(arr, W, H, color){
+  ctx.beginPath();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.4;
+  arr.forEach((v,i)=>{
+    const x = i / (arr.length-1) * W;
+    const y = (1 - v) * H;
+    if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+function updateMetrics(){
+  const cad = 100 + Math.sin(sig.t*0.4) * 8 + (Math.random()-0.5)*2;
+  const stride = 1.10 + Math.sin(sig.t*0.3) * 0.08 + (Math.random()-0.5)*0.02;
+  const vel = (cad/60) * stride / 2;
+  const cv = 3.0 + Math.abs(Math.sin(sig.t*0.2))*1.5 + (Math.random()-0.5);
+  const asym = Math.abs(Math.sin(sig.t*0.18))*0.06 + Math.random()*0.02;
+  const dbl = 22 + Math.sin(sig.t*0.25)*1.5;
+  document.getElementById('m-cadence').textContent = cad.toFixed(0);
+  document.getElementById('m-stride').textContent = stride.toFixed(2);
+  document.getElementById('m-vel').textContent = vel.toFixed(2);
+  document.getElementById('m-cv').textContent = cv.toFixed(1);
+  document.getElementById('m-asym').textContent = asym.toFixed(2);
+  document.getElementById('m-dbl').textContent = dbl.toFixed(1);
+
+  const gait = Math.round(72 + Math.sin(sig.t*0.1)*4);
+  const fall = Math.round(30 + Math.sin(sig.t*0.13)*8);
+  const pk = Math.round(12 + Math.abs(Math.sin(sig.t*0.16))*8);
+  const as = Math.round(8 + Math.abs(Math.sin(sig.t*0.2))*5);
+  setRing('ring-gait', 'ring-gait-num', gait);
+  setRing('ring-fall', 'ring-fall-num', fall);
+  document.getElementById('lbl-pk').textContent = pk + '%';
+  document.getElementById('lbl-as').textContent = as + '%';
+  document.getElementById('gauge-pk').style.width = pk + '%';
+  document.getElementById('gauge-as').style.width = as + '%';
+}
+function setRing(id, numId, v){
+  const C = 2 * Math.PI * 50;
+  document.getElementById(id).setAttribute('stroke-dashoffset', C * (1 - v/100));
+  document.getElementById(numId).textContent = v;
+}
+function startLive(){
+  if (liveT) return;
+  resizeCanvas();
+  liveT = setInterval(tickSignal, 60);
+  appendLog('[stream] CSI motion + presence — ESP32-S3 S-04 @ 100 Hz');
+  appendLog('[detect] stride window initialised (20 strides)');
+}
+function stopLive(){ if (liveT){ clearInterval(liveT); liveT = null; } }
+function appendLog(line){
+  const el = document.getElementById('live-log');
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  el.textContent += `\n[${ts}] ` + line;
+  el.scrollTop = el.scrollHeight;
+}
+document.getElementById('live-stop').addEventListener('click', e => {
+  livePaused = !livePaused;
+  e.target.textContent = livePaused ? 'Resume' : 'Pause';
+  appendLog(livePaused ? '[stream] paused by user' : '[stream] resumed');
+});
+document.getElementById('live-record').addEventListener('click', e => {
+  recording = !recording;
+  e.target.textContent = recording ? '■ Stop recording' : '● Record session';
+  e.target.classList.toggle('danger', recording);
+  e.target.classList.toggle('primary', !recording);
+  if (recording){
+    appendLog('[record] session started · patient ' + document.getElementById('live-patient').value);
+    showToast('Recording started');
+  } else {
+    appendLog('[record] session saved · 142 strides · score 73');
+    showToast('Session saved');
+  }
+});
+document.getElementById('btn-clear-events').addEventListener('click', () => {
+  document.getElementById('live-log').textContent = '[cleared]';
+});
+window.addEventListener('resize', () => { if (liveT) resizeCanvas(); });
+
+/* ============================ MODALS — wiring ============================ */
+function confirmAction(title, msg, onOk){
+  document.getElementById('cm-title').textContent = title;
+  document.getElementById('cm-msg').textContent = msg;
+  const ok = document.getElementById('cm-ok');
+  const nb = ok.cloneNode(true); ok.replaceWith(nb);
+  nb.addEventListener('click', () => { closeModal('m-confirm'); onOk(); });
+  openModal('m-confirm');
+}
+
+document.getElementById('btn-new-session').addEventListener('click', () => {
+  const psel = document.getElementById('ns-patient');
+  psel.innerHTML = PATIENTS.map(p => `<option value="${p.id}">${p.id} · ${p.name}</option>`).join('');
+  const ssel = document.getElementById('ns-sensor');
+  ssel.innerHTML = DEVICES.filter(d=>d.up).map(d => `<option value="${d.id}">${d.id} · ${d.loc}</option>`).join('');
+  openModal('m-new-session');
+});
+document.getElementById('ns-start').addEventListener('click', () => {
+  const pid = document.getElementById('ns-patient').value;
+  closeModal('m-new-session');
+  document.getElementById('live-patient').value = pid.toLowerCase().replace('-','');
+  showView('live');
+  setTimeout(()=>document.getElementById('live-record').click(), 200);
+});
+
+document.getElementById('btn-add-patient').addEventListener('click', () => {
+  const ssel = document.getElementById('ap-sensor');
+  ssel.innerHTML = DEVICES.filter(d=>d.up).map(d => `<option value="${d.id}">${d.id} · ${d.loc}</option>`).join('');
+  document.getElementById('ap-name').value = '';
+  document.getElementById('ap-age').value = '';
+  openModal('m-add-patient');
+});
+document.getElementById('ap-save').addEventListener('click', () => {
+  const name = document.getElementById('ap-name').value.trim();
+  const age = parseInt(document.getElementById('ap-age').value, 10);
+  if (!name || !age){ showToast('Name and age required', true); return; }
+  const cls = ({'Parkinsonian':'parkinsonian','Post-stroke':'stroke','Normal / baseline':'normal','Other neurological':'normal'})[document.getElementById('ap-class').value] || 'normal';
+  const id = 'P-' + String(PATIENTS.length + 1).padStart(3,'0');
+  PATIENTS.push({ id, name, age, sex:'—', cls, score:75, fall:25, sessions:0, sensor:document.getElementById('ap-sensor').value, last:'never' });
+  closeModal('m-add-patient'); renderPatients(); showToast('Added ' + name);
+  document.getElementById('k-patients').textContent = PATIENTS.length;
+});
+
+document.getElementById('btn-pair').addEventListener('click', () => {
+  const log = document.getElementById('pair-log');
+  log.textContent = 'scanning for ESP32-S3 advertisements on local mDNS…';
+  openModal('m-pair');
+  setTimeout(() => log.textContent += '\nfound: esp32-s3-9f02 (rssi -54 dBm)', 500);
+  setTimeout(() => log.textContent += '\nfound: esp32-s3-3a17 (rssi -67 dBm)', 1200);
+  setTimeout(() => log.textContent += '\nselect a device — enter PIN displayed on screen', 1600);
+});
+document.getElementById('pair-confirm').addEventListener('click', () => {
+  const pin = document.getElementById('pair-pin').value.trim();
+  if (!/^\d{6}$/.test(pin)){ showToast('Enter the 6-digit PIN', true); return; }
+  const id = 'S-' + String(DEVICES.length + 1).padStart(2,'0');
+  DEVICES.push({ id, loc:'Unassigned', room:'—', up:true, rssi:-58, batt:90, fw:'1.4.2', patients:0 });
+  closeModal('m-pair'); renderDevices(); showToast('Paired sensor ' + id);
+});
+
+document.getElementById('btn-rescan').addEventListener('click', () => {
+  const grid = document.getElementById('devices-grid');
+  grid.style.opacity = '0.5';
+  setTimeout(() => { grid.style.opacity = '1'; renderDevices(); showToast('Rescanned · ' + DEVICES.length + ' sensors'); }, 700);
+});
+
+document.getElementById('btn-export').addEventListener('click', () => exportCsv('cohort-report'));
+document.getElementById('btn-export-sessions').addEventListener('click', () => exportCsv('sessions'));
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+function exportCsv(kind){
+  let csv = '';
+  if (kind === 'sessions'){
+    csv = 'when,patient,name,duration_min,strides,cadence_spm,velocity_mps,asymmetry,score,events\n' +
+      SESSIONS.map(s => [s.when,s.patient,s.name,s.dur,s.strides,s.cad,s.vel,s.asy,s.score,s.events].join(',')).join('\n');
+  } else {
+    csv = 'patient_id,name,age,sex,classification,gait_score,fall_risk,sessions,sensor,last_session\n' +
+      PATIENTS.map(p => [p.id,p.name,p.age,p.sex,p.cls,p.score,p.fall,p.sessions,p.sensor,p.last].join(',')).join('\n');
+  }
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `gait-${kind}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Exported ' + kind + '.csv');
+}
+
+document.getElementById('btn-save-settings').addEventListener('click', () => showToast('Settings saved'));
+document.getElementById('btn-reset-settings').addEventListener('click', () => {
+  document.getElementById('th-fall').value = 65; document.getElementById('th-fall-v').textContent = '65';
+  document.getElementById('th-pk').value = 60;   document.getElementById('th-pk-v').textContent = '60';
+  document.getElementById('th-asym').value = 15; document.getElementById('th-asym-v').textContent = '0.15';
+  showToast('Defaults restored');
+});
+document.getElementById('btn-calibrate').addEventListener('click', () => showToast('Calibration started · 60s capture'));
+
+['th-fall','th-pk','th-asym'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', e => {
+    const v = e.target.value;
+    document.getElementById(id + '-v').textContent = id === 'th-asym' ? (v/100).toFixed(2) : v;
+  });
+});
+
+document.getElementById('trend-tabs').addEventListener('click', e => {
+  const b = e.target.closest('.pill-tab'); if (!b) return;
+  document.querySelectorAll('#trend-tabs .pill-tab').forEach(t => t.classList.remove('on'));
+  b.classList.add('on'); renderCohortChart(b.dataset.range);
+});
+
+/* ============================ INIT ============================ */
+renderCohortChart('30');
+renderConditionBars();
+renderDashAlerts();
+renderPatients();
+renderSessions();
+renderAlerts();
+renderDevices();
+</script>
+</body>
+</html>
