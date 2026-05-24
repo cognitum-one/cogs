@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Clean Room — Personnel &amp; ISO 14644 Compliance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Cognitum chrome — Clean Room dashboard
+   shadcn-style HSL theme, Outfit + JetBrains Mono
+   ============================================================ */
+:root {
+  --background: 222 23% 6%;
+  --foreground: 210 20% 96%;
+  --card: 222 22% 9%;
+  --card-foreground: 210 20% 96%;
+  --muted: 217 19% 14%;
+  --muted-foreground: 215 14% 60%;
+  --border: 217 19% 17%;
+  --input: 217 19% 17%;
+  --accent: 178 78% 52%;             /* cleanroom teal */
+  --accent-foreground: 222 23% 6%;
+  --primary: 178 78% 52%;
+  --primary-foreground: 222 23% 6%;
+  --success: 142 70% 48%;
+  --warning: 38 92% 58%;
+  --danger: 0 75% 60%;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+
+a { color: hsl(var(--accent)); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* App bar -------------------------------------------------- */
+.appbar {
+  position: sticky; top: 0; z-index: 50;
+  background: hsla(222, 23%, 6%, 0.85);
+  backdrop-filter: saturate(150%) blur(12px);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.appbar-row {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.5rem; gap: 1.5rem;
+}
+.brand { display: flex; align-items: center; gap: 0.625rem; }
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, hsl(var(--accent)), hsl(178 78% 38%));
+  display: grid; place-items: center;
+  box-shadow: 0 0 24px hsla(178, 78%, 52%, 0.35);
+}
+.brand-mark svg { width: 18px; height: 18px; stroke: hsl(var(--accent-foreground)); fill: none; stroke-width: 2; }
+.brand-text { font-size: 0.9375rem; letter-spacing: 0.01em; }
+.brand-text b { font-weight: 600; }
+.brand-text .slash { color: hsl(var(--muted-foreground)); margin: 0 0.35rem; }
+.brand-ver { font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-left: 0.5rem; }
+
+.nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.nav a {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8125rem; font-weight: 500;
+  padding: 0.5rem 0.75rem; border-radius: 8px;
+  text-decoration: none;
+}
+.nav a:hover { color: hsl(var(--foreground)); background: hsl(var(--muted)); text-decoration: none; }
+.nav a.active { color: hsl(var(--foreground)); background: hsl(var(--muted)); }
+
+/* Layout --------------------------------------------------- */
+.wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+.section { margin-bottom: 1.75rem; }
+.section h2 {
+  font-size: 0.8125rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: hsl(var(--muted-foreground));
+  margin: 0 0 0.875rem 0;
+}
+
+/* KPI strip ------------------------------------------------ */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.875rem;
+}
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 720px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+.kpi {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1rem; display: flex; gap: 0.875rem; align-items: flex-start;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.kpi:hover { border-color: hsl(var(--accent) / 0.4); }
+.kpi-ic {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 10px;
+  background: hsl(var(--muted));
+  display: grid; place-items: center;
+}
+.kpi-ic.accent { background: hsla(178, 78%, 52%, 0.12); }
+.kpi-ic.accent svg { stroke: hsl(var(--accent)); }
+.kpi-ic.warn { background: hsla(38, 92%, 58%, 0.12); }
+.kpi-ic.warn svg { stroke: hsl(var(--warning)); }
+.kpi-ic svg { width: 18px; height: 18px; stroke: hsl(var(--muted-foreground)); fill: none; stroke-width: 2; }
+.kpi-info { min-width: 0; }
+.kpi-label {
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground)); font-weight: 500;
+}
+.kpi-val {
+  font-size: 1.625rem; font-weight: 600;
+  color: hsl(var(--foreground)); line-height: 1.1; margin-top: 0.2rem;
+}
+.kpi-sub { font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.15rem; }
+
+/* Cards ---------------------------------------------------- */
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1.125rem;
+}
+.card-h {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 0.875rem; gap: 1rem;
+}
+.card-title { font-size: 0.9375rem; font-weight: 600; color: hsl(var(--foreground)); }
+.card-sub { font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.2rem; }
+
+/* Buttons / badges / dots --------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.85rem; border-radius: 8px;
+  font-size: 0.8125rem; font-weight: 500;
+  background: hsl(var(--accent)); color: hsl(var(--accent-foreground));
+  border: 1px solid transparent; cursor: pointer;
+  font-family: inherit; text-decoration: none;
+}
+.btn:hover { filter: brightness(1.08); text-decoration: none; }
+.btn.outline { background: transparent; color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+.btn.outline:hover { background: hsl(var(--muted)); }
+.btn.sm { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+
+.badge {
+  display: inline-block; padding: 0.15rem 0.5rem; border-radius: 6px;
+  font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.02em;
+  background: hsl(var(--muted)); color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+}
+.badge.ok { background: hsla(142, 70%, 48%, 0.15); color: hsl(var(--success)); }
+.badge.warn { background: hsla(38, 92%, 58%, 0.15); color: hsl(var(--warning)); }
+.badge.err { background: hsla(0, 75%, 60%, 0.15); color: hsl(var(--danger)); }
+.badge.accent { background: hsla(178, 78%, 52%, 0.15); color: hsl(var(--accent)); }
+
+.dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 0.35rem; vertical-align: middle;
+}
+.dot.up   { background: hsl(var(--success)); box-shadow: 0 0 8px hsl(var(--success) / 0.6); }
+.dot.warn { background: hsl(var(--warning)); box-shadow: 0 0 8px hsl(var(--warning) / 0.6); }
+.dot.down { background: hsl(var(--danger));  box-shadow: 0 0 8px hsl(var(--danger)  / 0.6); }
+.dot.idle { background: hsl(var(--muted-foreground)); }
+
+/* Live count hero ----------------------------------------- */
+.hero {
+  display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem;
+}
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+
+.live-count {
+  background: linear-gradient(140deg, hsl(var(--card)) 0%, hsl(222 22% 11%) 100%);
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  padding: 1.5rem; position: relative; overflow: hidden;
+}
+.live-count::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 85% -10%, hsla(178, 78%, 52%, 0.18), transparent 50%);
+  pointer-events: none;
+}
+.live-count-h {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.75rem; position: relative;
+}
+.live-pulse {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font-size: 0.75rem; color: hsl(var(--muted-foreground));
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.live-pulse .dot { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.4; transform: scale(0.85); }
+}
+.live-figure { position: relative; display: flex; align-items: baseline; gap: 0.75rem; }
+.live-figure .n {
+  font-size: 5.5rem; font-weight: 600; line-height: 1;
+  color: hsl(var(--foreground)); letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.live-figure .of { font-size: 1.25rem; color: hsl(var(--muted-foreground)); }
+.live-meta {
+  display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap;
+  position: relative; font-size: 0.8125rem;
+}
+.live-meta div { display: flex; flex-direction: column; gap: 0.15rem; }
+.live-meta .l {
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground));
+}
+.live-meta .v { color: hsl(var(--foreground)); font-weight: 500; }
+
+.capacity-bar {
+  position: relative; height: 10px; border-radius: 6px;
+  background: hsl(var(--muted)); margin-top: 1.25rem; overflow: hidden;
+}
+.capacity-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, hsl(var(--success)) 0%, hsl(var(--warning)) 70%, hsl(var(--danger)) 100%);
+  border-radius: 6px; transition: width 600ms cubic-bezier(.2,.8,.2,1);
+}
+.capacity-marks {
+  display: flex; justify-content: space-between; margin-top: 0.4rem;
+  font-size: 0.6875rem; color: hsl(var(--muted-foreground));
+}
+
+/* Compliance panel ---------------------------------------- */
+.compliance {
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  border-radius: var(--radius); padding: 1.25rem;
+  display: flex; flex-direction: column;
+}
+.compliance-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.875rem; }
+.compliance-h .card-title { font-size: 0.9375rem; }
+.iso-class {
+  display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 1rem;
+}
+.iso-class .label {
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground));
+}
+.iso-class .val {
+  font-size: 1.75rem; font-weight: 600; color: hsl(var(--foreground));
+}
+.iso-class .ver {
+  font-size: 0.75rem; color: hsl(var(--muted-foreground));
+}
+.check-list { list-style: none; padding: 0; margin: 0; }
+.check-list li {
+  display: flex; align-items: center; gap: 0.625rem;
+  padding: 0.5rem 0; border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.8125rem;
+}
+.check-list li:last-child { border-bottom: none; }
+.check-list .l { flex: 1; color: hsl(var(--muted-foreground)); }
+.check-list .v { color: hsl(var(--foreground)); font-weight: 500; }
+
+/* Sensor grid --------------------------------------------- */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.875rem;
+}
+.node {
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  border-radius: var(--radius); padding: 0.95rem; transition: border-color 120ms;
+}
+.node:hover { border-color: hsl(var(--accent) / 0.4); }
+.node-h {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.5rem; gap: 0.5rem;
+}
+.node-name { font-weight: 600; font-size: 0.875rem; }
+.node-meta { font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: grid; gap: 0.3rem; }
+.node-meta .l {
+  display: inline-block; width: 64px;
+  text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.05em;
+}
+.node-meta .v { color: hsl(var(--foreground)); }
+
+/* Events table -------------------------------------------- */
+table {
+  width: 100%; border-collapse: collapse; font-size: 0.8125rem;
+}
+thead th {
+  text-align: left; font-weight: 500;
+  padding: 0.55rem 0.75rem;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid hsl(var(--border));
+}
+tbody td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: hsl(var(--muted) / 0.4); }
+
+/* Events list (right column) ------------------------------ */
+.events {
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  border-radius: var(--radius); overflow: hidden;
+}
+.events-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 0.75rem;
+  padding: 0.7rem 1rem; border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.8125rem;
+}
+.events-row:last-child { border-bottom: none; }
+.events-row .e-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; color: hsl(var(--muted-foreground)); white-space: nowrap;
+}
+.events-row .e-msg { color: hsl(var(--foreground)); }
+.events-row .e-msg .mono { color: hsl(var(--muted-foreground)); margin-left: 0.4rem; font-size: 0.75rem; }
+
+/* Settings form ------------------------------------------- */
+.settings-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.field {
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.field label {
+  font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground)); font-weight: 500;
+}
+.field input, .field select {
+  background: hsl(var(--input)); color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border)); border-radius: 8px;
+  padding: 0.5rem 0.7rem; font-size: 0.875rem;
+  font-family: inherit; outline: none;
+}
+.field input:focus, .field select:focus { border-color: hsl(var(--accent)); }
+.field .hint { font-size: 0.7rem; color: hsl(var(--muted-foreground)); }
+
+/* Reports -------------------------------------------------- */
+.report-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.875rem;
+}
+.report-tile {
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
+  background: hsl(var(--card)); transition: border-color 120ms;
+}
+.report-tile:hover { border-color: hsl(var(--accent) / 0.4); }
+.report-tile .r-name { font-weight: 600; font-size: 0.875rem; }
+.report-tile .r-desc { font-size: 0.75rem; color: hsl(var(--muted-foreground)); flex: 1; }
+.report-tile .r-actions { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+
+/* Toast --------------------------------------------------- */
+.toast {
+  position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 100;
+  background: hsl(var(--card)); border: 1px solid hsl(var(--accent));
+  border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.8125rem;
+  color: hsl(var(--foreground)); box-shadow: 0 8px 24px hsla(0,0%,0%,0.4);
+  opacity: 0; transform: translateY(8px); pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Footer --------------------------------------------------- */
+.appfoot {
+  margin-top: 2rem; padding: 1.25rem 0; border-top: 1px solid hsl(var(--border));
+  font-size: 0.75rem; color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+.appfoot a { color: hsl(var(--muted-foreground)); margin: 0 0.4rem; }
+.appfoot a:hover { color: hsl(var(--foreground)); }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M9 2v2h6V2"/><path d="M7 4h10l2 4v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8l2-4z"/><path d="M9 13h6M9 17h4"/></svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Clean Room
+        <span class="brand-ver mono">v1.0.0</span>
+        <span class="badge accent" style="margin-left:0.5rem;font-size:0.6875rem;vertical-align:middle">ISO 14644</span>
+      </span>
+    </div>
+    <nav class="nav">
+      <a href="#dashboard" class="active">Dashboard</a>
+      <a href="#monitor">Live Monitor</a>
+      <a href="#personnel">Personnel</a>
+      <a href="#compliance">Compliance</a>
+      <a href="#sensors">Sensors</a>
+      <a href="#alerts">Alerts</a>
+      <a href="#reports">Reports</a>
+      <a href="#settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- KPI strip ============================================================ -->
+  <div class="section" id="dashboard">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Personnel now</div>
+          <div class="kpi-val" id="kpi-now">7</div>
+          <div class="kpi-sub" id="kpi-now-sub">of 10 max allowed</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Compliance</div>
+          <div class="kpi-val" id="kpi-comp">PASS</div>
+          <div class="kpi-sub" id="kpi-comp-sub">ISO 14644-1 Class 7</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Active warnings</div>
+          <div class="kpi-val" id="kpi-warn">1</div>
+          <div class="kpi-sub" id="kpi-warn-sub">limit approach (80%)</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Sensors online</div>
+          <div class="kpi-val" id="kpi-sensors">4</div>
+          <div class="kpi-sub">ESP32-S3 · CSI presence</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Peak today</div>
+          <div class="kpi-val" id="kpi-peak">9</div>
+          <div class="kpi-sub" id="kpi-peak-sub">at 11:42 · 90% occ.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live count + compliance ============================================== -->
+  <div class="section">
+    <div class="hero">
+
+      <div class="live-count" id="monitor">
+        <div class="live-count-h">
+          <div>
+            <div class="card-title">Cleanroom A · Live Personnel</div>
+            <div class="card-sub">Real-time CSI-based occupancy · refreshed every 2s</div>
+          </div>
+          <div class="live-pulse"><span class="dot up"></span>LIVE</div>
+        </div>
+        <div class="live-figure">
+          <span class="n" id="live-n">7</span>
+          <span class="of">/ 10 occupants</span>
+        </div>
+        <div class="capacity-bar"><div class="capacity-fill" id="cap-fill" style="width: 70%"></div></div>
+        <div class="capacity-marks">
+          <span>0</span><span>safe</span><span>warn @ 8</span><span>limit · 10</span>
+        </div>
+        <div class="live-meta">
+          <div><span class="l">Trend (5m)</span><span class="v" id="live-trend">+2 entries</span></div>
+          <div><span class="l">Last event</span><span class="v" id="live-last">entry · 14s ago</span></div>
+          <div><span class="l">Avg dwell</span><span class="v">22 min</span></div>
+          <div><span class="l">Particle count</span><span class="v">312 / m³ (0.5µm)</span></div>
+        </div>
+      </div>
+
+      <div class="compliance" id="compliance">
+        <div class="compliance-h">
+          <div>
+            <div class="card-title">ISO 14644-1 Compliance</div>
+            <div class="card-sub">Continuous monitoring · last audit 2026-05-12</div>
+          </div>
+          <span class="badge ok"><span class="dot up"></span>compliant</span>
+        </div>
+        <div class="iso-class">
+          <span class="label">Class</span>
+          <span class="val">7</span>
+          <span class="ver">≤ 352,000 particles ≥0.5µm / m³</span>
+        </div>
+        <ul class="check-list">
+          <li><span class="l">Personnel limit (≤10)</span><span class="v">7 / 10 <span class="badge ok">ok</span></span></li>
+          <li><span class="l">Gowning protocol</span><span class="v">passed <span class="badge ok">ok</span></span></li>
+          <li><span class="l">Air changes / hour</span><span class="v">62 ACH <span class="badge ok">ok</span></span></li>
+          <li><span class="l">Differential pressure</span><span class="v">+12.4 Pa <span class="badge ok">ok</span></span></li>
+          <li><span class="l">Particle count drift</span><span class="v">+8% <span class="badge warn">watch</span></span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sensors ============================================================= -->
+  <div class="section" id="sensors">
+    <h2>ESP32-S3 sensor mesh</h2>
+    <div class="grid" id="sensor-grid"></div>
+  </div>
+
+  <!-- Events + alerts ===================================================== -->
+  <div class="section">
+    <div class="hero">
+
+      <div class="card" id="personnel">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Personnel event log</div>
+            <div class="card-sub">CSI-derived entry / exit · last 24h</div>
+          </div>
+          <a href="#reports" class="btn sm outline">Export CSV →</a>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>Time</th><th>Event</th><th>Sensor</th><th>Count</th><th>Status</th></tr>
+            </thead>
+            <tbody id="evt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="events" id="alerts">
+        <div style="padding:1rem 1rem 0.5rem; border-bottom:1px solid hsl(var(--border))">
+          <div class="card-title">Alerts &amp; warnings</div>
+          <div class="card-sub">limit_warning · compliance_status</div>
+        </div>
+        <div id="alerts-body">
+          <div class="events-row">
+            <span class="badge warn">warn</span>
+            <span class="e-msg">Occupancy at 80% of ISO limit<span class="mono">cleanroom-a</span></span>
+            <span class="e-time">2m ago</span>
+          </div>
+          <div class="events-row">
+            <span class="badge ok">info</span>
+            <span class="e-msg">Compliance check passed<span class="mono">iso-14644-1</span></span>
+            <span class="e-time">14m ago</span>
+          </div>
+          <div class="events-row">
+            <span class="badge warn">warn</span>
+            <span class="e-msg">Particle drift +8% — schedule inspection<span class="mono">particle-rt</span></span>
+            <span class="e-time">38m ago</span>
+          </div>
+          <div class="events-row">
+            <span class="badge ok">info</span>
+            <span class="e-msg">Sensor csi-03 reconnected<span class="mono">esp32-s3</span></span>
+            <span class="e-time">1h ago</span>
+          </div>
+          <div class="events-row">
+            <span class="badge err">crit</span>
+            <span class="e-msg">Peak 9/10 occupants reached<span class="mono">limit_warning</span></span>
+            <span class="e-time">3h ago</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Cog manifest ======================================================== -->
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Cog manifest</div>
+          <div class="card-sub">clean-room · v1.0.0 · 14 KB · Easy install</div>
+        </div>
+        <button class="btn sm">Install →</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;font-size:0.8125rem">
+        <div>
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Category</div>
+          <div style="margin-top:0.25rem">Industrial</div>
+        </div>
+        <div>
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Hardware</div>
+          <div style="margin-top:0.25rem"><span class="badge accent">ESP32-S3</span></div>
+        </div>
+        <div>
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Input</div>
+          <div style="margin-top:0.25rem"><span class="badge">CSI presence</span></div>
+        </div>
+        <div>
+          <div style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground))">Events emitted</div>
+          <div style="margin-top:0.25rem;display:flex;gap:0.3rem;flex-wrap:wrap">
+            <span class="badge">personnel_count</span>
+            <span class="badge warn">limit_warning</span>
+            <span class="badge ok">compliance_status</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;font-size:0.8125rem;color:hsl(var(--muted-foreground))">
+        Counts personnel in cleanroom environments for ISO 14644 compliance. Alerts when maximum occupancy
+        limits are approached, with continuous compliance status reporting.
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports ============================================================= -->
+  <div class="section" id="reports">
+    <h2>Reports &amp; exports</h2>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Compliance &amp; occupancy reports</div>
+          <div class="card-sub">Download audit-ready records for ISO 14644 review</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <select id="report-range" class="field" style="background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:8px;padding:0.4rem 0.6rem;font-size:0.8125rem;font-family:inherit">
+            <option>Last 24 hours</option>
+            <option>Last 7 days</option>
+            <option>Last 30 days</option>
+            <option>Custom range…</option>
+          </select>
+        </div>
+      </div>
+      <div class="report-grid">
+        <div class="report-tile">
+          <div class="r-name">Personnel event log</div>
+          <div class="r-desc">All entry / exit events with sensor, timestamp, count, and ISO status.</div>
+          <div class="r-actions">
+            <button class="btn sm" data-export="events-csv">CSV</button>
+            <button class="btn sm outline" data-export="events-json">JSON</button>
+          </div>
+        </div>
+        <div class="report-tile">
+          <div class="r-name">Compliance status</div>
+          <div class="r-desc">ISO 14644-1 checks: occupancy, gowning, ACH, pressure, particle drift.</div>
+          <div class="r-actions">
+            <button class="btn sm" data-export="compliance-csv">CSV</button>
+            <button class="btn sm outline" data-export="compliance-pdf">PDF</button>
+          </div>
+        </div>
+        <div class="report-tile">
+          <div class="r-name">Limit warnings</div>
+          <div class="r-desc">All limit_warning events emitted by the cog with peak occupancy.</div>
+          <div class="r-actions">
+            <button class="btn sm" data-export="warnings-csv">CSV</button>
+            <button class="btn sm outline" data-export="warnings-json">JSON</button>
+          </div>
+        </div>
+        <div class="report-tile">
+          <div class="r-name">Sensor uptime</div>
+          <div class="r-desc">ESP32-S3 CSI sensor health, RSSI history, and firmware versions.</div>
+          <div class="r-actions">
+            <button class="btn sm" data-export="sensors-csv">CSV</button>
+            <button class="btn sm outline" data-export="sensors-json">JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings ============================================================ -->
+  <div class="section" id="settings">
+    <h2>Settings</h2>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Cleanroom configuration</div>
+          <div class="card-sub">Edit thresholds, ISO class, and sensor mesh options</div>
+        </div>
+        <button class="btn sm" id="settings-save">Save changes</button>
+      </div>
+      <div class="settings-grid">
+        <div class="field">
+          <label for="set-max">Max occupancy</label>
+          <input type="number" id="set-max" min="1" max="100" value="10">
+          <div class="hint">Hard cap before compliance_status flips to FAIL</div>
+        </div>
+        <div class="field">
+          <label for="set-warn">Warning threshold</label>
+          <input type="number" id="set-warn" min="1" max="100" value="8">
+          <div class="hint">Emits limit_warning when reached (80% default)</div>
+        </div>
+        <div class="field">
+          <label for="set-iso">ISO 14644-1 class</label>
+          <select id="set-iso">
+            <option>Class 5</option>
+            <option>Class 6</option>
+            <option selected>Class 7</option>
+            <option>Class 8</option>
+            <option>Class 9</option>
+          </select>
+          <div class="hint">Determines allowed particle counts</div>
+        </div>
+        <div class="field">
+          <label for="set-room">Cleanroom name</label>
+          <input type="text" id="set-room" value="Cleanroom A">
+          <div class="hint">Used in events and reports</div>
+        </div>
+        <div class="field">
+          <label for="set-poll">Poll interval (ms)</label>
+          <input type="number" id="set-poll" min="500" max="60000" step="500" value="2500">
+          <div class="hint">Sensor refresh rate</div>
+        </div>
+        <div class="field">
+          <label for="set-hw">Hardware profile</label>
+          <select id="set-hw">
+            <option selected>ESP32-S3 · CSI presence</option>
+            <option>ESP32-S3 · mmWave</option>
+            <option>ESP32-S3 · PIR + CSI</option>
+          </select>
+          <div class="hint">Defined by the cog manifest</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: clean-room@1.0.0</span> · <span class="mono">esp32-s3 · csi</span> · ISO 14644-1 Class 7</div>
+    <div style="margin-top:0.4rem">
+      <a href="#dashboard">Dashboard</a> ·
+      <a href="#compliance">Compliance</a> ·
+      <a href="#sensors">Sensors</a> ·
+      <a href="#alerts">Alerts</a>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ---- mock state -------------------------------------------------------- */
+const STATE = {
+  current: 7,
+  max: 10,
+  warnAt: 8,
+  peak: 9,
+  sensors: [
+    { id: 'csi-01', loc: 'entry-vestibule',  presence: 2, status: 'online', rssi: -52, fw: '1.4.2' },
+    { id: 'csi-02', loc: 'main-floor-north', presence: 3, status: 'online', rssi: -61, fw: '1.4.2' },
+    { id: 'csi-03', loc: 'main-floor-south', presence: 1, status: 'online', rssi: -58, fw: '1.4.2' },
+    { id: 'csi-04', loc: 'exit-airlock',     presence: 1, status: 'online', rssi: -49, fw: '1.4.2' },
+    { id: 'csi-05', loc: 'gowning-room',     presence: 0, status: 'idle',   rssi: -67, fw: '1.4.1' },
+  ],
+  events: [
+    { t: '14:32:08', kind: 'entry', sensor: 'csi-01', count: 7, status: 'ok'   },
+    { t: '14:31:54', kind: 'exit',  sensor: 'csi-04', count: 6, status: 'ok'   },
+    { t: '14:30:11', kind: 'entry', sensor: 'csi-01', count: 7, status: 'ok'   },
+    { t: '14:28:47', kind: 'entry', sensor: 'csi-01', count: 6, status: 'ok'   },
+    { t: '14:22:09', kind: 'warning', sensor: 'system', count: 8, status: 'warn' },
+    { t: '14:18:33', kind: 'entry', sensor: 'csi-01', count: 8, status: 'warn' },
+    { t: '14:15:02', kind: 'exit',  sensor: 'csi-04', count: 7, status: 'ok'   },
+    { t: '14:09:51', kind: 'compliance_check', sensor: 'system', count: 7, status: 'ok' },
+  ],
+};
+
+/* ---- renderers --------------------------------------------------------- */
+function renderLive(){
+  const pct = Math.round(100 * STATE.current / STATE.max);
+  $('#kpi-now').textContent = STATE.current;
+  $('#kpi-now-sub').textContent = 'of ' + STATE.max + ' max allowed';
+  $('#live-n').textContent = STATE.current;
+  $('#cap-fill').style.width = pct + '%';
+}
+
+function statusBadge(s){
+  if (s === 'online') return '<span class="badge ok"><span class="dot up"></span>online</span>';
+  if (s === 'idle')   return '<span class="badge"><span class="dot idle"></span>idle</span>';
+  return '<span class="badge err"><span class="dot down"></span>offline</span>';
+}
+
+function renderSensors(){
+  $('#sensor-grid').innerHTML = STATE.sensors.map(s => `
+    <div class="node">
+      <div class="node-h">
+        <span class="node-name">${s.id}</span>
+        ${statusBadge(s.status)}
+      </div>
+      <div class="node-meta">
+        <div><span class="l">location</span><span class="v">${s.loc}</span></div>
+        <div><span class="l">presence</span><span class="v">${s.presence} detected</span></div>
+        <div><span class="l">rssi</span><span class="v mono">${s.rssi} dBm</span></div>
+        <div><span class="l">firmware</span><span class="v mono">esp32-s3 · ${s.fw}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function eventStatusBadge(s){
+  if (s === 'ok')   return '<span class="badge ok">ok</span>';
+  if (s === 'warn') return '<span class="badge warn">warn</span>';
+  return '<span class="badge err">crit</span>';
+}
+
+function eventKindLabel(k){
+  if (k === 'entry')             return '<span class="badge accent">entry</span>';
+  if (k === 'exit')              return '<span class="badge">exit</span>';
+  if (k === 'warning')           return '<span class="badge warn">limit_warning</span>';
+  if (k === 'compliance_check')  return '<span class="badge ok">compliance_status</span>';
+  return '<span class="badge">' + k + '</span>';
+}
+
+function renderEvents(){
+  $('#evt-tbody').innerHTML = STATE.events.map(e => `
+    <tr>
+      <td class="mono" style="color:hsl(var(--muted-foreground))">${e.t}</td>
+      <td>${eventKindLabel(e.kind)}</td>
+      <td class="mono">${e.sensor}</td>
+      <td><b>${e.count}</b> / ${STATE.max}</td>
+      <td>${eventStatusBadge(e.status)}</td>
+    </tr>
+  `).join('');
+}
+
+/* ---- simulated live updates -------------------------------------------- */
+function tick(){
+  const drift = (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.35 ? 1 : 0);
+  STATE.current = Math.max(0, Math.min(STATE.max, STATE.current + drift));
+  if (STATE.current > STATE.peak) STATE.peak = STATE.current;
+
+  let remaining = STATE.current;
+  STATE.sensors.forEach((s, i) => {
+    if (i === STATE.sensors.length - 1) { s.presence = Math.max(0, remaining); return; }
+    const take = Math.min(remaining, Math.floor(Math.random() * 3));
+    s.presence = take; remaining -= take;
+  });
+
+  $('#kpi-peak').textContent = STATE.peak;
+  renderLive();
+  renderSensors();
+}
+
+/* ---- nav: smooth-scroll + active state --------------------------------- */
+const navLinks = $$('.nav a');
+const navByTarget = {};
+navLinks.forEach(a => {
+  const id = (a.getAttribute('href') || '').replace('#', '');
+  if (id) navByTarget[id] = a;
+});
+
+function activate(id){
+  navLinks.forEach(a => a.classList.toggle('active', a === navByTarget[id]));
+}
+
+navLinks.forEach(a => a.addEventListener('click', e => {
+  const href = a.getAttribute('href') || '';
+  if (!href.startsWith('#')) return;
+  const id = href.slice(1);
+  const target = document.getElementById(id);
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  history.replaceState(null, '', '#' + id);
+  activate(id);
+}));
+
+// scroll-spy: highlight nav entry of the section nearest the top
+const sectionIds = Object.keys(navByTarget);
+const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+if ('IntersectionObserver' in window && sectionEls.length){
+  const visible = new Set();
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) visible.add(en.target.id);
+      else visible.delete(en.target.id);
+    });
+    // pick the section closest to the top among visible
+    const ordered = sectionIds.filter(id => visible.has(id));
+    if (ordered.length) activate(ordered[0]);
+  }, { rootMargin: '-80px 0px -55% 0px', threshold: 0 });
+  sectionEls.forEach(el => io.observe(el));
+}
+
+// honour hash on initial load
+if (location.hash){
+  const id = location.hash.slice(1);
+  if (document.getElementById(id)) {
+    setTimeout(() => {
+      document.getElementById(id).scrollIntoView({ behavior: 'auto', block: 'start' });
+      activate(id);
+    }, 0);
+  }
+}
+
+/* ---- toast ------------------------------------------------------------- */
+let toastTimer = null;
+function toast(msg){
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---- reports / settings handlers --------------------------------------- */
+$$('[data-export]').forEach(btn => btn.addEventListener('click', () => {
+  const range = ($('#report-range') && $('#report-range').value) || 'Last 24 hours';
+  toast('Exporting ' + btn.dataset.export + ' · ' + range);
+}));
+
+const saveBtn = $('#settings-save');
+if (saveBtn) saveBtn.addEventListener('click', () => {
+  const max = parseInt($('#set-max').value, 10);
+  const warn = parseInt($('#set-warn').value, 10);
+  const poll = parseInt($('#set-poll').value, 10);
+  if (Number.isFinite(max) && max > 0)  STATE.max    = max;
+  if (Number.isFinite(warn) && warn > 0) STATE.warnAt = warn;
+  renderLive();
+  renderEvents();
+  if (Number.isFinite(poll) && poll >= 500){
+    clearInterval(tickInterval);
+    tickInterval = setInterval(tick, poll);
+  }
+  toast('Settings saved');
+});
+
+renderLive();
+renderSensors();
+renderEvents();
+let tickInterval = setInterval(tick, 2500);
+</script>
+</body>
+</html>

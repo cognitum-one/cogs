@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Flash Attention — Spatial Focus via Attention on Subcarrier Groups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --warning:35 95% 60%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:34px;height:34px;border-radius:0.5rem;
+  background:linear-gradient(135deg,hsl(var(--primary) / 0.2),hsl(var(--accent) / 0.15));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 12px hsl(var(--primary) / 0.25);
+}
+.brand-mark svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover,.nav a.active{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem;scroll-margin-top:5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.75rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.9375rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:52rem}
+
+/* Hero */
+.hero{
+  background:var(--gradient-hero);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.75rem;
+  position:relative;overflow:hidden;
+  box-shadow:var(--shadow-card);
+}
+.hero::before{
+  content:"";position:absolute;inset:0;
+  background:var(--gradient-glow);
+  pointer-events:none;opacity:0.7;
+}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-start;gap:1.5rem;flex-wrap:wrap;position:relative}
+.hero-left{flex:1;min-width:280px}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.25rem 0.625rem;border-radius:9999px;
+  background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.3);
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
+  margin-bottom:0.875rem;
+}
+.hero-meta{
+  display:flex;gap:1.25rem;flex-wrap:wrap;
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);
+  margin-top:1rem;
+}
+.hero-meta b{color:hsl(var(--foreground));font-weight:500;font-family:var(--font-display)}
+.hero-actions{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.875rem;gap:0.5rem;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* KPI grid */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+  position:relative;overflow:hidden;
+}
+.kpi::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:hsl(var(--primary));opacity:0;transition:opacity 0.3s;
+}
+.kpi.live::after{opacity:1;animation:pulse-bar 2s ease-in-out infinite}
+@keyframes pulse-bar{0%,100%{opacity:0.5}50%{opacity:1}}
+.kpi-ic{
+  width:42px;height:42px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warning) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warning))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.1;margin-top:0.125rem;font-feature-settings:"tnum"}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+.kpi-sub.up{color:hsl(var(--accent))}
+.kpi-sub.down{color:hsl(0 70% 70%)}
+
+/* Grids */
+.grid-2{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-12{display:grid;gap:1rem;grid-template-columns:repeat(12,1fr)}
+.col-8{grid-column:span 8}
+.col-4{grid-column:span 4}
+.col-7{grid-column:span 7}
+.col-5{grid-column:span 5}
+.col-6{grid-column:span 6}
+@media (max-width:980px){.col-8,.col-4,.col-7,.col-5,.col-6{grid-column:span 12}}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9);box-shadow:0 6px 16px -2px hsl(var(--primary) / 0.5)}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.2rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;font-family:var(--font-display);
+}
+.badge.live{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3)}
+.badge.idle{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.hard{background:hsl(var(--warning) / 0.12);color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.3)}
+.badge.signal{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.dot{width:7px;height:7px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent) / 0.7);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* Canvas wrappers */
+.canvas-wrap{
+  position:relative;width:100%;
+  background:hsl(var(--background));
+  border-radius:0.5rem;
+  border:1px solid hsl(var(--border) / 0.4);
+  overflow:hidden;
+}
+.canvas-wrap canvas{display:block;width:100%;height:100%}
+.canvas-overlay{
+  position:absolute;top:0.6rem;right:0.6rem;
+  display:flex;gap:0.4rem;align-items:center;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  pointer-events:none;
+}
+.canvas-legend{
+  position:absolute;bottom:0.6rem;left:0.75rem;
+  display:flex;gap:0.875rem;font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));pointer-events:none;
+}
+.canvas-legend span{display:inline-flex;align-items:center;gap:0.3rem}
+.legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px}
+
+/* Attention heatmap grid (cells) */
+.heatmap-info{
+  display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));margin-top:0.5rem;
+}
+
+/* Subcarrier group cells (interactive grid, not a bar chart) */
+.sub-grid{
+  display:grid;gap:0.4rem;
+  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+}
+.sub-cell{
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.45rem;
+  padding:0.625rem 0.625rem;
+  cursor:pointer;
+  transition:all 0.15s ease;
+  position:relative;overflow:hidden;
+}
+.sub-cell::before{
+  content:"";position:absolute;inset:0;opacity:var(--w,0);
+  background:radial-gradient(circle at 30% 30%,hsl(var(--primary) / 0.6),hsl(var(--primary) / 0.05));
+  transition:opacity 0.4s;
+}
+.sub-cell:hover{border-color:hsl(var(--primary) / 0.6);transform:translateY(-1px)}
+.sub-cell.focused{border-color:hsl(var(--accent));box-shadow:0 0 16px hsl(var(--accent) / 0.4)}
+.sub-cell.selected{border-color:hsl(var(--primary));box-shadow:0 0 20px hsl(var(--primary) / 0.45)}
+.sub-cell-id{font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));position:relative}
+.sub-cell-w{font-family:var(--font-mono);font-size:0.875rem;font-weight:600;color:hsl(var(--foreground));margin-top:0.2rem;position:relative;font-feature-settings:"tnum"}
+.sub-cell-bar{
+  position:relative;margin-top:0.4rem;height:3px;border-radius:2px;
+  background:hsl(var(--secondary));overflow:hidden;
+}
+.sub-cell-bar i{
+  position:absolute;left:0;top:0;bottom:0;
+  background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));
+  width:var(--w,0%);
+  transition:width 0.4s;
+}
+
+/* Event log */
+.event-log{
+  max-height:22rem;overflow-y:auto;
+  background:hsl(var(--background));
+  border-radius:0.5rem;
+  border:1px solid hsl(var(--border) / 0.5);
+  padding:0.5rem;
+}
+.event-row{
+  display:grid;grid-template-columns:auto auto 1fr auto;gap:0.625rem;
+  padding:0.4rem 0.625rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  border-bottom:1px solid hsl(var(--border) / 0.3);
+  align-items:center;
+}
+.event-row:last-child{border-bottom:none}
+.event-time{color:hsl(var(--muted-foreground))}
+.event-type{font-weight:600;color:hsl(var(--primary))}
+.event-type.focus{color:hsl(var(--accent))}
+.event-type.snr{color:hsl(var(--warning))}
+.event-data{color:hsl(var(--foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-val{color:hsl(var(--muted-foreground));text-align:right}
+
+/* Form */
+.field{margin-bottom:0.875rem}
+.field-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.4rem;
+}
+.field-label span{color:hsl(var(--primary));font-family:var(--font-mono);text-transform:none;letter-spacing:0}
+.field input[type=range]{
+  -webkit-appearance:none;width:100%;height:5px;
+  background:hsl(var(--secondary));border-radius:5px;outline:none;
+  border:none;padding:0;
+}
+.field input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:hsl(var(--primary));cursor:pointer;
+  box-shadow:0 0 10px hsl(var(--primary) / 0.5);
+}
+.field input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;
+  background:hsl(var(--primary));cursor:pointer;border:none;
+  box-shadow:0 0 10px hsl(var(--primary) / 0.5);
+}
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+select{width:100%}
+
+/* Pill tabs */
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.pill-tab{
+  padding:0.35rem 0.7rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;font-family:var(--font-display);
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+}
+
+/* Focus zone list (radial card) */
+.zone-list{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem}
+.zone-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.5rem 0.75rem;border-radius:0.5rem;
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.4);
+  font-family:var(--font-mono);font-size:0.75rem;
+  transition:all 0.2s;
+}
+.zone-row:hover{border-color:hsl(var(--primary) / 0.5)}
+.zone-row .zname{display:flex;align-items:center;gap:0.5rem;color:hsl(var(--foreground))}
+.zone-row .zdot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 6px currentColor;flex-shrink:0}
+.zone-row .zmeta{color:hsl(var(--muted-foreground));display:flex;gap:0.875rem}
+.zone-row .zmeta b{color:hsl(var(--foreground));font-weight:500}
+
+/* Status banner */
+.status-banner{
+  display:flex;justify-content:space-between;align-items:center;gap:0.75rem;
+  padding:0.625rem 0.875rem;border-radius:0.5rem;
+  background:hsl(var(--accent) / 0.08);
+  border:1px solid hsl(var(--accent) / 0.25);
+  font-size:0.8125rem;color:hsl(var(--accent));
+  font-family:var(--font-mono);margin-bottom:1rem;
+}
+.status-banner.paused{
+  background:hsl(var(--warning) / 0.08);
+  border-color:hsl(var(--warning) / 0.25);
+  color:hsl(var(--warning));
+}
+.status-banner.stopped{
+  background:hsl(var(--destructive) / 0.08);
+  border-color:hsl(var(--destructive) / 0.25);
+  color:hsl(0 70% 70%);
+}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.75);backdrop-filter:blur(6px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card),0 0 60px hsl(var(--primary) / 0.15);
+  padding:1.5rem;max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.modal-step{
+  font-family:var(--font-mono);font-size:0.75rem;
+  padding:0.5rem 0.75rem;border-radius:0.4rem;margin-bottom:0.4rem;
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.4);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-step .stat{color:hsl(var(--muted-foreground))}
+.modal-step.done .stat{color:hsl(var(--accent))}
+.modal-step.run .stat{color:hsl(var(--primary))}
+
+/* Toast */
+.toast-stack{position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
+.toast{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-left:3px solid hsl(var(--primary));
+  border-radius:0.5rem;padding:0.625rem 0.875rem;
+  font-size:0.8125rem;color:hsl(var(--foreground));
+  box-shadow:var(--shadow-card);
+  min-width:240px;max-width:340px;
+  animation:slidein 0.25s ease-out;
+}
+.toast.accent{border-left-color:hsl(var(--accent))}
+.toast.warn{border-left-color:hsl(var(--warning))}
+.toast .t-title{font-weight:600;font-size:0.8125rem}
+.toast .t-body{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+@keyframes slidein{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Inline detail rows */
+.detail-grid{display:grid;gap:0.625rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:0.625rem}
+.detail-cell{
+  padding:0.5rem 0.625rem;border-radius:0.4rem;
+  background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.4);
+}
+.detail-label{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))}
+.detail-val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground));margin-top:0.2rem;font-feature-settings:"tnum"}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Flash Attention<span class="brand-ver mono">v1.0.0</span>
+      </span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-target="overview" class="active">Overview</a>
+      <a data-target="attention">Attention Map</a>
+      <a data-target="focus">Focus Zones</a>
+      <a data-target="snr">SNR Monitor</a>
+      <a data-target="subcarriers">Subcarriers</a>
+      <a data-target="events">Events</a>
+      <a data-target="config">Configuration</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Overview / Hero -->
+  <div class="section" id="overview">
+    <div class="hero">
+      <div class="hero-row">
+        <div class="hero-left">
+          <span class="hero-tag">
+            <span class="dot up"></span>
+            Signal · Spatial Attention
+          </span>
+          <h1 class="page">Flash Attention</h1>
+          <div class="lede">
+            Applies flash attention mechanisms to subcarrier groups for spatial focusing,
+            improving signal-to-noise ratio in dense RF environments.
+          </div>
+          <div class="hero-meta">
+            <span><b>Hardware</b> ESP32-S3</span>
+            <span><b>Input</b> CSI subcarriers</span>
+            <span><b>Footprint</b> 20 KB</span>
+            <span><b>Difficulty</b> <span class="badge hard">Hard</span></span>
+            <span class="mono">cognitum-one/cogs/src/cogs/flash-attention</span>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary" id="btn-install">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Install
+          </button>
+          <button class="btn accent" id="btn-run">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span id="btn-run-lbl">Pause</span>
+          </button>
+          <button class="btn outline" id="btn-reset">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Reset
+          </button>
+          <button class="btn outline" id="btn-details">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Details
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status banner -->
+  <div class="status-banner" id="status-banner">
+    <span><span class="dot up"></span> <b id="status-text" style="color:inherit">RUNNING</b> &nbsp;·&nbsp; flash kernel active on subcarrier groups &nbsp;·&nbsp; tile size <span id="status-tile">64</span> &nbsp;·&nbsp; iteration <span id="status-iter" class="mono">0</span></span>
+    <span class="mono" id="status-fps">— hz</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi live">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">SNR improvement</div>
+          <div class="kpi-val" id="kpi-snr">+0.0 dB</div>
+          <div class="kpi-sub up" id="kpi-snr-sub">vs baseline · live</div>
+        </div>
+      </div>
+      <div class="kpi live">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Focus zones active</div>
+          <div class="kpi-val" id="kpi-zones">0</div>
+          <div class="kpi-sub" id="kpi-zones-sub">of 8 max</div>
+        </div>
+      </div>
+      <div class="kpi live">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Subcarrier groups</div>
+          <div class="kpi-val" id="kpi-groups">64</div>
+          <div class="kpi-sub" id="kpi-groups-sub">8 × 8 tiles · attended</div>
+        </div>
+      </div>
+      <div class="kpi live">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Attention iterations</div>
+          <div class="kpi-val" id="kpi-iter">0</div>
+          <div class="kpi-sub" id="kpi-iter-sub">since reset · cumulative</div>
+        </div>
+      </div>
+      <div class="kpi live">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Heap pressure</div>
+          <div class="kpi-val" id="kpi-mem">— KB</div>
+          <div class="kpi-sub" id="kpi-mem-sub">peak in flash window</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attention Map + Focus Radar -->
+  <div class="section" id="attention">
+    <div class="grid-12">
+      <div class="card col-7">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Attention Map</div>
+            <div class="card-sub">Softmax-weighted attention across <span class="mono">N×N</span> subcarrier groups · brighter = more attended</div>
+          </div>
+          <div style="display:flex;gap:0.4rem">
+            <button class="btn sm outline" id="btn-recenter">Recenter</button>
+            <button class="btn sm outline" id="btn-snapshot">Snapshot</button>
+          </div>
+        </div>
+        <div class="pill-tabs" id="attn-mode-tabs">
+          <button class="pill-tab on" data-mode="heat">Heatmap</button>
+          <button class="pill-tab" data-mode="flow">Flow lines</button>
+          <button class="pill-tab" data-mode="contour">Contours</button>
+        </div>
+        <div class="canvas-wrap" style="aspect-ratio:16/10">
+          <canvas id="cv-attn"></canvas>
+          <div class="canvas-overlay">
+            <span><span class="dot up"></span> attention</span>
+            <span class="mono" id="attn-stat">—</span>
+          </div>
+          <div class="canvas-legend">
+            <span><span class="legend-swatch" style="background:hsl(220 25% 14%)"></span>0.00</span>
+            <span><span class="legend-swatch" style="background:hsl(195 75% 35%)"></span>0.25</span>
+            <span><span class="legend-swatch" style="background:hsl(185 85% 55%)"></span>0.50</span>
+            <span><span class="legend-swatch" style="background:hsl(142 75% 60%)"></span>0.75</span>
+            <span><span class="legend-swatch" style="background:hsl(60 95% 70%)"></span>1.00</span>
+          </div>
+        </div>
+        <div class="heatmap-info">
+          <span>kernel: <span id="kernel-name" style="color:hsl(var(--foreground))">flash-v2 · tile 64</span></span>
+          <span id="attn-cursor" style="color:hsl(var(--primary))">hover the map for cell values</span>
+        </div>
+      </div>
+
+      <div class="card col-5" id="focus">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Spatial Focus Radar</div>
+            <div class="card-sub">Angular focus zones derived from attention peaks · ESP32-S3 antenna phase</div>
+          </div>
+          <span class="badge live"><span class="dot up"></span>tracking</span>
+        </div>
+        <div class="canvas-wrap" style="aspect-ratio:1/1;max-width:420px;margin:0 auto">
+          <canvas id="cv-radar"></canvas>
+          <div class="canvas-overlay">
+            <span class="mono" id="radar-stat">— zones</span>
+          </div>
+        </div>
+        <div class="zone-list" id="zone-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNR Monitor (waveform, not bars) + Attention Flow -->
+  <div class="section" id="snr">
+    <div class="grid-12">
+      <div class="card col-8">
+        <div class="card-h">
+          <div>
+            <div class="card-title">SNR Improvement — Live Trace</div>
+            <div class="card-sub">Streaming gain over raw CSI baseline · last 240 samples</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <span class="mono" style="font-size:0.75rem;color:hsl(var(--muted-foreground))">window</span>
+            <select id="snr-window" style="width:auto">
+              <option value="120">2s</option>
+              <option value="240" selected>4s</option>
+              <option value="480">8s</option>
+              <option value="960">16s</option>
+            </select>
+            <button class="btn sm outline" id="btn-export-snr">Export CSV</button>
+          </div>
+        </div>
+        <div class="canvas-wrap" style="aspect-ratio:16/6">
+          <canvas id="cv-snr"></canvas>
+          <div class="canvas-overlay">
+            <span class="mono" id="snr-stat">— dB peak</span>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-cell"><div class="detail-label">Mean gain</div><div class="detail-val" id="snr-mean">— dB</div></div>
+          <div class="detail-cell"><div class="detail-label">Peak gain</div><div class="detail-val" id="snr-peak">— dB</div></div>
+          <div class="detail-cell"><div class="detail-label">Std dev</div><div class="detail-val" id="snr-std">— dB</div></div>
+          <div class="detail-cell"><div class="detail-label">Sample rate</div><div class="detail-val" id="snr-rate">— Hz</div></div>
+        </div>
+      </div>
+
+      <div class="card col-4">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Attention Flow</div>
+            <div class="card-sub">Cross-attention links between active groups</div>
+          </div>
+        </div>
+        <div class="canvas-wrap" style="aspect-ratio:1/1.05">
+          <canvas id="cv-flow"></canvas>
+          <div class="canvas-overlay">
+            <span class="mono" id="flow-stat">— links</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subcarrier groups -->
+  <div class="section" id="subcarriers">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Subcarrier Groups</div>
+          <div class="card-sub">Click a tile to lock attention on it · double-click to clear lock</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <span class="mono" style="font-size:0.75rem;color:hsl(var(--muted-foreground))">layout</span>
+          <select id="grid-layout" style="width:auto">
+            <option value="8">8 × 8</option>
+            <option value="6" selected>6 × 6</option>
+            <option value="4">4 × 4</option>
+          </select>
+          <button class="btn sm outline" id="btn-clear-lock">Clear locks</button>
+        </div>
+      </div>
+      <div class="sub-grid" id="sub-grid"></div>
+      <div class="detail-grid" style="margin-top:1rem">
+        <div class="detail-cell"><div class="detail-label">Locked tiles</div><div class="detail-val" id="locked-count">0</div></div>
+        <div class="detail-cell"><div class="detail-label">Top-K mode</div><div class="detail-val" id="topk-disp">K = 8</div></div>
+        <div class="detail-cell"><div class="detail-label">Quant</div><div class="detail-val">int8 · per-tile</div></div>
+        <div class="detail-cell"><div class="detail-label">Phase</div><div class="detail-val" id="phase-disp">0.00 rad</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events -->
+  <div class="section" id="events">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event Stream</div>
+          <div class="card-sub">attention_map · focus_zone · snr_improvement</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="btn-filter-all">All</button>
+          <button class="btn sm outline" id="btn-filter-attn">attention_map</button>
+          <button class="btn sm outline" id="btn-filter-focus">focus_zone</button>
+          <button class="btn sm outline" id="btn-filter-snr">snr_improvement</button>
+          <button class="btn sm danger" id="btn-clear-events">Clear</button>
+        </div>
+      </div>
+      <div class="event-log" id="event-log"></div>
+    </div>
+  </div>
+
+  <!-- Configuration -->
+  <div class="section" id="config">
+    <div class="grid-12">
+      <div class="card col-6">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Kernel Parameters</div>
+            <div class="card-sub">Live-applied · changes propagate to the ESP32-S3 firmware</div>
+          </div>
+          <span class="badge signal">flash-v2</span>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Tile size</span><span id="lbl-tile">64</span></div>
+          <input type="range" id="ctl-tile" min="16" max="128" step="16" value="64">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Top-K attention</span><span id="lbl-topk">8</span></div>
+          <input type="range" id="ctl-topk" min="2" max="32" step="1" value="8">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Temperature (softmax)</span><span id="lbl-temp">1.00</span></div>
+          <input type="range" id="ctl-temp" min="0.10" max="3.00" step="0.05" value="1.00">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Dropout</span><span id="lbl-drop">0.10</span></div>
+          <input type="range" id="ctl-drop" min="0" max="0.5" step="0.01" value="0.10">
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Update rate (Hz)</span><span id="lbl-rate">30</span></div>
+          <input type="range" id="ctl-rate" min="5" max="60" step="5" value="30">
+        </div>
+      </div>
+
+      <div class="card col-6">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Signal Source</div>
+            <div class="card-sub">CSI subcarrier input · ESP32-S3 RF front-end</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Bandwidth</span></div>
+          <select id="ctl-bw">
+            <option>20 MHz · 52 subcarriers</option>
+            <option selected>40 MHz · 108 subcarriers</option>
+            <option>80 MHz · 234 subcarriers</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Channel</span></div>
+          <select id="ctl-ch">
+            <option>1 — 2412 MHz</option>
+            <option selected>6 — 2437 MHz</option>
+            <option>11 — 2462 MHz</option>
+            <option>36 — 5180 MHz</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Antenna geometry</span></div>
+          <select id="ctl-ant">
+            <option selected>Linear 2× (ESP32-S3 dev kit)</option>
+            <option>Circular 4×</option>
+            <option>L-shape 3×</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span>Spatial focus mode</span></div>
+          <select id="ctl-mode">
+            <option selected>Adaptive (track moving sources)</option>
+            <option>Static (lock to current peak)</option>
+            <option>Scan (sweep 0–360°)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.875rem">
+          <button class="btn outline" id="btn-defaults">Restore defaults</button>
+          <button class="btn primary" id="btn-apply">Apply &amp; flash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: flash-attention@1.0.0</span> &middot; <span class="mono">target: esp32-s3</span> &middot; <span class="mono">build: signal-stack</span></div>
+    <div style="margin-top:0.4rem">
+      <a href="#overview">overview</a> &middot;
+      <a href="#attention">attention map</a> &middot;
+      <a href="#focus">focus zones</a> &middot;
+      <a href="#snr">snr</a> &middot;
+      <a href="#subcarriers">subcarriers</a> &middot;
+      <a href="#events">events</a> &middot;
+      <a href="#config">config</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Install modal -->
+<div class="modal-bg" id="modal-install">
+  <div class="modal">
+    <h3>Install Flash Attention v1.0.0</h3>
+    <div class="modal-sub">Streaming 20 KB cog to target <span class="mono">esp32-s3</span></div>
+    <div id="install-steps">
+      <div class="modal-step" data-step="0"><span>Verifying signature</span><span class="stat">pending</span></div>
+      <div class="modal-step" data-step="1"><span>Allocating tile buffers (64 × 64)</span><span class="stat">pending</span></div>
+      <div class="modal-step" data-step="2"><span>Streaming flash kernel</span><span class="stat">pending</span></div>
+      <div class="modal-step" data-step="3"><span>Binding CSI subcarrier input</span><span class="stat">pending</span></div>
+      <div class="modal-step" data-step="4"><span>Warming attention cache</span><span class="stat">pending</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" id="modal-cancel">Cancel</button>
+      <button class="btn primary" id="modal-go">Start install</button>
+    </div>
+  </div>
+</div>
+
+<!-- Details modal -->
+<div class="modal-bg" id="modal-details">
+  <div class="modal">
+    <h3>Flash Attention · Details</h3>
+    <div class="modal-sub">cognitum-one/cogs/src/cogs/flash-attention</div>
+    <p style="font-size:0.875rem;color:hsl(var(--foreground));line-height:1.6;margin-bottom:1rem">
+      Applies flash attention mechanisms to subcarrier groups for spatial focusing,
+      improving signal-to-noise ratio in dense RF environments. The attention kernel
+      operates on tiled CSI subcarrier groups and emits attention maps, focus zones,
+      and SNR improvement deltas. Tile-fused softmax keeps the working set on-chip
+      so the full attention pass fits in ESP32-S3 PSRAM with room to spare.
+    </p>
+    <div class="detail-grid">
+      <div class="detail-cell"><div class="detail-label">Version</div><div class="detail-val">1.0.0</div></div>
+      <div class="detail-cell"><div class="detail-label">Footprint</div><div class="detail-val">20 KB</div></div>
+      <div class="detail-cell"><div class="detail-label">Difficulty</div><div class="detail-val">Hard</div></div>
+      <div class="detail-cell"><div class="detail-label">Hardware</div><div class="detail-val">ESP32-S3</div></div>
+      <div class="detail-cell"><div class="detail-label">Input</div><div class="detail-val">CSI subcarriers</div></div>
+      <div class="detail-cell"><div class="detail-label">Category</div><div class="detail-val">Signal</div></div>
+    </div>
+    <div style="margin-top:0.875rem">
+      <div class="detail-label" style="font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem">Events</div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <span class="badge signal">attention_map</span>
+        <span class="badge live">focus_zone</span>
+        <span class="badge hard">snr_improvement</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="details-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script>
+"use strict";
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+const STATE = {
+  running: true,
+  iter: 0,
+  tile: 64,
+  topK: 8,
+  temperature: 1.00,
+  dropout: 0.10,
+  rateHz: 30,
+  gridN: 6,
+  attentionMode: "heat",
+  snrWindow: 240,
+  events: [],
+  eventFilter: "all",
+  snrHistory: [],
+  lockedTiles: new Set(),
+  cells: [],
+  zones: [],
+  attMatrix: [],
+  hoverCell: null,
+  lastTickT: performance.now(),
+  fps: 0,
+  lastEmitT: 0,
+  installInProgress: false,
+};
+
+/* ---------- Nav scroll spy ---------- */
+const navLinks = $$("#nav a");
+navLinks.forEach(a => {
+  a.addEventListener("click", e => {
+    e.preventDefault();
+    const t = a.dataset.target;
+    const target = document.getElementById(t);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+function updateActiveNav(){
+  const sections = ["overview","attention","focus","snr","subcarriers","events","config"];
+  const scrollPos = window.scrollY + 120;
+  let active = "overview";
+  for (const id of sections){
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= scrollPos) active = id;
+  }
+  navLinks.forEach(a => a.classList.toggle("active", a.dataset.target === active));
+}
+window.addEventListener("scroll", updateActiveNav, { passive: true });
+
+/* ---------- Toasts ---------- */
+function toast(title, body, kind){
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.innerHTML = `<div class="t-title">${title}</div><div class="t-body">${body||""}</div>`;
+  el.style.pointerEvents = "auto";
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.style.transition = "opacity 0.3s, transform 0.3s"; el.style.opacity = "0"; el.style.transform = "translateX(20px)"; }, 3200);
+  setTimeout(() => el.remove(), 3600);
+}
+
+/* ---------- Modals ---------- */
+function showModal(id){ document.getElementById(id).classList.add("show"); }
+function hideModal(id){ document.getElementById(id).classList.remove("show"); }
+$$(".modal-bg").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("show"); }));
+
+/* ---------- Simulated attention engine ----------
+ * Generates a deterministic-but-evolving N×N attention matrix using
+ * a few moving 2D Gaussians, then softmax-normalises.
+ */
+function makeMatrix(N, t){
+  const rows = new Array(N);
+  const peaks = [
+    { x: N/2 + Math.sin(t*0.0008)*(N*0.32), y: N/2 + Math.cos(t*0.001)*(N*0.28), s: N*0.18, w: 1.0 },
+    { x: N*0.3 + Math.sin(t*0.0012+1.2)*(N*0.18), y: N*0.7 + Math.cos(t*0.0009+0.6)*(N*0.16), s: N*0.14, w: 0.85 },
+    { x: N*0.75 + Math.cos(t*0.0007+2.1)*(N*0.16), y: N*0.25 + Math.sin(t*0.0011+1.4)*(N*0.18), s: N*0.16, w: 0.7 },
+  ];
+  // Lock peaks toward selected tiles
+  if (STATE.lockedTiles.size){
+    Array.from(STATE.lockedTiles).slice(0, 3).forEach((idx, i) => {
+      const cx = (idx % N) + 0.5, cy = Math.floor(idx / N) + 0.5;
+      if (peaks[i]) { peaks[i].x = cx; peaks[i].y = cy; peaks[i].w *= 1.2; peaks[i].s *= 0.85; }
+    });
+  }
+  let sum = 0;
+  for (let y = 0; y < N; y++){
+    rows[y] = new Float32Array(N);
+    for (let x = 0; x < N; x++){
+      let v = 0;
+      for (const p of peaks){
+        const dx = (x + 0.5) - p.x, dy = (y + 0.5) - p.y;
+        v += p.w * Math.exp(-(dx*dx + dy*dy) / (2 * p.s * p.s));
+      }
+      // gentle noise + softmax temperature
+      v += 0.04 * Math.random();
+      v = Math.exp(v / STATE.temperature);
+      rows[y][x] = v;
+      sum += v;
+    }
+  }
+  // normalize so total ≈ 1
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++)
+      rows[y][x] /= sum;
+  return { rows, peaks };
+}
+
+/* Find top-K cells */
+function topKCells(M, K){
+  const N = M.length;
+  const flat = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) flat.push({ x, y, v: M[y][x] });
+  flat.sort((a, b) => b.v - a.v);
+  return flat.slice(0, K);
+}
+
+/* ---------- Attention heatmap canvas ---------- */
+const cvAttn = $("#cv-attn"), ctxAttn = cvAttn.getContext("2d");
+function fit(canvas){
+  const r = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(r.width * dpr));
+  canvas.height = Math.max(1, Math.floor(r.height * dpr));
+  return { w: r.width, h: r.height, dpr };
+}
+function colorForWeight(w){
+  // w in [0..1]: dark → cyan → green → yellow
+  if (w < 0.001) return [12, 18, 28];
+  if (w < 0.25){
+    const t = w / 0.25;
+    return [12 + (28-12)*t, 18 + (90-18)*t, 28 + (130-28)*t];
+  } else if (w < 0.5){
+    const t = (w - 0.25) / 0.25;
+    return [28 + (40-28)*t, 90 + (200-90)*t, 130 + (220-130)*t];
+  } else if (w < 0.75){
+    const t = (w - 0.5) / 0.25;
+    return [40 + (90-40)*t, 200 + (240-200)*t, 220 + (110-220)*t];
+  } else {
+    const t = Math.min(1, (w - 0.75) / 0.25);
+    return [90 + (240-90)*t, 240 + (240-240)*t, 110 + (110-110)*t];
+  }
+}
+function drawAttnHeat(M, dims){
+  const { w, h, dpr } = dims;
+  const N = M.length;
+  const cellW = (w / N) * dpr;
+  const cellH = (h / N) * dpr;
+  // Normalize for display
+  let maxv = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (M[y][x] > maxv) maxv = M[y][x];
+  const img = ctxAttn.createImageData(Math.round(w*dpr), Math.round(h*dpr));
+  const W = img.width, H = img.height;
+  for (let py = 0; py < H; py++){
+    const gy = Math.min(N-1, Math.floor((py / H) * N));
+    // bilinear-ish for smoother heatmap
+    const fy = (py / H) * N - gy;
+    for (let px = 0; px < W; px++){
+      const gx = Math.min(N-1, Math.floor((px / W) * N));
+      const fx = (px / W) * N - gx;
+      const x1 = Math.min(N-1, gx+1), y1 = Math.min(N-1, gy+1);
+      const v = (1-fx)*(1-fy)*M[gy][gx] + fx*(1-fy)*M[gy][x1] + (1-fx)*fy*M[y1][gx] + fx*fy*M[y1][x1];
+      const w01 = Math.min(1, v / maxv);
+      const [r, g, b] = colorForWeight(w01);
+      const idx = (py * W + px) * 4;
+      img.data[idx] = r; img.data[idx+1] = g; img.data[idx+2] = b; img.data[idx+3] = 255;
+    }
+  }
+  ctxAttn.putImageData(img, 0, 0);
+  // Grid overlay
+  ctxAttn.save();
+  ctxAttn.globalAlpha = 0.18;
+  ctxAttn.strokeStyle = "#88c";
+  ctxAttn.lineWidth = 1;
+  for (let i = 1; i < N; i++){
+    ctxAttn.beginPath();
+    ctxAttn.moveTo(i * cellW, 0); ctxAttn.lineTo(i * cellW, h*dpr);
+    ctxAttn.moveTo(0, i * cellH); ctxAttn.lineTo(w*dpr, i * cellH);
+    ctxAttn.stroke();
+  }
+  ctxAttn.restore();
+  // Top-K markers
+  const tk = topKCells(M, STATE.topK);
+  ctxAttn.save();
+  tk.forEach((c, i) => {
+    const cx = (c.x + 0.5) * cellW;
+    const cy = (c.y + 0.5) * cellH;
+    const r = 6 * dpr + (i === 0 ? 4 * dpr : 0);
+    ctxAttn.beginPath();
+    ctxAttn.strokeStyle = i === 0 ? "rgba(180,255,180,0.95)" : "rgba(180,235,255,0.6)";
+    ctxAttn.lineWidth = 1.4 * dpr;
+    ctxAttn.arc(cx, cy, r, 0, Math.PI*2);
+    ctxAttn.stroke();
+  });
+  ctxAttn.restore();
+  // Hover
+  if (STATE.hoverCell){
+    const { x, y } = STATE.hoverCell;
+    ctxAttn.save();
+    ctxAttn.strokeStyle = "rgba(255,255,255,0.9)";
+    ctxAttn.lineWidth = 2 * dpr;
+    ctxAttn.strokeRect(x * cellW, y * cellH, cellW, cellH);
+    ctxAttn.restore();
+  }
+}
+function drawAttnFlow(M, dims){
+  const { w, h, dpr } = dims;
+  const N = M.length;
+  // background dim
+  ctxAttn.fillStyle = "rgba(8,12,20,1)";
+  ctxAttn.fillRect(0, 0, w*dpr, h*dpr);
+  const cellW = (w / N) * dpr;
+  const cellH = (h / N) * dpr;
+  // grid
+  ctxAttn.save();
+  ctxAttn.globalAlpha = 0.18;
+  ctxAttn.strokeStyle = "#446";
+  for (let i = 1; i < N; i++){
+    ctxAttn.beginPath();
+    ctxAttn.moveTo(i * cellW, 0); ctxAttn.lineTo(i * cellW, h*dpr);
+    ctxAttn.moveTo(0, i * cellH); ctxAttn.lineTo(w*dpr, i * cellH);
+    ctxAttn.stroke();
+  }
+  ctxAttn.restore();
+  const tk = topKCells(M, Math.min(STATE.topK, 16));
+  // Flow links from peak0 to others
+  if (tk.length > 1){
+    const p0 = tk[0];
+    const x0 = (p0.x + 0.5) * cellW, y0 = (p0.y + 0.5) * cellH;
+    for (let i = 1; i < tk.length; i++){
+      const p = tk[i];
+      const x1 = (p.x + 0.5) * cellW, y1 = (p.y + 0.5) * cellH;
+      const a = Math.max(0.1, Math.min(0.95, p.v / p0.v));
+      ctxAttn.beginPath();
+      const cx = (x0+x1)/2 + (y1-y0)*0.1;
+      const cy = (y0+y1)/2 + (x0-x1)*0.1;
+      ctxAttn.strokeStyle = `hsla(${185 - i*8}, 80%, ${50 + 10*a}%, ${a})`;
+      ctxAttn.lineWidth = (1 + 3 * a) * dpr;
+      ctxAttn.moveTo(x0, y0);
+      ctxAttn.quadraticCurveTo(cx, cy, x1, y1);
+      ctxAttn.stroke();
+    }
+  }
+  // Nodes
+  tk.forEach((c, i) => {
+    const cx = (c.x + 0.5) * cellW, cy = (c.y + 0.5) * cellH;
+    const r = (4 + 8 * (c.v / tk[0].v)) * dpr;
+    const grad = ctxAttn.createRadialGradient(cx, cy, 1, cx, cy, r);
+    grad.addColorStop(0, i === 0 ? "rgba(180,255,180,1)" : "rgba(120,220,255,1)");
+    grad.addColorStop(1, "rgba(40,150,210,0)");
+    ctxAttn.fillStyle = grad;
+    ctxAttn.beginPath();
+    ctxAttn.arc(cx, cy, r, 0, Math.PI*2);
+    ctxAttn.fill();
+  });
+}
+function drawAttnContour(M, dims){
+  const { w, h, dpr } = dims;
+  const N = M.length;
+  ctxAttn.fillStyle = "rgba(10,14,22,1)";
+  ctxAttn.fillRect(0, 0, w*dpr, h*dpr);
+  // resample to bigger grid for smoother contours
+  const R = N * 6;
+  const cellW = (w / R) * dpr;
+  const cellH = (h / R) * dpr;
+  let maxv = 0;
+  const Mr = new Float32Array(R*R);
+  for (let py = 0; py < R; py++){
+    const gy = Math.min(N-1, Math.floor((py / R) * N));
+    const fy = (py / R) * N - gy;
+    for (let px = 0; px < R; px++){
+      const gx = Math.min(N-1, Math.floor((px / R) * N));
+      const fx = (px / R) * N - gx;
+      const x1 = Math.min(N-1, gx+1), y1 = Math.min(N-1, gy+1);
+      const v = (1-fx)*(1-fy)*M[gy][gx] + fx*(1-fy)*M[gy][x1] + (1-fx)*fy*M[y1][gx] + fx*fy*M[y1][x1];
+      Mr[py*R+px] = v;
+      if (v > maxv) maxv = v;
+    }
+  }
+  const levels = [0.15, 0.30, 0.50, 0.70, 0.88];
+  levels.forEach((lv, li) => {
+    const thr = lv * maxv;
+    const [r, g, b] = colorForWeight(lv);
+    ctxAttn.fillStyle = `rgba(${r|0},${g|0},${b|0},${0.10 + 0.16*li})`;
+    for (let py = 0; py < R; py++){
+      for (let px = 0; px < R; px++){
+        if (Mr[py*R+px] >= thr){
+          ctxAttn.fillRect(px*cellW, py*cellH, cellW+1, cellH+1);
+        }
+      }
+    }
+  });
+  // outlines
+  ctxAttn.save();
+  ctxAttn.strokeStyle = "rgba(180,235,255,0.5)";
+  ctxAttn.lineWidth = 1 * dpr;
+  levels.forEach(lv => {
+    const thr = lv * maxv;
+    for (let py = 1; py < R; py++){
+      for (let px = 1; px < R; px++){
+        const v = Mr[py*R+px], vl = Mr[py*R+px-1], vu = Mr[(py-1)*R+px];
+        if ((v >= thr) !== (vl >= thr)){
+          ctxAttn.beginPath();
+          ctxAttn.moveTo(px*cellW, py*cellH);
+          ctxAttn.lineTo(px*cellW, (py+1)*cellH);
+          ctxAttn.stroke();
+        }
+        if ((v >= thr) !== (vu >= thr)){
+          ctxAttn.beginPath();
+          ctxAttn.moveTo(px*cellW, py*cellH);
+          ctxAttn.lineTo((px+1)*cellW, py*cellH);
+          ctxAttn.stroke();
+        }
+      }
+    }
+  });
+  ctxAttn.restore();
+}
+
+/* ---------- Radar canvas ---------- */
+const cvRadar = $("#cv-radar"), ctxRadar = cvRadar.getContext("2d");
+let radarSweep = 0;
+function drawRadar(zones, dims){
+  const { w, h, dpr } = dims;
+  const W = w*dpr, H = h*dpr;
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H)/2 - 8*dpr;
+  ctxRadar.fillStyle = "rgba(8,12,20,1)";
+  ctxRadar.fillRect(0, 0, W, H);
+  // rings
+  ctxRadar.save();
+  ctxRadar.strokeStyle = "rgba(100,180,220,0.18)";
+  ctxRadar.lineWidth = 1 * dpr;
+  for (let i = 1; i <= 4; i++){
+    ctxRadar.beginPath();
+    ctxRadar.arc(cx, cy, (R*i)/4, 0, Math.PI*2);
+    ctxRadar.stroke();
+  }
+  // crosshairs
+  for (let a = 0; a < 360; a += 30){
+    const rad = a * Math.PI / 180;
+    ctxRadar.beginPath();
+    ctxRadar.moveTo(cx, cy);
+    ctxRadar.lineTo(cx + Math.cos(rad)*R, cy + Math.sin(rad)*R);
+    ctxRadar.globalAlpha = a % 90 === 0 ? 0.28 : 0.14;
+    ctxRadar.stroke();
+    ctxRadar.globalAlpha = 1;
+    // angle labels
+    if (a % 90 === 0){
+      ctxRadar.fillStyle = "rgba(140,170,200,0.5)";
+      ctxRadar.font = `${10*dpr}px JetBrains Mono`;
+      const lx = cx + Math.cos(rad)*(R+10*dpr) - 8*dpr;
+      const ly = cy + Math.sin(rad)*(R+10*dpr) + 4*dpr;
+      ctxRadar.fillText(a + "°", lx, ly);
+    }
+  }
+  ctxRadar.restore();
+  // sweep
+  radarSweep = (radarSweep + (STATE.running ? 0.018 : 0)) % (Math.PI*2);
+  const grad = ctxRadar.createConicGradient(radarSweep - Math.PI/2, cx, cy);
+  grad.addColorStop(0, "rgba(34,210,230,0.0)");
+  grad.addColorStop(0.05, "rgba(34,210,230,0.35)");
+  grad.addColorStop(0.20, "rgba(34,210,230,0)");
+  grad.addColorStop(1, "rgba(34,210,230,0)");
+  ctxRadar.fillStyle = grad;
+  ctxRadar.beginPath();
+  ctxRadar.arc(cx, cy, R, 0, Math.PI*2);
+  ctxRadar.fill();
+  // zone arcs
+  zones.forEach((z, i) => {
+    const startA = (z.angle - z.width/2) * Math.PI/180 - Math.PI/2;
+    const endA   = (z.angle + z.width/2) * Math.PI/180 - Math.PI/2;
+    const innerR = R * 0.20;
+    const outerR = R * (0.35 + 0.55 * z.intensity);
+    // fill
+    ctxRadar.save();
+    const arcGrad = ctxRadar.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    const hue = i === 0 ? 142 : (185 - i*15);
+    arcGrad.addColorStop(0, `hsla(${hue},80%,60%,0.05)`);
+    arcGrad.addColorStop(0.5, `hsla(${hue},85%,55%,0.30)`);
+    arcGrad.addColorStop(1, `hsla(${hue},85%,55%,0.05)`);
+    ctxRadar.fillStyle = arcGrad;
+    ctxRadar.beginPath();
+    ctxRadar.arc(cx, cy, outerR, startA, endA);
+    ctxRadar.arc(cx, cy, innerR, endA, startA, true);
+    ctxRadar.closePath();
+    ctxRadar.fill();
+    // outline
+    ctxRadar.strokeStyle = `hsla(${hue},90%,65%,0.85)`;
+    ctxRadar.lineWidth = 1.4 * dpr;
+    ctxRadar.beginPath();
+    ctxRadar.arc(cx, cy, outerR, startA, endA);
+    ctxRadar.stroke();
+    // peak marker
+    const peakA = z.angle * Math.PI/180 - Math.PI/2;
+    const px = cx + Math.cos(peakA) * outerR;
+    const py = cy + Math.sin(peakA) * outerR;
+    ctxRadar.fillStyle = `hsl(${hue},90%,70%)`;
+    ctxRadar.beginPath();
+    ctxRadar.arc(px, py, 4*dpr, 0, Math.PI*2);
+    ctxRadar.fill();
+    // label
+    ctxRadar.fillStyle = `hsl(${hue},90%,75%)`;
+    ctxRadar.font = `600 ${11*dpr}px Outfit`;
+    const lx = cx + Math.cos(peakA) * (outerR + 14*dpr) - 12*dpr;
+    const ly = cy + Math.sin(peakA) * (outerR + 14*dpr) + 4*dpr;
+    ctxRadar.fillText("Z" + (i+1), lx, ly);
+    ctxRadar.restore();
+  });
+  // hub
+  ctxRadar.save();
+  const hubG = ctxRadar.createRadialGradient(cx, cy, 0, cx, cy, 16*dpr);
+  hubG.addColorStop(0, "rgba(180,255,200,0.85)");
+  hubG.addColorStop(1, "rgba(40,180,220,0)");
+  ctxRadar.fillStyle = hubG;
+  ctxRadar.beginPath();
+  ctxRadar.arc(cx, cy, 16*dpr, 0, Math.PI*2);
+  ctxRadar.fill();
+  ctxRadar.fillStyle = "rgba(180,255,200,1)";
+  ctxRadar.beginPath();
+  ctxRadar.arc(cx, cy, 3*dpr, 0, Math.PI*2);
+  ctxRadar.fill();
+  ctxRadar.restore();
+}
+
+/* ---------- SNR trace canvas ---------- */
+const cvSnr = $("#cv-snr"), ctxSnr = cvSnr.getContext("2d");
+function drawSnr(dims){
+  const { w, h, dpr } = dims;
+  const W = w*dpr, H = h*dpr;
+  ctxSnr.fillStyle = "rgba(8,12,20,1)";
+  ctxSnr.fillRect(0, 0, W, H);
+  // horizontal gridlines
+  ctxSnr.save();
+  ctxSnr.strokeStyle = "rgba(120,160,200,0.10)";
+  ctxSnr.lineWidth = 1 * dpr;
+  for (let i = 1; i < 5; i++){
+    const y = (i / 5) * H;
+    ctxSnr.beginPath();
+    ctxSnr.moveTo(0, y); ctxSnr.lineTo(W, y);
+    ctxSnr.stroke();
+  }
+  ctxSnr.restore();
+  const hist = STATE.snrHistory.slice(-STATE.snrWindow);
+  if (hist.length < 2) return;
+  const minV = -2, maxV = 16;
+  const range = maxV - minV;
+  const stepX = W / (STATE.snrWindow - 1);
+  // baseline (0 dB)
+  const zeroY = H - ((0 - minV) / range) * H;
+  ctxSnr.save();
+  ctxSnr.strokeStyle = "rgba(200,220,255,0.25)";
+  ctxSnr.setLineDash([4*dpr, 4*dpr]);
+  ctxSnr.beginPath();
+  ctxSnr.moveTo(0, zeroY); ctxSnr.lineTo(W, zeroY);
+  ctxSnr.stroke();
+  ctxSnr.restore();
+  // y labels
+  ctxSnr.fillStyle = "rgba(160,180,210,0.45)";
+  ctxSnr.font = `${10*dpr}px JetBrains Mono`;
+  for (let v = 0; v <= 15; v += 5){
+    const y = H - ((v - minV) / range) * H;
+    ctxSnr.fillText(v + " dB", 6*dpr, y - 2*dpr);
+  }
+  // area fill
+  const offset = (STATE.snrWindow - hist.length) * stepX;
+  ctxSnr.beginPath();
+  ctxSnr.moveTo(offset, H);
+  hist.forEach((v, i) => {
+    const x = offset + i * stepX;
+    const y = H - ((v - minV) / range) * H;
+    ctxSnr.lineTo(x, y);
+  });
+  ctxSnr.lineTo(offset + (hist.length-1)*stepX, H);
+  ctxSnr.closePath();
+  const grad = ctxSnr.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, "rgba(50,220,160,0.32)");
+  grad.addColorStop(1, "rgba(50,220,160,0.0)");
+  ctxSnr.fillStyle = grad;
+  ctxSnr.fill();
+  // line
+  ctxSnr.beginPath();
+  hist.forEach((v, i) => {
+    const x = offset + i * stepX;
+    const y = H - ((v - minV) / range) * H;
+    if (i === 0) ctxSnr.moveTo(x, y); else ctxSnr.lineTo(x, y);
+  });
+  ctxSnr.strokeStyle = "hsl(142,80%,60%)";
+  ctxSnr.lineWidth = 2 * dpr;
+  ctxSnr.shadowBlur = 8 * dpr;
+  ctxSnr.shadowColor = "hsla(142,80%,60%,0.6)";
+  ctxSnr.stroke();
+  ctxSnr.shadowBlur = 0;
+  // current dot
+  const last = hist[hist.length-1];
+  const lx = offset + (hist.length-1)*stepX;
+  const ly = H - ((last - minV) / range) * H;
+  ctxSnr.fillStyle = "hsl(185,90%,65%)";
+  ctxSnr.beginPath();
+  ctxSnr.arc(lx, ly, 4*dpr, 0, Math.PI*2);
+  ctxSnr.fill();
+}
+
+/* ---------- Attention flow (chord-style) canvas ---------- */
+const cvFlow = $("#cv-flow"), ctxFlow = cvFlow.getContext("2d");
+function drawFlow(M, dims){
+  const { w, h, dpr } = dims;
+  const W = w*dpr, H = h*dpr;
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H)/2 - 18*dpr;
+  ctxFlow.fillStyle = "rgba(8,12,20,1)";
+  ctxFlow.fillRect(0, 0, W, H);
+  const N = M.length;
+  const K = Math.min(12, STATE.topK + 2);
+  const tk = topKCells(M, K);
+  // node positions on outer ring
+  const nodes = tk.map((c, i) => {
+    const a = (i / K) * Math.PI*2 - Math.PI/2;
+    return { ...c, a, x: cx + Math.cos(a)*R, y: cy + Math.sin(a)*R };
+  });
+  // ring
+  ctxFlow.save();
+  ctxFlow.strokeStyle = "rgba(100,160,200,0.18)";
+  ctxFlow.lineWidth = 1 * dpr;
+  ctxFlow.beginPath();
+  ctxFlow.arc(cx, cy, R, 0, Math.PI*2);
+  ctxFlow.stroke();
+  ctxFlow.restore();
+  // chords: link top node to others, then i->i+2 cyclic
+  function chord(a, b, w){
+    ctxFlow.beginPath();
+    ctxFlow.moveTo(a.x, a.y);
+    ctxFlow.quadraticCurveTo(cx, cy, b.x, b.y);
+    ctxFlow.strokeStyle = `hsla(185, 80%, 60%, ${0.15 + 0.55*w})`;
+    ctxFlow.lineWidth = (0.6 + 2.4*w) * dpr;
+    ctxFlow.stroke();
+  }
+  const maxV = nodes[0]?.v || 1;
+  let linkCount = 0;
+  for (let i = 1; i < nodes.length; i++){
+    chord(nodes[0], nodes[i], nodes[i].v / maxV);
+    linkCount++;
+  }
+  for (let i = 0; i < nodes.length; i++){
+    const j = (i+2) % nodes.length;
+    chord(nodes[i], nodes[j], 0.35 * (nodes[i].v / maxV));
+    linkCount++;
+  }
+  // nodes
+  nodes.forEach((n, i) => {
+    const r = (4 + 9 * (n.v / maxV)) * dpr;
+    const grad = ctxFlow.createRadialGradient(n.x, n.y, 1, n.x, n.y, r);
+    const isTop = i === 0;
+    grad.addColorStop(0, isTop ? "rgba(180,255,200,1)" : "rgba(140,220,255,1)");
+    grad.addColorStop(1, "rgba(50,180,220,0)");
+    ctxFlow.fillStyle = grad;
+    ctxFlow.beginPath();
+    ctxFlow.arc(n.x, n.y, r, 0, Math.PI*2);
+    ctxFlow.fill();
+    // tick label
+    ctxFlow.fillStyle = "rgba(180,210,240,0.65)";
+    ctxFlow.font = `${10*dpr}px JetBrains Mono`;
+    const tx = cx + Math.cos(n.a)*(R+14*dpr) - 10*dpr;
+    const ty = cy + Math.sin(n.a)*(R+14*dpr) + 3*dpr;
+    ctxFlow.fillText(`g${n.y}${n.x}`, tx, ty);
+  });
+  $("#flow-stat").textContent = linkCount + " links";
+}
+
+/* ---------- Subcarrier group cells ---------- */
+function buildSubGrid(){
+  const grid = $("#sub-grid");
+  grid.innerHTML = "";
+  const N = STATE.gridN;
+  STATE.cells = [];
+  for (let y = 0; y < N; y++){
+    for (let x = 0; x < N; x++){
+      const idx = y*N + x;
+      const el = document.createElement("div");
+      el.className = "sub-cell";
+      el.dataset.idx = idx;
+      el.innerHTML = `
+        <div class="sub-cell-id">g${y}${x} · ${(idx*8).toString().padStart(3,"0")}MHz</div>
+        <div class="sub-cell-w" data-val>0.00</div>
+        <div class="sub-cell-bar"><i></i></div>
+      `;
+      el.addEventListener("click", () => {
+        if (STATE.lockedTiles.has(idx)) STATE.lockedTiles.delete(idx);
+        else { if (STATE.lockedTiles.size >= 3) STATE.lockedTiles.delete(Array.from(STATE.lockedTiles)[0]); STATE.lockedTiles.add(idx); }
+        renderLocks();
+      });
+      el.addEventListener("dblclick", () => {
+        STATE.lockedTiles.delete(idx);
+        renderLocks();
+      });
+      grid.appendChild(el);
+      STATE.cells.push(el);
+    }
+  }
+  renderLocks();
+}
+function renderLocks(){
+  STATE.cells.forEach((el, i) => {
+    el.classList.toggle("selected", STATE.lockedTiles.has(i));
+  });
+  $("#locked-count").textContent = STATE.lockedTiles.size;
+}
+function updateSubGrid(M){
+  const N = STATE.gridN;
+  if (M.length !== N) return;
+  // find max
+  let maxv = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (M[y][x] > maxv) maxv = M[y][x];
+  STATE.cells.forEach((el, i) => {
+    const y = Math.floor(i/N), x = i%N;
+    const v = M[y][x];
+    const w = v / maxv;
+    el.style.setProperty("--w", w.toFixed(3));
+    el.querySelector("[data-val]").textContent = (v * 100).toFixed(1);
+    el.querySelector(".sub-cell-bar i").style.width = (w*100).toFixed(1) + "%";
+    el.classList.toggle("focused", w > 0.55);
+  });
+}
+
+/* ---------- Zones ---------- */
+function deriveZones(M, peaks){
+  // map peak (x,y) in N-space to angle (0..360) and intensity
+  const N = M.length;
+  const zones = peaks.map((p, i) => {
+    const dx = (p.x - N/2), dy = (p.y - N/2);
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (angle < 0) angle += 360;
+    // intensity from local max
+    const gx = Math.max(0, Math.min(N-1, Math.floor(p.x)));
+    const gy = Math.max(0, Math.min(N-1, Math.floor(p.y)));
+    const v = M[gy][gx];
+    return {
+      id: "Z" + (i+1),
+      angle: angle,
+      width: 18 + (i*4),
+      intensity: Math.max(0.15, Math.min(0.95, v * N * N * 0.4)),
+      snr: 4 + Math.random()*8 - i*0.6,
+      cell: `g${gy}${gx}`,
+    };
+  });
+  STATE.zones = zones;
+  return zones;
+}
+function renderZoneList(){
+  const colors = [142, 185, 200];
+  $("#zone-list").innerHTML = STATE.zones.map((z, i) => `
+    <div class="zone-row">
+      <div class="zname">
+        <span class="zdot" style="background:hsl(${colors[i%3]},85%,60%);color:hsl(${colors[i%3]},85%,60%)"></span>
+        <span>${z.id}</span>
+        <span style="color:hsl(var(--muted-foreground));margin-left:0.4rem">${z.cell}</span>
+      </div>
+      <div class="zmeta">
+        <span>angle <b>${z.angle.toFixed(0)}°</b></span>
+        <span>width <b>${z.width.toFixed(0)}°</b></span>
+        <span>+<b>${z.snr.toFixed(1)} dB</b></span>
+      </div>
+    </div>
+  `).join("");
+  $("#radar-stat").textContent = STATE.zones.length + " zones";
+}
+
+/* ---------- Events ---------- */
+function pushEvent(type, data){
+  const ev = { t: Date.now(), type, data };
+  STATE.events.unshift(ev);
+  if (STATE.events.length > 300) STATE.events.length = 300;
+  renderEvents();
+}
+function renderEvents(){
+  const log = $("#event-log");
+  const f = STATE.eventFilter;
+  const list = STATE.events.filter(e => f === "all" || e.type === f).slice(0, 80);
+  if (list.length === 0){
+    log.innerHTML = `<div style="padding:0.875rem;text-align:center;color:hsl(var(--muted-foreground));font-family:var(--font-mono);font-size:0.75rem">no events match filter</div>`;
+    return;
+  }
+  log.innerHTML = list.map(e => {
+    const time = new Date(e.t).toISOString().substr(11, 12);
+    const typeCls = e.type === "focus_zone" ? "focus" : (e.type === "snr_improvement" ? "snr" : "");
+    return `
+      <div class="event-row">
+        <span class="event-time">${time}</span>
+        <span class="event-type ${typeCls}">${e.type}</span>
+        <span class="event-data">${e.data.summary}</span>
+        <span class="event-val">${e.data.value || ""}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ---------- Attention canvas interactions ---------- */
+cvAttn.addEventListener("mousemove", e => {
+  const rect = cvAttn.getBoundingClientRect();
+  const N = STATE.gridN;
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  const x = Math.max(0, Math.min(N-1, Math.floor((px / rect.width) * N)));
+  const y = Math.max(0, Math.min(N-1, Math.floor((py / rect.height) * N)));
+  STATE.hoverCell = { x, y };
+  const v = (STATE.attMatrix[y] && STATE.attMatrix[y][x]) || 0;
+  $("#attn-cursor").innerHTML = `<span class="mono">g${y}${x}</span> · attention <span class="mono" style="color:hsl(var(--foreground))">${(v*100).toFixed(2)}%</span>`;
+});
+cvAttn.addEventListener("mouseleave", () => {
+  STATE.hoverCell = null;
+  $("#attn-cursor").textContent = "hover the map for cell values";
+});
+cvAttn.addEventListener("click", () => {
+  if (!STATE.hoverCell) return;
+  const { x, y } = STATE.hoverCell;
+  const idx = y * STATE.gridN + x;
+  if (STATE.lockedTiles.has(idx)) STATE.lockedTiles.delete(idx);
+  else { if (STATE.lockedTiles.size >= 3) STATE.lockedTiles.delete(Array.from(STATE.lockedTiles)[0]); STATE.lockedTiles.add(idx); }
+  renderLocks();
+  toast("Tile locked", `Attention pinned to g${y}${x}`, "accent");
+});
+
+/* ---------- Main tick ---------- */
+function tick(now){
+  const dt = now - STATE.lastTickT;
+  STATE.lastTickT = now;
+  if (dt > 0) STATE.fps = STATE.fps * 0.9 + (1000/dt) * 0.1;
+  if (STATE.running){
+    STATE.iter++;
+    // compute matrix
+    const { rows, peaks } = makeMatrix(STATE.gridN, now);
+    STATE.attMatrix = rows;
+    // SNR sample
+    let mean = 0;
+    const tk = topKCells(rows, STATE.topK);
+    tk.forEach(c => mean += c.v);
+    const baseline = 1 / (STATE.gridN * STATE.gridN);
+    const snr = Math.max(0, Math.log2((mean / STATE.topK) / baseline)) * (3.0 - STATE.dropout) + (Math.random()-0.5)*0.6;
+    STATE.snrHistory.push(snr);
+    if (STATE.snrHistory.length > 1000) STATE.snrHistory.splice(0, STATE.snrHistory.length - 1000);
+
+    deriveZones(rows, peaks);
+
+    // Emit events at ~2 Hz
+    if (now - STATE.lastEmitT > 500){
+      STATE.lastEmitT = now;
+      const top = tk[0];
+      pushEvent("attention_map", { summary: `top tile g${top.y}${top.x} weight ${(top.v*100).toFixed(1)}%`, value: `K=${STATE.topK}` });
+      if (STATE.zones[0]) pushEvent("focus_zone", { summary: `Z1 angle ${STATE.zones[0].angle.toFixed(0)}° width ${STATE.zones[0].width}°`, value: `${STATE.zones[0].intensity.toFixed(2)}` });
+      pushEvent("snr_improvement", { summary: `gain over baseline`, value: `+${snr.toFixed(1)} dB` });
+    }
+  }
+
+  // Draw
+  const dAttn = fit(cvAttn);
+  const dRad  = fit(cvRadar);
+  const dSnr  = fit(cvSnr);
+  const dFlow = fit(cvFlow);
+  if (STATE.attentionMode === "heat")    drawAttnHeat(STATE.attMatrix, dAttn);
+  if (STATE.attentionMode === "flow")    drawAttnFlow(STATE.attMatrix, dAttn);
+  if (STATE.attentionMode === "contour") drawAttnContour(STATE.attMatrix, dAttn);
+  drawRadar(STATE.zones, dRad);
+  drawSnr(dSnr);
+  drawFlow(STATE.attMatrix, dFlow);
+  updateSubGrid(STATE.attMatrix);
+  renderZoneList();
+  updateKpis();
+
+  requestAnimationFrame(tick);
+}
+
+function updateKpis(){
+  const hist = STATE.snrHistory;
+  const last = hist[hist.length-1] || 0;
+  $("#kpi-snr").textContent = "+" + last.toFixed(1) + " dB";
+  $("#kpi-snr-sub").textContent = "vs baseline · live · " + STATE.fps.toFixed(0) + " hz";
+  $("#kpi-zones").textContent = STATE.zones.length;
+  $("#kpi-zones-sub").textContent = `of 8 max · ${STATE.zones.filter(z => z.intensity > 0.6).length} strong`;
+  $("#kpi-groups").textContent = STATE.gridN * STATE.gridN;
+  $("#kpi-groups-sub").textContent = `${STATE.gridN} × ${STATE.gridN} tiles · attended`;
+  $("#kpi-iter").textContent = STATE.iter.toLocaleString();
+  $("#kpi-iter-sub").textContent = `since reset · cumulative`;
+  // Heap pressure simulated: scales with grid² and inverse temperature
+  const mem = (STATE.gridN*STATE.gridN*0.18 + STATE.tile*0.06 + STATE.topK*0.08).toFixed(1);
+  $("#kpi-mem").textContent = mem + " KB";
+  $("#kpi-mem-sub").textContent = `peak · budget 28 KB`;
+  $("#status-iter").textContent = STATE.iter.toLocaleString();
+  $("#status-tile").textContent = STATE.tile;
+  $("#status-fps").textContent = STATE.fps.toFixed(0) + " hz";
+  $("#attn-stat").textContent = `${STATE.gridN}×${STATE.gridN} · K=${STATE.topK}`;
+  // SNR stats
+  if (hist.length){
+    const tail = hist.slice(-STATE.snrWindow);
+    const mean = tail.reduce((a,b)=>a+b,0)/tail.length;
+    const peak = Math.max(...tail);
+    const variance = tail.reduce((a,b)=>a+(b-mean)*(b-mean),0)/tail.length;
+    $("#snr-mean").textContent = "+" + mean.toFixed(2) + " dB";
+    $("#snr-peak").textContent = "+" + peak.toFixed(2) + " dB";
+    $("#snr-std").textContent  = Math.sqrt(variance).toFixed(2) + " dB";
+    $("#snr-rate").textContent = STATE.fps.toFixed(0) + " Hz";
+    $("#snr-stat").textContent = `+${peak.toFixed(1)} dB peak`;
+  }
+  $("#topk-disp").textContent = "K = " + STATE.topK;
+  $("#phase-disp").textContent = ((STATE.iter % 628)/100).toFixed(2) + " rad";
+}
+
+/* ---------- Controls ---------- */
+$("#btn-run").addEventListener("click", () => {
+  STATE.running = !STATE.running;
+  $("#btn-run-lbl").textContent = STATE.running ? "Pause" : "Resume";
+  const banner = $("#status-banner");
+  banner.classList.toggle("paused", !STATE.running);
+  $("#status-text").textContent = STATE.running ? "RUNNING" : "PAUSED";
+  toast(STATE.running ? "Resumed" : "Paused", STATE.running ? "Flash kernel ticking" : "Kernel suspended", STATE.running ? "accent" : "warn");
+});
+$("#btn-reset").addEventListener("click", () => {
+  STATE.iter = 0;
+  STATE.snrHistory.length = 0;
+  STATE.events.length = 0;
+  STATE.lockedTiles.clear();
+  renderLocks();
+  renderEvents();
+  toast("Reset", "Counters & history cleared", "warn");
+});
+$("#btn-details").addEventListener("click", () => showModal("modal-details"));
+$("#details-close").addEventListener("click", () => hideModal("modal-details"));
+$("#btn-recenter").addEventListener("click", () => {
+  STATE.lockedTiles.clear();
+  renderLocks();
+  toast("Recentered", "Adaptive focus re-enabled", "accent");
+});
+$("#btn-snapshot").addEventListener("click", () => {
+  try {
+    const data = cvAttn.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = data;
+    a.download = `flash-attention-map-${Date.now()}.png`;
+    a.click();
+    toast("Snapshot saved", "PNG download started");
+  } catch(e){ toast("Snapshot failed", String(e.message||e), "warn"); }
+});
+$("#btn-export-snr").addEventListener("click", () => {
+  const rows = ["sample,snr_db", ...STATE.snrHistory.map((v,i)=>`${i},${v.toFixed(4)}`)].join("\n");
+  const blob = new Blob([rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `flash-attention-snr-${Date.now()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast("SNR exported", `${STATE.snrHistory.length} samples`, "accent");
+});
+$("#btn-clear-events").addEventListener("click", () => { STATE.events.length = 0; renderEvents(); toast("Cleared", "Event log emptied", "warn"); });
+["all","attn","focus","snr"].forEach(k => {
+  const map = { all: "all", attn: "attention_map", focus: "focus_zone", snr: "snr_improvement" };
+  document.getElementById("btn-filter-" + k).addEventListener("click", () => {
+    STATE.eventFilter = map[k];
+    renderEvents();
+  });
+});
+$("#btn-clear-lock").addEventListener("click", () => { STATE.lockedTiles.clear(); renderLocks(); toast("Locks cleared", "All tile locks released"); });
+
+$$("#attn-mode-tabs .pill-tab").forEach(b => {
+  b.addEventListener("click", () => {
+    $$("#attn-mode-tabs .pill-tab").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    STATE.attentionMode = b.dataset.mode;
+  });
+});
+
+/* Config sliders */
+function bindSlider(id, label, key, fmt){
+  const el = document.getElementById(id);
+  const lbl = document.getElementById(label);
+  el.addEventListener("input", () => {
+    const v = parseFloat(el.value);
+    STATE[key] = v;
+    lbl.textContent = fmt ? fmt(v) : v;
+  });
+}
+bindSlider("ctl-tile", "lbl-tile", "tile");
+bindSlider("ctl-topk", "lbl-topk", "topK");
+bindSlider("ctl-temp", "lbl-temp", "temperature", v => v.toFixed(2));
+bindSlider("ctl-drop", "lbl-drop", "dropout", v => v.toFixed(2));
+bindSlider("ctl-rate", "lbl-rate", "rateHz");
+
+$("#snr-window").addEventListener("change", e => { STATE.snrWindow = parseInt(e.target.value, 10); });
+$("#grid-layout").addEventListener("change", e => {
+  STATE.gridN = parseInt(e.target.value, 10);
+  STATE.lockedTiles.clear();
+  buildSubGrid();
+});
+
+$("#btn-defaults").addEventListener("click", () => {
+  STATE.tile = 64; $("#ctl-tile").value = 64; $("#lbl-tile").textContent = "64";
+  STATE.topK = 8; $("#ctl-topk").value = 8; $("#lbl-topk").textContent = "8";
+  STATE.temperature = 1.00; $("#ctl-temp").value = 1.00; $("#lbl-temp").textContent = "1.00";
+  STATE.dropout = 0.10; $("#ctl-drop").value = 0.10; $("#lbl-drop").textContent = "0.10";
+  STATE.rateHz = 30; $("#ctl-rate").value = 30; $("#lbl-rate").textContent = "30";
+  toast("Defaults restored", "Kernel parameters reset", "accent");
+});
+$("#btn-apply").addEventListener("click", () => {
+  pushEvent("attention_map", { summary: `applied: tile=${STATE.tile} K=${STATE.topK} T=${STATE.temperature.toFixed(2)}`, value: "flashed" });
+  toast("Applied", `tile=${STATE.tile} K=${STATE.topK} T=${STATE.temperature.toFixed(2)} → ESP32-S3`, "accent");
+});
+
+/* Install modal */
+$("#btn-install").addEventListener("click", () => {
+  if (STATE.installInProgress) return;
+  // reset modal step states
+  $$("#install-steps .modal-step").forEach(s => { s.classList.remove("done","run"); s.querySelector(".stat").textContent = "pending"; });
+  showModal("modal-install");
+});
+$("#modal-cancel").addEventListener("click", () => {
+  if (STATE.installInProgress) return;
+  hideModal("modal-install");
+});
+$("#modal-go").addEventListener("click", async () => {
+  if (STATE.installInProgress) return;
+  STATE.installInProgress = true;
+  const steps = $$("#install-steps .modal-step");
+  const goBtn = $("#modal-go"); const cancelBtn = $("#modal-cancel");
+  goBtn.disabled = true; cancelBtn.disabled = true;
+  goBtn.innerHTML = `Installing…`;
+  for (let i = 0; i < steps.length; i++){
+    steps[i].classList.add("run");
+    steps[i].querySelector(".stat").textContent = "running…";
+    await new Promise(r => setTimeout(r, 380 + Math.random()*240));
+    steps[i].classList.remove("run");
+    steps[i].classList.add("done");
+    steps[i].querySelector(".stat").textContent = "✓ done";
+  }
+  await new Promise(r => setTimeout(r, 300));
+  hideModal("modal-install");
+  STATE.installInProgress = false;
+  goBtn.disabled = false; cancelBtn.disabled = false; goBtn.textContent = "Start install";
+  toast("Installed", "flash-attention@1.0.0 deployed to esp32-s3", "accent");
+  pushEvent("attention_map", { summary: "cog installed and bound", value: "v1.0.0" });
+});
+
+/* ---------- Boot ---------- */
+buildSubGrid();
+renderEvents();
+requestAnimationFrame(tick);
+updateActiveNav();
+</script>
+</body>
+</html>

@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Gesture Language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --warn:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --surface-elevated:220 20% 12%;
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.brand-tag{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  margin-left:0.5rem;padding:0.125rem 0.5rem;border-radius:9999px;
+  background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));
+  border:1px solid hsl(var(--accent) / 0.25);
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a:hover,.nav a.active,.nav a[data-active="true"]{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active,.nav a[data-active="true"]{color:hsl(var(--primary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+.section-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:0.5rem;margin-bottom:0.75rem;
+}
+.section-h h2{margin-bottom:0}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.page-section{display:none}
+.page-section.on{display:block}
+
+.hero{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+  padding:1rem 1.25rem;margin-bottom:1.25rem;
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+}
+.hero-left{display:flex;flex-direction:column;gap:0.25rem}
+.hero h1{font-size:1.375rem;font-weight:600;letter-spacing:-0.02em}
+.hero p{font-size:0.8125rem;color:hsl(var(--muted-foreground));max-width:42rem}
+.hero-actions{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.empty-card{
+  background:var(--gradient-card);
+  border:1px dashed hsl(var(--border));
+  border-radius:var(--radius);
+  padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));
+}
+.empty-card h3{font-size:1rem;font-weight:600;color:hsl(var(--primary));margin-bottom:0.5rem}
+.empty-card p{font-size:0.875rem;max-width:36rem;margin:0 auto 0.75rem}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.split-2{display:grid;gap:0.75rem;grid-template-columns:2fr 1fr}
+@media (max-width:900px){.split-2{grid-template-columns:1fr}}
+
+.node{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+}
+.node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+.node-name{font-size:0.875rem;font-weight:600}
+.node-meta{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;border:1px solid transparent;
+}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.unknown{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.paired{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.unpaired{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.live{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.25)}
+.badge.live::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:hsl(var(--accent));box-shadow:0 0 8px hsl(var(--accent) / 0.8);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(35 85% 55%);box-shadow:0 0 6px hsl(35 85% 55% / 0.5)}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.625rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.625rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));vertical-align:middle;
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.3)}
+.table-wrap{overflow-x:auto;border-radius:0.5rem}
+
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=range]{padding:0;height:4px;background:hsl(var(--muted));border:none;accent-color:hsl(var(--primary))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input:disabled,textarea:disabled,select:disabled{opacity:0.5;cursor:not-allowed}
+.input{width:100%;height:2.4rem}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+label.field{display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem}
+label.field .lab{
+  font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+}
+label.field .hint{font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+.tpl-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.tpl{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:0.875rem 1rem;
+  display:flex;flex-direction:column;gap:0.5rem;
+  transition:border-color 0.15s,transform 0.15s;
+  cursor:pointer;
+}
+.tpl:hover{border-color:hsl(var(--primary) / 0.5);transform:translateY(-1px)}
+.tpl-h{display:flex;align-items:center;justify-content:space-between;gap:0.4rem}
+.tpl-name{font-size:0.9375rem;font-weight:600}
+.tpl-id{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.tpl-thumb{
+  height:64px;border-radius:0.4rem;background:hsl(var(--background));
+  border:1px solid hsl(var(--border));overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.tpl-thumb svg{width:100%;height:100%}
+.tpl-meta{
+  display:flex;justify-content:space-between;gap:0.4rem;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+}
+.tpl-meta b{color:hsl(var(--foreground));font-weight:600}
+
+.meter{
+  position:relative;width:100%;height:8px;
+  background:hsl(var(--muted));border-radius:9999px;overflow:hidden;
+}
+.meter-bar{
+  position:absolute;inset:0 100% 0 0;
+  background:linear-gradient(90deg,hsl(var(--accent)) 0%,hsl(var(--primary)) 100%);
+  border-radius:9999px;transition:right 0.4s ease;
+}
+.meter.warn .meter-bar{background:hsl(var(--warn))}
+.meter.danger .meter-bar{background:hsl(var(--destructive))}
+.meter-row{
+  display:grid;grid-template-columns:80px 1fr 44px;gap:0.625rem;
+  align-items:center;font-size:0.75rem;
+}
+.meter-row .l{color:hsl(var(--muted-foreground));font-family:var(--font-mono);font-size:0.6875rem}
+.meter-row .v{font-family:var(--font-mono);text-align:right}
+
+.wave-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+}
+.wave-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:0.5rem}
+.wave{
+  width:100%;height:200px;border-radius:0.5rem;
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  overflow:hidden;
+}
+.wave svg{width:100%;height:100%;display:block}
+
+.feed{
+  display:flex;flex-direction:column;gap:0.5rem;
+  max-height:520px;overflow-y:auto;padding-right:0.25rem;
+}
+.feed-item{
+  display:grid;grid-template-columns:auto 1fr auto;
+  gap:0.625rem;align-items:center;
+  padding:0.625rem 0.75rem;border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  transition:background 0.2s;
+}
+.feed-item.fresh{
+  background:hsl(var(--primary) / 0.08);
+  border-color:hsl(var(--primary) / 0.3);
+  animation:flash 1.2s ease-out;
+}
+@keyframes flash{0%{background:hsl(var(--primary) / 0.18)}100%{background:hsl(var(--primary) / 0.08)}}
+.feed-ic{
+  width:32px;height:32px;border-radius:0.4rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:600;
+  color:hsl(var(--primary));
+}
+.feed-body{display:flex;flex-direction:column;gap:0.1rem;min-width:0}
+.feed-gesture{font-size:0.875rem;font-weight:600}
+.feed-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.feed-conf{
+  font-family:var(--font-mono);font-size:0.8125rem;font-weight:600;
+  text-align:right;color:hsl(var(--accent));
+}
+.feed-conf.low{color:hsl(var(--warn))}
+
+.spot{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--primary) / 0.3);
+  border-radius:var(--radius);
+  padding:1.25rem;text-align:center;
+  position:relative;overflow:hidden;
+}
+.spot::before{
+  content:"";position:absolute;inset:-50%;
+  background:var(--gradient-glow);opacity:0.6;
+  pointer-events:none;
+}
+.spot > *{position:relative}
+.spot-label{
+  font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;
+}
+.spot-gesture{
+  font-size:2rem;font-weight:600;color:hsl(var(--foreground));
+  letter-spacing:-0.02em;margin-bottom:0.4rem;
+}
+.spot-id{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.875rem}
+.spot-conf{
+  font-family:var(--font-mono);font-size:0.9375rem;font-weight:600;
+  color:hsl(var(--accent));margin-bottom:0.875rem;
+}
+
+.capture{
+  position:relative;width:100%;
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:1rem 1.125rem;
+}
+.capture.armed{border-color:hsl(var(--accent) / 0.5);box-shadow:0 0 0 2px hsl(var(--accent) / 0.15)}
+.capture.recording{
+  border-color:hsl(var(--destructive) / 0.6);
+  box-shadow:0 0 0 2px hsl(var(--destructive) / 0.2),0 0 24px hsl(var(--destructive) / 0.25);
+}
+.capture-h{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem}
+.capture-status{
+  font-size:0.6875rem;font-family:var(--font-mono);
+  text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));
+}
+.capture.armed .capture-status{color:hsl(var(--accent))}
+.capture.recording .capture-status{color:hsl(0 70% 70%)}
+.rec-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:hsl(var(--destructive));margin-right:0.4rem;
+  box-shadow:0 0 8px hsl(var(--destructive) / 0.7);
+  animation:pulse 1s ease-in-out infinite;
+}
+
+.samples{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.75rem}
+.sample{
+  display:grid;grid-template-columns:auto 1fr auto auto;
+  gap:0.625rem;align-items:center;
+  padding:0.5rem 0.75rem;border-radius:0.4rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  font-size:0.8125rem;
+}
+.sample-idx{
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:600;
+  color:hsl(var(--primary));
+  width:28px;text-align:center;
+}
+.sample-wave{height:24px;width:120px;display:block}
+.sample-len{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+
+.settings-group{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.125rem 1.25rem;
+}
+.settings-group h3{font-size:0.9375rem;font-weight:600;margin-bottom:0.25rem}
+.settings-group .sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.settings-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:1rem;
+  padding:0.875rem 0;border-top:1px solid hsl(var(--border) / 0.4);
+  align-items:center;
+}
+.settings-row:first-of-type{border-top:none}
+.settings-row .info{display:flex;flex-direction:column;gap:0.2rem}
+.settings-row .info .lab{font-size:0.8125rem;font-weight:600}
+.settings-row .info .hint{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+@media (max-width:720px){.settings-row{grid-template-columns:1fr}}
+
+.chip{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.25rem 0.625rem;border-radius:0.4rem;
+  background:hsl(var(--secondary));border:1px solid hsl(var(--border));
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--foreground));
+}
+.chip b{color:hsl(var(--primary));font-weight:600}
+.chips{display:flex;gap:0.4rem;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 11V6a2 2 0 1 1 4 0v4"/>
+          <path d="M11 10V4a2 2 0 1 1 4 0v6"/>
+          <path d="M15 10V5a2 2 0 1 1 4 0v8a7 7 0 0 1-7 7h-1a6 6 0 0 1-6-6v-3a2 2 0 1 1 4 0v1"/>
+        </svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Gesture Language
+        <span class="brand-ver mono">v0.5.0</span>
+        <span class="brand-tag">DTW · CSI</span>
+      </span>
+    </div>
+    <nav class="nav">
+      <a href="#dashboard" data-route="dashboard">Dashboard</a>
+      <a href="#live" data-route="live">Live</a>
+      <a href="#templates" data-route="templates">Templates</a>
+      <a href="#training" data-route="training">Training</a>
+      <a href="#devices" data-route="devices">Devices</a>
+      <a href="#settings" data-route="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ═══════════════════════ DASHBOARD ═══════════════════════ -->
+  <section class="page-section" data-page="dashboard">
+    <div class="hero">
+      <div class="hero-left">
+        <h1>Gesture Language</h1>
+        <p>Sign language recognition via Dynamic Time Warping template matching against WiFi CSI motion signatures.</p>
+        <div class="chips" style="margin-top:0.5rem">
+          <span class="chip">event <b>gesture_recognized</b></span>
+          <span class="chip">input <b>csi-motion</b></span>
+          <span class="chip">hw <b>esp32-s3</b></span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <span class="badge live">live</span>
+        <a class="btn sm outline" href="#templates">Templates &rarr;</a>
+        <a class="btn sm primary" href="#live">
+          <svg class="ic" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Open live feed
+        </a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13"/><path d="M2 19h20"/><path d="M9 9h6M9 13h6"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Templates</div>
+            <div class="kpi-val" data-k="templates">—</div>
+            <div class="kpi-sub" data-k="templates-sub">registered</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Recognitions / min</div>
+            <div class="kpi-val" data-k="rate">—</div>
+            <div class="kpi-sub">rolling 60s</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Mean confidence</div>
+            <div class="kpi-val" data-k="conf">—</div>
+            <div class="kpi-sub">last 100 events</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M12 18v2M8 9h2M8 13h2M14 9h2M14 13h2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">ESP32-S3 devices</div>
+            <div class="kpi-val" data-k="devices">—</div>
+            <div class="kpi-sub" data-k="devices-sub">streaming CSI</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">DTW threshold</div>
+            <div class="kpi-val mono">0.72</div>
+            <div class="kpi-sub">cost / sample</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="split-2">
+        <div class="wave-card">
+          <div class="wave-h">
+            <div>
+              <div class="card-title">Aggregate CSI motion</div>
+              <div class="card-sub">cross-device amplitude · last 5s</div>
+            </div>
+            <span class="badge live">streaming</span>
+          </div>
+          <div class="wave">
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="wg-dash" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%"  stop-color="hsl(185 80% 50%)" stop-opacity="0.45"/>
+                  <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g stroke="hsl(220 15% 18%)" stroke-width="1">
+                <line x1="0" y1="50"  x2="600" y2="50"/>
+                <line x1="0" y1="100" x2="600" y2="100"/>
+                <line x1="0" y1="150" x2="600" y2="150"/>
+              </g>
+              <path data-el="wave-fill" d="" fill="url(#wg-dash)" stroke="none"/>
+              <path data-el="wave-path" d="" fill="none" stroke="hsl(185 80% 55%)" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="spot">
+          <div class="spot-label">Last recognition</div>
+          <div class="spot-gesture" data-el="spot-gesture">—</div>
+          <div class="spot-id mono" data-el="spot-id">—</div>
+          <div class="spot-conf" data-el="spot-conf">confidence —</div>
+          <div class="meter"><div class="meter-bar" data-el="spot-bar"></div></div>
+          <div style="margin-top:0.875rem;font-size:0.75rem;color:hsl(var(--muted-foreground))" data-el="spot-meta">awaiting events…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="split-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Recognition feed</div>
+              <div class="card-sub">most recent <code>gesture_recognized</code> events</div>
+            </div>
+            <a class="btn sm outline" href="#live">Open live &rarr;</a>
+          </div>
+          <div class="feed" data-el="feed"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Top templates</div>
+              <div class="card-sub">by recognition hits</div>
+            </div>
+            <a class="btn sm outline" href="#templates">All templates &rarr;</a>
+          </div>
+          <div data-el="top-templates" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-h">
+        <h2>Device cluster</h2>
+        <a class="btn sm outline" href="#devices">Manage devices &rarr;</a>
+      </div>
+      <div class="grid" data-el="device-grid"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ LIVE ═══════════════════════ -->
+  <section class="page-section" data-page="live">
+    <h1 class="page">Live recognition</h1>
+    <p class="lede">Streaming CSI motion from paired ESP32-S3 devices through the DTW matcher. Watch the matcher resolve the lowest-cost template, then emit a <code>gesture_recognized</code> event with confidence and template_id.</p>
+
+    <div class="section">
+      <div class="split-2">
+        <div class="spot">
+          <div class="spot-label">Last recognition</div>
+          <div class="spot-gesture" data-el="spot-gesture">—</div>
+          <div class="spot-id mono" data-el="spot-id">—</div>
+          <div class="spot-conf" data-el="spot-conf">confidence —</div>
+          <div class="meter"><div class="meter-bar" data-el="spot-bar"></div></div>
+          <div style="margin-top:0.875rem;font-size:0.75rem;color:hsl(var(--muted-foreground))" data-el="spot-meta">awaiting events…</div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Top match candidates</div>
+              <div class="card-sub">DTW distance · lower is better</div>
+            </div>
+            <span class="badge live">live</span>
+          </div>
+          <div data-el="candidates" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-h">
+        <h2>Per-device CSI streams</h2>
+        <div class="pill-tabs" data-el="device-tabs"></div>
+      </div>
+      <div class="wave-card">
+        <div class="wave-h">
+          <div>
+            <div class="card-title" data-el="wave-title">All devices · aggregate</div>
+            <div class="card-sub">amplitude over time · rolling 5s</div>
+          </div>
+          <div class="chips">
+            <span class="chip">sample rate <b>100 Hz</b></span>
+            <span class="chip">subcarriers <b>52</b></span>
+          </div>
+        </div>
+        <div class="wave" style="height:240px">
+          <svg viewBox="0 0 800 240" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="wg-live" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%"  stop-color="hsl(185 80% 50%)" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <g stroke="hsl(220 15% 18%)" stroke-width="1">
+              <line x1="0" y1="60"  x2="800" y2="60"/>
+              <line x1="0" y1="120" x2="800" y2="120"/>
+              <line x1="0" y1="180" x2="800" y2="180"/>
+            </g>
+            <path data-el="wave-fill" d="" fill="url(#wg-live)" stroke="none"/>
+            <path data-el="wave-path" d="" fill="none" stroke="hsl(185 80% 55%)" stroke-width="1.5"/>
+            <g data-el="markers"></g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Event stream</div>
+            <div class="card-sub">all <code>gesture_recognized</code> events since page load</div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn sm outline" data-el="btn-pause">Pause</button>
+            <button class="btn sm outline" data-el="btn-clear">Clear</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>Gesture</th><th>Template</th><th>Device</th><th>Confidence</th><th>Latency</th></tr></thead>
+            <tbody data-el="event-tbody"><tr><td colspan="6" style="color:hsl(var(--muted-foreground));text-align:center">no events yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ TEMPLATES ═══════════════════════ -->
+  <section class="page-section" data-page="templates">
+    <h1 class="page">Gesture templates</h1>
+    <p class="lede">DTW reference templates trained from CSI motion captures. Each template stores normalized motion signatures; the matcher compares live streams against this library and emits a recognition when the lowest-cost template beats the threshold.</p>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:0.625rem;align-items:center">
+        <input type="search" data-el="q" class="input" placeholder="Search by name or template_id…">
+        <select data-el="cat" class="input" style="width:160px"></select>
+        <div style="display:flex;gap:0.5rem">
+          <a class="btn sm outline" href="#training">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            New template
+          </a>
+          <button class="btn sm outline" data-el="btn-export">Export JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13"/><path d="M2 19h20"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Templates</div>
+            <div class="kpi-val" data-el="s-total">—</div>
+            <div class="kpi-sub" data-el="s-filter">all categories</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Mean accuracy</div>
+            <div class="kpi-val" data-el="s-acc">—</div>
+            <div class="kpi-sub">across filtered set</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Total samples</div>
+            <div class="kpi-val" data-el="s-samples">—</div>
+            <div class="kpi-sub">captured signatures</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Lifetime hits</div>
+            <div class="kpi-val" data-el="s-hits">—</div>
+            <div class="kpi-sub">recognitions emitted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="tpl-grid" data-el="tpl-grid"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ TRAINING ═══════════════════════ -->
+  <section class="page-section" data-page="training">
+    <h1 class="page">Train a new template</h1>
+    <p class="lede">Capture multiple CSI motion repetitions of a single gesture. The matcher averages the aligned signatures to build a robust DTW reference. Aim for 8–15 clean repetitions across slightly different positions.</p>
+
+    <div class="split-2">
+      <div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Template details</div>
+              <div class="card-sub">labels and routing for the new gesture</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:0.75rem;grid-template-columns:1fr 1fr">
+            <label class="field">
+              <span class="lab">Name</span>
+              <input data-el="t-name" class="input" placeholder="e.g. Good morning" value="Good morning">
+            </label>
+            <label class="field">
+              <span class="lab">Template ID</span>
+              <input data-el="t-id" class="input mono" placeholder="tpl_good_morning" value="tpl_good_morning">
+            </label>
+            <label class="field">
+              <span class="lab">Category</span>
+              <select data-el="t-cat" class="input">
+                <option>greeting</option><option>social</option><option>response</option>
+                <option>urgent</option><option>request</option><option>home</option><option>control</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="lab">Capture device</span>
+              <select data-el="t-dev" class="input"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Capture</div>
+              <div class="card-sub">press <b>record</b> then perform the gesture · auto-stops after 2.0 s</div>
+            </div>
+            <div class="chips">
+              <span class="chip">window <b>2.0s</b></span>
+              <span class="chip">rate <b>100 Hz</b></span>
+            </div>
+          </div>
+
+          <div class="capture" data-el="capture">
+            <div class="capture-h">
+              <div class="capture-status" data-el="cap-status">idle</div>
+              <div class="mono" style="font-size:0.75rem;color:hsl(var(--muted-foreground))" data-el="cap-clock">00:00 / 02:00</div>
+            </div>
+            <div class="wave" style="height:140px">
+              <svg viewBox="0 0 600 140" preserveAspectRatio="none" aria-hidden="true">
+                <g stroke="hsl(220 15% 18%)" stroke-width="1">
+                  <line x1="0" y1="35"  x2="600" y2="35"/>
+                  <line x1="0" y1="70"  x2="600" y2="70"/>
+                  <line x1="0" y1="105" x2="600" y2="105"/>
+                </g>
+                <path data-el="cap-path" d="" fill="none" stroke="hsl(185 80% 60%)" stroke-width="1.5"/>
+                <rect data-el="cap-progress" x="0" y="138" width="0" height="2" fill="hsl(0 65% 50%)"/>
+              </svg>
+            </div>
+
+            <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
+              <button class="btn danger" data-el="btn-record">
+                <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
+                Record sample
+              </button>
+              <button class="btn outline" data-el="btn-discard" disabled>Discard last</button>
+              <span style="flex:1"></span>
+              <button class="btn primary" data-el="btn-save" disabled>
+                <svg class="ic" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                Save template
+              </button>
+            </div>
+          </div>
+
+          <div class="samples" data-el="samples"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Capture summary</div>
+              <div class="card-sub">live as samples are added</div>
+            </div>
+          </div>
+          <div class="meter-row" style="margin-top:0.5rem">
+            <span class="l">samples</span>
+            <div class="meter"><div class="meter-bar" data-el="sum-bar-n" style="right:100%"></div></div>
+            <span class="v" data-el="sum-n">0 / 10</span>
+          </div>
+          <div class="meter-row" style="margin-top:0.6rem">
+            <span class="l">coherence</span>
+            <div class="meter"><div class="meter-bar" data-el="sum-bar-c" style="right:100%"></div></div>
+            <span class="v" data-el="sum-c">—</span>
+          </div>
+          <div class="meter-row" style="margin-top:0.6rem">
+            <span class="l">est. acc.</span>
+            <div class="meter"><div class="meter-bar" data-el="sum-bar-a" style="right:100%"></div></div>
+            <span class="v" data-el="sum-a">—</span>
+          </div>
+          <div data-el="sum-hint" style="margin-top:0.875rem;font-size:0.75rem;color:hsl(var(--muted-foreground))">Record at least 8 samples before saving. Discard outliers to keep coherence high.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Tips</div>
+              <div class="card-sub">improve recognition quality</div>
+            </div>
+          </div>
+          <ul style="margin:0;padding-left:1.25rem;font-size:0.8125rem;line-height:1.8;color:hsl(var(--muted-foreground))">
+            <li>Stand 1–3 m from the ESP32-S3 with line-of-sight when possible.</li>
+            <li>Vary position slightly between samples — left, right, closer, further.</li>
+            <li>Keep the gesture window under 2 s for stable DTW alignment.</li>
+            <li>Avoid recording with other gestures happening nearby — CSI is whole-room.</li>
+            <li>If coherence drops, discard outliers rather than adding more samples.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ DEVICES ═══════════════════════ -->
+  <section class="page-section" data-page="devices">
+    <h1 class="page">ESP32-S3 devices</h1>
+    <p class="lede">CSI sources for the gesture matcher. Each device captures WiFi Channel State Information at 100 Hz across 52 subcarriers and streams motion features to the recognizer.</p>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M12 18v2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Devices</div>
+            <div class="kpi-val" data-el="k-total">—</div>
+            <div class="kpi-sub" data-el="k-total-sub">paired</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Streaming</div>
+            <div class="kpi-val" data-el="k-stream">—</div>
+            <div class="kpi-sub">CSI active</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M2 12a10 10 0 0 1 20 0"/><path d="M5 12a7 7 0 0 1 14 0"/><path d="M8.5 12a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Mean RSSI</div>
+            <div class="kpi-val mono" data-el="k-rssi">—</div>
+            <div class="kpi-sub">paired devices</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Firmware</div>
+            <div class="kpi-val mono" data-el="k-fw">—</div>
+            <div class="kpi-sub" data-el="k-fw-sub">latest 0.5.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap">
+        <input data-el="q" class="input" placeholder="Filter by name, id, or ip…" style="flex:1;min-width:200px">
+        <div class="pill-tabs" data-el="status-tabs">
+          <button class="pill-tab on" data-st="">All</button>
+          <button class="pill-tab" data-st="online">Online</button>
+          <button class="pill-tab" data-st="warn">Degraded</button>
+          <button class="pill-tab" data-st="offline">Offline</button>
+        </div>
+        <button class="btn sm outline" data-el="btn-discover">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35"/><circle cx="10.5" cy="10.5" r="7.5"/></svg>
+          Discover
+        </button>
+        <button class="btn sm primary" data-el="btn-pair">+ Pair device</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Paired devices</div>
+            <div class="card-sub" data-el="d-sub">—</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>ID</th><th>IP</th><th>Status</th><th>RSSI</th><th>CSI</th><th>Firmware</th><th></th></tr>
+            </thead>
+            <tbody data-el="d-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ SETTINGS ═══════════════════════ -->
+  <section class="page-section" data-page="settings">
+    <h1 class="page">Settings</h1>
+    <p class="lede">Tune the DTW matcher, set the confidence floor for emitted events, and wire <code>gesture_recognized</code> events to downstream sinks.</p>
+
+    <div class="grid-2">
+      <div class="settings-group">
+        <h3>Matcher</h3>
+        <div class="sub">controls how strictly the DTW path is compared and accepted</div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">DTW threshold</span>
+            <span class="hint">Maximum normalized cost for a candidate to be considered a match. Lower = stricter.</span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0.625rem">
+              <input type="range" data-el="dtw" min="0.30" max="0.95" step="0.01" value="0.72" style="flex:1">
+              <span class="mono" data-el="dtw-val" style="width:48px;text-align:right">0.72</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Confidence floor</span>
+            <span class="hint">Events below this confidence are suppressed.</span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0.625rem">
+              <input type="range" data-el="conf" min="0.50" max="0.99" step="0.01" value="0.75" style="flex:1">
+              <span class="mono" data-el="conf-val" style="width:48px;text-align:right">0.75</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Window size</span>
+            <span class="hint">Sliding window length matched against each template.</span>
+          </div>
+          <div>
+            <select data-el="win" class="input">
+              <option>1.0 s · 100 samples</option>
+              <option selected>2.0 s · 200 samples</option>
+              <option>3.0 s · 300 samples</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Sakoe-Chiba band</span>
+            <span class="hint">Constrains the warping path to a diagonal band. Smaller = faster but less flexible.</span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0.625rem">
+              <input type="range" data-el="band" min="5" max="40" step="1" value="15" style="flex:1">
+              <span class="mono" data-el="band-val" style="width:48px;text-align:right">15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Input</h3>
+        <div class="sub">CSI capture pipeline</div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Source</span>
+            <span class="hint">Hardware capture device family.</span>
+          </div>
+          <div><input class="input mono" value="esp32-s3 · CSI motion" readonly></div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Sample rate</span>
+            <span class="hint">CSI frames per second per device.</span>
+          </div>
+          <div>
+            <select class="input">
+              <option>50 Hz</option>
+              <option selected>100 Hz</option>
+              <option>200 Hz</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Subcarrier selection</span>
+            <span class="hint">Which OFDM subcarriers feed the motion feature.</span>
+          </div>
+          <div>
+            <select class="input">
+              <option>All 52</option>
+              <option selected>Pilot-aligned 26</option>
+              <option>Strongest 16</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Smoothing</span>
+            <span class="hint">EMA smoothing applied before DTW.</span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0.625rem">
+              <input type="range" data-el="ema" min="0" max="0.9" step="0.05" value="0.35" style="flex:1">
+              <span class="mono" data-el="ema-val" style="width:48px;text-align:right">0.35</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group" style="grid-column:1/-1">
+        <h3>Events</h3>
+        <div class="sub">where <code>gesture_recognized</code> events go</div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Event schema</span>
+            <span class="hint">Emitted on every accepted match.</span>
+          </div>
+          <div class="chips">
+            <span class="chip">event <b>gesture_recognized</b></span>
+            <span class="chip">field <b>confidence</b></span>
+            <span class="chip">field <b>template_id</b></span>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Webhook URL</span>
+            <span class="hint">POSTs JSON event body. Leave blank to disable.</span>
+          </div>
+          <div><input class="input mono" placeholder="https://example.com/hooks/gesture"></div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">MQTT topic</span>
+            <span class="hint">Publishes the event body to the broker.</span>
+          </div>
+          <div><input class="input mono" value="cogs/gesture-language/events" placeholder="cogs/gesture-language/events"></div>
+        </div>
+
+        <div class="settings-row">
+          <div class="info">
+            <span class="lab">Dedupe window</span>
+            <span class="hint">Suppress repeats of the same template within this window.</span>
+          </div>
+          <div>
+            <select class="input">
+              <option>off</option>
+              <option>250 ms</option>
+              <option selected>500 ms</option>
+              <option>1.0 s</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button class="btn outline" data-el="btn-test">Send test event</button>
+          <button class="btn primary" data-el="btn-save">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="appfoot">
+    <div>
+      <span class="mono">cog: gesture-language</span> &middot;
+      <span class="mono">v0.5.0</span> &middot;
+      <span class="mono">hw: esp32-s3</span> &middot;
+      <span class="mono">input: csi-motion</span>
+    </div>
+    <div style="margin-top:0.4rem">
+      <a href="#dashboard">Dashboard</a> &middot;
+      <a href="#live">Live feed</a> &middot;
+      <a href="#templates">Templates</a> &middot;
+      <a href="#training">Training</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── shared data + helpers ─────────────────────────────────────
+  const TEMPLATES = [
+    { id: 'tpl_hello',     name: 'Hello',        category: 'greeting',   samples: 14, accuracy: 0.96, hits: 312 },
+    { id: 'tpl_thanks',    name: 'Thank you',    category: 'social',     samples: 12, accuracy: 0.93, hits: 198 },
+    { id: 'tpl_yes',       name: 'Yes',          category: 'response',   samples: 18, accuracy: 0.97, hits: 421 },
+    { id: 'tpl_no',        name: 'No',           category: 'response',   samples: 16, accuracy: 0.95, hits: 387 },
+    { id: 'tpl_help',      name: 'Help',         category: 'urgent',     samples: 11, accuracy: 0.88, hits: 64  },
+    { id: 'tpl_stop',      name: 'Stop',         category: 'urgent',     samples: 13, accuracy: 0.91, hits: 102 },
+    { id: 'tpl_water',     name: 'Water',        category: 'request',    samples: 10, accuracy: 0.87, hits: 78  },
+    { id: 'tpl_food',      name: 'Food',         category: 'request',    samples: 10, accuracy: 0.84, hits: 55  },
+    { id: 'tpl_lights_on', name: 'Lights on',    category: 'home',       samples: 9,  accuracy: 0.90, hits: 144 },
+    { id: 'tpl_lights_off',name: 'Lights off',   category: 'home',       samples: 9,  accuracy: 0.89, hits: 132 },
+    { id: 'tpl_open',      name: 'Open',         category: 'home',       samples: 8,  accuracy: 0.82, hits: 41  },
+    { id: 'tpl_close',     name: 'Close',        category: 'home',       samples: 8,  accuracy: 0.83, hits: 38  },
+    { id: 'tpl_again',     name: 'Again',        category: 'control',    samples: 7,  accuracy: 0.79, hits: 22  },
+    { id: 'tpl_more',      name: 'More',         category: 'control',    samples: 7,  accuracy: 0.81, hits: 27  },
+  ];
+
+  const DEVICES = [
+    { id: 'esp-a1b2', name: 'living-room',  ip: '10.0.4.21', rssi: -52, status: 'online',  fw: '0.5.0', csi: 'streaming' },
+    { id: 'esp-c3d4', name: 'kitchen',      ip: '10.0.4.22', rssi: -64, status: 'online',  fw: '0.5.0', csi: 'streaming' },
+    { id: 'esp-e5f6', name: 'study',        ip: '10.0.4.23', rssi: -58, status: 'online',  fw: '0.5.0', csi: 'streaming' },
+    { id: 'esp-g7h8', name: 'hallway',      ip: '10.0.4.24', rssi: -71, status: 'warn',    fw: '0.4.9', csi: 'degraded'  },
+    { id: 'esp-i9j0', name: 'bedroom',      ip: '10.0.4.25', rssi: 0,   status: 'offline', fw: '0.5.0', csi: 'idle'      },
+  ];
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function fmtPct(x) { return (Math.round(x * 1000) / 10).toFixed(1) + '%'; }
+  function fmtAgo(ts) {
+    const sec = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (sec < 5) return 'just now';
+    if (sec < 60) return sec + 's ago';
+    const min = Math.round(sec / 60);
+    if (min < 60) return min + 'm ago';
+    const hr = Math.round(min / 60);
+    if (hr < 24) return hr + 'h ago';
+    return Math.round(hr / 24) + 'd ago';
+  }
+  function rand(min, max) { return min + Math.random() * (max - min); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function seedRand(seed) {
+    let s = 0;
+    for (let i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) >>> 0;
+    return function () { s = (s * 1664525 + 1013904223) >>> 0; return (s & 0xffffffff) / 0x100000000; };
+  }
+
+  function buildPath(samples, width, height) {
+    const n = samples.length;
+    if (!n) return '';
+    const step = width / (n - 1);
+    let d = '';
+    for (let i = 0; i < n; i++) {
+      const y = height / 2 + (samples[i] * height / 2 * 0.85);
+      d += (i === 0 ? 'M' : 'L') + (i * step).toFixed(2) + ',' + y.toFixed(2) + ' ';
+    }
+    return d;
+  }
+  function gestureWaveform(seed, width, height) {
+    const rng = seedRand(seed);
+    const count = 60;
+    const samples = [];
+    const phase = rng() * Math.PI * 2;
+    const freq = 0.08 + rng() * 0.18;
+    const freq2 = 0.03 + rng() * 0.07;
+    for (let i = 0; i < count; i++) {
+      const env = Math.sin((i / count) * Math.PI);
+      samples.push((Math.sin(i * freq + phase) * 0.6 + Math.sin(i * freq2) * 0.3) * env);
+    }
+    return buildPath(samples, width, height);
+  }
+  function liveWaveform(width, height, t) {
+    const count = 140;
+    const samples = [];
+    for (let i = 0; i < count; i++) {
+      const x = i / count;
+      samples.push(
+        Math.sin((x * 8) + t * 0.004) * 0.4 +
+        Math.sin((x * 18) + t * 0.0018) * 0.25 +
+        Math.sin((x * 32) + t * 0.0007) * 0.15 +
+        (Math.random() - 0.5) * 0.08
+      );
+    }
+    return buildPath(samples, width, height);
+  }
+
+  function newEvent() {
+    const weights = TEMPLATES.map(t => Math.pow(t.accuracy, 5));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    let i = 0;
+    for (let k = 0; k < weights.length; k++) { r -= weights[k]; if (r <= 0) { i = k; break; } }
+    const t = TEMPLATES[i];
+    const confidence = Math.min(0.999, Math.max(0.55, t.accuracy + rand(-0.12, 0.06)));
+    return {
+      ts: Date.now(),
+      event: 'gesture_recognized',
+      template_id: t.id,
+      gesture: t.name,
+      confidence,
+      device: pick(DEVICES.filter(d => d.status !== 'offline')).name,
+      latency_ms: Math.round(rand(28, 96)),
+    };
+  }
+
+  // Helper to scope all queries to a page section root.
+  function scoped(root) {
+    return {
+      get: sel => root.querySelector('[data-el="' + sel + '"]'),
+      all: sel => root.querySelectorAll('[data-el="' + sel + '"]'),
+    };
+  }
+
+  // ── DASHBOARD ─────────────────────────────────────────────────
+  function initDashboard(root) {
+    const $ = scoped(root);
+    // KPI seed
+    root.querySelector('[data-k="templates"]').textContent = TEMPLATES.length;
+    root.querySelector('[data-k="templates-sub"]').textContent = TEMPLATES.reduce((a,t)=>a+t.samples,0) + ' samples';
+    const onlineDev = DEVICES.filter(d => d.status === 'online').length;
+    root.querySelector('[data-k="devices"]').textContent = onlineDev;
+    root.querySelector('[data-k="devices-sub"]').textContent = onlineDev + ' / ' + DEVICES.length + ' streaming';
+
+    // Device grid
+    root.querySelector('[data-el="device-grid"]').innerHTML = DEVICES.map(d => {
+      const badge = d.status === 'online' ? '<span class="badge online"><span class="dot up"></span>online</span>'
+                  : d.status === 'warn'   ? '<span class="badge warn"><span class="dot warn"></span>degraded</span>'
+                  : '<span class="badge offline"><span class="dot down"></span>offline</span>';
+      return `
+        <div class="node">
+          <div class="node-h">
+            <span class="node-name">${escapeHtml(d.name)}</span>
+            ${badge}
+          </div>
+          <div class="node-meta">
+            <div><span class="l">id</span>${escapeHtml(d.id)}</div>
+            <div><span class="l">ip</span>${escapeHtml(d.ip)}</div>
+            <div><span class="l">rssi</span>${d.status === 'offline' ? '—' : (d.rssi + ' dBm')}</div>
+            <div><span class="l">csi</span>${escapeHtml(d.csi)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Top templates (by hits, top 6)
+    const topTpls = [...TEMPLATES].sort((a,b) => b.hits - a.hits).slice(0, 6);
+    $.get('top-templates').innerHTML = topTpls.map(t => `
+      <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:0.625rem;align-items:center;padding:0.5rem 0.625rem;border-radius:0.4rem;background:hsl(var(--secondary)/0.4);border:1px solid hsl(var(--border)/0.4)">
+        <div>
+          <div style="font-size:0.8125rem;font-weight:600">${escapeHtml(t.name)}</div>
+          <div style="font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">${escapeHtml(t.id)}</div>
+        </div>
+        <div class="meter" title="accuracy ${fmtPct(t.accuracy)}">
+          <div class="meter-bar" style="right:${(100 - t.accuracy * 100).toFixed(1)}%"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;text-align:right;font-weight:600">${t.hits}</div>
+      </div>
+    `).join('');
+
+    // Recognition feed
+    const FEED_MAX = 10;
+    const feedEl = $.get('feed');
+    const events = [];
+
+    function renderFeed() {
+      feedEl.innerHTML = events.map((e, i) => `
+        <div class="feed-item ${i === 0 ? 'fresh' : ''}">
+          <div class="feed-ic">${escapeHtml(e.gesture.charAt(0).toUpperCase())}</div>
+          <div class="feed-body">
+            <div class="feed-gesture">${escapeHtml(e.gesture)}</div>
+            <div class="feed-meta">${escapeHtml(e.template_id)} · ${escapeHtml(e.device)} · ${e.latency_ms}ms · ${fmtAgo(e.ts)}</div>
+          </div>
+          <div class="feed-conf ${e.confidence < 0.75 ? 'low' : ''}">${fmtPct(e.confidence)}</div>
+        </div>`).join('');
+    }
+    function renderSpot(e) {
+      $.get('spot-gesture').textContent = e.gesture;
+      $.get('spot-id').textContent = e.template_id;
+      $.get('spot-conf').textContent = 'confidence ' + fmtPct(e.confidence);
+      $.get('spot-bar').style.right = (100 - e.confidence * 100).toFixed(1) + '%';
+      $.get('spot-meta').innerHTML = `via <b style="color:hsl(var(--foreground))">${escapeHtml(e.device)}</b> · DTW cost <span class="mono">${(1 - e.confidence).toFixed(3)}</span> · ${e.latency_ms} ms`;
+    }
+    function updateKpis() {
+      const w60 = events.filter(e => Date.now() - e.ts < 60000);
+      root.querySelector('[data-k="rate"]').textContent = w60.length;
+      if (events.length) {
+        const mean = events.reduce((a, e) => a + e.confidence, 0) / events.length;
+        root.querySelector('[data-k="conf"]').textContent = fmtPct(mean);
+      }
+    }
+    function pushEvent(e) {
+      events.unshift(e);
+      if (events.length > FEED_MAX) events.pop();
+      renderFeed();
+      renderSpot(e);
+      updateKpis();
+    }
+
+    // Waveform animation
+    const wavePath = $.get('wave-path');
+    const waveFill = $.get('wave-fill');
+    function tickWave() {
+      const d = liveWaveform(600, 200, performance.now());
+      wavePath.setAttribute('d', d);
+      waveFill.setAttribute('d', d + ' L600,200 L0,200 Z');
+    }
+    setInterval(tickWave, 90);
+    tickWave();
+
+    // Event stream — bursty cadence
+    function tickEvent() {
+      pushEvent(newEvent());
+      setTimeout(tickEvent, 1400 + Math.random() * 2400);
+    }
+    // Seed feed quickly
+    for (let i = 0; i < 4; i++) {
+      const e = newEvent();
+      e.ts = Date.now() - (4 - i) * 8000;
+      e.latency_ms = Math.round(40 + Math.random() * 50);
+      events.unshift(e);
+    }
+    renderFeed();
+    renderSpot(events[0]);
+    updateKpis();
+    setTimeout(tickEvent, 1500);
+    setInterval(renderFeed, 5000);
+  }
+
+  // ── LIVE ──────────────────────────────────────────────────────
+  function initLive(root) {
+    const $ = scoped(root);
+    let paused = false;
+
+    // Device tabs
+    const tabs = ['All devices', ...DEVICES.filter(d => d.status !== 'offline').map(d => d.name)];
+    $.get('device-tabs').innerHTML = tabs.map((n, i) =>
+      `<button class="pill-tab ${i===0?'on':''}" data-tab="${escapeHtml(n)}">${escapeHtml(n)}</button>`
+    ).join('');
+    $.get('device-tabs').addEventListener('click', e => {
+      const t = e.target.closest('.pill-tab');
+      if (!t) return;
+      $.get('device-tabs').querySelectorAll('.pill-tab').forEach(p => p.classList.remove('on'));
+      t.classList.add('on');
+      const name = t.dataset.tab;
+      $.get('wave-title').textContent = name === 'All devices' ? 'All devices · aggregate' : name + ' · single device';
+    });
+
+    // Waveform + markers
+    const wavePath = $.get('wave-path');
+    const waveFill = $.get('wave-fill');
+    const markersG = $.get('markers');
+    const markers = [];
+    function tickWave() {
+      const d = liveWaveform(800, 240, performance.now());
+      wavePath.setAttribute('d', d);
+      waveFill.setAttribute('d', d + ' L800,240 L0,240 Z');
+      for (let i = markers.length - 1; i >= 0; i--) {
+        markers[i].x -= 8;
+        if (markers[i].x < -20) markers.splice(i, 1);
+      }
+      markersG.innerHTML = markers.map(m => `
+        <g transform="translate(${m.x.toFixed(1)},0)">
+          <line x1="0" y1="0" x2="0" y2="240" stroke="hsl(142 70% 50%)" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+          <rect x="-44" y="6" width="88" height="20" rx="4" fill="hsl(220 20% 12%)" stroke="hsl(142 70% 50% / 0.4)"/>
+          <text x="0" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="hsl(142 70% 65%)">${escapeHtml(m.label)}</text>
+        </g>`).join('');
+    }
+    setInterval(tickWave, 60);
+
+    // Candidates panel
+    const CAND_N = 4;
+    function renderCandidates(activeId, conf) {
+      const sample = [...TEMPLATES].sort(() => Math.random() - 0.5).slice(0, CAND_N - 1);
+      const active = TEMPLATES.find(t => t.id === activeId);
+      const list = active ? [active, ...sample.filter(s => s.id !== active.id).slice(0, CAND_N - 1)]
+                          : sample.concat(TEMPLATES.slice(0, 1)).slice(0, CAND_N);
+      const enriched = list.map(t => {
+        if (active && t.id === active.id) return { ...t, cost: 1 - conf, winner: true };
+        return { ...t, cost: Math.min(0.95, (1 - conf) + 0.08 + Math.random() * 0.45) };
+      }).sort((a,b) => a.cost - b.cost);
+      $.get('candidates').innerHTML = enriched.map(c => `
+        <div style="display:grid;grid-template-columns:1fr 1fr 60px;gap:0.625rem;align-items:center;padding:0.5rem 0.625rem;border-radius:0.4rem;background:hsl(var(--secondary)/0.4);border:1px solid ${c.winner ? 'hsl(var(--primary)/0.4)' : 'hsl(var(--border)/0.4)'}">
+          <div>
+            <div style="font-size:0.8125rem;font-weight:600">${escapeHtml(c.name)}${c.winner ? ' <span class="badge paired" style="margin-left:0.4rem">match</span>' : ''}</div>
+            <div style="font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">${escapeHtml(c.id)}</div>
+          </div>
+          <div class="meter ${c.cost > 0.5 ? 'warn' : ''} ${c.cost > 0.7 ? 'danger' : ''}">
+            <div class="meter-bar" style="right:${(c.cost * 100).toFixed(1)}%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:0.75rem;text-align:right">${c.cost.toFixed(3)}</div>
+        </div>`).join('');
+    }
+
+    const events = [];
+    const TBODY = $.get('event-tbody');
+    function renderTable() {
+      if (!events.length) {
+        TBODY.innerHTML = '<tr><td colspan="6" style="color:hsl(var(--muted-foreground));text-align:center">no events yet</td></tr>';
+        return;
+      }
+      TBODY.innerHTML = events.slice(0, 50).map(e => `
+        <tr>
+          <td>${fmtAgo(e.ts)}</td>
+          <td style="font-family:var(--font-display);font-weight:600">${escapeHtml(e.gesture)}</td>
+          <td>${escapeHtml(e.template_id)}</td>
+          <td>${escapeHtml(e.device)}</td>
+          <td style="color:${e.confidence < 0.75 ? 'hsl(var(--warn))' : 'hsl(var(--accent))'}">${fmtPct(e.confidence)}</td>
+          <td>${e.latency_ms} ms</td>
+        </tr>`).join('');
+    }
+    function pushEvent(e) {
+      events.unshift(e);
+      if (events.length > 200) events.pop();
+      markers.push({ x: 800, label: e.gesture });
+      $.get('spot-gesture').textContent = e.gesture;
+      $.get('spot-id').textContent = e.template_id;
+      $.get('spot-conf').textContent = 'confidence ' + fmtPct(e.confidence);
+      $.get('spot-bar').style.right = (100 - e.confidence * 100).toFixed(1) + '%';
+      $.get('spot-meta').innerHTML = `via <b style="color:hsl(var(--foreground))">${escapeHtml(e.device)}</b> · DTW cost <span class="mono">${(1 - e.confidence).toFixed(3)}</span> · ${e.latency_ms} ms`;
+      renderCandidates(e.template_id, e.confidence);
+      renderTable();
+    }
+
+    $.get('btn-pause').addEventListener('click', e => {
+      paused = !paused;
+      e.currentTarget.textContent = paused ? 'Resume' : 'Pause';
+      e.currentTarget.classList.toggle('primary', paused);
+    });
+    $.get('btn-clear').addEventListener('click', () => { events.length = 0; renderTable(); });
+
+    function tickEvent() {
+      if (!paused) pushEvent(newEvent());
+      setTimeout(tickEvent, 1200 + Math.random() * 2200);
+    }
+    renderCandidates(null, 0.5);
+    setTimeout(tickEvent, 800);
+    setInterval(renderTable, 5000);
+  }
+
+  // ── TEMPLATES ─────────────────────────────────────────────────
+  function initTemplates(root) {
+    const $ = scoped(root);
+    const cats = [...new Set(TEMPLATES.map(t => t.category))].sort();
+    $.get('cat').innerHTML = '<option value="">All categories</option>' +
+      cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+    function thumbSvg(id) {
+      const d = gestureWaveform(id, 200, 64);
+      return `
+        <svg viewBox="0 0 200 64" preserveAspectRatio="none">
+          <path d="${d} L200,64 L0,64 Z" fill="hsl(185 80% 50% / 0.18)" stroke="none"/>
+          <path d="${d}" fill="none" stroke="hsl(185 80% 60%)" stroke-width="1.5"/>
+        </svg>`;
+    }
+
+    function render() {
+      const q = $.get('q').value.trim().toLowerCase();
+      const c = $.get('cat').value;
+      const list = TEMPLATES.filter(t => {
+        const mQ = !q || t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+        const mC = !c || t.category === c;
+        return mQ && mC;
+      });
+      $.get('tpl-grid').innerHTML = list.length ? list.map(t => `
+        <div class="tpl" data-id="${escapeHtml(t.id)}">
+          <div class="tpl-h">
+            <div>
+              <div class="tpl-name">${escapeHtml(t.name)}</div>
+              <div class="tpl-id">${escapeHtml(t.id)}</div>
+            </div>
+            <span class="badge paired" style="text-transform:capitalize">${escapeHtml(t.category)}</span>
+          </div>
+          <div class="tpl-thumb">${thumbSvg(t.id)}</div>
+          <div class="meter" title="accuracy ${fmtPct(t.accuracy)}">
+            <div class="meter-bar" style="right:${(100 - t.accuracy * 100).toFixed(1)}%"></div>
+          </div>
+          <div class="tpl-meta">
+            <span>samples <b>${t.samples}</b></span>
+            <span>acc <b>${fmtPct(t.accuracy)}</b></span>
+            <span>hits <b>${t.hits}</b></span>
+          </div>
+        </div>
+      `).join('') : `
+        <div class="empty-card" style="grid-column:1/-1">
+          <h3>No templates match</h3>
+          <p>Try a different name or clear the category filter.</p>
+        </div>`;
+
+      $.get('s-total').textContent = list.length;
+      $.get('s-filter').textContent = c ? c + ' category' : 'all categories';
+      $.get('s-samples').textContent = list.reduce((a, t) => a + t.samples, 0);
+      $.get('s-hits').textContent = list.reduce((a, t) => a + t.hits, 0).toLocaleString();
+      const acc = list.length ? list.reduce((a, t) => a + t.accuracy, 0) / list.length : 0;
+      $.get('s-acc').textContent = list.length ? fmtPct(acc) : '—';
+    }
+
+    $.get('q').addEventListener('input', render);
+    $.get('cat').addEventListener('change', render);
+
+    $.get('tpl-grid').addEventListener('click', e => {
+      const tile = e.target.closest('.tpl');
+      if (!tile) return;
+      const t = TEMPLATES.find(x => x.id === tile.dataset.id);
+      if (!t) return;
+      alert(`Template: ${t.name}\nid: ${t.id}\ncategory: ${t.category}\nsamples: ${t.samples}\naccuracy: ${fmtPct(t.accuracy)}\nhits: ${t.hits}`);
+    });
+
+    $.get('btn-export').addEventListener('click', () => {
+      const payload = JSON.stringify({ templates: TEMPLATES }, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gesture-templates.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    render();
+  }
+
+  // ── TRAINING ──────────────────────────────────────────────────
+  function initTraining(root) {
+    const $ = scoped(root);
+    const liveDev = DEVICES.filter(d => d.status === 'online');
+    $.get('t-dev').innerHTML = liveDev.map(d =>
+      `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)} · ${escapeHtml(d.id)}</option>`
+    ).join('') || '<option value="">no online devices</option>';
+
+    $.get('t-name').addEventListener('input', e => {
+      const slug = 'tpl_' + e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      $.get('t-id').value = slug.slice(0, 32);
+    });
+
+    const TARGET = 10;
+    const samples = [];
+    const cap = $.get('capture');
+    const capPath = $.get('cap-path');
+    const capProgress = $.get('cap-progress');
+    const capStatus = $.get('cap-status');
+    const capClock = $.get('cap-clock');
+    let recording = false;
+    let recStart = 0;
+
+    function fmtClock(ms) {
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+    function tickCapture() {
+      const t = performance.now();
+      if (recording) {
+        const elapsed = t - recStart;
+        capProgress.setAttribute('width', Math.min(600, (elapsed / 2000) * 600).toFixed(1));
+        capClock.textContent = fmtClock(elapsed) + ' / 02:00';
+        if (elapsed >= 2000) finishRecord();
+      }
+      capPath.setAttribute('d', liveWaveform(600, 140, t));
+    }
+    setInterval(tickCapture, 60);
+
+    function startRecord() {
+      if (recording) return;
+      recording = true;
+      recStart = performance.now();
+      cap.classList.remove('armed');
+      cap.classList.add('recording');
+      capStatus.innerHTML = '<span class="rec-dot"></span>recording…';
+      $.get('btn-record').disabled = true;
+    }
+    function finishRecord() {
+      recording = false;
+      cap.classList.remove('recording');
+      capStatus.textContent = 'sample captured';
+      capProgress.setAttribute('width', 0);
+      $.get('btn-record').disabled = false;
+      $.get('btn-discard').disabled = false;
+      const seed = $.get('t-id').value + '_' + (samples.length + 1);
+      samples.push({
+        len_ms: Math.round(1400 + Math.random() * 600),
+        path: gestureWaveform(seed, 120, 24),
+      });
+      updateSamples();
+      setTimeout(() => { if (!recording) capStatus.textContent = 'idle'; }, 1200);
+    }
+    function discardLast() {
+      if (!samples.length) return;
+      samples.pop();
+      updateSamples();
+    }
+    function updateSamples() {
+      const list = $.get('samples');
+      list.innerHTML = samples.length ? samples.map((s, i) => `
+        <div class="sample">
+          <div class="sample-idx">${String(i + 1).padStart(2, '0')}</div>
+          <svg class="sample-wave" viewBox="0 0 120 24" preserveAspectRatio="none">
+            <path d="${s.path}" fill="none" stroke="hsl(185 80% 60%)" stroke-width="1.25"/>
+          </svg>
+          <div class="sample-len">${s.len_ms} ms</div>
+          <button class="btn sm danger" data-rm="${i}" aria-label="Remove sample ${i+1}">×</button>
+        </div>`).join('') : '';
+      $.get('sum-n').textContent = samples.length + ' / ' + TARGET;
+      $.get('sum-bar-n').style.right = (Math.max(0, 100 - (samples.length / TARGET) * 100)).toFixed(1) + '%';
+      const coherence = samples.length < 2 ? 0 : Math.min(0.98, 0.55 + samples.length * 0.04 + Math.random() * 0.05);
+      const acc = samples.length < 2 ? 0 : Math.min(0.97, 0.5 + samples.length * 0.05);
+      $.get('sum-c').textContent = samples.length < 2 ? '—' : fmtPct(coherence);
+      $.get('sum-a').textContent = samples.length < 2 ? '—' : fmtPct(acc);
+      $.get('sum-bar-c').style.right = (100 - coherence * 100).toFixed(1) + '%';
+      $.get('sum-bar-a').style.right = (100 - acc * 100).toFixed(1) + '%';
+      $.get('btn-save').disabled = samples.length < 8;
+      $.get('btn-discard').disabled = samples.length === 0;
+      $.get('sum-hint').textContent = samples.length < 8
+        ? `Record at least ${8 - samples.length} more sample${samples.length === 7 ? '' : 's'} before saving.`
+        : samples.length < TARGET
+          ? 'Looking good — a few more samples will improve coverage.'
+          : 'Solid coverage. Save when ready.';
+    }
+
+    $.get('btn-record').addEventListener('click', startRecord);
+    $.get('btn-discard').addEventListener('click', discardLast);
+    $.get('samples').addEventListener('click', e => {
+      const b = e.target.closest('[data-rm]');
+      if (!b) return;
+      samples.splice(Number(b.dataset.rm), 1);
+      updateSamples();
+    });
+    $.get('btn-save').addEventListener('click', () => {
+      const id = $.get('t-id').value.trim();
+      const name = $.get('t-name').value.trim();
+      if (!id || !name) { alert('Name and template id are required.'); return; }
+      alert(`Saved template "${name}" (${id}) with ${samples.length} samples.\n\nIt will start matching live CSI streams immediately.`);
+      samples.length = 0;
+      updateSamples();
+    });
+
+    updateSamples();
+
+    // Ambient auto-capture: fires a simulated capture every few seconds so the
+    // Capture summary visibly fills up. Pauses once TARGET is reached, resumes
+    // if the user discards. Manual Record button still works in parallel.
+    function autoTick() {
+      if (!recording && samples.length < TARGET) startRecord();
+      setTimeout(autoTick, 1500);
+    }
+    setTimeout(autoTick, 1200);
+  }
+
+  // ── DEVICES ───────────────────────────────────────────────────
+  function initDevices(root) {
+    const $ = scoped(root);
+    const localDevices = DEVICES.slice(); // page-local copy so unpair only affects this view
+    const filter = { q: '', st: '' };
+
+    function render() {
+      const list = localDevices.filter(d => {
+        if (filter.st && d.status !== filter.st) return false;
+        if (!filter.q) return true;
+        const q = filter.q.toLowerCase();
+        return d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q) || d.ip.toLowerCase().includes(q);
+      });
+      $.get('d-sub').textContent = list.length + ' device' + (list.length === 1 ? '' : 's') + ' shown';
+      $.get('d-tbody').innerHTML = list.length ? list.map(d => {
+        const badge = d.status === 'online' ? '<span class="badge online"><span class="dot up"></span>online</span>'
+                    : d.status === 'warn'   ? '<span class="badge warn"><span class="dot warn"></span>degraded</span>'
+                    : '<span class="badge offline"><span class="dot down"></span>offline</span>';
+        const fwBadge = d.fw === '0.5.0' ? '' : ' <span class="badge warn" style="margin-left:0.4rem">update</span>';
+        return `
+          <tr>
+            <td style="font-family:var(--font-display);font-weight:600">${escapeHtml(d.name)}</td>
+            <td>${escapeHtml(d.id)}</td>
+            <td>${escapeHtml(d.ip)}</td>
+            <td>${badge}</td>
+            <td>${d.status === 'offline' ? '—' : (d.rssi + ' dBm')}</td>
+            <td>${escapeHtml(d.csi)}</td>
+            <td>${escapeHtml(d.fw)}${fwBadge}</td>
+            <td style="text-align:right">
+              <button class="btn sm outline" data-act="ping" data-id="${escapeHtml(d.id)}">Ping</button>
+              <button class="btn sm outline" data-act="restart" data-id="${escapeHtml(d.id)}">Restart</button>
+              <button class="btn sm danger" data-act="unpair" data-id="${escapeHtml(d.id)}">Unpair</button>
+            </td>
+          </tr>`;
+      }).join('') : `<tr><td colspan="8" style="color:hsl(var(--muted-foreground));text-align:center;padding:1.5rem">No devices match.</td></tr>`;
+    }
+
+    // KPI
+    $.get('k-total').textContent = localDevices.length;
+    $.get('k-total-sub').textContent = localDevices.length + ' paired';
+    $.get('k-stream').textContent = localDevices.filter(d => d.csi === 'streaming').length;
+    const onlineRssi = localDevices.filter(d => d.status !== 'offline').map(d => d.rssi);
+    const meanRssi = onlineRssi.length ? Math.round(onlineRssi.reduce((a,b)=>a+b,0) / onlineRssi.length) : 0;
+    $.get('k-rssi').textContent = onlineRssi.length ? meanRssi + ' dBm' : '—';
+    const stale = localDevices.filter(d => d.fw !== '0.5.0').length;
+    $.get('k-fw').textContent = localDevices.length - stale;
+    $.get('k-fw-sub').textContent = stale ? stale + ' need update' : 'all current';
+
+    $.get('q').addEventListener('input', e => { filter.q = e.target.value.trim(); render(); });
+    $.get('status-tabs').addEventListener('click', e => {
+      const b = e.target.closest('.pill-tab');
+      if (!b) return;
+      $.get('status-tabs').querySelectorAll('.pill-tab').forEach(p => p.classList.remove('on'));
+      b.classList.add('on');
+      filter.st = b.dataset.st;
+      render();
+    });
+    $.get('d-tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+      if (act === 'unpair') {
+        if (!confirm('Unpair ' + id + '?')) return;
+        const idx = localDevices.findIndex(d => d.id === id);
+        if (idx > -1) localDevices.splice(idx, 1);
+        render();
+      } else if (act === 'ping') {
+        btn.textContent = 'Ping…'; btn.disabled = true;
+        setTimeout(() => {
+          btn.textContent = 'OK';
+          setTimeout(() => { btn.textContent = 'Ping'; btn.disabled = false; }, 700);
+        }, 500);
+      } else if (act === 'restart') {
+        if (!confirm('Restart ' + id + '?')) return;
+        btn.textContent = 'Restarting…'; btn.disabled = true;
+        setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 1500);
+      }
+    });
+    $.get('btn-discover').addEventListener('click', e => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      const orig = b.innerHTML;
+      b.innerHTML = 'Scanning…';
+      setTimeout(() => { b.disabled = false; b.innerHTML = orig; alert('Discovery complete · 0 new devices found.'); }, 1400);
+    });
+    $.get('btn-pair').addEventListener('click', () => alert('Pairing flow not implemented in this mock UI.'));
+
+    render();
+  }
+
+  // ── SETTINGS ──────────────────────────────────────────────────
+  function initSettings(root) {
+    const $ = scoped(root);
+    function bind(inKey, outKey, fmt) {
+      const i = $.get(inKey), o = $.get(outKey);
+      const upd = () => o.textContent = fmt ? fmt(i.value) : i.value;
+      i.addEventListener('input', upd);
+      upd();
+    }
+    bind('dtw', 'dtw-val', v => Number(v).toFixed(2));
+    bind('conf', 'conf-val', v => Number(v).toFixed(2));
+    bind('band', 'band-val');
+    bind('ema', 'ema-val', v => Number(v).toFixed(2));
+
+    $.get('btn-save').addEventListener('click', () => {
+      alert('Settings saved.\nDTW threshold ' + $.get('dtw').value
+            + '\nConfidence floor ' + $.get('conf').value
+            + '\nSakoe-Chiba band ' + $.get('band').value
+            + '\nEMA smoothing ' + $.get('ema').value);
+    });
+    $.get('btn-test').addEventListener('click', () => {
+      const e = newEvent();
+      alert('POST gesture_recognized\n\n' + JSON.stringify({
+        event: 'gesture_recognized',
+        template_id: e.template_id,
+        confidence: Number(e.confidence.toFixed(3)),
+      }, null, 2));
+    });
+  }
+
+  // ── router ────────────────────────────────────────────────────
+  const INITIALIZERS = {
+    dashboard: initDashboard,
+    live:      initLive,
+    templates: initTemplates,
+    training:  initTraining,
+    devices:   initDevices,
+    settings:  initSettings,
+  };
+  const initialized = new Set();
+
+  function currentRoute() {
+    const h = (window.location.hash || '').replace(/^#/, '');
+    return INITIALIZERS[h] ? h : 'dashboard';
+  }
+
+  function route() {
+    const name = currentRoute();
+    document.querySelectorAll('.page-section').forEach(s => {
+      s.classList.toggle('on', s.dataset.page === name);
+    });
+    document.querySelectorAll('.nav a').forEach(a => {
+      const on = a.dataset.route === name;
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('data-active', 'true'); else a.removeAttribute('data-active');
+    });
+    if (!initialized.has(name)) {
+      initialized.add(name);
+      const root = document.querySelector('.page-section[data-page="' + name + '"]');
+      try { INITIALIZERS[name](root); }
+      catch (err) { console.error('init failed for', name, err); }
+    }
+    window.scrollTo(0, 0);
+  }
+
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

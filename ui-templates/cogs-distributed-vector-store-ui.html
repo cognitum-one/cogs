@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Distributed Vector Store — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --warn:35 85% 55%;
+  --radius:0.75rem;
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+  position:relative;
+}
+body::before{content:"";position:fixed;inset:0;background:var(--gradient-hero);z-index:-2}
+body::after{content:"";position:fixed;inset:0;background:var(--gradient-glow);z-index:-1;pointer-events:none}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-side{display:grid;gap:0.75rem;grid-template-columns:1fr 1fr}
+@media(max-width:900px){.grid-side{grid-template-columns:1fr}}
+
+.node{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+}
+.node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+.node-name{font-size:0.875rem;font-weight:600}
+.node-meta{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.role-master{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.2)}
+.badge.role-worker{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.2)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.unknown{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.accent{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.5rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.6rem 0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover td{background:hsl(var(--secondary) / 0.3)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.5rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+.input{width:100%}
+textarea.input{min-height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+.meta-pill{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.2rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:500;
+  background:hsl(var(--muted) / 0.6);color:hsl(var(--muted-foreground));
+  border:1px solid hsl(var(--border));
+}
+.meta-pill.diff{color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3);background:hsl(var(--warn) / 0.1)}
+
+/* Hash ring visualization */
+.ring-wrap{display:flex;align-items:center;justify-content:center;padding:1rem 0}
+.ring-svg{width:100%;max-width:520px;height:auto}
+.ring-bg{stroke:hsl(var(--border));stroke-width:2;fill:none;opacity:0.4}
+.ring-arc{stroke-width:14;fill:none;stroke-linecap:butt;opacity:0.85;transition:stroke-width 0.2s}
+.ring-arc:hover{stroke-width:20;cursor:pointer;opacity:1}
+.ring-tick{stroke:hsl(var(--foreground));stroke-width:1.5}
+.ring-label{font-family:var(--font-mono);font-size:10px;fill:hsl(var(--muted-foreground));text-anchor:middle}
+.ring-center text{text-anchor:middle;fill:hsl(var(--foreground))}
+.ring-center .big{font-size:24px;font-weight:600}
+.ring-center .small{font-size:10px;fill:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.1em}
+
+/* Event log */
+.evlog{display:flex;flex-direction:column;gap:0.4rem;max-height:24rem;overflow-y:auto}
+.ev{
+  display:grid;grid-template-columns:auto 1fr auto;gap:0.625rem;align-items:center;
+  padding:0.5rem 0.75rem;border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+}
+.ev .ev-ic{width:28px;height:28px;border-radius:0.4rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ev .ev-ic svg{width:14px;height:14px;fill:none;stroke-width:2}
+.ev-ic.shard{background:hsl(var(--primary) / 0.15)}
+.ev-ic.shard svg{stroke:hsl(var(--primary))}
+.ev-ic.query{background:hsl(var(--accent) / 0.15)}
+.ev-ic.query svg{stroke:hsl(var(--accent))}
+.ev-ic.rebal{background:hsl(var(--warn) / 0.15)}
+.ev-ic.rebal svg{stroke:hsl(var(--warn))}
+.ev-ic.done{background:hsl(142 70% 50% / 0.15)}
+.ev-ic.done svg{stroke:hsl(142 70% 50%)}
+.ev-body{min-width:0}
+.ev-name{font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground))}
+.ev-detail{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.ev-ts{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));white-space:nowrap}
+
+/* Vector result item */
+.vec-result{
+  display:grid;grid-template-columns:auto 1fr auto;gap:0.75rem;align-items:center;
+  padding:0.75rem 0.875rem;border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.3);
+  border:1px solid hsl(var(--border) / 0.4);
+}
+.vec-result .rank{
+  width:30px;height:30px;border-radius:0.4rem;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:0.75rem;font-weight:600;
+  background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));
+}
+.vec-result .vec-id{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground));font-weight:500}
+.vec-result .vec-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.vec-result .vec-score{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--accent));font-weight:600}
+
+.split{display:grid;gap:0.75rem;grid-template-columns:1.2fr 1fr}
+@media(max-width:1000px){.split{grid-template-columns:1fr}}
+
+.section-hide{display:none}
+
+.bar-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem}
+.bar-row .label{flex:0 0 110px;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.bar-row .bar-track{flex:1;height:8px;background:hsl(var(--muted));border-radius:9999px;overflow:hidden}
+.bar-row .bar-fill{height:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));border-radius:9999px;transition:width 0.3s}
+.bar-row .val{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));flex:0 0 60px;text-align:right}
+
+.tag{
+  display:inline-block;padding:0.1rem 0.45rem;border-radius:0.3rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+  border:1px solid hsl(var(--border));
+}
+
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 1rem;font-size:0.8125rem;
+  box-shadow:var(--shadow-card);z-index:100;
+  opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.toast.ok{border-color:hsl(142 70% 50% / 0.4)}
+.toast.err{border-color:hsl(var(--destructive) / 0.4)}
+
+/* Page header strip — compact, no oversize hero */
+.page-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;
+}
+.page-head .ph-title{font-size:1.25rem;font-weight:600;letter-spacing:-0.02em;display:flex;align-items:center;gap:0.6rem}
+.page-head .ph-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;max-width:54rem}
+.page-head .ph-actions{display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center}
+
+.live-dot{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.2rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;
+  background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border:1px solid hsl(142 70% 50% / 0.25);
+}
+.live-dot::before{
+  content:"";width:7px;height:7px;border-radius:50%;background:hsl(142 70% 50%);
+  box-shadow:0 0 0 0 hsl(142 70% 50% / 0.6);animation:pulse 1.8s ease-out infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 hsl(142 70% 50% / 0.6)}
+  70%{box-shadow:0 0 0 8px hsl(142 70% 50% / 0)}
+  100%{box-shadow:0 0 0 0 hsl(142 70% 50% / 0)}
+}
+
+/* Living ring: dashed flow + pulsing arcs + rotating sweep */
+.ring-arc{
+  stroke-dasharray:6 3;
+  animation:ring-flow 18s linear infinite, ring-breathe 4s ease-in-out infinite;
+}
+@keyframes ring-flow{ to { stroke-dashoffset:-180 } }
+@keyframes ring-breathe{ 0%,100%{opacity:0.78} 50%{opacity:1} }
+.ring-sweep{
+  fill:none;stroke:hsl(var(--primary) / 0.18);stroke-width:1.5;
+  transform-origin:center;animation:ring-sweep 8s linear infinite;
+  pointer-events:none;
+}
+@keyframes ring-sweep{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+.ring-sweep-glow{
+  fill:url(#sweepGrad);transform-origin:center;
+  animation:ring-sweep 8s linear infinite;pointer-events:none;opacity:0.65;
+}
+.ring-center .big{ animation:ring-breathe 4s ease-in-out infinite }
+.mote{ fill:hsl(var(--primary));filter:drop-shadow(0 0 6px hsl(var(--primary) / 0.8));pointer-events:none }
+.mote.q{ fill:hsl(var(--accent));filter:drop-shadow(0 0 6px hsl(var(--accent) / 0.8)) }
+.mote.r{ fill:hsl(var(--warn));filter:drop-shadow(0 0 6px hsl(var(--warn) / 0.7)) }
+
+/* Living bars */
+.bar-track{position:relative;overflow:hidden}
+.bar-fill{
+  position:relative;
+  background-size:200% 100%;
+  animation:bar-shimmer 3.6s linear infinite;
+  transition:width 0.7s cubic-bezier(.2,.7,.2,1);
+}
+.bar-fill::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,hsl(0 0% 100% / 0.18) 50%,transparent 100%);
+  background-size:200% 100%;animation:bar-shine 2.8s linear infinite;
+}
+@keyframes bar-shimmer{ to { background-position:200% 0 } }
+@keyframes bar-shine{ 0%{background-position:-100% 0} 100%{background-position:200% 0} }
+
+/* New event slide-in */
+.ev{ animation:ev-in 0.4s ease-out }
+@keyframes ev-in{ from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+/* KPI value smooth pop on change */
+.kpi-val{transition:color 0.4s}
+.kpi-val.flash{color:hsl(var(--accent))}
+
+/* Vector result fade-in */
+.vec-result{animation:ev-in 0.35s ease-out}
+
+/* Sparkline */
+.sparkline{display:block;width:100%;height:36px;margin-top:0.5rem}
+.spark-line{fill:none;stroke:hsl(var(--primary));stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.spark-fill{fill:url(#sparkGrad);opacity:0.5}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+
+.q-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.q-field label{display:block;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Distributed Vector Store<span class="brand-ver mono">v1.0.0</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#overview" data-route="overview" class="active">Overview</a>
+      <a href="#ring"     data-route="ring">Hash Ring</a>
+      <a href="#seeds"    data-route="seeds">Seeds</a>
+      <a href="#query"    data-route="query">Query</a>
+      <a href="#vectors"  data-route="vectors">Vectors</a>
+      <a href="#events"   data-route="events">Events</a>
+      <a href="#config"   data-route="config">Config</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- OVERVIEW -->
+  <div class="route" id="route-overview">
+    <div class="page-head">
+      <div>
+        <div class="ph-title">Overview <span class="live-dot">live</span></div>
+        <div class="ph-sub">Shard vectors across seeds with consistent hashing. Query any seed, get results from all peers. Automatic shard rebalancing when seeds join or leave.</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn primary" id="btn-rebalance">Trigger rebalance</button>
+        <button class="btn outline" id="btn-refresh">Refresh</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/></svg></div><div class="kpi-info"><div class="kpi-label">Seeds in ring</div><div class="kpi-val" id="kpi-seeds">—</div><div class="kpi-sub" id="kpi-seeds-sub">online / total</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Vectors stored</div><div class="kpi-val" id="kpi-vec">—</div><div class="kpi-sub">across the swarm</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></div><div class="kpi-info"><div class="kpi-label">Active shards</div><div class="kpi-val" id="kpi-shards">—</div><div class="kpi-sub">virtual nodes · 128/seed</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="kpi-info"><div class="kpi-label">Query rate</div><div class="kpi-val" id="kpi-qps">—</div><div class="kpi-sub">queries / sec (1m avg)</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="kpi-info"><div class="kpi-label">P50 latency</div><div class="kpi-val" id="kpi-p50">—</div><div class="kpi-sub" id="kpi-p99">p99 —</div></div></div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 4 21 10 15 10"/></svg></div><div class="kpi-info"><div class="kpi-label">Rebalance</div><div class="kpi-val" id="kpi-rebal-state">idle</div><div class="kpi-sub" id="kpi-rebal-sub">last: —</div></div></div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Hash ring topology</div>
+            <div class="card-sub">128 virtual nodes per seed · MD5 keyspace</div>
+          </div>
+          <button class="btn sm outline" data-goto="ring">Open ring →</button>
+        </div>
+        <div class="ring-wrap"><div id="ring-mini"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Shard distribution</div>
+            <div class="card-sub">Keyspace coverage per seed</div>
+          </div>
+        </div>
+        <div id="shard-bars"></div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:1.5rem">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent events</div>
+            <div class="card-sub">shard_assigned · query_distributed · rebalance_started · rebalance_complete</div>
+          </div>
+          <button class="btn sm outline" data-goto="events">All events →</button>
+        </div>
+        <div class="evlog" id="ev-recent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HASH RING -->
+  <div class="route section-hide" id="route-ring">
+    <h1 class="page">Hash ring</h1>
+    <p class="lede">Consistent hashing maps the MD5 keyspace (2^128) onto a circular ring. Each seed owns 128 virtual nodes; a vector hashes to a point and is owned by the next seed clockwise. Adding or removing a seed only reshuffles the arcs it touches.</p>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Ring view</div>
+            <div class="card-sub" id="ring-sub">—</div>
+          </div>
+          <div style="display:flex;gap:0.4rem">
+            <button class="btn sm outline" id="btn-simulate-join">Simulate seed join</button>
+            <button class="btn sm outline" id="btn-simulate-leave">Simulate seed leave</button>
+          </div>
+        </div>
+        <div class="ring-wrap"><div id="ring-full"></div></div>
+        <p style="font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;margin-top:0.5rem">Hover an arc to see the seed that owns it · click a seed in the right panel to highlight</p>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Seeds on the ring</div>
+            <div class="card-sub" id="ring-seed-sub">—</div>
+          </div>
+        </div>
+        <div id="ring-seed-list" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEEDS -->
+  <div class="route section-hide" id="route-seeds">
+    <h1 class="page">Seeds</h1>
+    <p class="lede">Every seed in the swarm holds a slice of the keyspace. Queries fan out to all peers; results are merged before returning to the caller.</p>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title" id="seeds-title">Swarm members</div>
+          <div class="card-sub" id="seeds-sub">—</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm" id="btn-add-seed">Add seed</button>
+          <button class="btn sm outline" id="btn-discover">Re-discover</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Seed ID</th>
+            <th>Hostname</th>
+            <th>IP</th>
+            <th>Status</th>
+            <th>Vectors</th>
+            <th>Shards</th>
+            <th>Keyspace</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="seeds-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUERY -->
+  <div class="route section-hide" id="route-query">
+    <h1 class="page">Distributed query</h1>
+    <p class="lede">Submit a query vector to any seed. The local seed broadcasts to peers via <code class="mono">query_distributed</code>, merges top-K results from each shard, and returns the global K-nearest neighbours.</p>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Query vector</div>
+            <div class="card-sub">Paste a vector, choose K, fire it at any seed</div>
+          </div>
+        </div>
+        <div class="q-grid" style="margin-bottom:0.75rem">
+          <div class="q-field">
+            <label>Seed (entry point)</label>
+            <select id="q-seed" class="input"></select>
+          </div>
+          <div class="q-field">
+            <label>K (neighbours)</label>
+            <input id="q-k" class="input" type="number" min="1" max="100" value="10">
+          </div>
+          <div class="q-field">
+            <label>Distance</label>
+            <select id="q-dist" class="input">
+              <option value="cosine">cosine</option>
+              <option value="l2">l2 (euclidean)</option>
+              <option value="dot">dot product</option>
+            </select>
+          </div>
+          <div class="q-field">
+            <label>Dim</label>
+            <input id="q-dim" class="input" type="number" value="128" readonly>
+          </div>
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Query vector (JSON array · 128 floats)</label>
+          <textarea id="q-vec" class="input" placeholder="[0.1, -0.04, 0.92, ...]"></textarea>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn primary" id="btn-query">Run query</button>
+          <button class="btn outline" id="btn-q-random">Generate random vector</button>
+          <button class="btn outline" id="btn-q-clear">Clear</button>
+        </div>
+        <div id="q-status" class="mono" style="margin-top:0.75rem;font-size:0.75rem;color:hsl(var(--muted-foreground))"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Results</div>
+            <div class="card-sub" id="q-result-sub">No query run yet</div>
+          </div>
+        </div>
+        <div id="q-results" style="display:flex;flex-direction:column;gap:0.4rem;max-height:32rem;overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:1.25rem">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Fan-out timeline</div>
+            <div class="card-sub">Per-seed round-trip for the last query</div>
+          </div>
+        </div>
+        <div id="fanout"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VECTORS -->
+  <div class="route section-hide" id="route-vectors">
+    <h1 class="page">Vectors</h1>
+    <p class="lede">Inserted vectors are hashed to a point on the ring and stored on the seed that owns the arc. Insert below or browse what is already indexed.</p>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Insert vector</div>
+            <div class="card-sub">Routes via consistent hashing</div>
+          </div>
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Vector ID (optional)</label>
+          <input id="ins-id" class="input" placeholder="auto-generated if blank">
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Payload (JSON · optional)</label>
+          <textarea id="ins-meta" class="input" style="min-height:3rem" placeholder='{"label": "cat", "src": "image_42.jpg"}'></textarea>
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Vector (JSON array · 128 floats)</label>
+          <textarea id="ins-vec" class="input" placeholder="[0.1, -0.04, 0.92, ...]"></textarea>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn primary" id="btn-insert">Insert</button>
+          <button class="btn outline" id="btn-ins-random">Random vector</button>
+        </div>
+        <div id="ins-status" class="mono" style="margin-top:0.75rem;font-size:0.75rem;color:hsl(var(--muted-foreground))"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Browse index</div>
+            <div class="card-sub" id="vec-browse-sub">—</div>
+          </div>
+          <input id="vec-filter" class="input" style="width:180px" placeholder="filter by id/seed…">
+        </div>
+        <div style="overflow-x:auto;max-height:28rem;overflow-y:auto">
+          <table>
+            <thead><tr>
+              <th>ID</th>
+              <th>Seed</th>
+              <th>Hash</th>
+              <th>Payload</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="vec-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="route section-hide" id="route-events">
+    <h1 class="page">Events</h1>
+    <p class="lede">Live event stream from the swarm. Filter by type to follow rebalancing, query fan-out, or shard assignment activity.</p>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Event stream</div>
+          <div class="card-sub" id="ev-sub">—</div>
+        </div>
+        <div style="display:flex;gap:0.3rem;flex-wrap:wrap" id="ev-filters">
+          <button class="btn sm primary" data-filter="all">All</button>
+          <button class="btn sm outline" data-filter="shard_assigned">shard_assigned</button>
+          <button class="btn sm outline" data-filter="query_distributed">query_distributed</button>
+          <button class="btn sm outline" data-filter="rebalance_started">rebalance_started</button>
+          <button class="btn sm outline" data-filter="rebalance_complete">rebalance_complete</button>
+        </div>
+      </div>
+      <div class="evlog" id="ev-full" style="max-height:36rem"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="route section-hide" id="route-config">
+    <h1 class="page">Config</h1>
+    <p class="lede">Tunable parameters for the consistent hashing layer and rebalancer. Changes take effect on next ring update.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Ring</div><div class="card-sub">Consistent hashing parameters</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Virtual nodes per seed</label><input class="input" type="number" value="128"></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Hash function</label><select class="input"><option>MD5</option><option>SHA-1</option><option>xxHash64</option></select></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Replication factor</label><input class="input" type="number" value="2"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Rebalancer</div><div class="card-sub">Triggered on seed join/leave</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Mode</label><select class="input"><option>automatic</option><option>manual</option></select></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Batch size (vectors)</label><input class="input" type="number" value="512"></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Throttle (ms per batch)</label><input class="input" type="number" value="20"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Query fan-out</div><div class="card-sub">Distributed query parameters</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Per-seed top-K multiplier</label><input class="input" type="number" value="3"></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Timeout (ms)</label><input class="input" type="number" value="1500"></div>
+          <div><label style="font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.4rem;display:block">Concurrency</label><input class="input" type="number" value="8"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Source</div><div class="card-sub">cognitum-one/cogs/src/cogs/swarm-distributed-store</div></div></div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.7">
+          <div><span class="tag">version</span> 1.0.0</div>
+          <div style="margin-top:0.4rem"><span class="tag">size</span> 14 KB</div>
+          <div style="margin-top:0.4rem"><span class="tag">difficulty</span> hard</div>
+          <div style="margin-top:0.4rem"><span class="tag">hardware</span> none (WiFi only)</div>
+          <div style="margin-top:0.4rem"><span class="tag">input</span> vector store</div>
+          <div style="margin-top:0.75rem"><a href="#" onclick="return false">View on cognitum-one →</a></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:flex-end">
+      <button class="btn outline">Reset defaults</button>
+      <button class="btn primary">Save config</button>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">swarm-distributed-store</span> · <span class="mono">v1.0.0</span> · 4 events · MD5 keyspace</div>
+    <div style="margin-top:0.4rem"><a onclick="return false">shard_assigned</a> · <a onclick="return false">query_distributed</a> · <a onclick="return false">rebalance_started</a> · <a onclick="return false">rebalance_complete</a></div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo state — simulated swarm. In a live deployment this would be replaced
+// with calls to the seed cluster's HTTP/gossip API.
+// ─────────────────────────────────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const RING_MAX = Math.pow(2, 32); // visual ring uses 32-bit slice of MD5
+const VNODES = 128;
+const DIM = 128;
+
+const PALETTE = [
+  '185 80% 50%',  // primary cyan
+  '142 70% 50%',  // accent green
+  '35 85% 55%',   // warn amber
+  '270 70% 65%',  // purple
+  '0 65% 60%',    // red
+  '210 80% 60%',  // blue
+  '320 65% 60%',  // pink
+  '50 80% 55%',   // yellow
+];
+
+function rand(seed){
+  let x = seed | 0;
+  return () => { x = (x * 1664525 + 1013904223) | 0; return ((x >>> 0) % 1e9) / 1e9; };
+}
+
+function hashStr(s){
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+
+function fmtBig(n){
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'k';
+  return String(n);
+}
+
+function fmtRel(tsMs){
+  const diff = (Date.now() - tsMs) / 1000;
+  if (diff < 5) return 'just now';
+  if (diff < 60) return Math.round(diff) + 's ago';
+  if (diff < 3600) return Math.round(diff/60) + 'm ago';
+  if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+  return Math.round(diff/86400) + 'd ago';
+}
+
+function fmtTime(tsMs){
+  const d = new Date(tsMs);
+  return d.toTimeString().slice(0,8) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Build initial swarm
+function buildSeed(idx, name, ip, status){
+  return {
+    id: 'seed-' + name,
+    name: name,
+    hostname: name + '.local',
+    ip: ip,
+    status: status || 'online',
+    color: PALETTE[idx % PALETTE.length],
+    vectors: 0,           // computed from store
+    joined: Date.now() - (idx*60 + 30) * 60 * 1000,
+    // vnodes: ring positions
+    vnodes: [],
+  };
+}
+
+function vnodesFor(seedName){
+  const out = [];
+  for (let i = 0; i < VNODES; i++){
+    out.push(hashStr(seedName + '#' + i) % RING_MAX);
+  }
+  return out.sort((a,b)=>a-b);
+}
+
+const STATE = {
+  seeds: [],
+  events: [],
+  vectors: [],
+  rebalancing: false,
+  rebalanceStart: null,
+  rebalanceLast: null,
+  lastQuery: null,
+  qps: 0,
+  p50: 0,
+  p99: 0,
+  filter: 'all',
+};
+
+function initSwarm(){
+  STATE.seeds = [
+    buildSeed(0, 'alpha',   '10.42.0.11', 'online'),
+    buildSeed(1, 'bravo',   '10.42.0.12', 'online'),
+    buildSeed(2, 'charlie', '10.42.0.13', 'online'),
+    buildSeed(3, 'delta',   '10.42.0.14', 'online'),
+    buildSeed(4, 'echo',    '10.42.0.15', 'online'),
+  ];
+  STATE.seeds.forEach(s => { s.vnodes = vnodesFor(s.name); });
+  // Seed initial vectors
+  const r = rand(42);
+  for (let i = 0; i < 240; i++){
+    const id = 'vec-' + (1000 + i).toString(36);
+    const payload = i % 3 === 0 ? {label:'image', n:i} : (i % 3 === 1 ? {label:'text', n:i} : {label:'audio', n:i});
+    addVectorRaw(id, payload, r);
+  }
+  // Seed events
+  const now = Date.now();
+  for (let i = 0; i < 18; i++){
+    const offset = (18 - i) * (2000 + Math.floor(r()*4000));
+    pushEvent(pickStartingEvent(i, r), now - offset, false);
+  }
+}
+
+function pickStartingEvent(i, r){
+  const seeds = STATE.seeds;
+  const a = seeds[Math.floor(r() * seeds.length)];
+  const b = seeds[Math.floor(r() * seeds.length)];
+  switch(i % 7){
+    case 0: return { type:'shard_assigned',    seed:a.name, detail:'shard '+Math.floor(r()*VNODES)+' → '+a.name };
+    case 1: return { type:'query_distributed', seed:a.name, detail:'k=10 · fan-out 5 seeds · '+Math.floor(8+r()*40)+'ms' };
+    case 2: return { type:'query_distributed', seed:b.name, detail:'k=5 · fan-out 5 seeds · '+Math.floor(8+r()*40)+'ms' };
+    case 3: return { type:'rebalance_started', seed:a.name, detail:'trigger=join · moving '+Math.floor(20+r()*60)+' vectors' };
+    case 4: return { type:'rebalance_complete',seed:a.name, detail:'moved '+Math.floor(20+r()*60)+' vectors in '+Math.floor(80+r()*400)+'ms' };
+    case 5: return { type:'shard_assigned',    seed:b.name, detail:'shard '+Math.floor(r()*VNODES)+' → '+b.name };
+    default: return { type:'query_distributed', seed:a.name, detail:'k=20 · fan-out 5 seeds · '+Math.floor(8+r()*40)+'ms' };
+  }
+}
+
+// Who owns a hash on the ring? First vnode clockwise.
+function ownerOf(hash){
+  let best = null, bestDist = Infinity;
+  for (const s of STATE.seeds.filter(x => x.status === 'online')){
+    for (const v of s.vnodes){
+      const dist = v >= hash ? v - hash : (RING_MAX - hash + v);
+      if (dist < bestDist){ bestDist = dist; best = s; }
+    }
+  }
+  return best;
+}
+
+function addVectorRaw(id, payload, r){
+  const vec = [];
+  for (let i = 0; i < DIM; i++) vec.push(+(r()*2-1).toFixed(3));
+  const h = hashStr(id) % RING_MAX;
+  const owner = ownerOf(h);
+  if (!owner) return;
+  STATE.vectors.push({ id, payload, vec, hash:h, seed:owner.name, addedAt: Date.now() });
+  owner.vectors = (owner.vectors || 0) + 1;
+}
+
+function recomputeOwnership(){
+  STATE.seeds.forEach(s => { s.vectors = 0; });
+  STATE.vectors.forEach(v => {
+    const o = ownerOf(v.hash);
+    v.seed = o ? o.name : '—';
+    if (o) o.vectors++;
+  });
+}
+
+function pushEvent(ev, ts, isLive){
+  STATE.events.unshift({ ...ev, ts: ts || Date.now() });
+  if (STATE.events.length > 200) STATE.events.length = 200;
+  if (isLive){
+    renderRecent();
+    renderEvents();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ring SVG
+// ─────────────────────────────────────────────────────────────────────────────
+function buildRingSvg(opts){
+  const size = opts.size || 360;
+  const cx = size/2, cy = size/2;
+  const r = size/2 - 28;
+  const seeds = STATE.seeds.filter(s => s.status === 'online');
+  const layerId = opts.layerId || 'ring-layer-' + Math.random().toString(36).slice(2,8);
+
+  const all = [];
+  seeds.forEach(s => s.vnodes.forEach(v => all.push({ pos:v, seed:s })));
+  all.sort((a,b)=>a.pos-b.pos);
+
+  let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="ring-svg" data-cx="'+cx+'" data-cy="'+cy+'" data-r="'+r+'">';
+  svg += '<defs>';
+  svg += '<radialGradient id="sweepGrad-'+layerId+'" cx="50%" cy="50%" r="50%">';
+  svg += '<stop offset="0%" stop-color="hsl(185 80% 50% / 0)"/>';
+  svg += '<stop offset="60%" stop-color="hsl(185 80% 50% / 0)"/>';
+  svg += '<stop offset="100%" stop-color="hsl(185 80% 50% / 0.25)"/>';
+  svg += '</radialGradient>';
+  svg += '<linearGradient id="sweepWedge-'+layerId+'" x1="0" y1="0" x2="1" y2="0">';
+  svg += '<stop offset="0%" stop-color="hsl(185 80% 50% / 0.0)"/>';
+  svg += '<stop offset="100%" stop-color="hsl(185 80% 50% / 0.35)"/>';
+  svg += '</linearGradient>';
+  svg += '</defs>';
+  svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" class="ring-bg"/>';
+
+  function polar(angle, rr){ return [cx + Math.cos(angle) * rr, cy + Math.sin(angle) * rr]; }
+  function arcPath(a0, a1, rr){
+    const [x0,y0] = polar(a0, rr);
+    const [x1,y1] = polar(a1, rr);
+    const large = ((a1 - a0 + Math.PI*2) % (Math.PI*2)) > Math.PI ? 1 : 0;
+    return 'M '+x0+' '+y0+' A '+rr+' '+rr+' 0 '+large+' 1 '+x1+' '+y1;
+  }
+
+  if (all.length > 0){
+    for (let i = 0; i < all.length; i++){
+      const prev = all[(i - 1 + all.length) % all.length];
+      const curr = all[i];
+      const a0 = (prev.pos / RING_MAX) * Math.PI*2 - Math.PI/2;
+      const a1 = (curr.pos / RING_MAX) * Math.PI*2 - Math.PI/2;
+      const color = curr.seed.color;
+      svg += '<path class="ring-arc" data-seed="'+curr.seed.name+'" stroke="hsl('+color+')" d="'+arcPath(a0, a1, r)+'"><title>'+curr.seed.name+'</title></path>';
+    }
+  }
+
+  // Rotating sweep wedge — a faint comet tail orbiting the ring
+  const sweepR = r - 18;
+  const sweepArc = 'M '+(cx+sweepR)+' '+cy+' A '+sweepR+' '+sweepR+' 0 0 1 '+(cx)+' '+(cy+sweepR);
+  svg += '<path class="ring-sweep" d="'+sweepArc+'" stroke="url(#sweepWedge-'+layerId+')" stroke-width="14" stroke-linecap="round"/>';
+
+  // Ticks at the actual vnode position + labels nudged apart so they don't overlap.
+  // Each label needs enough angular room to fit ~name-length text; otherwise we
+  // relax positions outward, then draw a thin leader line back to the tick.
+  const labelData = seeds.map(s => ({
+    seed: s,
+    tickAngle: (s.vnodes[0] / RING_MAX) * Math.PI*2 - Math.PI/2,
+    labelAngle: 0,
+  }));
+  labelData.sort((a,b) => a.tickAngle - b.tickAngle);
+  labelData.forEach(d => { d.labelAngle = d.tickAngle; });
+
+  // Min angular separation: scales with longest name + ring size so the fix
+  // works for 3 seeds or 12.
+  const maxLen = Math.max(4, ...labelData.map(d => d.seed.name.length));
+  const charW = 6.5; // px per char at 10px JetBrains Mono
+  const labelR = r + 22;
+  // arc length needed = chars * charW * 1.4 (padding); convert to radians
+  const minSep = Math.min(Math.PI / 3, (maxLen * charW * 1.4) / labelR);
+
+  for (let pass = 0; pass < 40; pass++){
+    let moved = false;
+    for (let i = 0; i < labelData.length; i++){
+      const a = labelData[i];
+      const b = labelData[(i+1) % labelData.length];
+      let gap = b.labelAngle - a.labelAngle;
+      if (i === labelData.length - 1) gap += Math.PI * 2; // wrap
+      if (gap < minSep){
+        const adj = (minSep - gap) / 2;
+        a.labelAngle -= adj;
+        b.labelAngle += adj;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  labelData.forEach(d => {
+    const [tx0,ty0] = polar(d.tickAngle, r-10);
+    const [tx1,ty1] = polar(d.tickAngle, r+10);
+    svg += '<line class="ring-tick" x1="'+tx0+'" y1="'+ty0+'" x2="'+tx1+'" y2="'+ty1+'" stroke="hsl('+d.seed.color+')"/>';
+    // Leader line from tick rim out to the label anchor (only if shifted)
+    if (Math.abs(d.labelAngle - d.tickAngle) > 0.04){
+      const [lx0,ly0] = polar(d.tickAngle, r+10);
+      const [lx1,ly1] = polar(d.labelAngle, r+18);
+      svg += '<line x1="'+lx0+'" y1="'+ly0+'" x2="'+lx1+'" y2="'+ly1+'" stroke="hsl('+d.seed.color+' / 0.45)" stroke-width="1"/>';
+    }
+    // Anchor side-aware so text grows outward away from the ring, never
+    // inward across the arcs. Vertical baseline handled via dy.
+    const cosA = Math.cos(d.labelAngle), sinA = Math.sin(d.labelAngle);
+    let anchor, dx = 0;
+    if (cosA >  0.25){ anchor = 'start'; dx =  4; }
+    else if (cosA < -0.25){ anchor = 'end'; dx = -4; }
+    else { anchor = 'middle'; dx = 0; }
+    // Push vertically so top/bottom labels sit just outside the ring instead
+    // of overlapping the arc stroke.
+    const dy = sinA > 0.25 ? 10 : (sinA < -0.25 ? -4 : 3);
+    const [lx,ly] = polar(d.labelAngle, labelR);
+    svg += '<text class="ring-label" x="'+(lx+dx)+'" y="'+(ly+dy)+'" text-anchor="'+anchor+'" fill="hsl('+d.seed.color+')">'+escapeHtml(d.seed.name)+'</text>';
+  });
+
+  // Mote layer — JS-driven particles fly in/out here
+  svg += '<g class="ring-motes" data-layer="'+layerId+'"></g>';
+
+  // Center label
+  const total = STATE.vectors.length;
+  svg += '<g class="ring-center"><text class="big" x="'+cx+'" y="'+(cy-4)+'">'+fmtBig(total)+'</text><text class="small" x="'+cx+'" y="'+(cy+14)+'">vectors</text><text class="small" x="'+cx+'" y="'+(cy+28)+'">'+seeds.length+' seeds · '+(seeds.length*VNODES)+' vnodes</text></g>';
+  svg += '</svg>';
+  return svg;
+}
+
+function renderRing(){
+  $('#ring-mini').innerHTML = buildRingSvg({size:320});
+  $('#ring-full').innerHTML = buildRingSvg({size:460});
+  const online = STATE.seeds.filter(s => s.status === 'online').length;
+  $('#ring-sub').textContent = online + ' seeds · ' + (online*VNODES) + ' virtual nodes · keyspace 2^32 (visual)';
+  $('#ring-seed-sub').textContent = 'Owner of each arc · click to focus';
+
+  $('#ring-seed-list').innerHTML = STATE.seeds.map(s => {
+    const pct = ringPctFor(s);
+    return `
+      <div class="node" data-focus="${escapeHtml(s.name)}" style="cursor:pointer">
+        <div class="node-h">
+          <span class="node-name"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:hsl(${s.color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(s.name)}</span>
+          <span>${statusBadge(s.status)}</span>
+        </div>
+        <div class="node-meta">
+          <div><span class="l">ip</span>${escapeHtml(s.ip)}</div>
+          <div><span class="l">vnodes</span>${VNODES}</div>
+          <div><span class="l">vectors</span>${s.vectors}</div>
+          <div><span class="l">keyspace</span>${(pct*100).toFixed(1)}%</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Focus a seed → highlight its arcs in the full ring
+  $$('#ring-seed-list [data-focus]').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.getAttribute('data-focus');
+      $$('#ring-full .ring-arc').forEach(a => {
+        a.style.opacity = a.getAttribute('data-seed') === name ? '1' : '0.18';
+        a.style.strokeWidth = a.getAttribute('data-seed') === name ? '22' : '14';
+      });
+    });
+  });
+}
+
+function ringPctFor(seed){
+  // Approximate: sum of arc lengths owned by this seed / RING_MAX.
+  const all = [];
+  STATE.seeds.filter(s => s.status === 'online').forEach(s => s.vnodes.forEach(v => all.push({ pos:v, seed:s.name })));
+  all.sort((a,b)=>a.pos-b.pos);
+  let total = 0;
+  for (let i = 0; i < all.length; i++){
+    const prev = all[(i - 1 + all.length) % all.length];
+    const curr = all[i];
+    if (curr.seed !== seed.name) continue;
+    const len = curr.pos > prev.pos ? curr.pos - prev.pos : (RING_MAX - prev.pos + curr.pos);
+    total += len;
+  }
+  return total / RING_MAX;
+}
+
+function statusBadge(status){
+  return '<span class="badge '+status+'"><span class="dot '+(status==='online'?'up':'down')+'"></span>'+status+'</span>';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KPIs + bars
+// ─────────────────────────────────────────────────────────────────────────────
+function setKpi(sel, val){
+  const el = $(sel);
+  if (!el) return;
+  if (el.textContent !== val){
+    el.textContent = val;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 450);
+  }
+}
+function renderKpis(){
+  const online = STATE.seeds.filter(s => s.status==='online').length;
+  setKpi('#kpi-seeds', String(online));
+  $('#kpi-seeds-sub').textContent = online + ' / ' + STATE.seeds.length + ' online';
+  setKpi('#kpi-vec', fmtBig(STATE.vectors.length));
+  setKpi('#kpi-shards', String(online * VNODES));
+  setKpi('#kpi-qps', STATE.qps.toFixed(1));
+  setKpi('#kpi-p50', STATE.p50.toFixed(0) + ' ms');
+  $('#kpi-p99').textContent = 'p99 ' + STATE.p99.toFixed(0) + ' ms';
+  setKpi('#kpi-rebal-state', STATE.rebalancing ? 'running' : 'idle');
+  $('#kpi-rebal-sub').textContent = STATE.rebalanceLast
+    ? 'last: ' + fmtRel(STATE.rebalanceLast)
+    : 'no rebalance yet';
+}
+
+function renderShardBars(){
+  const online = STATE.seeds.filter(s => s.status==='online');
+  const html = online.map(s => {
+    const pct = ringPctFor(s);
+    return `
+      <div class="bar-row">
+        <div class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${s.color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(s.name)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(pct*100).toFixed(1)}%;background:linear-gradient(90deg,hsl(${s.color}),hsl(${s.color} / 0.6))"></div></div>
+        <div class="val">${s.vectors} · ${(pct*100).toFixed(1)}%</div>
+      </div>`;
+  }).join('');
+  $('#shard-bars').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Seeds table
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSeedsTable(){
+  const online = STATE.seeds.filter(s => s.status==='online').length;
+  $('#seeds-title').textContent = 'Swarm members · ' + STATE.seeds.length + ' registered';
+  $('#seeds-sub').textContent = online + ' online / ' + STATE.seeds.length + ' total · ' + (online*VNODES) + ' vnodes total';
+  $('#seeds-tbody').innerHTML = STATE.seeds.map(s => `
+    <tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${s.color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(s.id)}</td>
+      <td>${escapeHtml(s.hostname)}</td>
+      <td>${escapeHtml(s.ip)}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td>${s.vectors}</td>
+      <td>${VNODES}</td>
+      <td>${(ringPctFor(s)*100).toFixed(1)}%</td>
+      <td>${fmtRel(s.joined)}</td>
+      <td>
+        ${s.status==='online'
+          ? '<button class="btn sm danger" data-leave="'+escapeHtml(s.name)+'">Leave</button>'
+          : '<button class="btn sm" data-rejoin="'+escapeHtml(s.name)+'">Rejoin</button>'}
+      </td>
+    </tr>`).join('');
+  $$('[data-leave]').forEach(b => b.addEventListener('click', () => leaveSeed(b.getAttribute('data-leave'))));
+  $$('[data-rejoin]').forEach(b => b.addEventListener('click', () => rejoinSeed(b.getAttribute('data-rejoin'))));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Events
+// ─────────────────────────────────────────────────────────────────────────────
+function evIconKind(t){
+  if (t === 'shard_assigned')     return 'shard';
+  if (t === 'query_distributed')  return 'query';
+  if (t === 'rebalance_started')  return 'rebal';
+  if (t === 'rebalance_complete') return 'done';
+  return 'shard';
+}
+function evIconSvg(kind){
+  switch(kind){
+    case 'shard': return '<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
+    case 'query': return '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    case 'rebal': return '<svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+    case 'done':  return '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  }
+}
+function evRow(e){
+  const kind = evIconKind(e.type);
+  return `
+    <div class="ev" data-type="${e.type}">
+      <div class="ev-ic ${kind}">${evIconSvg(kind)}</div>
+      <div class="ev-body">
+        <div class="ev-name">${escapeHtml(e.type)} <span class="tag" style="margin-left:0.4rem">${escapeHtml(e.seed)}</span></div>
+        <div class="ev-detail">${escapeHtml(e.detail||'')}</div>
+      </div>
+      <div class="ev-ts" title="${new Date(e.ts).toISOString()}">${fmtTime(e.ts)}</div>
+    </div>`;
+}
+function renderRecent(){
+  $('#ev-recent').innerHTML = STATE.events.slice(0, 8).map(evRow).join('');
+}
+function renderEvents(){
+  const arr = STATE.filter === 'all'
+    ? STATE.events
+    : STATE.events.filter(e => e.type === STATE.filter);
+  $('#ev-sub').textContent = arr.length + ' events' + (STATE.filter==='all' ? '' : ' · filter: '+STATE.filter);
+  $('#ev-full').innerHTML = arr.map(evRow).join('') || '<div style="text-align:center;color:hsl(var(--muted-foreground));padding:1rem">No events match this filter.</div>';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vectors table
+// ─────────────────────────────────────────────────────────────────────────────
+let vecFilter = '';
+function renderVecBrowse(){
+  const f = vecFilter.toLowerCase().trim();
+  const list = STATE.vectors.filter(v => !f || v.id.toLowerCase().includes(f) || (v.seed||'').toLowerCase().includes(f));
+  $('#vec-browse-sub').textContent = list.length + ' / ' + STATE.vectors.length + ' vectors';
+  const show = list.slice(0, 100);
+  $('#vec-tbody').innerHTML = show.map(v => {
+    const s = STATE.seeds.find(x => x.name === v.seed);
+    const color = s ? s.color : '215 15% 55%';
+    const meta = v.payload ? JSON.stringify(v.payload) : '—';
+    return `<tr>
+      <td>${escapeHtml(v.id)}</td>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(v.seed||'—')}</td>
+      <td title="${v.hash}">${('00000000' + v.hash.toString(16)).slice(-8)}</td>
+      <td>${escapeHtml(meta.length>40 ? meta.slice(0,40)+'…' : meta)}</td>
+      <td><button class="btn sm danger" data-del-vec="${escapeHtml(v.id)}">Delete</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:hsl(var(--muted-foreground))">No vectors match.</td></tr>';
+  $$('[data-del-vec]').forEach(b => b.addEventListener('click', () => deleteVector(b.getAttribute('data-del-vec'))));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Actions
+// ─────────────────────────────────────────────────────────────────────────────
+function toast(msg, kind){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = 'toast'; }, 2400);
+}
+
+function startRebalance(reason, seedName){
+  if (STATE.rebalancing) return;
+  STATE.rebalancing = true;
+  STATE.rebalanceStart = Date.now();
+  pushEvent({ type:'rebalance_started', seed:seedName||STATE.seeds[0].name, detail:'trigger='+reason+' · scanning ring…' }, Date.now(), true);
+  renderKpis();
+  const dur = 1200 + Math.floor(Math.random()*1400);
+  setTimeout(() => {
+    recomputeOwnership();
+    STATE.rebalancing = false;
+    STATE.rebalanceLast = Date.now();
+    pushEvent({ type:'rebalance_complete', seed:seedName||STATE.seeds[0].name, detail:'rebuilt ring · '+STATE.vectors.length+' vectors verified in '+dur+'ms' }, Date.now(), true);
+    refreshAll();
+    toast('Rebalance complete', 'ok');
+  }, dur);
+}
+
+function leaveSeed(name){
+  const s = STATE.seeds.find(x => x.name === name);
+  if (!s) return;
+  s.status = 'offline';
+  pushEvent({ type:'shard_assigned', seed:name, detail:'seed left · arcs redistributed to peers' }, Date.now(), true);
+  startRebalance('leave', name);
+  refreshAll();
+}
+function rejoinSeed(name){
+  const s = STATE.seeds.find(x => x.name === name);
+  if (!s) return;
+  s.status = 'online';
+  s.joined = Date.now();
+  pushEvent({ type:'shard_assigned', seed:name, detail:'seed rejoined · '+VNODES+' vnodes claimed' }, Date.now(), true);
+  startRebalance('join', name);
+  refreshAll();
+}
+function addSeed(){
+  const taken = STATE.seeds.map(s=>s.name);
+  const candidates = ['foxtrot','golf','hotel','india','juliet','kilo','lima','mike','november','oscar'];
+  const name = candidates.find(c => !taken.includes(c)) || ('seed'+(STATE.seeds.length+1));
+  const idx = STATE.seeds.length;
+  const ip = '10.42.0.' + (11 + idx);
+  const s = buildSeed(idx, name, ip, 'online');
+  s.vnodes = vnodesFor(s.name);
+  STATE.seeds.push(s);
+  pushEvent({ type:'shard_assigned', seed:name, detail:'new seed joined · '+VNODES+' vnodes inserted' }, Date.now(), true);
+  startRebalance('join', name);
+  refreshAll();
+  toast('Seed '+name+' joined the swarm', 'ok');
+}
+function removeRandomSeed(){
+  const online = STATE.seeds.filter(s => s.status==='online');
+  if (online.length <= 2){ toast('Cannot drop below 2 seeds', 'err'); return; }
+  const s = online[online.length - 1];
+  leaveSeed(s.name);
+  toast('Seed '+s.name+' left the swarm', 'ok');
+}
+
+function deleteVector(id){
+  const i = STATE.vectors.findIndex(v => v.id === id);
+  if (i < 0) return;
+  const v = STATE.vectors[i];
+  const s = STATE.seeds.find(x => x.name === v.seed);
+  if (s) s.vectors = Math.max(0, s.vectors-1);
+  STATE.vectors.splice(i, 1);
+  pushEvent({ type:'shard_assigned', seed:v.seed||'—', detail:'deleted '+id }, Date.now(), true);
+  refreshAll();
+}
+
+function insertVector(){
+  let vec;
+  try { vec = JSON.parse($('#ins-vec').value); }
+  catch (e){ $('#ins-status').textContent = 'parse error: ' + e.message; $('#ins-status').style.color = 'hsl(0 70% 70%)'; return; }
+  if (!Array.isArray(vec) || vec.length !== DIM){
+    $('#ins-status').textContent = 'expected JSON array of length '+DIM;
+    $('#ins-status').style.color = 'hsl(0 70% 70%)';
+    return;
+  }
+  let payload = null;
+  const metaStr = $('#ins-meta').value.trim();
+  if (metaStr){
+    try { payload = JSON.parse(metaStr); }
+    catch (e){ $('#ins-status').textContent = 'payload parse error: ' + e.message; $('#ins-status').style.color='hsl(0 70% 70%)'; return; }
+  }
+  const id = ($('#ins-id').value.trim()) || ('vec-' + Math.random().toString(36).slice(2,9));
+  if (STATE.vectors.some(v => v.id === id)){
+    $('#ins-status').textContent = 'duplicate id: '+id;
+    $('#ins-status').style.color = 'hsl(0 70% 70%)';
+    return;
+  }
+  const h = hashStr(id) % RING_MAX;
+  const owner = ownerOf(h);
+  if (!owner){ $('#ins-status').textContent = 'no online seeds'; $('#ins-status').style.color='hsl(0 70% 70%)'; return; }
+  STATE.vectors.push({ id, payload, vec, hash:h, seed:owner.name, addedAt: Date.now() });
+  owner.vectors = (owner.vectors||0)+1;
+  pushEvent({ type:'shard_assigned', seed:owner.name, detail:'inserted '+id+' → shard '+(h.toString(16))+' on '+owner.name }, Date.now(), true);
+  $('#ins-status').textContent = 'OK · '+id+' routed to '+owner.name;
+  $('#ins-status').style.color = 'hsl(142 70% 65%)';
+  refreshAll();
+  toast('Inserted '+id+' on '+owner.name, 'ok');
+}
+
+function randomVec(){
+  const v = [];
+  for (let i = 0; i < DIM; i++) v.push(+(Math.random()*2-1).toFixed(3));
+  return v;
+}
+
+function cosine(a, b){
+  let dot=0, na=0, nb=0;
+  for (let i = 0; i < a.length; i++){ dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+  return dot / (Math.sqrt(na)*Math.sqrt(nb) + 1e-9);
+}
+function l2(a, b){
+  let s = 0;
+  for (let i = 0; i < a.length; i++){ const d = a[i]-b[i]; s += d*d; }
+  return Math.sqrt(s);
+}
+function dotp(a, b){
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d += a[i]*b[i];
+  return d;
+}
+
+function runQuery(){
+  let q;
+  try { q = JSON.parse($('#q-vec').value); }
+  catch (e){ $('#q-status').textContent = 'parse error: '+e.message; $('#q-status').style.color = 'hsl(0 70% 70%)'; return; }
+  if (!Array.isArray(q) || q.length !== DIM){
+    $('#q-status').textContent = 'expected JSON array of length '+DIM;
+    $('#q-status').style.color = 'hsl(0 70% 70%)';
+    return;
+  }
+  const k = Math.max(1, Math.min(100, parseInt($('#q-k').value, 10) || 10));
+  const dist = $('#q-dist').value;
+  const entry = $('#q-seed').value;
+
+  const t0 = performance.now();
+
+  // Per-seed local top-K * fan-out multiplier
+  const FANOUT = 3;
+  const perSeedK = k * FANOUT;
+  const perSeed = {};
+  STATE.seeds.filter(s => s.status==='online').forEach(s => { perSeed[s.name] = []; });
+  STATE.vectors.forEach(v => {
+    if (!perSeed[v.seed]) return;
+    let score;
+    if (dist === 'cosine') score = cosine(q, v.vec);
+    else if (dist === 'l2') score = -l2(q, v.vec);
+    else score = dotp(q, v.vec);
+    perSeed[v.seed].push({ id:v.id, seed:v.seed, score, payload:v.payload });
+  });
+  const fanout = [];
+  Object.keys(perSeed).forEach(name => {
+    perSeed[name].sort((a,b)=>b.score-a.score);
+    perSeed[name] = perSeed[name].slice(0, perSeedK);
+    fanout.push({ seed:name, scanned: STATE.seeds.find(s=>s.name===name).vectors||0, returned: perSeed[name].length, ms: 6 + Math.random()*22 });
+  });
+  const merged = [].concat(...Object.values(perSeed)).sort((a,b)=>b.score-a.score).slice(0, k);
+  const t1 = performance.now();
+  const ms = Math.round(t1-t0) + Math.round(Math.random()*18); // sim network add
+
+  STATE.lastQuery = { q, k, dist, entry, results:merged, fanout, ms };
+  // Stats
+  STATE.qps = (STATE.qps * 0.7) + 1.3;
+  STATE.p50 = ms;
+  STATE.p99 = Math.max(STATE.p99 * 0.8, ms * 1.8);
+
+  pushEvent({ type:'query_distributed', seed:entry, detail:'k='+k+' · dist='+dist+' · fan-out '+fanout.length+' seeds · '+ms+'ms' }, Date.now(), true);
+
+  $('#q-status').textContent = 'OK · '+merged.length+' results · '+ms+'ms · entry '+entry;
+  $('#q-status').style.color = 'hsl(142 70% 65%)';
+  renderResults();
+  renderFanout();
+  renderKpis();
+}
+
+function renderResults(){
+  if (!STATE.lastQuery){ $('#q-result-sub').textContent = 'No query run yet'; $('#q-results').innerHTML = ''; return; }
+  const { results, k, ms, entry } = STATE.lastQuery;
+  $('#q-result-sub').textContent = results.length+'/'+k+' results · '+ms+'ms · merged from all seeds';
+  $('#q-results').innerHTML = results.map((r, i) => {
+    const s = STATE.seeds.find(x => x.name === r.seed);
+    const color = s ? s.color : '215 15% 55%';
+    const meta = r.payload ? JSON.stringify(r.payload) : '—';
+    return `<div class="vec-result">
+      <div class="rank">${i+1}</div>
+      <div>
+        <div class="vec-id">${escapeHtml(r.id)}</div>
+        <div class="vec-meta"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(r.seed)} · ${escapeHtml(meta)}</div>
+      </div>
+      <div class="vec-score">${r.score.toFixed(4)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderFanout(){
+  if (!STATE.lastQuery){ $('#fanout').innerHTML = '<div style="color:hsl(var(--muted-foreground));font-size:0.8125rem">Run a query to see fan-out timing.</div>'; return; }
+  const f = STATE.lastQuery.fanout;
+  const maxMs = Math.max(...f.map(x => x.ms), 1);
+  $('#fanout').innerHTML = f.map(row => {
+    const s = STATE.seeds.find(x => x.name === row.seed);
+    const color = s ? s.color : '215 15% 55%';
+    const pct = (row.ms / maxMs) * 100;
+    return `<div class="bar-row">
+      <div class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${color});margin-right:0.4rem;vertical-align:middle"></span>${escapeHtml(row.seed)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:linear-gradient(90deg,hsl(${color}),hsl(${color} / 0.5))"></div></div>
+      <div class="val">${row.ms.toFixed(1)} ms · ${row.returned}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Routing (hash-based — back/forward + refresh stay on the active page)
+// ─────────────────────────────────────────────────────────────────────────────
+const ROUTES = ['overview','ring','seeds','query','vectors','events','config'];
+function showRoute(name, opts){
+  if (!ROUTES.includes(name)) name = 'overview';
+  $$('.route').forEach(r => r.classList.add('section-hide'));
+  const target = $('#route-'+name);
+  if (target) target.classList.remove('section-hide');
+  $$('#nav a').forEach(a => a.classList.toggle('active', a.getAttribute('data-route') === name));
+  if (!opts || !opts.skipHash){
+    if (location.hash !== '#'+name) location.hash = '#'+name;
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (name === 'ring') renderRing();
+  if (name === 'seeds') renderSeedsTable();
+  if (name === 'query') { renderQuerySeedSelect(); renderResults(); renderFanout(); }
+  if (name === 'vectors') renderVecBrowse();
+  if (name === 'events') renderEvents();
+}
+function routeFromHash(){
+  const h = (location.hash || '').replace(/^#/,'') || 'overview';
+  showRoute(h, { skipHash: true });
+}
+window.addEventListener('hashchange', routeFromHash);
+
+function renderQuerySeedSelect(){
+  const sel = $('#q-seed');
+  const current = sel.value;
+  sel.innerHTML = STATE.seeds.filter(s => s.status==='online').map(s => '<option value="'+escapeHtml(s.name)+'">'+escapeHtml(s.name)+' ('+escapeHtml(s.ip)+')</option>').join('');
+  if (current && STATE.seeds.some(s => s.name === current && s.status==='online')) sel.value = current;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global refresh
+// ─────────────────────────────────────────────────────────────────────────────
+function refreshAll(){
+  renderKpis();
+  renderShardBars();
+  renderRecent();
+  // Only re-render visible heavy views
+  const visible = $$('.route').find(r => !r.classList.contains('section-hide'));
+  if (!visible) return;
+  const id = visible.id.replace('route-','');
+  if (id === 'ring') renderRing();
+  if (id === 'overview'){ $('#ring-mini').innerHTML = buildRingSvg({size:320}); }
+  if (id === 'seeds') renderSeedsTable();
+  if (id === 'vectors') renderVecBrowse();
+  if (id === 'events') renderEvents();
+  if (id === 'query') renderQuerySeedSelect();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wire up
+// ─────────────────────────────────────────────────────────────────────────────
+initSwarm();
+recomputeOwnership();
+
+// Nav — let href="#x" update the hash; hashchange listener does the render.
+// data-goto buttons (mid-page) navigate via hash too.
+$$('[data-goto]').forEach(b => b.addEventListener('click', () => { location.hash = '#' + b.getAttribute('data-goto'); }));
+
+// Hero actions
+$('#btn-rebalance').addEventListener('click', () => startRebalance('manual'));
+$('#btn-refresh').addEventListener('click', () => { refreshAll(); toast('Refreshed', 'ok'); });
+
+// Ring simulators
+$('#btn-simulate-join').addEventListener('click', () => addSeed());
+$('#btn-simulate-leave').addEventListener('click', () => removeRandomSeed());
+
+// Seeds
+$('#btn-add-seed').addEventListener('click', () => addSeed());
+$('#btn-discover').addEventListener('click', () => { toast('Discovery kicked', 'ok'); pushEvent({ type:'shard_assigned', seed:STATE.seeds[0].name, detail:'mDNS discovery sweep complete · no new peers' }, Date.now(), true); });
+
+// Query (arrow wrappers so post-init monkey-patches still fire)
+$('#btn-query').addEventListener('click', () => runQuery());
+$('#btn-q-random').addEventListener('click', () => { $('#q-vec').value = JSON.stringify(randomVec()); });
+$('#btn-q-clear').addEventListener('click', () => { $('#q-vec').value = ''; $('#q-status').textContent = ''; });
+
+// Insert
+$('#btn-insert').addEventListener('click', () => insertVector());
+$('#btn-ins-random').addEventListener('click', () => { $('#ins-vec').value = JSON.stringify(randomVec()); });
+
+// Vector filter
+$('#vec-filter').addEventListener('input', e => { vecFilter = e.target.value; renderVecBrowse(); });
+
+// Event filters
+$$('#ev-filters [data-filter]').forEach(b => b.addEventListener('click', () => {
+  STATE.filter = b.getAttribute('data-filter');
+  $$('#ev-filters .btn').forEach(x => { x.classList.remove('primary'); x.classList.add('outline'); });
+  b.classList.add('primary');
+  b.classList.remove('outline');
+  renderEvents();
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mote animation — particles that fly across every visible ring SVG
+// ─────────────────────────────────────────────────────────────────────────────
+const MOTES = []; // { svg, x0,y0, x1,y1, t, dur, kind }
+
+function spawnMote(kind, fromSeed, toSeed){
+  $$('svg.ring-svg').forEach(svg => {
+    const cx = +svg.dataset.cx, cy = +svg.dataset.cy, r = +svg.dataset.r;
+    const seeds = STATE.seeds.filter(s => s.status==='online');
+    function angleOf(name){
+      const s = seeds.find(x => x.name === name);
+      if (!s) return 0;
+      return (s.vnodes[0] / RING_MAX) * Math.PI*2 - Math.PI/2;
+    }
+    let x0,y0,x1,y1;
+    if (kind === 'q'){
+      // query fan-out: center → seed
+      x0 = cx; y0 = cy;
+      const a = angleOf(toSeed || (seeds[Math.floor(Math.random()*seeds.length)]||{}).name);
+      x1 = cx + Math.cos(a) * (r-8);
+      y1 = cy + Math.sin(a) * (r-8);
+    } else if (kind === 'r'){
+      // rebalance: seed → seed across the ring
+      const a0 = angleOf(fromSeed || seeds[0].name);
+      const a1 = angleOf(toSeed   || seeds[seeds.length-1].name);
+      x0 = cx + Math.cos(a0) * (r-8);  y0 = cy + Math.sin(a0) * (r-8);
+      x1 = cx + Math.cos(a1) * (r-8);  y1 = cy + Math.sin(a1) * (r-8);
+    } else {
+      // insert: center → owning arc
+      x0 = cx; y0 = cy;
+      const a = angleOf((toSeed || seeds[0].name));
+      x1 = cx + Math.cos(a) * (r-8);
+      y1 = cy + Math.sin(a) * (r-8);
+    }
+    MOTES.push({
+      g: svg.querySelector('.ring-motes'),
+      x0,y0,x1,y1,
+      t: 0, dur: 700 + Math.random()*400, kind,
+      el: null,
+    });
+  });
+}
+
+let lastFrame = performance.now();
+function tickMotes(now){
+  const dt = now - lastFrame; lastFrame = now;
+  for (let i = MOTES.length - 1; i >= 0; i--){
+    const m = MOTES[i];
+    m.t += dt;
+    const k = Math.min(1, m.t / m.dur);
+    const ease = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2;
+    const x = m.x0 + (m.x1 - m.x0) * ease;
+    const y = m.y0 + (m.y1 - m.y0) * ease;
+    if (!m.el){
+      m.el = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      m.el.setAttribute('class','mote ' + m.kind);
+      m.el.setAttribute('r','3');
+      if (m.g) m.g.appendChild(m.el);
+    }
+    if (m.el){
+      m.el.setAttribute('cx', x);
+      m.el.setAttribute('cy', y);
+      m.el.setAttribute('opacity', String(1 - Math.pow(k, 2)));
+    }
+    if (k >= 1){
+      if (m.el && m.el.parentNode) m.el.parentNode.removeChild(m.el);
+      MOTES.splice(i, 1);
+    }
+  }
+  requestAnimationFrame(tickMotes);
+}
+requestAnimationFrame(tickMotes);
+
+// Hook spawn points into existing actions
+const _origRunQuery = runQuery;
+runQuery = function(){
+  const before = STATE.lastQuery;
+  _origRunQuery();
+  if (STATE.lastQuery && STATE.lastQuery !== before){
+    STATE.lastQuery.fanout.forEach(f => spawnMote('q', null, f.seed));
+  }
+};
+const _origInsertVector = insertVector;
+insertVector = function(){
+  const before = STATE.vectors.length;
+  _origInsertVector();
+  if (STATE.vectors.length > before){
+    const v = STATE.vectors[STATE.vectors.length-1];
+    spawnMote('i', null, v.seed);
+  }
+};
+const _origStartRebalance = startRebalance;
+startRebalance = function(reason, seedName){
+  _origStartRebalance(reason, seedName);
+  const seeds = STATE.seeds.filter(s => s.status==='online');
+  for (let i = 0; i < 8; i++){
+    setTimeout(() => {
+      const a = seeds[Math.floor(Math.random()*seeds.length)];
+      const b = seeds[Math.floor(Math.random()*seeds.length)];
+      if (a && b) spawnMote('r', a.name, b.name);
+    }, 100 + i*180);
+  }
+};
+
+// QPS sparkline
+const QPS_HIST = new Array(40).fill(0);
+function renderSparkline(){
+  // mount under the QPS KPI if not present
+  let host = document.getElementById('qps-spark-host');
+  if (!host){
+    const kpi = $('#kpi-qps');
+    if (!kpi) return;
+    host = document.createElement('div');
+    host.id = 'qps-spark-host';
+    host.style.width = '100%';
+    kpi.parentNode.appendChild(host);
+  }
+  const W = 140, H = 30;
+  const max = Math.max(1, ...QPS_HIST);
+  const pts = QPS_HIST.map((v,i) => {
+    const x = (i / (QPS_HIST.length-1)) * W;
+    const y = H - (v / max) * (H - 4) - 2;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  const area = 'M 0,'+H+' L ' + pts.split(' ').join(' L ') + ' L '+W+','+H+' Z';
+  host.innerHTML = '<svg class="sparkline" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+    '<defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="hsl(185 80% 50% / 0.5)"/>'+
+    '<stop offset="100%" stop-color="hsl(185 80% 50% / 0)"/>'+
+    '</linearGradient></defs>'+
+    '<path class="spark-fill" d="'+area+'"/>'+
+    '<polyline class="spark-line" points="'+pts+'"/>'+
+    '</svg>';
+}
+
+// Initial paint
+routeFromHash();
+refreshAll();
+renderSparkline();
+
+// Background sim — generates queries + shifts QPS to feel alive
+setInterval(() => {
+  if (Math.random() < 0.55){
+    const s = STATE.seeds.filter(x => x.status==='online');
+    const a = s[Math.floor(Math.random()*s.length)];
+    const ms = Math.floor(8 + Math.random()*40);
+    pushEvent({ type:'query_distributed', seed:a.name, detail:'k='+([5,10,20][Math.floor(Math.random()*3)])+' · fan-out '+s.length+' seeds · '+ms+'ms' }, Date.now(), true);
+    STATE.qps = STATE.qps * 0.85 + Math.random()*0.9;
+    STATE.p50 = STATE.p50 * 0.8 + ms * 0.2;
+    STATE.p99 = Math.max(STATE.p99*0.85, ms * 1.6);
+    renderKpis();
+    s.slice(0, Math.min(3, s.length)).forEach(seed => spawnMote('q', null, seed.name));
+  }
+}, 1800);
+
+// Live KPI heartbeat — keeps QPS decaying gently, sparkline ticking
+setInterval(() => {
+  STATE.qps = STATE.qps * 0.92;
+  QPS_HIST.shift(); QPS_HIST.push(STATE.qps);
+  renderSparkline();
+  renderKpis();
+}, 1000);
+</script>
+</body>
+</html>

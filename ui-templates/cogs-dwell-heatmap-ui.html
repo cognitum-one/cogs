@@ -1,0 +1,1821 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <title>Dwell Heatmap — Cognitum Cog</title>
+  <meta name="description" content="Dwell time per zone for customer engagement analysis. A Cognitum retail cog for the Seed device." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0e1a'/><circle cx='16' cy='16' r='8' fill='none' stroke='%234ecdc4' stroke-width='1.5'/><circle cx='16' cy='16' r='4.5' fill='%234ecdc4'/><circle cx='16' cy='16' r='2' fill='%23fff'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+  /* ============================================================
+     Cognitum Seed palette — sourced from seed.cognitum.one/store
+     ============================================================ */
+  :root {
+    --font: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    --mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+
+    --bg:     #0a0e1a;
+    --bg2:    #111627;
+    --bg3:    #0d1220;
+    --card:   #171d30;
+    --card-h: #1e2540;
+    --border: #252d45;
+    --border-l: #2e3756;
+
+    --t1: #e0e4f0;
+    --t2: #8890a8;
+    --t3: #505872;
+
+    --cyan:   #4ecdc4;   --cyan-d:   rgba(78,205,196,0.15);
+    --green:  #6bcb77;   --green-d:  rgba(107,203,119,0.15);
+    --amber:  #d4a574;   --amber-d:  rgba(212,165,116,0.15);
+    --red:    #e06060;   --red-d:    rgba(224,96,96,0.15);
+    --purple: #a78bfa;   --purple-d: rgba(167,139,250,0.15);
+    --pink:   #f472b6;   --pink-d:   rgba(244,114,182,0.15);
+    --blue:   #60a5fa;   --blue-d:   rgba(96,165,250,0.15);
+    --orange: #fb923c;   --orange-d: rgba(251,146,60,0.15);
+    --gray:   #94a3b8;   --gray-d:   rgba(148,163,184,0.15);
+
+    --r: 10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  html, body { height: 100%; }
+  [data-nav-section] { scroll-margin-top: 72px; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--t1);
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(ellipse 70% 45% at 15% -5%, rgba(78,205,196,0.07), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 95% 0%,  rgba(167,139,250,0.05), transparent 60%);
+    background-attachment: fixed;
+  }
+  ::selection { background: var(--cyan-d); color: var(--cyan); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-l); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--t3); }
+
+  h1, h2, h3 { font-weight: 600; letter-spacing: -0.005em; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ============================================================ Top bar */
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(17,22,39,0.92);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand:hover { text-decoration: none; }
+  .brand-icon {
+    width: 36px; height: 36px;
+    background: var(--cyan-d);
+    border-radius: var(--r);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cyan);
+    position: relative;
+    overflow: hidden;
+  }
+  .brand-icon::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(78,205,196,0.18) 70%);
+    border-radius: var(--r);
+  }
+  .brand-text { font-size: 13px; font-weight: 500; letter-spacing: 0.4px; color: var(--t2); }
+  .brand-text b { color: var(--cyan); font-weight: 600; }
+  .brand-meta {
+    margin-left: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--t3);
+    padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px;
+  }
+
+  .top-right { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .nav-scroll {
+    display: flex; align-items: center; gap: 2px;
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+  .nav-link {
+    font-size: 12px; font-weight: 500;
+    color: var(--t2);
+    padding: 6px 11px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .nav-link:hover { color: var(--cyan); background: var(--cyan-d); text-decoration: none; }
+  .nav-link[data-active="true"] {
+    color: var(--cyan);
+    background: var(--cyan-d);
+    border-color: rgba(78,205,196,0.30);
+  }
+  .nav-link svg { opacity: 0.85; }
+  .nav-divider { width: 1px; height: 22px; background: var(--border); margin: 0 6px; flex-shrink: 0; }
+
+  .ext-link {
+    color: var(--t3); font-size: 12px;
+    padding: 6px 10px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 5px;
+    text-decoration: none;
+  }
+  .ext-link:hover { color: var(--cyan); background: var(--cyan-d); text-decoration: none; }
+  .live-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--t2);
+    margin-left: 6px;
+    cursor: pointer;
+  }
+  .live-chip:hover { border-color: var(--cyan); color: var(--t1); }
+  .live-chip b { color: var(--cyan); font-weight: 600; }
+
+  /* ============================================================ Main */
+  .main {
+    max-width: 1320px; margin: 0 auto;
+    padding: 24px 32px 64px;
+    width: 100%;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  @media (min-width: 1100px) { .two-col { grid-template-columns: minmax(0, 1.92fr) minmax(0, 1fr); } }
+  .col-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  /* ============================================================ Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px;
+    transition: border-color 0.2s;
+  }
+  .card.subtle { background: var(--bg2); }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 9px;
+    color: var(--t1);
+  }
+  .card-title .ico {
+    display: grid; place-items: center;
+    height: 24px; width: 24px;
+    border-radius: 6px;
+    color: var(--cyan);
+    background: var(--cyan-d);
+  }
+  .card-sub {
+    font-size: 12px; color: var(--t2); margin-top: 4px;
+    max-width: 60ch;
+    text-transform: none; letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  /* ============================================================ Pills + buttons */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 3px 9px;
+    font-size: 11px; font-weight: 500; line-height: 1;
+    color: var(--t2);
+    white-space: nowrap;
+  }
+  .pill.cyan   { color: var(--cyan);   background: var(--cyan-d);   border-color: rgba(78,205,196,0.35); }
+  .pill.green  { color: var(--green);  background: var(--green-d);  border-color: rgba(107,203,119,0.35); }
+  .pill.amber  { color: var(--amber);  background: var(--amber-d);  border-color: rgba(212,165,116,0.35); }
+  .pill.red    { color: var(--red);    background: var(--red-d);    border-color: rgba(224,96,96,0.35); }
+  .pill.purple { color: var(--purple); background: var(--purple-d); border-color: rgba(167,139,250,0.35); }
+  .pill.mono { font-family: var(--mono); font-size: 11px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12.5px; font-weight: 600;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.05s;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--cyan);
+    color: #082023;
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 24px -8px rgba(78,205,196,0.5);
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--t1);
+  }
+  .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-d); }
+  .btn-block { width: 100%; justify-content: center; }
+  .btn-icon { padding: 8px 10px; }
+
+  /* ============================================================ KPI grid */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (min-width: 980px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .stat::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.5;
+  }
+  .stat-head {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 10.5px; font-weight: 600;
+    color: var(--t2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .stat-ico {
+    display: grid; place-items: center;
+    height: 28px; width: 28px;
+    border-radius: 7px;
+  }
+  .stat-ico.cyan   { color: var(--cyan);   background: var(--cyan-d); }
+  .stat-ico.green  { color: var(--green);  background: var(--green-d); }
+  .stat-ico.amber  { color: var(--amber);  background: var(--amber-d); }
+  .stat-ico.purple { color: var(--purple); background: var(--purple-d); }
+  .stat-val {
+    margin-top: 14px;
+    font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--t1);
+    font-family: var(--mono);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .stat-val.sans { font-family: var(--font); }
+  .stat-sub { margin-top: 4px; font-size: 12px; color: var(--t2); }
+  .stat-val + .stat-sub { margin-bottom: 4px; }
+  .stat-delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600; font-family: var(--mono);
+    padding: 2px 7px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg);
+    margin-left: 6px;
+  }
+  .stat-delta.up   { color: var(--green); border-color: rgba(107,203,119,0.35); background: var(--green-d); }
+  .stat-delta.down { color: var(--red);   border-color: rgba(224,96,96,0.35);   background: var(--red-d); }
+  .spark { margin-top: auto; width: 100%; height: 32px; display: block; padding-top: 10px; box-sizing: content-box; }
+
+  /* Gauge — expands to fill remaining vertical space so engagement card matches sparkline cards */
+  .gauge-wrap {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 14px;
+    flex: 1;
+  }
+  .gauge { width: 84px; height: 84px; flex-shrink: 0; }
+  .gauge-num { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; font-family: var(--mono); color: var(--t1); }
+  .gauge-label { font-size: 11px; color: var(--t2); margin-top: 4px; }
+
+  /* ============================================================ Floorplan / heatmap stage */
+  .floor-card { padding: 0; overflow: hidden; }
+  .floor-card .card-head { padding: 18px 18px 12px; margin-bottom: 0; }
+  .legend { display: none; align-items: center; gap: 8px;
+    font-size: 10px; color: var(--t2);
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+  @media (min-width: 720px) { .legend { display: flex; } }
+  .legend-bar {
+    height: 6px; width: 140px; border-radius: 999px;
+    background: linear-gradient(90deg, #4ecdc4 0%, #6bcb77 35%, #d4a574 70%, #e06060 100%);
+    box-shadow: 0 0 14px -2px rgba(78,205,196,0.3);
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1000 / 620;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(78,205,196,0.06), transparent 70%),
+      linear-gradient(180deg, #0a0e1a 0%, #050810 100%);
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stage > * {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+  .stage-grid {
+    pointer-events: none;
+  }
+  .stage-canvas {
+    /* Apply colormap filter — cyan/green/amber/red heat ramp */
+    filter: url(#heat-cmap);
+    image-rendering: optimizeQuality;
+  }
+  .stage-overlay { pointer-events: none; }
+  .stage-overlay .floor-zone {
+    pointer-events: auto; cursor: pointer;
+    transition: filter 0.2s;
+  }
+  .stage-overlay .floor-zone:hover { filter: drop-shadow(0 0 6px var(--cyan)); }
+  .scan-line {
+    position: absolute; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent 0%, var(--cyan) 18%, var(--cyan) 82%, transparent 100%);
+    box-shadow: 0 0 14px var(--cyan), 0 0 4px var(--cyan);
+    opacity: 0.7;
+    pointer-events: none;
+    animation: scan-sweep 7s linear infinite;
+  }
+  @keyframes scan-sweep {
+    0%   { left: -2%; opacity: 0; }
+    6%   { opacity: 0.7; }
+    94%  { opacity: 0.7; }
+    100% { left: 102%; opacity: 0; }
+  }
+  .scan-noise {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 3px);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+  .stage-hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  .hud-label {
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--cyan);
+    text-shadow: 0 0 6px rgba(78,205,196,0.4);
+  }
+  .hud-label.dim { color: var(--t3); text-shadow: none; }
+
+  /* Floorplan footer strip */
+  .stage-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 18px;
+    background: var(--bg2);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--t2);
+    flex-wrap: wrap; gap: 12px;
+  }
+  .stage-foot .lbl { color: var(--t3); }
+  .stage-foot .val { color: var(--t1); }
+  .stage-foot .val.cyan { color: var(--cyan); }
+  .stage-foot .val.red  { color: var(--red); }
+
+  /* ============================================================ Multi-line chart */
+  .chart-svg { width: 100%; display: block; margin-top: 4px; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .leg-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px; border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 11px; color: var(--t1);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .leg-chip:hover { border-color: var(--cyan); }
+  .leg-swatch { height: 9px; width: 9px; border-radius: 3px; box-shadow: 0 0 6px currentColor; }
+
+  /* ============================================================ Top zones list */
+  .top-list { display: flex; flex-direction: column; gap: 5px; list-style: none; padding: 0; margin: 0; }
+  .top-row-btn {
+    width: 100%; text-align: left;
+    border-radius: 8px; padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: block;
+  }
+  .top-row-btn:hover { background: var(--card-h); border-color: var(--border-l); }
+  .top-row-btn[aria-pressed="true"] {
+    border-color: var(--cyan);
+    background: var(--cyan-d);
+  }
+  .top-row-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .top-row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .rank {
+    display: grid; place-items: center;
+    height: 24px; min-width: 28px; padding: 0 6px; border-radius: 6px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--t3);
+  }
+  .rank.gold   { color: var(--amber);  background: var(--amber-d);  border-color: rgba(212,165,116,0.4); }
+  .rank.silver { color: var(--cyan);   background: var(--cyan-d);   border-color: rgba(78,205,196,0.4); }
+  .rank.bronze { color: var(--orange); background: var(--orange-d); border-color: rgba(251,146,60,0.4); }
+  .top-name { font-weight: 600; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .top-livepill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600; color: var(--cyan);
+    background: var(--cyan-d);
+    padding: 2px 7px; border-radius: 999px;
+    border: 1px solid rgba(78,205,196,0.3);
+  }
+  .top-row-right { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; }
+  .top-dwell { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--t1); }
+  .top-ev { font-family: var(--mono); font-size: 11px;
+    color: var(--t3); width: 44px; text-align: right; }
+  .bar {
+    margin-top: 8px; height: 5px; border-radius: 999px;
+    background: var(--bg2); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .bar > div { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+
+  /* ============================================================ Insights */
+  /* Stretch the insights card so the right column matches the left's bottom edge */
+  #sec-insights { flex: 1 1 0; display: flex; flex-direction: column; }
+  .insights { display: flex; flex-direction: column; gap: 8px; }
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* Quick-stats grid inside insights */
+  .quick-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .qstat {
+    padding: 11px 13px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-width: 0;
+  }
+  .qstat-k {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--t3);
+  }
+  .qstat-v {
+    margin-top: 5px;
+    font-size: 18px; font-weight: 600;
+    color: var(--t1); font-family: var(--mono);
+    line-height: 1.1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .qstat-v.sm { font-size: 14px; font-family: var(--font); }
+  .qstat-v.cyan  { color: var(--cyan); }
+  .qstat-v.green { color: var(--green); }
+  .qstat-v.amber { color: var(--amber); }
+  .qstat-v.purple{ color: var(--purple); }
+
+  /* Live event-stream feed */
+  .feed { display: flex; flex-direction: column; }
+  .feed-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 12px;
+  }
+  .feed-row:last-child { border-bottom: 0; }
+  .feed-dot {
+    width: 6px; height: 6px; border-radius: 999px;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .feed-time {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--t3);
+    flex-shrink: 0; width: 60px;
+  }
+  .feed-code {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--cyan);
+    flex-shrink: 0; width: 46px;
+  }
+  .feed-msg {
+    color: var(--t1); flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .feed-tag {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px;
+    flex-shrink: 0; letter-spacing: 0.04em;
+  }
+  .feed-tag.cyan   { background: var(--cyan-d);   color: var(--cyan); }
+  .feed-tag.green  { background: var(--green-d);  color: var(--green); }
+  .feed-tag.amber  { background: var(--amber-d);  color: var(--amber); }
+  .feed-tag.red    { background: var(--red-d);    color: var(--red); }
+  .feed-tag.purple { background: var(--purple-d); color: var(--purple); }
+  .insight {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 11px 13px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+  }
+  .insight.cyan   { border-left-color: var(--cyan); }
+  .insight.green  { border-left-color: var(--green); }
+  .insight.amber  { border-left-color: var(--amber); }
+  .insight.purple { border-left-color: var(--purple); }
+  .insight-ico {
+    flex-shrink: 0; height: 24px; width: 24px;
+    display: grid; place-items: center; border-radius: 6px;
+  }
+  .insight-ico.cyan   { background: var(--cyan-d);   color: var(--cyan); }
+  .insight-ico.green  { background: var(--green-d);  color: var(--green); }
+  .insight-ico.amber  { background: var(--amber-d);  color: var(--amber); }
+  .insight-ico.purple { background: var(--purple-d); color: var(--purple); }
+  .insight-body { font-size: 13px; line-height: 1.5; color: var(--t1); }
+  .insight-body b { color: var(--t1); font-weight: 600; }
+  .insight-body .mono { font-family: var(--mono); font-size: 12px; color: var(--cyan); }
+
+  /* ============================================================ Install panel */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  .field-k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    font-weight: 600; color: var(--t3); }
+  .field-v { margin-top: 3px; font-size: 13px; font-weight: 500; color: var(--t1);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .field-v.mono { font-family: var(--mono); font-weight: 400; }
+  .field-v.small { font-size: 12px; }
+  .subsec { margin-top: 16px; }
+  .sublabel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+    font-weight: 600; color: var(--t3); margin-bottom: 8px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .console {
+    border-radius: 8px; background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px; line-height: 1.65;
+    overflow-x: auto; margin: 0; white-space: pre;
+    color: var(--t1);
+  }
+  .console .dim { color: var(--t3); }
+  .console .cyan { color: var(--cyan); }
+  .console .green { color: var(--green); }
+  .install-actions { margin-top: 16px; display: flex; align-items: center; gap: 8px; }
+  .install-actions .btn-primary { flex: 1; }
+  .blurb { margin-top: 12px; font-size: 12px; color: var(--t2); line-height: 1.55; }
+
+  /* Stretch install card so left column matches right column's bottom edge */
+  #sec-install { flex: 1 1 0; display: flex; flex-direction: column; }
+  .install-spacer { flex: 1 1 auto; min-height: 12px; }
+
+  /* Schema field list */
+  .schema-list {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    row-gap: 5px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .schema-k { color: var(--cyan); }
+  .schema-v { color: var(--t2); white-space: nowrap; }
+
+  /* ============================================================ JSON disclosure */
+  .disclosure-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; }
+  .json-pre {
+    margin: 14px 0 0; max-height: 320px; overflow: auto;
+    border-radius: 8px; background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px; line-height: 1.65;
+    color: var(--t1);
+  }
+  .chev { transition: transform 0.2s; color: var(--t3); }
+  .chev.open { transform: rotate(180deg); }
+
+  /* ============================================================ Footer */
+  .footer { border-top: 1px solid var(--border); margin-top: 0; }
+  .footer-inner {
+    max-width: 1320px; margin: 0 auto;
+    padding: 16px 32px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 11px; font-family: var(--mono);
+    color: var(--t3);
+  }
+  .footer .fg { color: var(--t1); }
+
+  /* ============================================================ Animations */
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(78,205,196,0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(78,205,196,0); }
+    100% { box-shadow: 0 0 0 0 rgba(78,205,196,0); }
+  }
+  .dot-live {
+    display: inline-block; height: 7px; width: 7px; border-radius: 999px;
+    background: var(--cyan);
+    animation: pulse-ring 2s infinite;
+  }
+  .dot-paused { height: 7px; width: 7px; border-radius: 999px; background: var(--t3); display: inline-block; }
+
+  @keyframes svg-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50%      { transform: scale(1.5); opacity: 0; }
+  }
+  .svg-pulse { transform-origin: center; transform-box: fill-box; animation: svg-pulse 2.4s ease-in-out infinite; }
+
+  @keyframes blink {
+    50% { opacity: 0.4; }
+  }
+  .blink { animation: blink 1.2s infinite; }
+  </style>
+</head>
+<body>
+  <!-- Colormap filter: maps grayscale white blobs → cyan/green/amber/red heat -->
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+    <defs>
+      <filter id="heat-cmap" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feGaussianBlur stdDeviation="6"/>
+        <feComponentTransfer>
+          <!-- 9-stop colormap: black → cyan → green → amber → red, with rising alpha -->
+          <feFuncR type="table" tableValues="0.04 0.10 0.13 0.18 0.45 0.75 0.92 0.95 0.95"/>
+          <feFuncG type="table" tableValues="0.05 0.55 0.78 0.82 0.78 0.60 0.40 0.30 0.20"/>
+          <feFuncB type="table" tableValues="0.10 0.55 0.78 0.55 0.30 0.20 0.15 0.20 0.30"/>
+          <feFuncA type="table" tableValues="0 0.30 0.55 0.70 0.82 0.92 0.96 0.99 1.0"/>
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="app" class="app"></div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    /* ============================================================
+       Constants — zones, floorplan, palette mappings
+       ============================================================ */
+    const ZONE_LAYOUT = [
+      { id: "z-entry",       label: "Entry",        weight: 0.95 },
+      { id: "z-apparel",     label: "Apparel",      weight: 0.78 },
+      { id: "z-electronics", label: "Electronics",  weight: 0.88 },
+      { id: "z-checkout",    label: "Checkout",     weight: 0.92 },
+      { id: "z-promo",       label: "Promo Aisle",  weight: 0.65 },
+      { id: "z-grocery",     label: "Grocery",      weight: 0.70 },
+      { id: "z-cafe",        label: "Café",         weight: 0.55 },
+      { id: "z-fitting",     label: "Fitting Room", weight: 0.45 },
+      { id: "z-home",        label: "Home Goods",   weight: 0.35 },
+      { id: "z-kids",        label: "Kids",         weight: 0.40 },
+      { id: "z-pickup",      label: "Pickup",       weight: 0.50 },
+      { id: "z-exit",        label: "Exit",         weight: 0.60 },
+    ];
+    const zoneLabel = id => (ZONE_LAYOUT.find(z => z.id === id) || {}).label || id;
+
+    /* Floorplan viewBox: 1000 × 620. Each zone is a room rectangle. */
+    const STAGE_W = 1000, STAGE_H = 620;
+    const FLOORPLAN = [
+      { id: "z-home",        code: "ZN-09", x:  40, y:  40, w: 240, h: 140 },
+      { id: "z-kids",        code: "ZN-10", x: 290, y:  40, w: 200, h: 140 },
+      { id: "z-cafe",        code: "ZN-07", x: 500, y:  40, w: 180, h: 140 },
+      { id: "z-fitting",     code: "ZN-08", x: 690, y:  40, w: 270, h: 140 },
+      { id: "z-promo",       code: "ZN-05", x:  40, y: 200, w: 140, h: 140 },
+      { id: "z-apparel",     code: "ZN-02", x: 190, y: 200, w: 220, h: 140 },
+      { id: "z-electronics", code: "ZN-03", x: 420, y: 200, w: 540, h: 140 },
+      { id: "z-grocery",     code: "ZN-06", x:  40, y: 360, w: 320, h: 140 },
+      { id: "z-pickup",      code: "ZN-11", x: 370, y: 360, w: 250, h: 140 },
+      { id: "z-checkout",    code: "ZN-04", x: 630, y: 360, w: 330, h: 140 },
+      { id: "z-entry",       code: "ZN-01", x: 260, y: 520, w: 200, h:  60 },
+      { id: "z-exit",        code: "ZN-12", x: 700, y: 520, w: 180, h:  60 },
+    ];
+    const floorOf = id => FLOORPLAN.find(f => f.id === id);
+
+    /* Multi-line chart palette — Cognitum brand color names */
+    const SERIES_COLORS = ["#4ecdc4", "#a78bfa", "#d4a574", "#6bcb77", "#f472b6"];
+
+    /* ============================================================
+       Deterministic PRNG + snapshot builder
+       ============================================================ */
+    function mulberry32(seed) {
+      let a = seed >>> 0;
+      return function () {
+        a |= 0; a = (a + 0x6d2b79f5) | 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const WINDOW_SECS = 3600;
+    const BUCKETS = 60;
+
+    function buildSnapshot(tick) {
+      const now = Math.floor(Date.now() / 1000);
+      const rand = mulberry32(0xc06a + tick);
+      const series = ZONE_LAYOUT.map(z => {
+        const points = new Array(BUCKETS);
+        let v = z.weight * 35 + rand() * 15;
+        for (let i = 0; i < BUCKETS; i++) {
+          const drift = (rand() - 0.5) * 18 * z.weight;
+          v = Math.max(0, v * 0.85 + drift + z.weight * 8);
+          if (i > 35 && i < 50 && z.weight > 0.6) v += rand() * 25;
+          points[i] = Math.round(v);
+        }
+        return { zone: z.id, points };
+      });
+      const totalSeries = new Array(BUCKETS).fill(0).map((_, i) =>
+        series.reduce((s, x) => s + x.points[i], 0)
+      );
+      const zone_heatmap = ZONE_LAYOUT.map((z, idx) => {
+        const s = series[idx];
+        const totalDwell = s.points.reduce((a, b) => a + b, 0);
+        const events = Math.max(1, Math.round((totalDwell / 90) + rand() * 4));
+        const active = s.points[BUCKETS - 1] > 18;
+        return { zone: z.id, dwell_secs: totalDwell, events, active };
+      }).sort((a, b) => b.dwell_secs - a.dwell_secs);
+      const total_dwell_secs = zone_heatmap.reduce((s, z) => s + z.dwell_secs, 0);
+      const active_zones = zone_heatmap.filter(z => z.active).length;
+      const top_zone = (zone_heatmap[0] && zone_heatmap[0].zone) || "";
+
+      const utilization = active_zones / ZONE_LAYOUT.length;
+      const distribution = total_dwell_secs > 0
+        ? 1 - (zone_heatmap[0].dwell_secs / total_dwell_secs) : 0;
+      const intensity = Math.min(1, total_dwell_secs / (ZONE_LAYOUT.length * 800));
+      const engagement = Math.round((utilization * 0.4 + distribution * 0.25 + intensity * 0.35) * 100);
+
+      const total_events = zone_heatmap.reduce((s, z) => s + z.events, 0);
+      const recentHalf = totalSeries.slice(30).reduce((a, b) => a + b, 0);
+      const olderHalf  = totalSeries.slice(0, 30).reduce((a, b) => a + b, 0);
+      const deltaPct = olderHalf > 0 ? Math.round(((recentHalf - olderHalf) / olderHalf) * 100) : 0;
+
+      return {
+        report: { zone_heatmap, top_zone, total_dwell_secs, active_zones,
+                  window_secs: WINDOW_SECS, timestamp: now },
+        series, totalSeries, engagement, total_events, deltaPct,
+      };
+    }
+
+    /* ============================================================
+       Formatters
+       ============================================================ */
+    function formatDuration(secs) {
+      if (secs < 60) return `${secs}s`;
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      return mm ? `${h}h ${mm}m` : `${h}h`;
+    }
+    function formatRelative(ts, now) {
+      const diff = Math.max(0, now - ts);
+      if (diff < 5) return "just now";
+      if (diff < 60) return `${diff}s`;
+      if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+      return `${Math.floor(diff / 3600)}h`;
+    }
+    function formatClock(ts) {
+      const d = new Date(ts * 1000);
+      return [d.getHours(), d.getMinutes(), d.getSeconds()]
+        .map(n => String(n).padStart(2, "0")).join(":");
+    }
+
+    /* ============================================================
+       Activity feed — derived from current snapshot.
+       Synthesises recent events from per-zone series so the feed
+       reflects real-looking activity, ordered newest-first.
+       ============================================================ */
+    function buildActivityFeed() {
+      const { snapshot } = state;
+      const { report, series } = snapshot;
+      const now = report.timestamp;
+      const events = [];
+      const seedRand = mulberry32(0xfeed + state.tick);
+      report.zone_heatmap.slice(0, 9).forEach((zh, i) => {
+        const s = series.find(x => x.zone === zh.zone);
+        if (!s) return;
+        const recent = s.points.slice(-6);
+        const recentLast = recent[recent.length - 1];
+        const prior = s.points[s.points.length - 7] || 0;
+        const trendUp = recentLast > prior;
+        const tOffset = 4 + i * 7 + Math.floor(seedRand() * 9);
+        const ts = now - tOffset;
+        let msg, tag;
+        if (zh.active && trendUp) {
+          msg = `Presence detected · cluster forming`;
+          tag = { cls: "cyan", text: "PRESENT" };
+        } else if (zh.dwell_secs > 1200) {
+          msg = `High dwell · ${formatDuration(zh.dwell_secs)} accumulated`;
+          tag = { cls: "amber", text: "DWELL" };
+        } else if (!trendUp && recentLast < 12) {
+          msg = `Activity cooling · last bucket ${recentLast}s`;
+          tag = { cls: "green", text: "COOL" };
+        } else if (zh.events > 30) {
+          msg = `${zh.events} engagement events logged`;
+          tag = { cls: "purple", text: "BUSY" };
+        } else {
+          msg = `Tracking · ${zh.events} events in window`;
+          tag = { cls: "green", text: "TRACK" };
+        }
+        events.push({ ts, zone: zh.zone, msg, tag });
+      });
+      events.sort((a, b) => b.ts - a.ts);
+      return events.slice(0, 7);
+    }
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    /* ============================================================
+       Inline SVG icons
+       ============================================================ */
+    const I = {
+      diamond:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 22 12 12 22 2 12Z"/></svg>`,
+      download: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>`,
+      pause:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,
+      play:     `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5L7 4.5Z"/></svg>`,
+      star:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.95 6.5L22 9.6l-5.2 4.7L18.3 22 12 18.4 5.7 22l1.5-7.7L2 9.6l7.05-1.1L12 2Z"/></svg>`,
+      pulse:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l3-9 4 18 3-9h5"/></svg>`,
+      clock:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+      users:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+      spark:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.5 6L4.5 10.5 10.5 12 12 18l1.5-6L19.5 10.5l-6-1.5L12 3Z"/></svg>`,
+      map:      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 4 3 6v15l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v15"/><path d="M15 6v15"/></svg>`,
+      rank:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>`,
+      chart:    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-6"/></svg>`,
+      cube:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m21 16-9 5-9-5V8l9-5 9 5v8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg>`,
+      docs:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>`,
+      code:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>`,
+      chev:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+      bolt:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg>`,
+      bulb:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.6 1 1.4 1 2.3v1h6v-1c0-.9.4-1.7 1-2.3A7 7 0 0 0 12 2Z"/></svg>`,
+      arrow:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
+      ext:      `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>`,
+    };
+
+    /* ============================================================
+       App state
+       ============================================================ */
+    const state = {
+      tick: 0,
+      live: true,
+      now: Math.floor(Date.now() / 1000),
+      selectedZone: null,
+      jsonOpen: false,
+      snapshot: null,
+      hiddenSeries: new Set(),
+      activeSection: "overview",
+    };
+    state.snapshot = buildSnapshot(state.tick);
+
+    /* ============================================================
+       Top bar (sticky, brand left, section nav top-right)
+       ============================================================ */
+    const NAV_ITEMS = [
+      { id: "overview",  label: "Overview" },
+      { id: "floorplan", label: "Heatmap" },
+      { id: "trends",    label: "Trends" },
+      { id: "top-zones", label: "Top Zones" },
+      { id: "insights",  label: "Insights" },
+      { id: "install",   label: "Install" },
+      { id: "raw",       label: "Raw" },
+    ];
+
+    function renderTopBar() {
+      const { report } = state.snapshot;
+      const rel = formatRelative(report.timestamp, state.now);
+      const links = NAV_ITEMS.map(n => {
+        const active = state.activeSection === n.id;
+        return `<button class="nav-link" data-action="nav" data-nav-link="${esc(n.id)}"
+                  data-active="${active}" aria-current="${active}">${esc(n.label)}</button>`;
+      }).join("");
+      return `
+      <div class="top-bar">
+        <div class="brand" style="cursor:pointer;" data-action="nav" data-nav-link="overview">
+          <div class="brand-icon">${I.diamond}</div>
+          <div class="brand-text"><b>Cognitum</b> · Dwell Heatmap</div>
+          <span class="brand-meta">v1.0.0</span>
+        </div>
+        <div class="top-right">
+          <div class="nav-scroll">
+            ${links}
+          </div>
+          <div class="nav-divider"></div>
+          <button class="live-chip" data-action="toggle-live" aria-pressed="${state.live}" title="${state.live ? "Pause live updates" : "Resume live updates"}">
+            <span class="${state.live ? "dot-live" : "dot-paused"}" id="live-dot"></span>
+            <span id="live-text"><b>${state.live ? "LIVE" : "PAUSED"}</b> · ${esc(rel)}</span>
+          </button>
+          <a class="ext-link" href="https://github.com/cognitum-one/cogs" target="_blank" rel="noreferrer">
+            <span>Source</span>${I.ext}
+          </a>
+        </div>
+      </div>`;
+    }
+
+    /* ============================================================
+       KPI grid
+       ============================================================ */
+    function sparklineSVG(data, color) {
+      if (!data.length) return "";
+      const c = color || "#4ecdc4";
+      const max = Math.max(1, ...data);
+      const w = 200, h = 32, step = w / (data.length - 1);
+      const path = data.map((v, i) =>
+        `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)},${(h - (v / max) * h * 0.92 - 2).toFixed(1)}`
+      ).join(" ");
+      const gid = `spk-${Math.random().toString(36).slice(2, 8)}`;
+      return `<svg viewBox="0 0 ${w} ${h}" class="spark" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${c}" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="${c}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${path} L${w},${h} L0,${h} Z" fill="url(#${gid})"/>
+        <path d="${path}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"
+              style="filter: drop-shadow(0 0 4px ${c});"/>
+      </svg>`;
+    }
+
+    function gaugeSVG(value) {
+      const size = 84, r = 34, cx = size / 2, cy = size / 2;
+      const start = -Math.PI * 1.25, end = Math.PI * 0.25;
+      const sweep = end - start;
+      const v = Math.max(0, Math.min(100, value));
+      const tEnd = start + sweep * (v / 100);
+      function arc(a0, a1) {
+        const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+        const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+        const large = (a1 - a0) > Math.PI ? 1 : 0;
+        return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+      }
+      return `<svg viewBox="0 0 ${size} ${size}" class="gauge">
+        <defs>
+          <linearGradient id="gauge-grad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%"   stop-color="#4ecdc4"/>
+            <stop offset="35%"  stop-color="#6bcb77"/>
+            <stop offset="70%"  stop-color="#d4a574"/>
+            <stop offset="100%" stop-color="#e06060"/>
+          </linearGradient>
+        </defs>
+        <path d="${arc(start, end)}" stroke="#252d45" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="${arc(start, tEnd)}" stroke="url(#gauge-grad)" stroke-width="6" fill="none" stroke-linecap="round"
+              style="filter: drop-shadow(0 0 6px rgba(78,205,196,0.4));"/>
+        <circle cx="${cx + r * Math.cos(tEnd)}" cy="${cy + r * Math.sin(tEnd)}" r="3.5" fill="#4ecdc4"/>
+      </svg>`;
+    }
+
+    function renderStatGrid() {
+      const { report, totalSeries, engagement, total_events, deltaPct } = state.snapshot;
+      const avgDwell = report.zone_heatmap.length
+        ? Math.round(report.total_dwell_secs / report.zone_heatmap.length) : 0;
+      const top = report.zone_heatmap[0];
+      const topShare = report.total_dwell_secs
+        ? Math.round(((top ? top.dwell_secs : 0) / report.total_dwell_secs) * 100) : 0;
+
+      const deltaLabel = deltaPct === 0 ? "—" : `${deltaPct > 0 ? "+" : ""}${deltaPct}%`;
+      const deltaClass = deltaPct > 0 ? "up" : deltaPct < 0 ? "down" : "";
+      const deltaArrow = deltaPct > 0
+        ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4 22 20H2Z"/></svg>`
+        : deltaPct < 0
+          ? `<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20 2 4h20Z"/></svg>`
+          : "";
+
+      return `
+      <div class="stat-grid" id="sec-overview" data-nav-section="overview">
+        <div class="stat">
+          <div class="stat-head">
+            <span class="stat-ico purple">${I.bolt}</span>
+            <span>Engagement</span>
+          </div>
+          <div class="gauge-wrap">
+            ${gaugeSVG(engagement)}
+            <div>
+              <div class="gauge-num">${engagement}<span style="font-size:13px;color:var(--t3);font-weight:500;font-family:var(--font);"> / 100</span></div>
+              <div class="gauge-label">${engagement >= 75 ? "Strong" : engagement >= 55 ? "Healthy" : engagement >= 35 ? "Light" : "Quiet"} engagement</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-head">
+            <span class="stat-ico cyan">${I.star}</span>
+            <span>Peak Zone</span>
+          </div>
+          <div class="stat-val sans">${esc(zoneLabel(report.top_zone))}</div>
+          <div class="stat-sub">
+            <span class="mono" style="font-family:var(--mono);color:var(--cyan);">${formatDuration(top ? top.dwell_secs : 0)}</span>
+            · ${topShare}% of total dwell
+          </div>
+          ${sparklineSVG(state.snapshot.series.find(s => s.zone === report.top_zone)?.points || [], "#4ecdc4")}
+        </div>
+
+        <div class="stat">
+          <div class="stat-head">
+            <span class="stat-ico green">${I.users}</span>
+            <span>Activity</span>
+          </div>
+          <div class="stat-val">${report.active_zones}<span style="font-size:13px;color:var(--t3);font-weight:500;font-family:var(--font);"> of ${report.zone_heatmap.length}</span></div>
+          <div class="stat-sub">
+            <span style="font-family:var(--mono);color:var(--green);">${total_events}</span> events
+            ${deltaLabel !== "—" ? `<span class="stat-delta ${deltaClass}">${deltaArrow}${deltaLabel}</span>` : ""}
+          </div>
+          ${sparklineSVG(totalSeries, "#6bcb77")}
+        </div>
+
+        <div class="stat">
+          <div class="stat-head">
+            <span class="stat-ico amber">${I.clock}</span>
+            <span>Total Dwell · ${Math.round(report.window_secs / 60)}m</span>
+          </div>
+          <div class="stat-val">${formatDuration(report.total_dwell_secs)}</div>
+          <div class="stat-sub">avg <span style="font-family:var(--mono);color:var(--amber);">${formatDuration(avgDwell)}</span> per zone</div>
+          ${sparklineSVG(totalSeries.slice(20), "#d4a574")}
+        </div>
+      </div>`;
+    }
+
+    /* ============================================================
+       Floorplan + heatmap stage (canvas + SVG overlay)
+       ============================================================ */
+    function renderFloorplan() {
+      const { report } = state.snapshot;
+      const byId = new Map(report.zone_heatmap.map(z => [z.zone, z]));
+      const max = Math.max(1, ...report.zone_heatmap.map(z => z.dwell_secs));
+
+      // SVG overlay: grid pattern, zone outlines, labels, HUD elements
+      const gridStroke = "rgba(78,205,196,0.06)";
+      const gridStrong = "rgba(78,205,196,0.10)";
+
+      // Zone outlines + labels
+      const overlayZones = FLOORPLAN.map(f => {
+        const zh = byId.get(f.id) || { dwell_secs: 0, events: 0, active: false };
+        const t = zh.dwell_secs / max;
+        const isSelected = state.selectedZone === f.id;
+        const stroke = isSelected ? "#4ecdc4" : (t > 0.7 ? "rgba(224,96,96,0.6)" : t > 0.4 ? "rgba(212,165,116,0.55)" : "rgba(78,205,196,0.45)");
+        const strokeWidth = isSelected ? 2 : 1.2;
+        const small = f.h < 80;
+        const labelY = small ? f.y + f.h / 2 - 2 : f.y + 22;
+        const labelX = f.x + 12;
+        const codeY  = small ? f.y + f.h / 2 + 14 : f.y + f.h - 14;
+
+        const activePulse = zh.active
+          ? `<circle cx="${f.x + f.w - 12}" cy="${f.y + 12}" r="3.5" fill="#4ecdc4" class="svg-pulse"/>
+             <circle cx="${f.x + f.w - 12}" cy="${f.y + 12}" r="3.5" fill="#4ecdc4"/>`
+          : "";
+
+        // Code badge corner brackets (HUD)
+        const brackets = !small ? `
+          <g stroke="${stroke}" stroke-width="1" fill="none" opacity="0.7">
+            <path d="M ${f.x + 4} ${f.y + 12} L ${f.x + 4} ${f.y + 4} L ${f.x + 12} ${f.y + 4}"/>
+            <path d="M ${f.x + f.w - 12} ${f.y + 4} L ${f.x + f.w - 4} ${f.y + 4} L ${f.x + f.w - 4} ${f.y + 12}"/>
+            <path d="M ${f.x + 4} ${f.y + f.h - 12} L ${f.x + 4} ${f.y + f.h - 4} L ${f.x + 12} ${f.y + f.h - 4}"/>
+            <path d="M ${f.x + f.w - 12} ${f.y + f.h - 4} L ${f.x + f.w - 4} ${f.y + f.h - 4} L ${f.x + f.w - 4} ${f.y + f.h - 12}"/>
+          </g>` : "";
+
+        return `
+        <g class="floor-zone" data-action="select" data-zone="${esc(f.id)}"
+           aria-label="${esc(zoneLabel(f.id))}, ${formatDuration(zh.dwell_secs)}, ${zh.events} events">
+          <rect x="${f.x + 0.5}" y="${f.y + 0.5}" width="${f.w - 1}" height="${f.h - 1}"
+                fill="transparent" stroke="${stroke}" stroke-width="${strokeWidth}"
+                stroke-dasharray="${isSelected ? "0" : "0"}" rx="2"/>
+          ${brackets}
+          ${activePulse}
+          <text x="${f.x + 12}" y="${small ? f.y + f.h / 2 + 4 : f.y + 22}"
+                font-family="JetBrains Mono, monospace" font-size="10" fill="#4ecdc4"
+                style="filter:drop-shadow(0 0 3px rgba(78,205,196,0.5));letter-spacing:0.05em;">${esc(f.code)}</text>
+          ${!small ? `<text x="${f.x + 12}" y="${f.y + 40}"
+                font-family="Segoe UI, system-ui, sans-serif" font-weight="600" font-size="14" fill="#e0e4f0"
+                style="paint-order:stroke;stroke:#0a0e1a;stroke-width:3px;stroke-linejoin:round;">${esc(zoneLabel(f.id))}</text>` : ""}
+          ${!small ? `<text x="${f.x + 12}" y="${f.y + f.h - 16}"
+                font-family="JetBrains Mono, monospace" font-size="13" font-weight="600" fill="#e0e4f0"
+                style="paint-order:stroke;stroke:#0a0e1a;stroke-width:3px;stroke-linejoin:round;">${formatDuration(zh.dwell_secs)}</text>` : ""}
+          ${!small ? `<text x="${f.x + f.w - 12}" y="${f.y + f.h - 16}" text-anchor="end"
+                font-family="JetBrains Mono, monospace" font-size="11" fill="#8890a8"
+                style="paint-order:stroke;stroke:#0a0e1a;stroke-width:3px;stroke-linejoin:round;">${zh.events} EV</text>` : ""}
+          ${small ? `<text x="${f.x + f.w - 12}" y="${f.y + f.h / 2 + 4}" text-anchor="end"
+                font-family="JetBrains Mono, monospace" font-size="12" fill="#e0e4f0"
+                style="paint-order:stroke;stroke:#0a0e1a;stroke-width:3px;stroke-linejoin:round;">${esc(zoneLabel(f.id))} · ${formatDuration(zh.dwell_secs)}</text>` : ""}
+        </g>`;
+      }).join("");
+
+      // HUD corner brackets (stage corners)
+      const cornerLen = 28;
+      const corners = `
+        <g stroke="#4ecdc4" stroke-width="1.5" fill="none" opacity="0.7">
+          <path d="M 14 ${cornerLen + 14} L 14 14 L ${cornerLen + 14} 14"/>
+          <path d="M ${STAGE_W - cornerLen - 14} 14 L ${STAGE_W - 14} 14 L ${STAGE_W - 14} ${cornerLen + 14}"/>
+          <path d="M 14 ${STAGE_H - cornerLen - 14} L 14 ${STAGE_H - 14} L ${cornerLen + 14} ${STAGE_H - 14}"/>
+          <path d="M ${STAGE_W - cornerLen - 14} ${STAGE_H - 14} L ${STAGE_W - 14} ${STAGE_H - 14} L ${STAGE_W - 14} ${STAGE_H - cornerLen - 14}"/>
+        </g>`;
+
+      // HUD telemetry text in stage corners
+      const scanCount = state.tick * 12 + 4287;
+      const hud = `
+        <text x="22" y="36" font-family="JetBrains Mono, monospace" font-size="10" fill="#4ecdc4"
+              style="filter:drop-shadow(0 0 4px rgba(78,205,196,0.5));letter-spacing:0.06em;">
+          SECTOR · A-04 · CSI-RX
+        </text>
+        <text x="${STAGE_W - 22}" y="36" text-anchor="end"
+              font-family="JetBrains Mono, monospace" font-size="10" fill="#4ecdc4"
+              style="filter:drop-shadow(0 0 4px rgba(78,205,196,0.5));letter-spacing:0.06em;">
+          SCAN · #${scanCount.toString().padStart(5, "0")}
+        </text>
+        <text x="22" y="${STAGE_H - 22}" font-family="JetBrains Mono, monospace" font-size="10" fill="#505872">
+          LAT 0.000 LON 0.000
+        </text>
+        <text x="${STAGE_W - 22}" y="${STAGE_H - 22}" text-anchor="end"
+              font-family="JetBrains Mono, monospace" font-size="10" fill="#4ecdc4"
+              style="filter:drop-shadow(0 0 4px rgba(78,205,196,0.5));">
+          PRESENCE · ${report.active_zones}/${ZONE_LAYOUT.length}
+        </text>`;
+
+      const winMin = Math.round(report.window_secs / 60);
+
+      return `
+      <section class="card floor-card" id="sec-floorplan" data-nav-section="floorplan">
+        <div class="card-head">
+          <div>
+            <div class="card-title">
+              <span class="ico">${I.map}</span>
+              Live Heatmap · Store Floorplan
+            </div>
+            <div class="card-sub">Dynamic customer-presence heat overlay · WiFi-CSI sampled every 5s · rolling ${winMin}-minute window. Tap any zone to focus the time series.</div>
+          </div>
+          <div class="legend">
+            <span>cold</span><span class="legend-bar"></span><span>hot</span>
+          </div>
+        </div>
+
+        <div class="stage" id="heat-stage">
+          <!-- Background grid -->
+          <svg class="stage-grid" viewBox="0 0 ${STAGE_W} ${STAGE_H}" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid-fine" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${gridStroke}" stroke-width="0.5"/>
+              </pattern>
+              <pattern id="grid-coarse" width="100" height="100" patternUnits="userSpaceOnUse">
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="${gridStrong}" stroke-width="0.8"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-fine)"/>
+            <rect width="100%" height="100%" fill="url(#grid-coarse)"/>
+          </svg>
+
+          <!-- The actual heatmap: canvas with feComponentTransfer colormap -->
+          <canvas id="heat-canvas" class="stage-canvas" width="${STAGE_W}" height="${STAGE_H}"></canvas>
+
+          <!-- Scan line sweep + faint CRT scanlines -->
+          <div class="scan-line"></div>
+          <div class="scan-noise"></div>
+
+          <!-- Overlay: zones, labels, HUD -->
+          <svg class="stage-overlay" viewBox="0 0 ${STAGE_W} ${STAGE_H}" preserveAspectRatio="none">
+            ${corners}
+            ${overlayZones}
+            ${hud}
+          </svg>
+        </div>
+
+        <div class="stage-foot">
+          <span><span class="lbl">SOURCE</span> <span class="val">CSI · ESP32-S3</span></span>
+          <span><span class="lbl">PRESENCE PTS</span> <span class="val cyan" id="hud-pts">—</span></span>
+          <span><span class="lbl">FPS</span> <span class="val mono" id="hud-fps">—</span></span>
+          <span><span class="lbl">WINDOW</span> <span class="val">${winMin}m rolling</span></span>
+          <span><span class="lbl">TICK</span> <span class="val">${state.tick}</span></span>
+        </div>
+      </section>`;
+    }
+
+    /* ============================================================
+       Heatmap canvas — additive presence-point blob accumulation.
+       SVG colormap (feGaussianBlur + feComponentTransfer) converts
+       the resulting grayscale intensity into a cyan→red heat ramp.
+       ============================================================ */
+    const heat = {
+      points: [],
+      ctx: null,
+      canvas: null,
+      raf: null,
+      lastT: 0,
+      frames: 0,
+      fpsT: 0,
+      fps: 0,
+    };
+
+    function seedHeatPoints() {
+      heat.points.length = 0;
+      const { report } = state.snapshot;
+      const max = Math.max(1, ...report.zone_heatmap.map(z => z.dwell_secs));
+      for (const zh of report.zone_heatmap) {
+        const f = floorOf(zh.zone);
+        if (!f) continue;
+        const t = zh.dwell_secs / max;
+        // Number of presence points scales with dwell (and base of 1 per zone for visibility)
+        const n = Math.max(1, Math.round(1 + t * 9));
+        for (let i = 0; i < n; i++) {
+          const padX = Math.min(20, f.w * 0.15);
+          const padY = Math.min(20, f.h * 0.15);
+          heat.points.push({
+            zone: zh.zone,
+            bx: f.x + padX, by: f.y + padY,
+            bw: f.w - padX * 2, bh: f.h - padY * 2,
+            x: f.x + padX + Math.random() * (f.w - padX * 2),
+            y: f.y + padY + Math.random() * (f.h - padY * 2),
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: (Math.random() - 0.5) * 0.6,
+            r: 48 + Math.random() * 36,
+            intensity: 0.18 + t * 0.55 + Math.random() * 0.12,
+            phase: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+    }
+
+    function updatePoints(dt) {
+      for (const p of heat.points) {
+        // Random walk
+        p.vx += (Math.random() - 0.5) * 0.04 * dt;
+        p.vy += (Math.random() - 0.5) * 0.04 * dt;
+        p.vx = Math.max(-0.7, Math.min(0.7, p.vx));
+        p.vy = Math.max(-0.7, Math.min(0.7, p.vy));
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        // Slow breathing of intensity for "alive" feel
+        p.phase += dt * 0.04;
+        // Bound to its zone
+        if (p.x < p.bx) { p.x = p.bx; p.vx = Math.abs(p.vx); }
+        if (p.x > p.bx + p.bw) { p.x = p.bx + p.bw; p.vx = -Math.abs(p.vx); }
+        if (p.y < p.by) { p.y = p.by; p.vy = Math.abs(p.vy); }
+        if (p.y > p.by + p.bh) { p.y = p.by + p.bh; p.vy = -Math.abs(p.vy); }
+      }
+    }
+
+    function drawHeatFrame() {
+      const c = heat.ctx;
+      if (!c) return;
+      c.clearRect(0, 0, STAGE_W, STAGE_H);
+      c.globalCompositeOperation = "lighter";
+      for (const p of heat.points) {
+        const breathe = 0.85 + 0.15 * Math.sin(p.phase);
+        const a = p.intensity * breathe;
+        const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        g.addColorStop(0, `rgba(255,255,255,${(a * 0.55).toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(255,255,255,${(a * 0.20).toFixed(3)})`);
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        c.fillStyle = g;
+        c.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+      }
+      c.globalCompositeOperation = "source-over";
+    }
+
+    function heatLoop(ts) {
+      const last = heat.lastT || ts;
+      const dt = Math.min(3, (ts - last) / 16.6);  // dt normalised to 60fps frames
+      heat.lastT = ts;
+
+      updatePoints(dt);
+      drawHeatFrame();
+
+      // FPS
+      heat.frames++;
+      if (ts - heat.fpsT >= 1000) {
+        heat.fps = heat.frames;
+        heat.frames = 0;
+        heat.fpsT = ts;
+        const f = document.getElementById("hud-fps");
+        if (f) f.textContent = heat.fps + " fps";
+        const p = document.getElementById("hud-pts");
+        if (p) p.textContent = heat.points.length;
+      }
+      heat.raf = requestAnimationFrame(heatLoop);
+    }
+
+    function startHeat() {
+      heat.canvas = document.getElementById("heat-canvas");
+      if (!heat.canvas) return;
+      heat.ctx = heat.canvas.getContext("2d", { alpha: true });
+      if (!heat.points.length) seedHeatPoints();
+      if (heat.raf) cancelAnimationFrame(heat.raf);
+      heat.lastT = 0; heat.frames = 0; heat.fpsT = 0;
+      heat.raf = requestAnimationFrame(heatLoop);
+    }
+
+    /* ============================================================
+       Time-series multi-line chart
+       ============================================================ */
+    function renderTimeChart() {
+      const { snapshot } = state;
+      const { report } = snapshot;
+      const W = 920, H = 240, PAD = { t: 18, r: 20, b: 32, l: 40 };
+      const chartW = W - PAD.l - PAD.r;
+      const chartH = H - PAD.t - PAD.b;
+
+      const seriesList = state.selectedZone
+        ? [{ zone: state.selectedZone, points: snapshot.series.find(s => s.zone === state.selectedZone)?.points || [], color: "#4ecdc4" }]
+        : report.zone_heatmap.slice(0, 5).map((z, i) => ({
+            zone: z.zone,
+            points: snapshot.series.find(s => s.zone === z.zone)?.points || [],
+            color: SERIES_COLORS[i % SERIES_COLORS.length],
+          }));
+
+      const visible = seriesList.filter(s => !state.hiddenSeries.has(s.zone));
+      const allY = visible.flatMap(s => s.points);
+      const max = Math.max(1, ...allY);
+      const step = chartW / Math.max(1, BUCKETS - 1);
+
+      const yTicks = 4;
+      const yGrid = Array.from({ length: yTicks + 1 }, (_, i) => {
+        const v = Math.round((max / yTicks) * i);
+        const y = PAD.t + chartH - (v / max) * chartH;
+        return `
+          <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"
+                stroke="#252d45" stroke-dasharray="${i === 0 ? "0" : "2 5"}" stroke-width="1"/>
+          <text x="${PAD.l - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end"
+                fill="#505872" style="font-size:10px;font-family:JetBrains Mono,monospace;">${v}</text>`;
+      }).join("");
+
+      const xLabels = [0, 15, 30, 45, 59].map(i => {
+        const x = PAD.l + i * step;
+        const txt = i === 59 ? "now" : `-${59 - i}m`;
+        return `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle"
+                  fill="#505872" style="font-size:10px;font-family:JetBrains Mono,monospace;">${txt}</text>`;
+      }).join("");
+
+      const lines = visible.map(s => {
+        const pts = s.points.map((v, i) => [PAD.l + i * step, PAD.t + chartH - (v / max) * chartH]);
+        const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+        const last = pts[pts.length - 1];
+        const fillArea = (seriesList.length === 1)
+          ? `<path d="${line} L${PAD.l + chartW},${PAD.t + chartH} L${PAD.l},${PAD.t + chartH} Z" fill="${s.color}" fill-opacity="0.15"/>`
+          : "";
+        return `
+          ${fillArea}
+          <path d="${line}" fill="none" stroke="${s.color}" stroke-width="2"
+                stroke-linejoin="round" stroke-linecap="round"
+                style="filter: drop-shadow(0 0 4px ${s.color});"/>
+          <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="${s.color}"/>
+          <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="9" fill="${s.color}" opacity="0.18"/>`;
+      }).join("");
+
+      const legendHTML = seriesList.map(s => {
+        const on = !state.hiddenSeries.has(s.zone);
+        return `<button class="leg-chip" data-action="toggle-series" data-zone="${esc(s.zone)}"
+                  aria-pressed="${on}" style="${on ? "" : "opacity:0.45;"}">
+                  <span class="leg-swatch" style="background:${s.color};color:${s.color};"></span>
+                  <span>${esc(zoneLabel(s.zone))}</span>
+                </button>`;
+      }).join("");
+
+      const subtitle = state.selectedZone
+        ? `Focused on <span style="font-family:var(--mono);color:var(--cyan);">${esc(zoneLabel(state.selectedZone))}</span> · 60-minute rolling window`
+        : "Top 5 zones · 60-minute rolling window · 1-minute buckets · click a chip to toggle a series";
+
+      return `
+      <section class="card" id="sec-trends" data-nav-section="trends">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><span class="ico">${I.chart}</span> Dwell over time</div>
+            <div class="card-sub">${subtitle}</div>
+          </div>
+          ${state.selectedZone ? `<button class="btn btn-ghost" data-action="clear-select">${I.arrow}<span>Show top 5</span></button>` : ""}
+        </div>
+        <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="none">
+          ${yGrid}
+          ${xLabels}
+          ${lines}
+        </svg>
+        <div class="chart-legend">${legendHTML}</div>
+      </section>`;
+    }
+
+    /* ============================================================
+       Top zones list
+       ============================================================ */
+    function renderTopZones() {
+      const { report } = state.snapshot;
+      const max = Math.max(1, ...report.zone_heatmap.map(z => z.dwell_secs));
+      const rows = report.zone_heatmap.map((z, i) => {
+        const pct = (z.dwell_secs / max) * 100;
+        const isSelected = state.selectedZone === z.zone;
+        const grad = pct > 75
+          ? "linear-gradient(90deg, #4ecdc4, #d4a574 60%, #e06060)"
+          : pct > 45
+            ? "linear-gradient(90deg, #4ecdc4, #d4a574)"
+            : "linear-gradient(90deg, #4ecdc4, #6bcb77)";
+        const rankClass = i === 0 ? "rank gold" : i === 1 ? "rank silver" : i === 2 ? "rank bronze" : "rank";
+        const code = floorOf(z.zone)?.code || "";
+        return `
+          <li>
+            <button class="top-row-btn" data-action="select" data-zone="${esc(z.zone)}" aria-pressed="${isSelected}">
+              <div class="top-row-line">
+                <div class="top-row-left">
+                  <span class="${rankClass}">${code || String(i + 1).padStart(2, "0")}</span>
+                  <span class="top-name">${esc(zoneLabel(z.zone))}</span>
+                  ${z.active ? `<span class="top-livepill"><span class="dot-live"></span>LIVE</span>` : ""}
+                </div>
+                <div class="top-row-right">
+                  <span class="top-dwell">${formatDuration(z.dwell_secs)}</span>
+                  <span class="top-ev">${z.events} ev</span>
+                </div>
+              </div>
+              <div class="bar"><div style="width:${pct.toFixed(1)}%;background:${grad};"></div></div>
+            </button>
+          </li>`;
+      }).join("");
+      return `
+      <section class="card" id="sec-top-zones" data-nav-section="top-zones">
+        <div class="card-head">
+          <div class="card-title"><span class="ico">${I.rank}</span> Top Zones</div>
+          <span class="pill mono">${report.zone_heatmap.length} ZONES</span>
+        </div>
+        <ul class="top-list">${rows}</ul>
+      </section>`;
+    }
+
+    /* ============================================================
+       Insights
+       ============================================================ */
+    function renderInsights() {
+      const { report, engagement, deltaPct, totalSeries } = state.snapshot;
+      const top = report.zone_heatmap[0];
+      const second = report.zone_heatmap[1];
+      const quietest = report.zone_heatmap[report.zone_heatmap.length - 1];
+      const totalEv = report.zone_heatmap.reduce((s, z) => s + z.events, 0);
+      const topShare = report.total_dwell_secs ? Math.round((top.dwell_secs / report.total_dwell_secs) * 100) : 0;
+      const items = [];
+
+      if (top && second) {
+        const diff = Math.max(0, Math.round(((top.dwell_secs - second.dwell_secs) / Math.max(1, second.dwell_secs)) * 100));
+        items.push({
+          accent: "cyan", icon: I.star,
+          html: `<b>${esc(zoneLabel(top.zone))}</b> leads dwell — <span class="mono">${formatDuration(top.dwell_secs)}</span>, <b>${diff}%</b> above <b>${esc(zoneLabel(second.zone))}</b>.`,
+        });
+      }
+      items.push({
+        accent: report.active_zones >= ZONE_LAYOUT.length * 0.6 ? "green" : "amber",
+        icon: I.users,
+        html: `<b>${report.active_zones}</b> of <b>${report.zone_heatmap.length}</b> zones currently active · <span class="mono">${totalEv}</span> presence events in window.`,
+      });
+      if (deltaPct !== 0) {
+        items.push({
+          accent: deltaPct > 0 ? "green" : "amber",
+          icon: deltaPct > 0 ? I.bolt : I.clock,
+          html: `Dwell is <b>${deltaPct > 0 ? "trending up" : "cooling down"}</b> · last 30m vs prior 30m <span class="mono">${deltaPct > 0 ? "+" : ""}${deltaPct}%</span>.`,
+        });
+      }
+      if (topShare > 30) {
+        items.push({
+          accent: "purple", icon: I.bulb,
+          html: `Dwell is <b>concentrated</b>: <b>${topShare}%</b> in <b>${esc(zoneLabel(top.zone))}</b>. Consider routing flow toward <b>${esc(zoneLabel(quietest.zone))}</b> (lightest at <span class="mono">${formatDuration(quietest.dwell_secs)}</span>).`,
+        });
+      } else {
+        items.push({
+          accent: "green", icon: I.spark,
+          html: `Dwell is <b>well distributed</b> across zones — engagement score <span class="mono">${engagement}/100</span>.`,
+        });
+      }
+
+      /* Conversion-path insight: entry → checkout dwell ratio */
+      const entryHeat = report.zone_heatmap.find(z => z.zone === "z-entry");
+      const checkoutHeat = report.zone_heatmap.find(z => z.zone === "z-checkout");
+      if (entryHeat && checkoutHeat && entryHeat.dwell_secs > 0) {
+        const ratio = Math.round((checkoutHeat.dwell_secs / entryHeat.dwell_secs) * 100);
+        items.push({
+          accent: ratio >= 60 ? "green" : ratio >= 30 ? "amber" : "cyan",
+          icon: I.arrow,
+          html: `Conversion path · <b>Checkout</b> dwell is <span class="mono">${ratio}%</span> of <b>Entry</b> dwell — ${ratio >= 60 ? "healthy follow-through" : ratio >= 30 ? "some browsing drop-off" : "high entry, light checkout"}.`,
+        });
+      }
+
+      /* Heat dispersion insight — how spread across zones */
+      const maxD = top ? top.dwell_secs : 1;
+      const hotCount = report.zone_heatmap.filter(z => z.dwell_secs > maxD * 0.5).length;
+      items.push({
+        accent: hotCount >= 4 ? "cyan" : "purple",
+        icon: I.map,
+        html: `Heat dispersion · <span class="mono">${hotCount}</span> of <span class="mono">${report.zone_heatmap.length}</span> zones above 50% of peak — ${hotCount >= 4 ? "broad activity footprint" : "activity is localized"}.`,
+      });
+
+      /* ---- Quick-stats grid (4 mini KPIs) ---- */
+      const avgVisit = totalEv > 0 ? Math.round(report.total_dwell_secs / totalEv) : 0;
+      const peakMinIdx = totalSeries.indexOf(Math.max(...totalSeries));
+      const peakMinAgo = 59 - peakMinIdx;
+      const quietZones = report.zone_heatmap.filter(z => z.dwell_secs < maxD * 0.15).length;
+
+      const quickStats = `
+        <div class="quick-stats">
+          <div class="qstat">
+            <div class="qstat-k">Peak Minute</div>
+            <div class="qstat-v cyan">${peakMinAgo === 0 ? "now" : `T-${peakMinAgo}m`}</div>
+          </div>
+          <div class="qstat">
+            <div class="qstat-k">Avg Visit</div>
+            <div class="qstat-v green">${formatDuration(avgVisit)}</div>
+          </div>
+          <div class="qstat">
+            <div class="qstat-k">Hot Zones</div>
+            <div class="qstat-v amber">${hotCount} / ${report.zone_heatmap.length}</div>
+          </div>
+          <div class="qstat">
+            <div class="qstat-k">Quietest</div>
+            <div class="qstat-v sm">${esc(zoneLabel(quietest.zone))}</div>
+          </div>
+        </div>`;
+
+      /* ---- Live event-stream feed ---- */
+      const feed = buildActivityFeed();
+      const feedHTML = feed.map(e => `
+        <div class="feed-row">
+          <span class="feed-time">${formatClock(e.ts)}</span>
+          <span class="feed-code">${esc(floorOf(e.zone)?.code || "")}</span>
+          <span class="feed-msg">${esc(zoneLabel(e.zone))} · ${esc(e.msg)}</span>
+          <span class="feed-tag ${e.tag.cls}">${esc(e.tag.text)}</span>
+        </div>`).join("");
+
+      return `
+      <section class="card" id="sec-insights" data-nav-section="insights">
+        <div class="card-head">
+          <div class="card-title"><span class="ico" style="background:var(--purple-d);color:var(--purple);">${I.bulb}</span> Insights</div>
+          <span class="pill">auto-derived</span>
+        </div>
+        <div class="insights">
+          ${items.map(it => `
+            <div class="insight ${it.accent}">
+              <span class="insight-ico ${it.accent}">${it.icon}</span>
+              <div class="insight-body">${it.html}</div>
+            </div>`).join("")}
+        </div>
+
+        <div class="divider"></div>
+        <div class="sublabel" style="margin-bottom:10px;">At a glance</div>
+        ${quickStats}
+
+        <div class="divider"></div>
+        <div class="card-head" style="margin-bottom:6px;">
+          <div class="sublabel" style="margin-bottom:0;">Live event stream</div>
+          <span class="pill mono"><span class="dot-live" style="width:6px;height:6px;"></span>STREAM</span>
+        </div>
+        <div class="feed">${feedHTML}</div>
+      </section>`;
+    }
+
+    /* ============================================================
+       Install panel
+       ============================================================ */
+    function renderInstallPanel() {
+      const fields = [
+        { k: "Cog ID",   v: "dwell-heatmap",         mono: true },
+        { k: "Version",  v: "1.0.0",                 mono: true },
+        { k: "Category", v: "Retail" },
+        { k: "Hardware", v: "ESP32-S3",              mono: true },
+        { k: "Input",    v: "WiFi-CSI presence" },
+        { k: "Binary",   v: "cog-dwell-heatmap-arm", mono: true, small: true },
+      ];
+      const fieldsHTML = fields.map(f => `
+        <div>
+          <div class="field-k">${esc(f.k)}</div>
+          <div class="field-v${f.mono ? " mono" : ""}${f.small ? " small" : ""}">${esc(f.v)}</div>
+        </div>`).join("");
+      const emits = ["dwell_time", "zone_heatmap", "engagement_score"];
+      const schema = [
+        ["zone_heatmap",     "ZoneHeat[]"],
+        ["top_zone",         "String"],
+        ["total_dwell_secs", "u64"],
+        ["active_zones",     "u32"],
+        ["window_secs",      "u64"],
+        ["timestamp",        "u64"],
+      ];
+      const commands = ["--once", "--once --interval 2", "--interval 5", "--help"];
+      return `
+      <section class="card" id="sec-install" data-nav-section="install">
+        <div class="card-head">
+          <div class="card-title"><span class="ico" style="background:var(--amber-d);color:var(--amber);">${I.cube}</span> Cog Details</div>
+          <span class="pill cyan mono">MEDIUM · 20 KB</span>
+        </div>
+        <div class="field-grid">${fieldsHTML}</div>
+
+        <div class="subsec">
+          <div class="sublabel">Emits</div>
+          <div class="pill-row">
+            ${emits.map(e => `<span class="pill mono">${esc(e)}</span>`).join("")}
+          </div>
+        </div>
+
+        <div class="subsec">
+          <div class="sublabel">Output schema</div>
+          <div class="schema-list">
+            ${schema.map(([k, v]) =>
+              `<span class="schema-k">${esc(k)}</span><span class="schema-v">${esc(v)}</span>`
+            ).join("")}
+          </div>
+        </div>
+
+        <div class="subsec">
+          <div class="sublabel">Allowed commands</div>
+          <div class="pill-row">
+            ${commands.map(c => `<span class="pill mono"><span style="color:var(--t3);">$</span> ${esc(c)}</span>`).join("")}
+          </div>
+        </div>
+
+        <div class="install-spacer"></div>
+
+        <div class="install-actions">
+          <button class="btn btn-primary btn-block" data-action="install">${I.download} Install to Seed</button>
+          <button class="btn btn-ghost btn-icon" data-action="docs" aria-label="Open docs">${I.docs}</button>
+        </div>
+        <p class="blurb">
+          Generates dwell-time heatmaps per zone to analyze customer engagement patterns and optimize
+          store layouts. Pairs with WiFi-CSI presence detection on the Cognitum Seed.
+        </p>
+      </section>`;
+    }
+
+    /* ============================================================
+       Raw JSON disclosure
+       ============================================================ */
+    function renderReportJson() {
+      const { report } = state.snapshot;
+      const json = JSON.stringify(report, null, 2);
+      return `
+      <section class="card" id="sec-raw" data-nav-section="raw">
+        <button class="disclosure-btn" data-action="toggle-json" aria-expanded="${state.jsonOpen}">
+          <div class="card-title"><span class="ico">${I.code}</span> Raw Report
+            <span class="pill mono">stdout JSON</span>
+          </div>
+          <span class="chev ${state.jsonOpen ? "open" : ""}">${I.chev}</span>
+        </button>
+        ${state.jsonOpen ? `<pre class="json-pre">${esc(json)}</pre>` : ""}
+      </section>`;
+    }
+
+    /* ============================================================
+       Footer
+       ============================================================ */
+    function renderFooter() {
+      return `
+      <footer class="footer">
+        <div class="footer-inner">
+          <span>cog · <span class="fg">dwell-heatmap</span> · part of
+            <a href="https://github.com/cognitum-one/cogs" target="_blank" rel="noreferrer">cognitum-one/cogs</a>
+          </span>
+          <span>Cognitum Seed · ESP32-S3 · WiFi-CSI presence</span>
+        </div>
+      </footer>`;
+    }
+
+    /* ============================================================
+       Render orchestration
+       ============================================================ */
+    let sectionObserver = null;
+
+    function setActiveSection(id) {
+      if (!id || state.activeSection === id) return;
+      state.activeSection = id;
+      document.querySelectorAll(".nav-link").forEach(link => {
+        const lid = link.getAttribute("data-nav-link");
+        const on = lid === id;
+        link.setAttribute("data-active", on ? "true" : "false");
+        link.setAttribute("aria-current", on ? "true" : "false");
+      });
+    }
+
+    function setupSectionObserver() {
+      if (sectionObserver) sectionObserver.disconnect();
+      const sections = document.querySelectorAll("[data-nav-section]");
+      if (!sections.length || typeof IntersectionObserver === "undefined") return;
+      const visible = new Map();
+      sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute("data-nav-section");
+          if (entry.isIntersecting) visible.set(id, entry.boundingClientRect.top);
+          else visible.delete(id);
+        });
+        if (!visible.size) return;
+        let bestId = null, bestTop = Infinity;
+        visible.forEach((top, id) => {
+          const score = Math.abs(top);
+          if (score < bestTop) { bestTop = score; bestId = id; }
+        });
+        setActiveSection(bestId);
+      }, { rootMargin: "-15% 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] });
+      sections.forEach(s => sectionObserver.observe(s));
+    }
+
+    function render() {
+      const app = document.getElementById("app");
+      app.innerHTML =
+        renderTopBar() +
+        `<main class="main">
+          ${renderStatGrid()}
+          <div class="two-col">
+            <div class="col-stack">
+              ${renderFloorplan()}
+              ${renderTimeChart()}
+              ${renderInstallPanel()}
+            </div>
+            <div class="col-stack">
+              ${renderTopZones()}
+              ${renderInsights()}
+            </div>
+          </div>
+          ${renderReportJson()}
+        </main>` +
+        renderFooter();
+
+      // Re-bind canvas + observer after DOM rebuild
+      startHeat();
+      setupSectionObserver();
+    }
+
+    /* ============================================================
+       Event delegation
+       ============================================================ */
+    document.addEventListener("click", function (e) {
+      const t = e.target.closest("[data-action]");
+      if (!t) return;
+      const action = t.getAttribute("data-action");
+      if (action === "toggle-live") {
+        state.live = !state.live;
+        render();
+      } else if (action === "select") {
+        const z = t.getAttribute("data-zone");
+        state.selectedZone = state.selectedZone === z ? null : z;
+        render();
+      } else if (action === "clear-select") {
+        state.selectedZone = null;
+        render();
+      } else if (action === "toggle-json") {
+        state.jsonOpen = !state.jsonOpen;
+        render();
+      } else if (action === "toggle-series") {
+        const z = t.getAttribute("data-zone");
+        if (state.hiddenSeries.has(z)) state.hiddenSeries.delete(z);
+        else state.hiddenSeries.add(z);
+        render();
+      } else if (action === "nav") {
+        const target = t.getAttribute("data-nav-link");
+        const el = document.querySelector(`[data-nav-section="${target}"]`);
+        if (el) {
+          setActiveSection(target);
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } else if (action === "install" || action === "docs") {
+        // no-op: demo
+      }
+    });
+
+    /* ============================================================
+       Live loops
+       ============================================================ */
+    setInterval(function () {
+      if (!state.live) return;
+      state.tick += 1;
+      state.snapshot = buildSnapshot(state.tick);
+      state.now = Math.floor(Date.now() / 1000);
+      seedHeatPoints();   // re-distribute points based on new dwell weights
+      render();
+    }, 5000);
+
+    setInterval(function () {
+      state.now = Math.floor(Date.now() / 1000);
+      const t = document.getElementById("live-text");
+      if (t) {
+        const rel = formatRelative(state.snapshot.report.timestamp, state.now);
+        t.innerHTML = `<b>${state.live ? "LIVE" : "PAUSED"}</b> · ${rel}`;
+      }
+    }, 1000);
+
+    render();
+  })();
+  </script>
+</body>
+</html>

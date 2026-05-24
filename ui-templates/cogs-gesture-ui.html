@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Gesture — DTW Recognition Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────── Design tokens (Cogs brand) ─────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(185 80% 50% / 0.18) 0%,hsl(280 70% 60% / 0.12) 60%,hsl(220 20% 10%) 100%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ─────────────────────────── App bar / top nav ─────────────────────────── */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:34px;height:34px;border-radius:0.5rem;
+  background:linear-gradient(135deg,hsl(185 80% 50% / 0.2),hsl(280 70% 60% / 0.2));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+.brand-mark svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+/* ─────────────────────────── Layout ─────────────────────────── */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.crumbs{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-family:var(--font-mono)}
+.crumbs a{color:hsl(var(--muted-foreground))}
+.crumbs a:hover{color:hsl(var(--primary))}
+.crumbs .sep{margin:0 0.4rem;color:hsl(var(--border))}
+
+/* ─────────────────────────── Hero (cog header) ─────────────────────────── */
+.hero{
+  background:var(--gradient-hero);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.75rem 2rem;
+  box-shadow:var(--shadow-card);
+  display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 600px 200px at 80% 0%,hsl(var(--primary) / 0.15),transparent 70%);
+}
+.hero-emo{
+  font-size:4.5rem;line-height:1;flex-shrink:0;
+  filter:drop-shadow(0 4px 12px hsl(var(--primary) / 0.4));
+}
+.hero-body{flex:1;min-width:260px;position:relative;z-index:1}
+.hero-cat{
+  display:inline-block;padding:0.2rem 0.55rem;border-radius:9999px;
+  background:hsl(var(--primary) / 0.18);color:hsl(var(--primary));
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;
+}
+.hero-name{font-size:2rem;font-weight:700;color:hsl(var(--foreground));line-height:1.1;margin-bottom:0.3rem}
+.hero-tag{font-size:0.9375rem;color:hsl(var(--muted-foreground));max-width:46rem;line-height:1.55}
+.hero-meta{
+  display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:0.875rem;
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));
+}
+.hero-meta .k{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.3rem}
+.hero-meta .v{color:hsl(var(--foreground))}
+.hero-actions{display:flex;gap:0.5rem;align-items:center;margin-top:1rem;flex-wrap:wrap}
+
+/* ─────────────────────────── Tab nav ─────────────────────────── */
+.subnav{
+  display:flex;gap:0.25rem;align-items:center;flex-wrap:wrap;
+  padding:0.5rem;margin:1rem 0;
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.625rem;
+  position:sticky;top:4rem;z-index:20;
+  backdrop-filter:blur(8px);
+}
+.tab-btn{
+  padding:0.45rem 0.95rem;border-radius:0.45rem;
+  font-size:0.8125rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:transparent;border:1px solid transparent;
+  cursor:pointer;transition:all 0.15s;font-family:var(--font-display);
+}
+.tab-btn:hover{color:hsl(var(--foreground));background:hsl(var(--secondary) / 0.6)}
+.tab-btn.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.subnav .spacer{flex:1}
+.subnav .pulse{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  padding:0.3rem 0.6rem;
+}
+.pulse .dot{
+  width:0.5rem;height:0.5rem;border-radius:9999px;
+  background:hsl(var(--primary));box-shadow:0 0 6px hsl(var(--primary) / 0.7);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+.pulse .dot.live{
+  background:hsl(var(--accent));box-shadow:0 0 10px hsl(var(--accent));
+  animation:pulse 1.1s ease-in-out infinite;
+}
+.pulse .dot.off{background:hsl(var(--muted-foreground) / 0.4);box-shadow:none;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.panel{display:none}
+.panel.on{display:block}
+
+/* ─────────────────────────── Cards ─────────────────────────── */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:0.875rem;gap:0.5rem;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* KPI strip */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{
+  background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(35 85% 55% / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(35 85% 60%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.1;margin-top:0.15rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+/* Generic grids */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+
+/* ─────────────────────────── Buttons ─────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.95rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.15s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.32rem 0.65rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9);transform:translateY(-1px)}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.9)}
+.btn.outline{background:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:hsl(var(--muted-foreground))}
+.btn.ghost:hover{color:hsl(var(--foreground));background:hsl(var(--secondary) / 0.5)}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.22)}
+.btn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Chips */
+.chip{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.15rem 0.5rem;border-radius:9999px;
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+  font-size:0.625rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  font-family:var(--font-mono);
+}
+.chip.easy{background:hsl(142 70% 50% / 0.15);color:hsl(142 70% 65%)}
+.chip.medium{background:hsl(35 85% 55% / 0.15);color:hsl(35 85% 70%)}
+.chip.hard{background:hsl(0 65% 55% / 0.15);color:hsl(0 70% 70%)}
+.chip.dev{background:hsl(142 70% 50% / 0.15);color:hsl(142 70% 65%)}
+.chip.signal{background:hsl(185 80% 50% / 0.15);color:hsl(185 80% 65%)}
+.chip.live{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));border:1px solid hsl(var(--accent) / 0.3)}
+
+/* Inputs */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.42rem 0.7rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=range]{accent-color:hsl(var(--primary))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));padding:0}
+
+/* ─────────────────────────── Templates table ─────────────────────────── */
+.tpl-grid{display:grid;gap:0.625rem}
+.tpl-row{
+  display:grid;grid-template-columns:32px 1fr auto auto auto auto;
+  gap:0.75rem;align-items:center;
+  padding:0.7rem 0.875rem;border-radius:0.5rem;
+  background:hsl(var(--secondary) / 0.35);
+  border:1px solid hsl(var(--border) / 0.4);
+  transition:all 0.15s;
+}
+.tpl-row:hover{border-color:hsl(var(--primary) / 0.4);background:hsl(var(--secondary) / 0.55)}
+.tpl-row.disabled{opacity:0.55}
+.tpl-icon{
+  width:32px;height:32px;border-radius:0.4rem;
+  background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.tpl-name{font-weight:600;font-size:0.875rem;color:hsl(var(--foreground))}
+.tpl-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+.tpl-conf{
+  font-family:var(--font-mono);font-size:0.8125rem;font-weight:600;
+  color:hsl(var(--accent));min-width:54px;text-align:right;
+}
+.tpl-actions{display:flex;gap:0.35rem}
+.tpl-actions .btn{padding:0.28rem 0.55rem;font-size:0.6875rem}
+
+/* Switch */
+.switch{position:relative;display:inline-block;width:34px;height:20px;cursor:pointer;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{
+  position:absolute;inset:0;background:hsl(var(--muted));border-radius:9999px;
+  transition:background 0.2s;
+}
+.switch .slider::before{
+  content:"";position:absolute;left:2px;top:2px;
+  width:16px;height:16px;background:hsl(var(--foreground));border-radius:50%;
+  transition:transform 0.2s;
+}
+.switch input:checked + .slider{background:hsl(var(--primary))}
+.switch input:checked + .slider::before{transform:translateX(14px)}
+
+/* ─────────────────────────── Chart cards ─────────────────────────── */
+.chart-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+  box-shadow:var(--shadow-card);
+  display:flex;flex-direction:column;
+}
+.chart-host{width:100%;height:220px;margin-top:0.5rem;position:relative}
+.chart-host canvas{width:100%;height:100%;display:block}
+.chart-legend{display:flex;gap:0.875rem;flex-wrap:wrap;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.6rem}
+.chart-legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:0.35rem;vertical-align:middle}
+
+/* Live event feed */
+.feed{
+  font-family:var(--font-mono);font-size:0.75rem;
+  display:flex;flex-direction:column;gap:0.4rem;
+  max-height:340px;overflow-y:auto;padding-right:0.25rem;
+}
+.feed-row{
+  display:grid;grid-template-columns:78px 1fr auto auto;gap:0.625rem;align-items:center;
+  padding:0.4rem 0.55rem;border-radius:0.35rem;
+  border:1px solid hsl(var(--border) / 0.4);
+  background:hsl(var(--secondary) / 0.3);
+  animation:slidein 0.3s ease;
+}
+@keyframes slidein{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.feed-ts{color:hsl(var(--muted-foreground) / 0.8)}
+.feed-name{color:hsl(var(--foreground));font-weight:600;font-family:var(--font-display);font-size:0.8125rem}
+.feed-conf{color:hsl(var(--accent));font-weight:600}
+.feed-id{color:hsl(var(--primary));font-size:0.625rem}
+
+/* CSI waveform */
+.csi-host{height:220px;background:hsl(var(--background) / 0.6);border-radius:0.5rem;border:1px solid hsl(var(--border) / 0.4);position:relative;overflow:hidden}
+.csi-host canvas{width:100%;height:100%;display:block}
+
+/* ─────────────────────────── Modal ─────────────────────────── */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.78);backdrop-filter:blur(6px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-radius:var(--radius);box-shadow:var(--shadow-card);
+  padding:1.5rem 1.75rem;max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.3rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{
+  display:block;font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.35rem;
+}
+.modal-row input,.modal-row select,.modal-row textarea{width:100%}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;
+  display:flex;flex-direction:column;gap:0.5rem;
+  max-width:340px;
+}
+.toast-msg{
+  background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.4);
+  border-radius:0.5rem;padding:0.65rem 0.85rem;font-size:0.8125rem;
+  box-shadow:0 8px 24px -8px hsl(220 25% 2% / 0.6);
+  animation:tin 0.25s ease;
+}
+.toast-msg.ok{border-color:hsl(var(--accent) / 0.5);color:hsl(var(--accent))}
+.toast-msg.err{border-color:hsl(var(--destructive) / 0.5);color:hsl(0 70% 70%)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Code blocks */
+pre.codebox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  overflow:auto;line-height:1.6;color:hsl(var(--foreground));
+  white-space:pre;max-height:32rem;
+}
+.copy-row{position:relative}
+.copy-btn{
+  position:absolute;top:0.45rem;right:0.45rem;
+  padding:0.2rem 0.5rem;border:1px solid hsl(var(--border));
+  border-radius:0.3rem;background:hsl(var(--secondary));
+  color:hsl(var(--foreground));font-family:var(--font-display);
+  font-size:0.6875rem;font-weight:500;cursor:pointer;opacity:0.85;
+}
+.copy-btn:hover{opacity:1;border-color:hsl(var(--primary) / 0.5)}
+.copy-btn.copied{background:hsl(var(--accent) / 0.18);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.4)}
+
+/* File tree */
+.tree{font-family:var(--font-mono);font-size:0.75rem;line-height:1.85;color:hsl(var(--muted-foreground))}
+.tree .f{color:hsl(var(--foreground))}
+.tree .d{color:hsl(var(--primary))}
+
+/* ─────────────────────────── Heatmap (canvas, thermal) ─────────────────────────── */
+.heat-host{
+  width:100%;
+  aspect-ratio:24 / 6;
+  max-height:240px;
+  margin-top:0.75rem;
+  background:#06060a;
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.5rem;
+  padding:0.5rem;
+  position:relative;
+  overflow:hidden;
+}
+.heat-host::before{
+  /* faint scanline overlay so the thermal field reads like a sensor image */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:overlay;
+  z-index:2;
+}
+.heat-host canvas{width:100%;height:100%;display:block;cursor:crosshair;position:relative;z-index:1}
+.heat-scale{display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem}
+.heat-scale-bar{
+  flex:1;max-width:280px;height:10px;border-radius:3px;
+  background:linear-gradient(
+    90deg,
+    rgb(10,8,28)     0%,
+    rgb(28,10,55)    8%,
+    rgb(65,15,85)   18%,
+    rgb(120,20,80)  30%,
+    rgb(180,35,60)  42%,
+    rgb(230,60,40)  55%,
+    rgb(250,120,30) 68%,
+    rgb(255,175,35) 80%,
+    rgb(255,225,80) 90%,
+    rgb(255,255,220) 100%
+  );
+  border:1px solid hsl(var(--border) / 0.5);
+}
+
+/* ─────────────────────────── Chart tooltip ─────────────────────────── */
+.chart-tip{
+  position:fixed;z-index:400;pointer-events:none;
+  background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.5);
+  padding:0.45rem 0.6rem;border-radius:0.35rem;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--foreground));
+  box-shadow:0 8px 24px -8px hsl(220 25% 2% / 0.6);
+  opacity:0;transition:opacity 0.1s;line-height:1.5;
+}
+.chart-tip.on{opacity:1}
+.chart-tip .k{color:hsl(var(--muted-foreground));margin-right:0.35rem}
+.chart-tip .v{color:hsl(var(--accent))}
+
+.range-btn.on{
+  background:hsl(var(--primary)) !important;
+  color:hsl(var(--primary-foreground)) !important;
+  border-color:hsl(var(--primary)) !important;
+  font-weight:600;
+}
+
+/* Settings rows */
+.cfg-row{
+  display:grid;grid-template-columns:200px 1fr auto;gap:1rem;align-items:center;
+  padding:0.75rem 0;border-bottom:1px dashed hsl(var(--border) / 0.4);
+}
+.cfg-row:last-child{border-bottom:none}
+.cfg-label{font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground))}
+.cfg-label .desc{display:block;font-weight:400;font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+.cfg-val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--accent));min-width:60px;text-align:right}
+.cfg-row input[type=range]{width:100%}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+
+@media (max-width: 640px){
+  .hero{padding:1.25rem}
+  .hero-name{font-size:1.5rem}
+  .tpl-row{grid-template-columns:32px 1fr auto;gap:0.5rem}
+  .tpl-row .tpl-conf,.tpl-row .tpl-actions{grid-column:2 / -1;justify-content:flex-end}
+  .cfg-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <!-- Gesture / hand-wave icon -->
+        <svg viewBox="0 0 24 24">
+          <path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/>
+          <path d="M12 11V4.5a1.5 1.5 0 0 1 3 0V11"/>
+          <path d="M15 11V6.5a1.5 1.5 0 0 1 3 0V14"/>
+          <path d="M9 11V8.5a1.5 1.5 0 0 0-3 0V15c0 3.3 2.7 6 6 6s6-2.7 6-6"/>
+        </svg>
+      </div>
+      <span class="brand-text"><b>Gesture</b><span class="slash">/</span>DTW Recognition Engine<span class="brand-ver mono">v2.0.0</span></span>
+    </div>
+    <nav class="nav" id="topnav">
+      <a data-tab="overview" class="active">Overview</a>
+      <a data-tab="templates">Templates</a>
+      <a data-tab="live">Recognition</a>
+      <a data-tab="analytics">Analytics</a>
+      <a data-tab="source">Source</a>
+      <a data-tab="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ───────── Hero ───────── -->
+  <div class="hero">
+    <div class="hero-emo">👋</div>
+    <div class="hero-body">
+      <span class="hero-cat">Signal · Developer</span>
+      <h1 class="hero-name">Gesture</h1>
+      <p class="hero-tag">Core gesture recognition engine using Dynamic Time Warping. Provides template management, matching, and confidence scoring against ESP32-S3 CSI motion frames.</p>
+      <div class="hero-meta">
+        <div><span class="k">version</span><span class="v">v2.0.0</span></div>
+        <div><span class="k">size</span><span class="v">16 KB</span></div>
+        <div><span class="k">difficulty</span><span class="v">Easy</span></div>
+        <div><span class="k">hardware</span><span class="v">ESP32-S3</span></div>
+        <div><span class="k">input</span><span class="v">CSI motion</span></div>
+        <div><span class="k">events</span><span class="v">gesture_match</span></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" id="install-btn">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          <span id="install-label">Install</span>
+        </button>
+        <button class="btn outline" id="details-btn">Details</button>
+        <button class="btn outline" id="docs-btn">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M2 4h20v16H2zM2 9h20"/></svg>
+          Docs
+        </button>
+        <span class="chip easy">Easy</span>
+        <span class="chip dev">Developer</span>
+        <span class="chip signal">Signal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Stream indicator strip ───────── -->
+  <div class="subnav" role="status">
+    <span class="pulse" style="padding-left:0.4rem">
+      <span class="dot live" id="stream-dot"></span>
+      <span id="stream-text">Recognising · emitting gesture_match · 50 Hz</span>
+    </span>
+    <span class="spacer"></span>
+    <span style="font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));padding:0.3rem 0.6rem">
+      cog: <span style="color:hsl(var(--foreground))">gesture</span> · esp32-s3 · csi @ 50 Hz
+    </span>
+  </div>
+
+  <!-- ─────────────────────────── Overview ─────────────────────────── -->
+  <div class="panel on" id="panel-overview" role="tabpanel">
+
+    <div class="kpi-grid section">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><polyline points="7,14 11,10 15,13 21,7"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Templates</div>
+          <div class="kpi-val" id="kpi-tpl">6</div>
+          <div class="kpi-sub">5 enabled</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Matches / hr</div>
+          <div class="kpi-val" id="kpi-rate">142</div>
+          <div class="kpi-sub" id="kpi-rate-sub">rolling 60 min</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Avg confidence</div>
+          <div class="kpi-val" id="kpi-conf">0.87</div>
+          <div class="kpi-sub">threshold 0.65</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-12V5l-8-3-8 3v5c0 8 8 12 8 12z"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">DTW cost (avg)</div>
+          <div class="kpi-val" id="kpi-cost">0.41</div>
+          <div class="kpi-sub">lower is closer</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Description</div>
+            <div class="card-sub">What this cog does</div>
+          </div>
+        </div>
+        <p style="font-size:0.875rem;line-height:1.65;color:hsl(var(--foreground) / 0.92)">
+          The Gesture cog runs a Dynamic Time Warping (DTW) matcher over a sliding window of CSI amplitude frames from the
+          ESP32-S3. Each enabled template is scored independently; the best score under the threshold emits a
+          <code>gesture_match</code> event with the matched <code>template_id</code> and a normalised
+          <code>confidence</code> in [0, 1].
+        </p>
+        <p style="font-size:0.875rem;line-height:1.65;color:hsl(var(--foreground) / 0.92);margin-top:0.75rem">
+          Templates are loaded at boot from flash and may be added, retrained, or disabled at runtime. The matcher is
+          gated by a configurable activation window and Sakoe-Chiba band to keep latency under one frame at 50 Hz.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Events emitted</div>
+            <div class="card-sub">Subscribe via the cog bus</div>
+          </div>
+          <span class="chip" style="background:hsl(var(--accent) / 0.15);color:hsl(var(--accent))">1 topic</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.625rem">
+          <div style="padding:0.7rem 0.875rem;border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;background:hsl(var(--background) / 0.4)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <code style="color:hsl(var(--primary));font-size:0.875rem;font-weight:600">gesture_match</code>
+              <span class="chip signal">event</span>
+            </div>
+            <div style="margin-top:0.5rem;font-family:var(--font-mono);font-size:0.6875rem;line-height:1.7;color:hsl(var(--muted-foreground))">
+              <div><span style="color:hsl(var(--accent))">confidence</span>  <span style="opacity:0.6">f32 ∈ [0,1]</span></div>
+              <div><span style="color:hsl(var(--accent))">template_id</span>  <span style="opacity:0.6">str, e.g. "wave_left"</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.875rem">
+          <div class="card-sub" style="margin-bottom:0.4rem">Hardware</div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+            <span class="chip">ESP32-S3</span>
+            <span class="chip">CSI motion</span>
+            <span class="chip">50 Hz</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">DTW match trail</div>
+          <div class="card-sub">Last 60 seconds of best-template confidence (live)</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="ov-reset-chart">Reset</button>
+        </div>
+      </div>
+      <div class="chart-host" style="height:200px"><canvas id="chart-overview"></canvas></div>
+      <div class="chart-legend">
+        <span><i class="sw" style="background:hsl(var(--primary))"></i>Confidence</span>
+        <span><i class="sw" style="background:hsl(var(--accent))"></i>Threshold</span>
+        <span><i class="sw" style="background:hsl(35 85% 60%)"></i>DTW cost</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Templates ─────────────────────────── -->
+  <div class="panel" id="panel-templates" role="tabpanel">
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Gesture templates</div>
+          <div class="card-sub">Stored in flash · loaded at boot</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="tpl-export">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m-5-5l5 5 5-5M5 21h14"/></svg>
+            Export
+          </button>
+          <button class="btn sm primary" id="tpl-add-btn">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Add template
+          </button>
+        </div>
+      </div>
+      <div class="tpl-grid" id="tpl-list"></div>
+    </div>
+
+    <div class="grid-2 section">
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Per-template DTW similarity</div>
+            <div class="card-sub">Distance to live signal · lower = closer match</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="chart-radar"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Match distribution</div>
+            <div class="card-sub">Share of matches per template (session)</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="chart-donut"></canvas></div>
+        <div class="chart-legend" id="donut-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Live ─────────────────────────── -->
+  <div class="panel" id="panel-live" role="tabpanel">
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Live recognition</div>
+          <div class="card-sub">Synthetic CSI feed · click Start to begin emitting gesture_match events</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm accent" id="live-start" disabled>
+            <svg class="ic" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+            Resume
+          </button>
+          <button class="btn sm danger" id="live-stop">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" fill="currentColor"/></svg>
+            Pause
+          </button>
+          <button class="btn sm outline" id="live-clear">Clear</button>
+        </div>
+      </div>
+      <div class="csi-host"><canvas id="chart-csi"></canvas></div>
+      <div class="chart-legend">
+        <span><i class="sw" style="background:hsl(var(--primary))"></i>CSI subcarrier A</span>
+        <span><i class="sw" style="background:hsl(var(--accent))"></i>CSI subcarrier B</span>
+        <span><i class="sw" style="background:hsl(35 85% 60%)"></i>Motion envelope</span>
+      </div>
+    </div>
+
+    <div class="grid-2 section">
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Confidence (live)</div>
+            <div class="card-sub">Best-template score, last 60 s</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="chart-live-conf"></canvas></div>
+        <div class="chart-legend">
+          <span><i class="sw" style="background:hsl(var(--primary))"></i>Confidence</span>
+          <span><i class="sw" style="background:hsl(var(--accent))"></i>Threshold</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">gesture_match feed</div>
+            <div class="card-sub" id="feed-sub">0 events</div>
+          </div>
+        </div>
+        <div class="feed" id="feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Analytics ─────────────────────────── -->
+  <div class="panel" id="panel-analytics" role="tabpanel">
+    <div class="grid-2 section">
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Confidence vs duration</div>
+            <div class="card-sub" id="scatter-sub">0 events · hover a dot for details</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <select id="scatter-tpl" class="input" style="height:1.85rem;width:auto;font-size:0.75rem">
+              <option value="">All templates</option>
+            </select>
+            <button class="btn sm outline" id="scatter-clear">Clear</button>
+          </div>
+        </div>
+        <div class="chart-host" style="height:260px"><canvas id="chart-scatter"></canvas></div>
+        <div class="chart-legend" id="scatter-legend"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Match rate</div>
+            <div class="card-sub" id="rate-sub">Bucketed live · 0 matches</div>
+          </div>
+          <div style="display:flex;gap:0.25rem">
+            <button class="btn sm outline range-btn on" data-range="60">1 min</button>
+            <button class="btn sm outline range-btn" data-range="300">5 min</button>
+            <button class="btn sm outline range-btn" data-range="1800">30 min</button>
+          </div>
+        </div>
+        <div class="chart-host" style="height:260px"><canvas id="chart-area"></canvas></div>
+        <div class="chart-legend">
+          <span><i class="sw" style="background:hsl(var(--primary))"></i>matches / bucket</span>
+          <span><i class="sw" style="background:hsl(var(--accent))"></i>rolling mean</span>
+        </div>
+      </div>
+
+      <div class="chart-card" style="grid-column:1/-1">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Activity heatmap</div>
+            <div class="card-sub" id="heat-sub">Match count · day-of-week × hour-of-day (last 7 days)</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <select id="heat-tpl" class="input" style="height:1.85rem;width:auto;font-size:0.75rem">
+              <option value="">All templates</option>
+            </select>
+            <button class="btn sm outline" id="heat-resample">Resample</button>
+          </div>
+        </div>
+        <div class="heat-host"><canvas id="chart-heat"></canvas></div>
+        <div class="heat-scale">
+          <span style="font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">low</span>
+          <div class="heat-scale-bar"></div>
+          <span style="font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">high</span>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">max <span id="heat-max" style="color:hsl(var(--foreground))">—</span> matches</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Source ─────────────────────────── -->
+  <div class="panel" id="panel-source" role="tabpanel">
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Source</div>
+          <div class="card-sub">cognitum-one/cogs/src/cogs/gesture</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="src-open">Open in repo →</button>
+          <button class="btn sm outline" id="src-copy-path">Copy path</button>
+        </div>
+      </div>
+      <div class="copy-row">
+        <pre class="codebox" id="src-tree"><span class="d">gesture/</span>
+├── <span class="f">manifest.toml</span>          <span style="color:hsl(var(--muted-foreground))"># name, version, deps, events</span>
+├── <span class="f">cog.py</span>                 <span style="color:hsl(var(--muted-foreground))"># entrypoint + event loop</span>
+├── <span class="f">dtw.py</span>                 <span style="color:hsl(var(--muted-foreground))"># Sakoe-Chiba banded DTW</span>
+├── <span class="f">templates.py</span>           <span style="color:hsl(var(--muted-foreground))"># load / save / enable / score</span>
+├── <span class="d">templates/</span>
+│   ├── <span class="f">wave_left.bin</span>
+│   ├── <span class="f">wave_right.bin</span>
+│   ├── <span class="f">circle_cw.bin</span>
+│   ├── <span class="f">circle_ccw.bin</span>
+│   ├── <span class="f">push.bin</span>
+│   └── <span class="f">tap.bin</span>
+└── <span class="d">tests/</span>
+    ├── <span class="f">test_dtw.py</span>
+    └── <span class="f">test_templates.py</span></pre>
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">manifest.toml</div>
+          <div class="card-sub">Cog metadata</div>
+        </div>
+        <button class="btn sm outline copy-btn" data-copy-target="manifest" style="position:static">Copy</button>
+      </div>
+      <div class="copy-row">
+<pre class="codebox" id="manifest">[cog]
+name        = "gesture"
+version     = "2.0.0"
+description = "Core DTW gesture recognition engine with template management"
+author      = "developer"
+size_kb     = 16
+difficulty  = "easy"
+category    = "signal"
+
+[hardware]
+target = "esp32-s3"
+
+[inputs]
+csi_motion = { rate_hz = 50, channels = 2 }
+
+[[events]]
+name   = "gesture_match"
+fields = ["confidence", "template_id"]
+
+[config]
+threshold       = 0.65
+window_ms       = 1200
+smoothing       = 0.35
+band_width      = 8
+max_templates   = 12</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Settings ─────────────────────────── -->
+  <div class="panel" id="panel-settings" role="tabpanel">
+    <div class="card section">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Runtime configuration</div>
+          <div class="card-sub">Applied to the matcher on save · persisted to flash</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="cfg-reset">Reset to defaults</button>
+          <button class="btn sm primary" id="cfg-save">Save</button>
+        </div>
+      </div>
+
+      <div class="cfg-row">
+        <div class="cfg-label">Match threshold
+          <span class="desc">Min confidence to emit gesture_match · 0.50–0.95</span>
+        </div>
+        <input type="range" id="cfg-threshold" min="0.50" max="0.95" step="0.01" value="0.65">
+        <div class="cfg-val" id="cfg-threshold-v">0.65</div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">DTW window (ms)
+          <span class="desc">Sliding window over CSI frames · 400–2400</span>
+        </div>
+        <input type="range" id="cfg-window" min="400" max="2400" step="100" value="1200">
+        <div class="cfg-val" id="cfg-window-v">1200</div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">Smoothing α
+          <span class="desc">EMA factor on motion envelope · 0.10–0.80</span>
+        </div>
+        <input type="range" id="cfg-smoothing" min="0.10" max="0.80" step="0.01" value="0.35">
+        <div class="cfg-val" id="cfg-smoothing-v">0.35</div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">Sakoe-Chiba band
+          <span class="desc">Warping band width in frames · 2–16</span>
+        </div>
+        <input type="range" id="cfg-band" min="2" max="16" step="1" value="8">
+        <div class="cfg-val" id="cfg-band-v">8</div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">Auto-suppress repeats
+          <span class="desc">Reject same template within N ms</span>
+        </div>
+        <input type="range" id="cfg-suppress" min="0" max="2000" step="50" value="350">
+        <div class="cfg-val" id="cfg-suppress-v">350 ms</div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">Emit on confidence change
+          <span class="desc">Re-fire if best template confidence shifts &gt; 0.1</span>
+        </div>
+        <div></div>
+        <label class="switch"><input type="checkbox" id="cfg-emit-change" checked><span class="slider"></span></label>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-label">Train mode
+          <span class="desc">Capture new templates over the cog bus</span>
+        </div>
+        <div></div>
+        <label class="switch"><input type="checkbox" id="cfg-train"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: gesture</span> &middot; <span class="mono">v2.0.0</span> &middot; <span class="mono">16 KB</span> &middot; <a id="foot-src" href="#">source</a></div>
+    <div style="margin-top:0.4rem"><a data-tab="source">source</a> &middot; <a data-tab="settings">settings</a> &middot; <a href="#" id="foot-issue">report issue</a></div>
+  </footer>
+</div>
+
+<!-- ───────── Add template modal ───────── -->
+<div class="modal-bg" id="modal-add">
+  <div class="modal">
+    <h3>Add template</h3>
+    <div class="modal-sub">Capture a new gesture from the live CSI stream and store it on flash.</div>
+    <div class="modal-row">
+      <label>Template id</label>
+      <input id="add-id" placeholder="e.g. swipe_up" maxlength="32">
+    </div>
+    <div class="modal-row">
+      <label>Display name</label>
+      <input id="add-name" placeholder="e.g. Swipe up">
+    </div>
+    <div class="modal-row">
+      <label>Capture duration (ms)</label>
+      <input id="add-dur" type="number" min="400" max="3000" value="1200">
+    </div>
+    <div class="modal-row">
+      <label>Emoji</label>
+      <input id="add-emo" maxlength="2" value="✋" style="width:70px;text-align:center;font-size:1.1rem">
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" id="add-cancel">Cancel</button>
+      <button class="btn primary" id="add-save">Capture &amp; save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── Details modal ───────── -->
+<div class="modal-bg" id="modal-details">
+  <div class="modal" style="max-width:680px">
+    <h3>Gesture · cog details</h3>
+    <div class="modal-sub">Core DTW gesture recognition engine with template management.</div>
+    <div style="font-family:var(--font-mono);font-size:0.75rem;line-height:1.85;color:hsl(var(--muted-foreground))">
+      <div><span style="color:hsl(var(--accent))">name</span>         gesture</div>
+      <div><span style="color:hsl(var(--accent))">version</span>      v2.0.0</div>
+      <div><span style="color:hsl(var(--accent))">size</span>         16 KB</div>
+      <div><span style="color:hsl(var(--accent))">difficulty</span>   Easy</div>
+      <div><span style="color:hsl(var(--accent))">author</span>       Developer</div>
+      <div><span style="color:hsl(var(--accent))">category</span>     signal</div>
+      <div><span style="color:hsl(var(--accent))">hardware</span>     ESP32-S3</div>
+      <div><span style="color:hsl(var(--accent))">input</span>        CSI motion (50 Hz, 2 channels)</div>
+      <div><span style="color:hsl(var(--accent))">events</span>       gesture_match { confidence, template_id }</div>
+      <div><span style="color:hsl(var(--accent))">algorithm</span>    Sakoe-Chiba banded DTW</div>
+      <div><span style="color:hsl(var(--accent))">latency</span>      &lt; 20 ms @ 50 Hz</div>
+      <div><span style="color:hsl(var(--accent))">source</span>       cognitum-one/cogs/src/cogs/gesture</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="details-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="chart-tip" id="chart-tip"></div>
+
+<script>
+/* ─────────────────────────── Helpers ─────────────────────────── */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const css = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const hsl = (h, a=1) => `hsl(${h} / ${a})`;
+const COL = {
+  primary:  '185 80% 50%',
+  primary2: '185 80% 70%',
+  accent:   '142 70% 50%',
+  warn:     '35 85% 60%',
+  pink:     '320 70% 65%',
+  purple:   '280 70% 65%',
+  muted:    '215 15% 55%',
+  fg:       '210 20% 92%',
+  bg:       '220 25% 6%',
+  border:   '220 15% 22%',
+};
+
+function toast(msg, kind='ok'){
+  const t = document.createElement('div');
+  t.className = 'toast-msg ' + kind;
+  t.textContent = msg;
+  $('#toast').appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(8px)'; t.style.transition='all 0.25s'; }, 2200);
+  setTimeout(() => t.remove(), 2600);
+}
+
+/* ─────────────────────────── State ─────────────────────────── */
+const STATE = {
+  installed: false,
+  threshold: 0.65,
+  liveOn: true,
+  liveTimer: null,
+  csiTimer: null,
+  t: 0,
+  confHistory: [],          // [{t, conf, cost}]
+  liveConfHistory: [],      // [{t, conf}]
+  csiBuf: { A: [], B: [], E: [] },
+  feed: [],                 // last events
+  matchCounts: {},          // tpl_id -> count
+  scatter: [],              // [{x:duration_ms, y:conf, tpl, ts}]
+  eventLog: [],             // [{ts_ms, tpl}]  used by rate chart + heatmap
+  rateRange: 60,            // seconds covered by the rate chart
+  heatTpl: '',              // filter heatmap by template id ('' = all)
+  scatterTpl: '',           // filter scatter by template id ('' = all)
+  heatData: null,           // 7x24 matrix of counts (built from eventLog)
+  templates: [
+    { id:'wave_left',   name:'Wave left',     emo:'👈', enabled:true,  trained:42, conf:0.91 },
+    { id:'wave_right',  name:'Wave right',    emo:'👉', enabled:true,  trained:38, conf:0.89 },
+    { id:'circle_cw',   name:'Circle clockwise', emo:'🔄', enabled:true, trained:25, conf:0.83 },
+    { id:'circle_ccw',  name:'Circle counter-cw', emo:'🔃', enabled:true, trained:21, conf:0.80 },
+    { id:'push',        name:'Push forward',  emo:'🤚', enabled:true,  trained:30, conf:0.86 },
+    { id:'tap',         name:'Tap',           emo:'☝️', enabled:false, trained:12, conf:0.71 },
+  ],
+};
+
+/* ─────────────────────────── Tabs (top nav switches panels) ─────────────────────────── */
+function showTab(tab){
+  $$('#topnav a').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  $$('.panel').forEach(p => p.classList.remove('on'));
+  const target = $('#panel-' + tab);
+  if (target) target.classList.add('on');
+  setTimeout(renderAllCharts, 0);
+}
+$$('#topnav a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  showTab(a.dataset.tab);
+}));
+$$('[data-tab]:not(#topnav a)').forEach(el => el.addEventListener('click', e => {
+  if (el.dataset.tab) { e.preventDefault(); showTab(el.dataset.tab); }
+}));
+
+/* ─────────────────────────── Install button ─────────────────────────── */
+const installBtn = $('#install-btn');
+installBtn.addEventListener('click', () => {
+  STATE.installed = !STATE.installed;
+  $('#install-label').textContent = STATE.installed ? 'Installed · Uninstall' : 'Install';
+  installBtn.classList.toggle('primary', !STATE.installed);
+  installBtn.classList.toggle('outline', STATE.installed);
+  installBtn.classList.toggle('danger', STATE.installed);
+  toast(STATE.installed ? 'Gesture installed to fleet' : 'Gesture uninstalled', 'ok');
+});
+
+/* Hero: details / docs */
+$('#details-btn').addEventListener('click', () => $('#modal-details').classList.add('show'));
+$('#details-close').addEventListener('click', () => $('#modal-details').classList.remove('show'));
+$('#modal-details').addEventListener('click', e => { if (e.target.id === 'modal-details') e.currentTarget.classList.remove('show'); });
+$('#docs-btn').addEventListener('click', () => toast('Opening cog guide…'));
+
+/* ─────────────────────────── Templates ─────────────────────────── */
+function renderTemplates(){
+  const root = $('#tpl-list');
+  root.innerHTML = STATE.templates.map(t => `
+    <div class="tpl-row ${t.enabled ? '' : 'disabled'}" data-id="${t.id}">
+      <div class="tpl-icon">${t.emo}</div>
+      <div>
+        <div class="tpl-name">${t.name}</div>
+        <div class="tpl-meta">id=${t.id} · trained ${t.trained}×</div>
+      </div>
+      <div class="tpl-conf">${t.conf.toFixed(2)}</div>
+      <label class="switch" title="${t.enabled ? 'Disable' : 'Enable'}">
+        <input type="checkbox" data-act="toggle" ${t.enabled ? 'checked' : ''}>
+        <span class="slider"></span>
+      </label>
+      <div class="tpl-actions">
+        <button class="btn sm outline" data-act="train">Train</button>
+        <button class="btn sm danger" data-act="delete">Delete</button>
+      </div>
+    </div>
+  `).join('');
+  root.querySelectorAll('.tpl-row').forEach(row => {
+    const id = row.dataset.id;
+    row.querySelector('[data-act=toggle]').addEventListener('change', e => {
+      const t = STATE.templates.find(x => x.id === id);
+      t.enabled = e.target.checked;
+      row.classList.toggle('disabled', !t.enabled);
+      updateKpi();
+      renderRadar();
+      toast(`Template "${t.id}" ${t.enabled ? 'enabled' : 'disabled'}`);
+    });
+    row.querySelector('[data-act=train]').addEventListener('click', () => {
+      const t = STATE.templates.find(x => x.id === id);
+      const btn = row.querySelector('[data-act=train]');
+      btn.disabled = true;
+      let n = 3;
+      btn.textContent = 'Training ' + n;
+      const iv = setInterval(() => {
+        n--;
+        if (n <= 0){
+          clearInterval(iv);
+          t.trained++;
+          t.conf = Math.min(0.99, t.conf + 0.01 + Math.random() * 0.03);
+          renderTemplates();
+          renderRadar();
+          toast(`"${t.id}" retrained · ${t.trained} samples`, 'ok');
+        } else {
+          btn.textContent = 'Training ' + n;
+        }
+      }, 600);
+    });
+    row.querySelector('[data-act=delete]').addEventListener('click', () => {
+      const idx = STATE.templates.findIndex(x => x.id === id);
+      if (idx < 0) return;
+      if (!confirm(`Delete template "${id}"? This removes it from flash.`)) return;
+      STATE.templates.splice(idx, 1);
+      delete STATE.matchCounts[id];
+      STATE.scatter = STATE.scatter.filter(p => p.tpl !== id);
+      STATE.eventLog = STATE.eventLog.filter(e => e.tpl !== id);
+      renderTemplates();
+      renderRadar();
+      renderDonut();
+      updateKpi();
+      refreshScatterLegend();
+      renderScatter();
+      renderHeat();
+      toast(`Template "${id}" deleted`);
+    });
+  });
+}
+
+$('#tpl-add-btn').addEventListener('click', () => {
+  $('#modal-add').classList.add('show');
+  $('#add-id').focus();
+});
+$('#add-cancel').addEventListener('click', () => $('#modal-add').classList.remove('show'));
+$('#modal-add').addEventListener('click', e => { if (e.target.id === 'modal-add') e.currentTarget.classList.remove('show'); });
+$('#add-save').addEventListener('click', () => {
+  const id = $('#add-id').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const name = $('#add-name').value.trim() || id;
+  const emo = $('#add-emo').value.trim() || '✋';
+  if (!id) { toast('Template id required', 'err'); return; }
+  if (STATE.templates.find(t => t.id === id)) { toast('Id already exists', 'err'); return; }
+  STATE.templates.push({ id, name, emo, enabled:true, trained:1, conf:0.70 + Math.random()*0.15 });
+  $('#modal-add').classList.remove('show');
+  $('#add-id').value=''; $('#add-name').value='';
+  renderTemplates(); renderRadar(); renderDonut(); updateKpi();
+  refreshScatterLegend(); renderScatter(); renderHeat();
+  toast(`Captured "${id}" (1 sample)`, 'ok');
+});
+
+$('#tpl-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(STATE.templates, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gesture_templates.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Templates exported');
+});
+
+function updateKpi(){
+  $('#kpi-tpl').textContent = STATE.templates.length;
+  const en = STATE.templates.filter(t => t.enabled).length;
+  $('#kpi-tpl').nextElementSibling.textContent = en + ' enabled';
+  const avg = STATE.templates.filter(t => t.enabled).reduce((s,t) => s+t.conf, 0) / (en || 1);
+  $('#kpi-conf').textContent = (avg || 0).toFixed(2);
+  $('#kpi-conf').nextElementSibling.textContent = 'threshold ' + STATE.threshold.toFixed(2);
+}
+
+/* ─────────────────────────── Charts (canvas-based, no bar graphs) ─────────────────────────── */
+function fitCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  // Canvas is in a hidden panel — skip until ResizeObserver tells us it has a size.
+  if (r.width < 2 || r.height < 2) return null;
+  canvas.width = Math.floor(r.width * dpr);
+  canvas.height = Math.floor(r.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* Line chart with two series + threshold rule (NO bars) */
+function drawLineChart(canvas, opts){
+  const fit = fitCanvas(canvas); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 36, r: 12, t: 12, b: 22 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const series = opts.series || [];
+  const xmin = opts.xmin ?? 0;
+  const xmax = opts.xmax ?? 1;
+  const ymin = opts.ymin ?? 0;
+  const ymax = opts.ymax ?? 1;
+
+  // grid + y-ticks
+  ctx.strokeStyle = hsl(COL.border, 0.5);
+  ctx.fillStyle   = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.lineWidth = 1;
+  const yt = opts.yticks ?? 5;
+  for (let i = 0; i <= yt; i++){
+    const y = pad.t + ch - (i / yt) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    const val = ymin + (i / yt) * (ymax - ymin);
+    const txt = opts.ylabel ? opts.ylabel(val) : val.toFixed(2);
+    ctx.fillText(txt, 4, y + 3);
+  }
+  // x ticks
+  const xt = opts.xticks ?? 5;
+  for (let i = 0; i <= xt; i++){
+    const x = pad.l + (i / xt) * cw;
+    const val = xmin + (i / xt) * (xmax - xmin);
+    const txt = opts.xlabel ? opts.xlabel(val) : val.toFixed(0);
+    ctx.fillText(txt, x - 8, h - 6);
+  }
+
+  // threshold line
+  if (opts.threshold !== undefined){
+    const y = pad.t + ch - ((opts.threshold - ymin) / (ymax - ymin)) * ch;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = hsl(COL.accent, 0.6);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  series.forEach(s => {
+    if (!s.data.length) return;
+    const stroke = s.color || hsl(COL.primary);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = s.width || 2;
+    ctx.beginPath();
+    s.data.forEach((p, i) => {
+      const x = pad.l + ((p[0] - xmin) / (xmax - xmin || 1)) * cw;
+      const y = pad.t + ch - ((p[1] - ymin) / (ymax - ymin || 1)) * ch;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    if (s.fill){
+      ctx.lineTo(pad.l + cw, pad.t + ch);
+      ctx.lineTo(pad.l, pad.t + ch);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+      grad.addColorStop(0, s.fill);
+      grad.addColorStop(1, hsl(COL.bg, 0));
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+  });
+}
+
+/* Radar chart (polygon) — replaces bar chart of per-template scores */
+function drawRadar(canvas, labels, values, valuesB){
+  const fit = fitCanvas(canvas); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2 + 4;
+  const R = Math.min(w, h) / 2 - 28;
+  const n = labels.length;
+  if (n < 3) return;
+  // rings
+  ctx.strokeStyle = hsl(COL.border, 0.6);
+  ctx.fillStyle   = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  for (let r = 1; r <= 4; r++){
+    ctx.beginPath();
+    for (let i = 0; i < n; i++){
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + Math.cos(a) * (R * r / 4);
+      const y = cy + Math.sin(a) * (R * r / 4);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.stroke();
+  }
+  // axes + labels
+  for (let i = 0; i < n; i++){
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+    ctx.strokeStyle = hsl(COL.border, 0.5);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+    ctx.fillStyle = hsl(COL.fg, 0.8);
+    const tx = cx + Math.cos(a) * (R + 14), ty = cy + Math.sin(a) * (R + 14) + 4;
+    ctx.textAlign = Math.cos(a) > 0.3 ? 'left' : (Math.cos(a) < -0.3 ? 'right' : 'center');
+    ctx.fillText(labels[i], tx, ty);
+  }
+  ctx.textAlign = 'start';
+  // polygon B (secondary - dotted)
+  if (valuesB){
+    ctx.beginPath();
+    for (let i = 0; i < n; i++){
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const r = valuesB[i] * R;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = hsl(COL.warn, 0.85);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // polygon A
+  ctx.beginPath();
+  for (let i = 0; i < n; i++){
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const r = values[i] * R;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = hsl(COL.primary, 0.25);
+  ctx.strokeStyle = hsl(COL.primary, 0.9);
+  ctx.lineWidth = 2;
+  ctx.fill(); ctx.stroke();
+  // points
+  for (let i = 0; i < n; i++){
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const r = values[i] * R;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    ctx.fillStyle = hsl(COL.primary);
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+/* Donut chart */
+function drawDonut(canvas, slices){
+  const fit = fitCanvas(canvas); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2;
+  const R = Math.min(w, h) / 2 - 12;
+  const r = R * 0.62;
+  const total = slices.reduce((s, x) => s + x.v, 0) || 1;
+  let a0 = -Math.PI / 2;
+  slices.forEach(s => {
+    const a1 = a0 + (s.v / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    a0 = a1;
+  });
+  // inner hole
+  ctx.beginPath();
+  ctx.fillStyle = hsl(COL.bg);
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // center label
+  ctx.fillStyle = hsl(COL.fg);
+  ctx.font = 'bold 22px Outfit, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(String(total), cx, cy + 2);
+  ctx.fillStyle = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('matches', cx, cy + 18);
+  ctx.textAlign = 'start';
+}
+
+/* Scatter plot */
+function drawScatter(canvas, points, opts){
+  const fit = fitCanvas(canvas); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 40, r: 12, t: 12, b: 26 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const xmin = opts.xmin, xmax = opts.xmax, ymin = opts.ymin, ymax = opts.ymax;
+  // grid
+  ctx.strokeStyle = hsl(COL.border, 0.5);
+  ctx.fillStyle = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  for (let i = 0; i <= 4; i++){
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    const v = ymax - (i / 4) * (ymax - ymin);
+    ctx.fillText(v.toFixed(2), 4, y + 3);
+  }
+  for (let i = 0; i <= 5; i++){
+    const x = pad.l + (i / 5) * cw;
+    const v = xmin + (i / 5) * (xmax - xmin);
+    ctx.fillText(v.toFixed(0) + 'ms', x - 12, h - 8);
+  }
+  // axis labels
+  ctx.fillStyle = hsl(COL.muted, 0.8);
+  ctx.fillText('duration →', pad.l + cw - 60, h - 22);
+  ctx.save();
+  ctx.translate(10, pad.t + ch/2 + 30);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('confidence ↑', 0, 0);
+  ctx.restore();
+  // points
+  points.forEach(p => {
+    const x = pad.l + ((p.x - xmin) / (xmax - xmin)) * cw;
+    const y = pad.t + ch - ((p.y - ymin) / (ymax - ymin)) * ch;
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+/* CSI waveform (multi-trace, looping) — auto-scaled so bursts never clip. */
+function drawCsi(){
+  const canvas = $('#chart-csi');
+  if (!canvas) return;
+  const fit = fitCanvas(canvas); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+
+  const series = [
+    { buf: STATE.csiBuf.A, color: hsl(COL.primary), width: 1.6 },
+    { buf: STATE.csiBuf.B, color: hsl(COL.accent),  width: 1.6 },
+    { buf: STATE.csiBuf.E, color: hsl(COL.warn),    width: 2.3 },
+  ];
+
+  // Compute the actual extents across all traces and pick a symmetric range
+  // padded by ~12 % so peaks have headroom against the top/bottom edges.
+  let absMax = 1;
+  series.forEach(s => { for (const v of s.buf) { const a = Math.abs(v); if (a > absMax) absMax = a; } });
+  const range = absMax * 1.12;
+  const pad = 6;
+  const innerH = h - pad * 2;
+  const mid = h / 2;
+  const ampToY = v => mid - (v / range) * (innerH / 2);
+
+  // background gridlines + midline
+  ctx.strokeStyle = hsl(COL.border, 0.3);
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++){
+    const y = pad + (i / 4) * innerH;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  ctx.strokeStyle = hsl(COL.border, 0.55);
+  ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+
+  // amplitude scale tag (top-right)
+  ctx.fillStyle = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('±' + range.toFixed(2), w - 6, 12);
+  ctx.textAlign = 'start';
+
+  series.forEach(s => {
+    if (!s.buf.length) return;
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.width;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    s.buf.forEach((v, i) => {
+      const x = (i / (s.buf.length - 1 || 1)) * w;
+      const y = ampToY(v);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+}
+
+/* ─────────────────────────── Renderers ─────────────────────────── */
+function renderOverviewChart(){
+  const c = $('#chart-overview');
+  if (!c) return;
+  const data = STATE.confHistory;
+  const xmin = data.length ? data[0].t : 0;
+  const xmax = data.length ? data[data.length-1].t : 60;
+  drawLineChart(c, {
+    xmin, xmax, ymin:0, ymax:1, yticks:4, xticks:6,
+    xlabel: v => Math.round(xmax - v) + 's',
+    threshold: STATE.threshold,
+    series: [
+      { data: data.map(d => [d.t, d.conf]), color: hsl(COL.primary), width: 2.2, fill: hsl(COL.primary, 0.18) },
+      { data: data.map(d => [d.t, d.cost]), color: hsl(COL.warn),    width: 1.5 },
+    ],
+  });
+}
+
+function renderLiveConf(){
+  const c = $('#chart-live-conf');
+  if (!c) return;
+  const data = STATE.liveConfHistory;
+  const xmin = data.length ? data[0].t : 0;
+  const xmax = data.length ? data[data.length-1].t : 60;
+  drawLineChart(c, {
+    xmin, xmax, ymin:0, ymax:1, yticks:4, xticks:6,
+    xlabel: v => Math.round(xmax - v) + 's',
+    threshold: STATE.threshold,
+    series: [
+      { data: data.map(d => [d.t, d.conf]), color: hsl(COL.primary), width: 2.2, fill: hsl(COL.primary, 0.2) },
+    ],
+  });
+}
+
+function renderRadar(){
+  const c = $('#chart-radar');
+  if (!c) return;
+  const tps = STATE.templates.filter(t => t.enabled);
+  if (!tps.length){
+    const fit = fitCanvas(c); if (!fit) return; const { ctx, w, h } = fit;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = hsl(COL.muted);
+    ctx.font = '12px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText('No enabled templates', w/2, h/2);
+    ctx.textAlign = 'start';
+    return;
+  }
+  const labels = tps.map(t => t.id);
+  const conf = tps.map(t => t.conf);
+  // live "distance" — invert conf with a bit of jitter for the dotted overlay
+  const live = tps.map(t => Math.min(1, Math.max(0, t.conf - 0.15 + (Math.random() - 0.5) * 0.12)));
+  drawRadar(c, labels, conf, live);
+}
+
+function renderDonut(){
+  const c = $('#chart-donut');
+  if (!c) return;
+  const palette = [
+    hsl(COL.primary), hsl(COL.accent), hsl(COL.warn),
+    hsl(COL.pink), hsl(COL.purple), hsl(COL.primary2),
+    hsl('220 70% 65%'), hsl('0 65% 60%'),
+  ];
+  const slices = STATE.templates.map((t, i) => ({
+    label: t.id,
+    v: STATE.matchCounts[t.id] || 0,
+    color: palette[i % palette.length],
+  })).filter(s => s.v > 0);
+  if (!slices.length){
+    const fit = fitCanvas(c); if (!fit) return; const { ctx, w, h } = fit;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = hsl(COL.muted);
+    ctx.font = '12px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText('Start the live stream to record matches', w/2, h/2);
+    ctx.textAlign = 'start';
+    $('#donut-legend').innerHTML = '';
+    return;
+  }
+  drawDonut(c, slices);
+  $('#donut-legend').innerHTML = slices.map(s =>
+    `<span><i class="sw" style="background:${s.color}"></i>${s.label} · ${s.v}</span>`
+  ).join('');
+}
+
+/* ─────────────────────────── Tooltip helper ─────────────────────────── */
+const TIP = $('#chart-tip');
+function showTip(html, x, y){
+  TIP.innerHTML = html;
+  TIP.classList.add('on');
+  // position inside viewport
+  const r = TIP.getBoundingClientRect();
+  const W = window.innerWidth, H = window.innerHeight;
+  let nx = x + 12, ny = y + 12;
+  if (nx + r.width > W - 8)  nx = x - r.width - 12;
+  if (ny + r.height > H - 8) ny = y - r.height - 12;
+  TIP.style.left = nx + 'px';
+  TIP.style.top  = ny + 'px';
+}
+function hideTip(){ TIP.classList.remove('on'); }
+
+/* ─────────────────────────── Scatter: confidence vs duration ─────────────────────────── */
+function tplColor(id){
+  const idx = STATE.templates.findIndex(t => t.id === id);
+  const palette = [hsl(COL.primary), hsl(COL.accent), hsl(COL.warn), hsl(COL.pink), hsl(COL.purple), hsl(COL.primary2), hsl('220 70% 65%'), hsl('0 65% 60%')];
+  return palette[(idx < 0 ? 0 : idx) % palette.length];
+}
+function refreshScatterLegend(){
+  $('#scatter-legend').innerHTML = STATE.templates.map(t =>
+    `<span><i class="sw" style="background:${tplColor(t.id)}"></i>${t.id}</span>`
+  ).join('');
+  // keep selectors in sync with the template list
+  const cur = STATE.scatterTpl;
+  $('#scatter-tpl').innerHTML = '<option value="">All templates</option>' +
+    STATE.templates.map(t => `<option value="${t.id}">${t.id}</option>`).join('');
+  $('#scatter-tpl').value = cur;
+  const curH = STATE.heatTpl;
+  $('#heat-tpl').innerHTML = '<option value="">All templates</option>' +
+    STATE.templates.map(t => `<option value="${t.id}">${t.id}</option>`).join('');
+  $('#heat-tpl').value = curH;
+}
+
+let SCATTER_GEOM = null;        // cached for hover hit-testing
+function renderScatter(){
+  const c = $('#chart-scatter');
+  if (!c) return;
+  const data = (STATE.scatterTpl ? STATE.scatter.filter(p => p.tpl === STATE.scatterTpl) : STATE.scatter).slice(-200);
+  const sub = data.length + ' / ' + STATE.scatter.length + ' events';
+  $('#scatter-sub').textContent = sub + ' · hover a dot for details';
+
+  const fit = fitCanvas(c); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 46, r: 14, t: 14, b: 30 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const xmin = 200, xmax = 2400, ymin = 0.4, ymax = 1.0;
+
+  // grid
+  ctx.strokeStyle = hsl(COL.border, 0.5);
+  ctx.fillStyle = hsl(COL.muted);
+  ctx.font = '10px JetBrains Mono, monospace';
+  for (let i = 0; i <= 4; i++){
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    const v = ymax - (i / 4) * (ymax - ymin);
+    ctx.fillText(v.toFixed(2), 4, y + 3);
+  }
+  for (let i = 0; i <= 5; i++){
+    const x = pad.l + (i / 5) * cw;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ch); ctx.stroke();
+    const v = xmin + (i / 5) * (xmax - xmin);
+    ctx.fillText(Math.round(v) + 'ms', x - 14, h - 10);
+  }
+  // axes
+  ctx.fillStyle = hsl(COL.fg, 0.7);
+  ctx.fillText('duration (ms) →', pad.l + cw - 92, h - 10);
+  ctx.save();
+  ctx.translate(12, pad.t + ch/2 + 36);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('confidence ↑', 0, 0);
+  ctx.restore();
+  // threshold line
+  const ty = pad.t + ch - ((STATE.threshold - ymin) / (ymax - ymin)) * ch;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = hsl(COL.accent, 0.6);
+  ctx.beginPath(); ctx.moveTo(pad.l, ty); ctx.lineTo(pad.l + cw, ty); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // points (newest brightest)
+  SCATTER_GEOM = [];
+  const n = data.length;
+  data.forEach((p, i) => {
+    if (p.x < xmin || p.x > xmax) return;
+    const x = pad.l + ((p.x - xmin) / (xmax - xmin)) * cw;
+    const y = pad.t + ch - ((Math.min(ymax, Math.max(ymin, p.y)) - ymin) / (ymax - ymin)) * ch;
+    const age = (n - 1 - i) / Math.max(1, n - 1);
+    const alpha = 0.35 + (1 - age) * 0.55;
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    SCATTER_GEOM.push({ x, y, p });
+  });
+}
+
+(function wireScatter(){
+  const c = $('#chart-scatter');
+  c.addEventListener('mousemove', e => {
+    if (!SCATTER_GEOM) return;
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    let hit = null, bestD = 12;
+    for (let i = SCATTER_GEOM.length - 1; i >= 0; i--){
+      const g = SCATTER_GEOM[i];
+      const d = Math.hypot(g.x - mx, g.y - my);
+      if (d < bestD){ bestD = d; hit = g; }
+    }
+    if (hit){
+      const p = hit.p;
+      const when = new Date(p.ts).toLocaleTimeString('en-US', { hour12:false });
+      showTip(
+        `<div><span class="k">template</span><span class="v">${p.tpl}</span></div>` +
+        `<div><span class="k">confidence</span><span class="v">${p.y.toFixed(3)}</span></div>` +
+        `<div><span class="k">duration</span><span class="v">${Math.round(p.x)} ms</span></div>` +
+        `<div><span class="k">at</span><span class="v">${when}</span></div>`,
+        e.clientX, e.clientY
+      );
+    } else hideTip();
+  });
+  c.addEventListener('mouseleave', hideTip);
+})();
+
+$('#scatter-clear').addEventListener('click', () => {
+  STATE.scatter = [];
+  renderScatter();
+  toast('Scatter cleared');
+});
+$('#scatter-tpl').addEventListener('change', e => {
+  STATE.scatterTpl = e.target.value;
+  renderScatter();
+});
+
+/* ─────────────────────────── Match rate (live, bucketed) ─────────────────────────── */
+function renderArea(){
+  const c = $('#chart-area');
+  if (!c) return;
+  const range = STATE.rateRange;          // seconds shown
+  const buckets = 30;                     // bars-worth of buckets (drawn as a line)
+  const bucketSec = range / buckets;
+  const nowMs = Date.now();
+  const startMs = nowMs - range * 1000;
+
+  const counts = new Array(buckets).fill(0);
+  STATE.eventLog.forEach(ev => {
+    if (ev.ts_ms < startMs) return;
+    const idx = Math.min(buckets - 1, Math.floor((ev.ts_ms - startMs) / 1000 / bucketSec));
+    counts[idx]++;
+  });
+  const ymax = Math.max(4, Math.ceil(Math.max(...counts) * 1.25));
+  const total = counts.reduce((s, v) => s + v, 0);
+  // rolling mean (window 5)
+  const mean = counts.map((_, i) => {
+    let s = 0, k = 0;
+    for (let j = Math.max(0, i - 2); j <= Math.min(counts.length - 1, i + 2); j++) { s += counts[j]; k++; }
+    return s / k;
+  });
+  $('#rate-sub').textContent = `Range ${range}s · ${total} matches · ${(total/range*60).toFixed(1)}/min`;
+
+  drawLineChart(c, {
+    xmin: 0, xmax: buckets - 1, ymin: 0, ymax,
+    yticks: 4, xticks: 5,
+    xlabel: v => '-' + Math.round((buckets - 1 - v) * bucketSec) + 's',
+    ylabel: v => Math.round(v).toString(),
+    series: [
+      { data: counts.map((v, i) => [i, v]), color: hsl(COL.primary), width: 2.2, fill: hsl(COL.primary, 0.22) },
+      { data: mean.map((v, i) => [i, v]),   color: hsl(COL.accent),  width: 1.5 },
+    ],
+  });
+}
+
+$$('.range-btn').forEach(b => b.addEventListener('click', () => {
+  $$('.range-btn').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  STATE.rateRange = parseInt(b.dataset.range, 10);
+  renderArea();
+}));
+
+/* ─────────────────────────── Heatmap (day-of-week × hour-of-day) ─────────────────────────── */
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function buildHeatBase(){
+  // seed with a plausible 7-day baseline so the heatmap isn't empty before any live events
+  STATE.heatData = Array.from({length:7}, (_, d) =>
+    Array.from({length:24}, (_, h) => {
+      const dayWeight  = [1.0, 1.1, 1.0, 1.05, 0.95, 0.7, 0.6][d];
+      const hourWeight = Math.exp(-Math.pow((h - 14) / 5.5, 2)) + 0.15 * Math.exp(-Math.pow((h - 9) / 3, 2));
+      const lam = 18 * hourWeight * dayWeight;
+      // Poisson-ish: sum of a few uniforms gives a chunky shape
+      let v = 0;
+      for (let k = 0; k < 4; k++) v += Math.random() * lam / 4;
+      return Math.round(v);
+    })
+  );
+}
+function heatBuckets(){
+  // start from baseline + overlay live events from the rolling event log
+  if (!STATE.heatData) buildHeatBase();
+  const grid = STATE.heatData.map(row => row.slice());
+  STATE.eventLog.forEach(ev => {
+    if (STATE.heatTpl && ev.tpl !== STATE.heatTpl) return;
+    const d = new Date(ev.ts_ms);
+    const dow = (d.getDay() + 6) % 7;     // Mon = 0
+    const hr  = d.getHours();
+    grid[dow][hr]++;
+  });
+  return grid;
+}
+/* ─────────────────────────── Thermal heatmap ──────────────────────────────
+ * Renders the 7×24 day×hour activity grid as a continuous heat field using
+ * bilinear interpolation between cells. Colour ramp follows a thermal /
+ * black-body curve (deep purple → red → orange → yellow → white) and the
+ * hottest cells breathe with a soft additive bloom so the field looks alive.
+ * ─────────────────────────────────────────────────────────────────────── */
+const THERMAL = [
+  [0.00, [  6,   4,  18]],
+  [0.06, [ 22,   8,  44]],
+  [0.14, [ 50,  10,  70]],
+  [0.24, [ 95,  18,  78]],
+  [0.36, [150,  28,  64]],
+  [0.48, [205,  42,  48]],
+  [0.60, [235,  82,  32]],
+  [0.72, [250, 140,  30]],
+  [0.82, [255, 195,  45]],
+  [0.92, [255, 235, 100]],
+  [1.00, [255, 255, 230]],
+];
+function thermal(v){
+  v = Math.max(0, Math.min(1, v));
+  for (let i = 1; i < THERMAL.length; i++){
+    const [t1, c1] = THERMAL[i];
+    if (v <= t1){
+      const [t0, c0] = THERMAL[i - 1];
+      const f = (v - t0) / (t1 - t0 || 1);
+      return [
+        (c0[0] + (c1[0] - c0[0]) * f) | 0,
+        (c0[1] + (c1[1] - c0[1]) * f) | 0,
+        (c0[2] + (c1[2] - c0[2]) * f) | 0,
+      ];
+    }
+  }
+  return [255, 255, 230];
+}
+
+const HEAT_OFF = document.createElement('canvas');   // offscreen heat field
+let HEAT_GEOM = null;
+
+function renderHeat(){
+  const c = $('#chart-heat');
+  if (!c) return;
+  const grid = heatBuckets();
+  const max = Math.max(1, ...grid.flat());
+  const total = grid.flat().reduce((s, v) => s + v, 0);
+  $('#heat-max').textContent = max;
+  $('#heat-sub').textContent =
+    `Match count · day-of-week × hour-of-day · total ${total} (last 7 days)` +
+    (STATE.heatTpl ? ' · ' + STATE.heatTpl : '');
+
+  const fit = fitCanvas(c); if (!fit) return; const { ctx, w, h } = fit;
+  ctx.clearRect(0, 0, w, h);
+
+  // Layout: leave room for day labels on the left and hour labels at the bottom.
+  const padL = 40, padR = 12, padT = 6, padB = 22;
+  const plotW = Math.max(1, w - padL - padR);
+  const plotH = Math.max(1, h - padT - padB);
+
+  // 1. Build a high-resolution thermal field on an offscreen canvas using
+  //    bilinear interpolation of the 7×24 grid. Browser's high-quality
+  //    smoothing then up-samples it onto the visible canvas, producing a
+  //    continuous heat blob rather than discrete cells.
+  const SUP = 8;                               // supersample per source cell
+  const SW = 24 * SUP, SH = 7 * SUP;
+  HEAT_OFF.width = SW; HEAT_OFF.height = SH;
+  const oc = HEAT_OFF.getContext('2d');
+  const img = oc.createImageData(SW, SH);
+  for (let y = 0; y < SH; y++){
+    const gy = (y + 0.5) / SH * 7 - 0.5;
+    const d0 = Math.max(0, Math.min(6, Math.floor(gy)));
+    const d1 = Math.max(0, Math.min(6, d0 + 1));
+    const fy = Math.max(0, Math.min(1, gy - d0));
+    for (let x = 0; x < SW; x++){
+      const gx = (x + 0.5) / SW * 24 - 0.5;
+      const h0 = Math.max(0, Math.min(23, Math.floor(gx)));
+      const h1 = Math.max(0, Math.min(23, h0 + 1));
+      const fx = Math.max(0, Math.min(1, gx - h0));
+      const v00 = grid[d0][h0], v01 = grid[d0][h1];
+      const v10 = grid[d1][h0], v11 = grid[d1][h1];
+      const vv  = v00*(1-fx)*(1-fy) + v01*fx*(1-fy) + v10*(1-fx)*fy + v11*fx*fy;
+      const a = vv / max;
+      const [r, g, b] = thermal(a);
+      const idx = (y * SW + x) * 4;
+      img.data[idx] = r; img.data[idx+1] = g; img.data[idx+2] = b; img.data[idx+3] = 255;
+    }
+  }
+  oc.putImageData(img, 0, 0);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(HEAT_OFF, padL, padT, plotW, plotH);
+
+  // 2. Additive bloom on the hottest cells, with a slow per-cell phase so the
+  //    field clearly "breathes" — the visible cue that this is *activity*.
+  const cellW = plotW / 24, cellH = plotH / 7;
+  const now = performance.now();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let d = 0; d < 7; d++){
+    for (let hh = 0; hh < 24; hh++){
+      const a = grid[d][hh] / max;
+      if (a < 0.45) continue;
+      const cx = padL + hh * cellW + cellW / 2;
+      const cy = padT + d  * cellH + cellH / 2;
+      const pulse = 1 + 0.22 * Math.sin(now / 480 + hh * 0.37 + d * 0.91);
+      const radius = Math.max(cellW, cellH) * 0.95 * pulse;
+      const [r, g, b] = thermal(Math.min(1, a * 1.1));
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      grad.addColorStop(0,    `rgba(${r},${g},${b},${0.30 + (a - 0.45) * 0.7})`);
+      grad.addColorStop(0.55, `rgba(${r},${g},${b},${0.08 + (a - 0.45) * 0.4})`);
+      grad.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 3. Axis labels on top of the field.
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.fillStyle = 'rgba(220,225,235,0.78)';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  DAYS.forEach((d, i) => {
+    const cy = padT + i * cellH + cellH / 2;
+    ctx.fillText(d, padL - 6, cy);
+  });
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let hh = 0; hh < 24; hh++){
+    if (hh % 3 !== 0) continue;
+    const cx = padL + hh * cellW + cellW / 2;
+    ctx.fillText(String(hh).padStart(2, '0'), cx, padT + plotH + 6);
+  }
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+
+  HEAT_GEOM = { padL, padT, plotW, plotH, cellW, cellH, grid, max };
+}
+
+(function wireHeat(){
+  const c = $('#chart-heat');
+  c.addEventListener('mousemove', e => {
+    if (!HEAT_GEOM) return;
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const { padL, padT, cellW, cellH, grid } = HEAT_GEOM;
+    const hh = Math.floor((mx - padL) / cellW);
+    const dd = Math.floor((my - padT) / cellH);
+    if (hh < 0 || hh > 23 || dd < 0 || dd > 6){ hideTip(); return; }
+    const v = grid[dd][hh];
+    showTip(
+      `<div><span class="k">${DAYS[dd]}</span><span class="v">${String(hh).padStart(2,'0')}:00–${String(hh).padStart(2,'0')}:59</span></div>` +
+      `<div><span class="k">matches</span><span class="v">${v}</span></div>` +
+      (STATE.heatTpl ? `<div><span class="k">template</span><span class="v">${STATE.heatTpl}</span></div>` : ''),
+      e.clientX, e.clientY
+    );
+  });
+  c.addEventListener('mouseleave', hideTip);
+})();
+
+$('#heat-resample').addEventListener('click', () => { buildHeatBase(); renderHeat(); toast('Baseline resampled'); });
+$('#heat-tpl').addEventListener('change', e => { STATE.heatTpl = e.target.value; renderHeat(); });
+
+/* ─────────────────────────── Stream (always running, dynamic) ───────────────────────────
+ * One interval drives all live visuals. The DTW match trail animates whether or not
+ * Recognition is "started" — Start only flips gesture_match emission on. */
+function streamTick(){
+  STATE.t += 0.1;
+  const now = STATE.t;
+
+  // sample CSI: two sinusoidals + envelope (plus an occasional gesture burst)
+  const burst = (Math.sin(now * 0.35) > 0.85) ? 0.7 : 0;
+  const a = Math.sin(now * 2.1) * (0.6 + burst) + (Math.random() - 0.5) * 0.3;
+  const b = Math.sin(now * 1.5 + 0.7) * (0.55 + burst * 0.8) + (Math.random() - 0.5) * 0.3;
+  const env = (Math.abs(a) + Math.abs(b)) * 0.7;
+  STATE.csiBuf.A.push(a); STATE.csiBuf.B.push(b); STATE.csiBuf.E.push(env);
+  const cap = 240;
+  ['A','B','E'].forEach(k => { if (STATE.csiBuf[k].length > cap) STATE.csiBuf[k].shift(); });
+
+  // synth confidence + DTW cost — always updates so the trail is dynamic
+  let conf = 0.25 + Math.random() * 0.25 + env * 0.6;
+  if (Math.random() < 0.07) conf = 0.78 + Math.random() * 0.2;
+  conf = Math.min(0.99, conf);
+  const cost = Math.max(0.05, 1 - conf - Math.random() * 0.05);
+  STATE.confHistory.push({ t: now, conf, cost });
+  STATE.liveConfHistory.push({ t: now, conf });
+  if (STATE.confHistory.length > 200) STATE.confHistory.shift();
+  if (STATE.liveConfHistory.length > 200) STATE.liveConfHistory.shift();
+
+  // Render visible panels only — avoids redundant canvas work on background tabs
+  if ($('#panel-overview').classList.contains('on')) renderOverviewChart();
+  if ($('#panel-live').classList.contains('on'))     { drawCsi(); renderLiveConf(); }
+  if ($('#panel-analytics').classList.contains('on')){ renderArea(); renderHeat(); }
+
+  // emit event only when Recognition is started AND we're over threshold
+  if (STATE.liveOn && conf >= STATE.threshold && (STATE.feed.length === 0 || (now - STATE.feed[0]._t) > 0.4)){
+    const en = STATE.templates.filter(t => t.enabled);
+    if (en.length){
+      const tpl = en[Math.floor(Math.random() * en.length)];
+      const nowMs = Date.now();
+      const duration = 350 + Math.round(Math.random() * 1700);
+      const ev = {
+        _t: now,
+        ts: new Date().toLocaleTimeString('en-US', { hour12:false }),
+        template_id: tpl.id,
+        confidence: conf,
+      };
+      STATE.feed.unshift(ev);
+      if (STATE.feed.length > 80) STATE.feed.pop();
+      STATE.matchCounts[tpl.id] = (STATE.matchCounts[tpl.id] || 0) + 1;
+      // analytics streams
+      STATE.scatter.push({ x: duration, y: conf, tpl: tpl.id, ts: nowMs, color: tplColor(tpl.id) });
+      if (STATE.scatter.length > 400) STATE.scatter.shift();
+      STATE.eventLog.push({ ts_ms: nowMs, tpl: tpl.id });
+      // keep eventLog bounded — keep last 7 days
+      const cutoff = nowMs - 7 * 24 * 3600 * 1000;
+      while (STATE.eventLog.length && STATE.eventLog[0].ts_ms < cutoff) STATE.eventLog.shift();
+      renderFeed();
+      renderDonut();
+      // bump rate kpi
+      const total = Object.values(STATE.matchCounts).reduce((s,v) => s+v, 0);
+      $('#kpi-rate').textContent = total;
+      $('#kpi-rate-sub').textContent = 'this session';
+      $('#kpi-cost').textContent = cost.toFixed(2);
+      // refresh analytics views if the analytics tab is showing
+      if ($('#panel-analytics').classList.contains('on')){
+        renderScatter();
+        renderArea();
+        renderHeat();
+      }
+    }
+  }
+}
+
+// Start the stream the moment the page loads so every chart is alive immediately.
+setInterval(streamTick, 100);
+
+function startLive(){
+  if (STATE.liveOn) return;
+  STATE.liveOn = true;
+  $('#live-start').disabled = true;
+  $('#live-stop').disabled = false;
+  $('#stream-dot').classList.add('live');
+  $('#stream-text').textContent = 'Recognising · emitting gesture_match · 50 Hz';
+  toast('Recognition started · emitting gesture_match', 'ok');
+}
+function stopLive(){
+  if (!STATE.liveOn) return;
+  STATE.liveOn = false;
+  $('#live-start').disabled = false;
+  $('#live-stop').disabled = true;
+  $('#stream-dot').classList.remove('live');
+  $('#stream-text').textContent = 'Stream live · not emitting';
+  toast('Event emission paused (stream still active)');
+}
+$('#live-start').addEventListener('click', startLive);
+$('#live-stop').addEventListener('click', stopLive);
+$('#live-clear').addEventListener('click', () => {
+  STATE.feed = [];
+  STATE.matchCounts = {};
+  STATE.confHistory = [];
+  STATE.liveConfHistory = [];
+  STATE.csiBuf = { A: [], B: [], E: [] };
+  STATE.scatter = [];
+  STATE.eventLog = [];
+  STATE.heatData = null;
+  renderFeed(); renderDonut(); renderOverviewChart(); renderLiveConf(); drawCsi();
+  renderScatter(); renderArea(); renderHeat();
+  $('#kpi-rate').textContent = '0';
+  toast('Cleared');
+});
+$('#ov-reset-chart').addEventListener('click', () => {
+  STATE.confHistory = []; renderOverviewChart(); toast('Chart reset');
+});
+
+function renderFeed(){
+  const feedEl = $('#feed');
+  $('#feed-sub').textContent = STATE.feed.length + ' events';
+  // Log-style autoscroll: newest at the bottom; stick to the bottom only when
+  // the user is already pinned there. If they've scrolled up to read older
+  // events, preserve their scroll offset so we don't yank them back down.
+  const wasAtBottom = (feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight) < 12;
+  const prevScrollHeight = feedEl.scrollHeight;
+  const prevScrollTop    = feedEl.scrollTop;
+
+  // STATE.feed is newest-first; reverse for chronological top→bottom display.
+  const items = STATE.feed.slice(0, 60).slice().reverse();
+  feedEl.innerHTML = items.length ? items.map(e => `
+    <div class="feed-row">
+      <span class="feed-ts">${e.ts}</span>
+      <span class="feed-name">gesture_match</span>
+      <span class="feed-id">${e.template_id}</span>
+      <span class="feed-conf">${e.confidence.toFixed(3)}</span>
+    </div>
+  `).join('')
+   : '<div style="color:hsl(var(--muted-foreground));font-size:0.8125rem;padding:0.5rem">No events yet. Stream is live · waiting for matches.</div>';
+
+  if (wasAtBottom){
+    feedEl.scrollTop = feedEl.scrollHeight;
+  } else {
+    // keep the same visual row in view as the list grows
+    feedEl.scrollTop = prevScrollTop + (feedEl.scrollHeight - prevScrollHeight);
+  }
+}
+
+/* ─────────────────────────── Settings ─────────────────────────── */
+const cfg = {
+  threshold:  ['cfg-threshold',  'cfg-threshold-v',  v => v.toFixed(2)],
+  window:     ['cfg-window',     'cfg-window-v',     v => v.toString()],
+  smoothing:  ['cfg-smoothing',  'cfg-smoothing-v',  v => v.toFixed(2)],
+  band:       ['cfg-band',       'cfg-band-v',       v => v.toString()],
+  suppress:   ['cfg-suppress',   'cfg-suppress-v',   v => v + ' ms'],
+};
+Object.entries(cfg).forEach(([k, [iId, vId, fmt]]) => {
+  const i = $('#' + iId), v = $('#' + vId);
+  i.addEventListener('input', () => {
+    const num = parseFloat(i.value);
+    v.textContent = fmt(num);
+    if (k === 'threshold'){
+      STATE.threshold = num;
+      updateKpi();
+      renderOverviewChart();
+      renderLiveConf();
+      renderScatter();
+    }
+  });
+});
+$('#cfg-save').addEventListener('click', () => toast('Config saved · matcher restarted', 'ok'));
+$('#cfg-reset').addEventListener('click', () => {
+  const defaults = { 'cfg-threshold':0.65, 'cfg-window':1200, 'cfg-smoothing':0.35, 'cfg-band':8, 'cfg-suppress':350 };
+  Object.entries(defaults).forEach(([id, v]) => {
+    const el = $('#' + id);
+    el.value = v;
+    el.dispatchEvent(new Event('input'));
+  });
+  $('#cfg-emit-change').checked = true;
+  $('#cfg-train').checked = false;
+  toast('Config reset to defaults');
+});
+$('#cfg-train').addEventListener('change', e => toast('Train mode ' + (e.target.checked ? 'enabled' : 'disabled')));
+$('#cfg-emit-change').addEventListener('change', e => toast('Emit-on-change ' + (e.target.checked ? 'on' : 'off')));
+
+/* ─────────────────────────── Source actions ─────────────────────────── */
+$('#src-open').addEventListener('click', () => toast('Opening cognitum-one/cogs/src/cogs/gesture …'));
+$('#src-copy-path').addEventListener('click', () => {
+  navigator.clipboard?.writeText('cognitum-one/cogs/src/cogs/gesture').catch(()=>{});
+  toast('Path copied', 'ok');
+});
+$$('.copy-btn[data-copy-target]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tgt = document.getElementById(btn.dataset.copyTarget);
+    if (!tgt) return;
+    navigator.clipboard?.writeText(tgt.textContent).catch(()=>{});
+    btn.classList.add('copied');
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = 'Copy'; }, 1400);
+  });
+});
+$('#foot-src').addEventListener('click', e => { e.preventDefault(); showTab('source'); });
+$('#foot-issue').addEventListener('click', e => { e.preventDefault(); toast('Opening issue tracker…'); });
+
+/* ─────────────────────────── Init ─────────────────────────── */
+function renderAllCharts(){
+  renderOverviewChart();
+  renderLiveConf();
+  renderRadar();
+  renderDonut();
+  renderScatter();
+  renderArea();
+  renderHeat();
+  drawCsi();
+}
+
+function seedHistory(){
+  // pre-fill the line charts so the overview tab isn't empty on first paint
+  let v = 0.35;
+  for (let i = 0; i < 60; i++){
+    v = Math.max(0.1, Math.min(0.95, v + (Math.random() - 0.5) * 0.18));
+    const cost = Math.max(0.05, 1 - v - Math.random() * 0.05);
+    STATE.confHistory.push({ t: i * 0.1, conf: v, cost });
+    STATE.liveConfHistory.push({ t: i * 0.1, conf: v });
+  }
+  STATE.t = 6.0;
+  // seed match counts so donut has something to show on first paint
+  STATE.templates.forEach(t => {
+    if (t.enabled) STATE.matchCounts[t.id] = Math.floor(Math.random() * 18) + 4;
+  });
+  // seed scatter + event log so the analytics tab has content before pressing Start
+  const enabled = STATE.templates.filter(t => t.enabled);
+  const nowMs = Date.now();
+  for (let i = 0; i < 140; i++){
+    const t = enabled[Math.floor(Math.random() * enabled.length)];
+    if (!t) break;
+    const conf = Math.max(0.45, Math.min(0.99, t.conf + (Math.random() - 0.5) * 0.22));
+    const dur  = 400 + Math.round(Math.random() * 1700);
+    const offset = Math.random() * 7 * 24 * 3600 * 1000;
+    STATE.scatter.push({ x: dur, y: conf, tpl: t.id, ts: nowMs - offset, color: tplColor(t.id) });
+    STATE.eventLog.push({ ts_ms: nowMs - offset, tpl: t.id });
+  }
+  STATE.scatter.sort((a, b) => a.ts - b.ts);
+  STATE.eventLog.sort((a, b) => a.ts_ms - b.ts_ms);
+
+  // seed the gesture_match feed so it's not blank on first paint — most recent ~15 events
+  const recent = STATE.eventLog.slice(-15).reverse();
+  let synthT = STATE.t;
+  recent.forEach(ev => {
+    const tpl = STATE.templates.find(t => t.id === ev.tpl);
+    if (!tpl) return;
+    synthT -= 0.3 + Math.random() * 0.4;
+    const conf = Math.max(0.65, Math.min(0.99, tpl.conf + (Math.random() - 0.4) * 0.15));
+    STATE.feed.push({
+      _t: synthT,
+      ts: new Date(ev.ts_ms).toLocaleTimeString('en-US', { hour12:false }),
+      template_id: ev.tpl,
+      confidence: conf,
+    });
+  });
+}
+
+renderTemplates();
+updateKpi();
+refreshScatterLegend();
+seedHistory();
+renderAllCharts();
+renderFeed();
+// Pin the feed to the bottom on first paint so the newest seeded event is visible.
+requestAnimationFrame(() => {
+  const feedEl = document.getElementById('feed');
+  if (feedEl) feedEl.scrollTop = feedEl.scrollHeight;
+});
+
+/* ──────────────────────────────────────────────────────────────────
+ * Canvases inside hidden panels start at 0×0, so their first render
+ * paints into a 1×1 backing buffer that CSS then stretches into a
+ * single solid block. A ResizeObserver per canvas redraws as soon as
+ * its panel is shown (or the window resizes) and the box gains real
+ * dimensions.
+ * ────────────────────────────────────────────────────────────────── */
+const CHART_RENDERERS = {
+  'chart-overview':  renderOverviewChart,
+  'chart-live-conf': renderLiveConf,
+  'chart-csi':       drawCsi,
+  'chart-radar':     renderRadar,
+  'chart-donut':     renderDonut,
+  'chart-scatter':   renderScatter,
+  'chart-area':      renderArea,
+  'chart-heat':      renderHeat,
+};
+if (typeof ResizeObserver !== 'undefined'){
+  const ro = new ResizeObserver(entries => {
+    for (const e of entries){
+      const fn = CHART_RENDERERS[e.target.id];
+      const cr = e.contentRect;
+      if (fn && cr.width > 1 && cr.height > 1) fn();
+    }
+  });
+  Object.keys(CHART_RENDERERS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) ro.observe(el);
+  });
+}
+
+window.addEventListener('resize', () => {
+  renderAllCharts();
+});
+</script>
+</body>
+</html>

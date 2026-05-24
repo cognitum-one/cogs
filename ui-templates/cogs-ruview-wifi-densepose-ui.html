@@ -4,23 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RuView WiFi DensePose · Cognitum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Cognitum Store design tokens */
+    /* Cognitum design tokens — mirrors the cognitum-one/management
+       design system: HSL palette, Outfit display + JetBrains Mono code.
+       Existing CSS variable names are kept so component styles below
+       still resolve; values now align to the template's tokens. */
     :root {
-      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      --mono: 'Cascadia Code', 'Fira Code', Consolas, monospace;
-      --bg: #0a0e1a; --bg2: #111627; --card: #171d30; --card-h: #1e2540; --border: #252d45;
-      --t1: #e0e4f0; --t2: #8890a8; --t3: #505872;
-      --cyan: #4ecdc4; --cyan-d: rgba(78,205,196,0.15);
-      --green: #6bcb77; --green-d: rgba(107,203,119,0.15);
-      --amber: #d4a574; --amber-d: rgba(212,165,116,0.15);
-      --red: #e06060; --red-d: rgba(224,96,96,0.15);
-      --purple: #a78bfa; --purple-d: rgba(167,139,250,0.15);
-      --pink: #f472b6; --pink-d: rgba(244,114,182,0.15);
-      --blue: #60a5fa; --blue-d: rgba(96,165,250,0.15);
-      --orange: #fb923c; --orange-d: rgba(251,146,60,0.15);
-      --r: 10px;
+      --font: 'Outfit', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+      /* Surfaces */
+      --bg:     hsl(220 25% 6%);
+      --bg2:    hsl(220 20% 8%);
+      --card:   hsl(220 20% 10%);
+      --card-h: hsl(220 20% 14%);
+      --border: hsl(220 15% 18%);
+      --grad-card: linear-gradient(180deg, hsl(220 20% 12%) 0%, hsl(220 20% 8%) 100%);
+      --grad-hero: linear-gradient(135deg, hsl(220 25% 6%) 0%, hsl(220 20% 10%) 50%, hsl(200 25% 8%) 100%);
+      --shadow-card: 0 8px 32px -8px hsl(220 25% 2% / 0.8);
+      /* Text */
+      --t1: hsl(210 20% 92%);
+      --t2: hsl(215 15% 55%);
+      --t3: hsl(215 15% 40%);
+      /* Accents */
+      --cyan:   hsl(185 80% 50%);  --cyan-d:   hsl(185 80% 50% / 0.12);
+      --green:  hsl(142 70% 55%);  --green-d:  hsl(142 70% 50% / 0.12);
+      --amber:  hsl(35 85% 65%);   --amber-d:  hsl(35 85% 55% / 0.12);
+      --red:    hsl(0 70% 65%);    --red-d:    hsl(0 65% 50% / 0.12);
+      --purple: hsl(280 70% 70%);  --purple-d: hsl(280 70% 60% / 0.15);
+      --pink:   hsl(320 70% 70%);  --pink-d:   hsl(320 70% 60% / 0.15);
+      --blue:   hsl(220 80% 70%);  --blue-d:   hsl(220 80% 60% / 0.15);
+      --orange: hsl(28 90% 65%);   --orange-d: hsl(28 90% 55% / 0.15);
+      --r: 0.75rem;
+      --r-sm: 0.4rem;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -28,11 +47,18 @@
       font-family: var(--font);
       background: var(--bg);
       color: var(--t1);
-      line-height: 1.6;
+      line-height: 1.5;
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.005em;
     }
     .mono { font-family: var(--mono); }
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-track { background: hsl(220 20% 14% / 0.3); border-radius: 4px; }
+    *::-webkit-scrollbar-thumb { background: hsl(185 80% 50% / 0.3); border-radius: 4px; }
+    *::-webkit-scrollbar-thumb:hover { background: hsl(185 80% 50% / 0.5); }
+    h1, h2, h3, h4 { font-family: var(--font); font-weight: 500; letter-spacing: -0.02em; }
 
     /* Aura background (from example_ui.html) */
     .aura-background-component {
@@ -45,109 +71,114 @@
       pointer-events: none;
     }
 
-    /* Top bar */
+    /* Top bar — cognitum appbar */
     .top-bar {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(17,22,39,0.85);
-      border-bottom: 1px solid var(--border);
+      background: hsl(220 25% 6% / 0.9);
+      border-bottom: 1px solid hsl(220 15% 18% / 0.5);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px; height: 56px;
-      backdrop-filter: blur(16px);
+      padding: 0 20px; height: 60px;
+      backdrop-filter: blur(8px);
     }
     .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
     .brand-icon {
-      width: 36px; height: 36px;
+      width: 32px; height: 32px;
       background: var(--cyan-d);
-      border-radius: 10px;
+      border-radius: 0.5rem;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
+      font-size: 16px;
     }
-    .brand-text { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; color: var(--t2); }
-    .brand-text b { color: var(--cyan); font-weight: 600; }
-    .top-right { display: flex; align-items: center; gap: 12px; }
+    .brand-text { font-size: 15px; font-weight: 500; color: var(--t2); letter-spacing: 0; }
+    .brand-text b { color: var(--t1); font-weight: 600; }
+    .top-right { display: flex; align-items: center; gap: 8px; }
     .nav-link {
-      font-size: 12px; color: var(--t2);
-      padding: 6px 12px; border-radius: 6px;
-      transition: 0.2s; text-decoration: none;
+      font-size: 13px; color: var(--t2);
+      padding: 0.4rem 0.75rem; border-radius: var(--r-sm);
+      transition: all 0.2s; text-decoration: none; font-weight: 500;
     }
-    .nav-link:hover { color: var(--cyan); background: var(--cyan-d); }
+    .nav-link:hover { color: var(--t1); background: hsl(220 20% 14%); }
     .pill {
       display: inline-flex; align-items: center; gap: 6px;
-      font-size: 11px; padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--green-d); color: var(--green);
-      border: 1px solid rgba(107,203,119,0.25);
+      font-size: 11px; padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      background: hsl(142 70% 50% / 0.12); color: hsl(142 70% 65%);
+      border: 1px solid hsl(142 70% 50% / 0.25);
+      font-weight: 600;
     }
     .pill .dot {
       width: 6px; height: 6px; border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green);
+      background: hsl(142 70% 55%);
+      box-shadow: 0 0 6px hsl(142 70% 50% / 0.5);
       animation: pulse 1.6s infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
     /* Main wrapper */
-    .main { max-width: 1320px; margin: 0 auto; padding: 28px 32px 80px; }
+    .main { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
 
-    /* Hero header (uses ring/dashed-border styling from example_ui2.html) */
+    /* Hero header — cognitum gradient card with subtle glow */
     .hero-shell {
       position: relative; overflow: hidden;
-      border: 1px dashed rgba(255,255,255,0.18);
-      border-radius: 0;
-      background: rgba(10,14,26,0.6);
-      padding: 28px 28px 0;
-      margin-bottom: 28px;
+      border: 1px solid hsl(220 15% 18% / 0.7);
+      border-radius: var(--r);
+      background: var(--grad-hero);
+      box-shadow: var(--shadow-card);
+      padding: 1.75rem 1.75rem 0;
+      margin-bottom: 1.5rem;
     }
     .hero-shell::before {
-      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.7;
+      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.8;
       background:
-        radial-gradient(1200px 400px at 50% -10%, rgba(78,205,196,0.22), transparent),
-        radial-gradient(1200px 600px at 50% 120%, rgba(96,165,250,0.18), transparent);
-      mask-image: radial-gradient(65% 65% at 50% 50%, black, transparent);
+        radial-gradient(900px 320px at 50% -10%, hsl(185 80% 50% / 0.18), transparent),
+        radial-gradient(900px 500px at 50% 120%, hsl(142 70% 50% / 0.10), transparent);
+      mask-image: radial-gradient(70% 70% at 50% 50%, black, transparent);
     }
     .hero-shell::after {
-      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.18;
+      content:''; position:absolute; inset:0; pointer-events:none; opacity:0.06;
       background:
-        linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px);
-      background-size: 28px 28px;
+        linear-gradient(to right, hsl(0 0% 100% / 0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, hsl(0 0% 100% / 0.6) 1px, transparent 1px);
+      background-size: 32px 32px;
       mask-image: radial-gradient(80% 80% at 50% 50%, black, transparent);
     }
     .hero-content { position: relative; z-index: 1; }
     .hero-meta {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 11px; color: var(--cyan);
-      margin-bottom: 18px;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.6875rem; color: var(--cyan);
+      margin-bottom: 1rem;
     }
-    .hero-meta .num { font-size: 22px; font-weight: 300; color: rgba(78,205,196,0.85); font-variant-numeric: tabular-nums; }
-    .hero-meta .sep { color: rgba(78,205,196,0.4); }
-    .hero-meta .lbl { letter-spacing: 0.18em; text-transform: uppercase; color: rgba(78,205,196,0.9); }
+    .hero-meta .num { font-size: 1.25rem; font-weight: 400; color: hsl(185 80% 60%); font-variant-numeric: tabular-nums; font-family: var(--mono); }
+    .hero-meta .sep { color: hsl(185 80% 50% / 0.4); }
+    .hero-meta .lbl { letter-spacing: 0.1em; text-transform: uppercase; color: hsl(185 80% 60%); font-weight: 600; font-family: var(--mono); }
     .hero h1 {
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 300; letter-spacing: -0.02em;
-      color: #fff; margin-bottom: 12px;
+      font-size: clamp(1.75rem, 3.5vw, 2.625rem);
+      font-weight: 600; letter-spacing: -0.025em;
+      color: var(--t1); margin-bottom: 0.625rem;
+      line-height: 1.15;
     }
     .hero h1 .accent { color: var(--cyan); }
     .hero p.lead {
-      max-width: 640px; color: var(--t2); font-size: 15px; margin-bottom: 22px;
+      max-width: 42rem; color: var(--t2); font-size: 0.9375rem; margin-bottom: 1.25rem;
+      line-height: 1.55;
     }
-    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
     .tag {
-      font-size: 11px; padding: 4px 10px; border-radius: 4px;
-      background: var(--bg2); border: 1px solid var(--border); color: var(--t2);
-      font-family: var(--mono);
+      font-size: 0.6875rem; padding: 0.2rem 0.55rem; border-radius: 9999px;
+      background: hsl(220 15% 15% / 0.6); border: 1px solid hsl(220 15% 18% / 0.7); color: var(--t2);
+      font-family: var(--mono); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .tag.cyan { background: var(--cyan-d); color: var(--cyan); border-color: rgba(78,205,196,0.25); }
-    .tag.purple { background: var(--purple-d); color: var(--purple); border-color: rgba(167,139,250,0.25); }
-    .tag.amber { background: var(--amber-d); color: var(--amber); border-color: rgba(212,165,116,0.25); }
-    .tag.red { background: var(--red-d); color: var(--red); border-color: rgba(224,96,96,0.25); }
+    .tag.cyan   { background: hsl(185 80% 50% / 0.12); color: hsl(185 80% 65%); border-color: hsl(185 80% 50% / 0.25); }
+    .tag.purple { background: hsl(280 70% 60% / 0.12); color: hsl(280 70% 75%); border-color: hsl(280 70% 60% / 0.25); }
+    .tag.amber  { background: hsl(35 85% 55% / 0.12);  color: hsl(35 85% 70%);  border-color: hsl(35 85% 55% / 0.3); }
+    .tag.red    { background: hsl(0 65% 50% / 0.12);   color: hsl(0 70% 70%);   border-color: hsl(0 65% 50% / 0.3); }
 
     /* Through-wall canvas panel */
     .scene-panel {
       position: relative;
-      margin: 0 -28px;
-      background: linear-gradient(180deg, rgba(10,14,26,0.2), rgba(10,14,26,0.7));
-      border-top: 1px solid var(--border);
+      margin: 0 -1.75rem;
+      background: linear-gradient(180deg, hsl(220 25% 6% / 0.2), hsl(220 25% 6% / 0.7));
+      border-top: 1px solid hsl(220 15% 18% / 0.5);
     }
     .scene-wrap {
       position: relative;
@@ -171,91 +202,101 @@
     }
     .ov-card {
       pointer-events: auto;
-      background: rgba(17,22,39,0.7);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
+      background: hsl(220 20% 10% / 0.75);
+      border: 1px solid hsl(220 15% 18% / 0.7);
+      border-radius: var(--r-sm);
+      padding: 0.5rem 0.75rem;
       backdrop-filter: blur(8px);
-      font-size: 11px;
+      font-size: 0.6875rem;
       min-width: 0;
     }
-    .ov-card .l { color: var(--t3); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
-    .ov-card .v { color: #fff; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
-    .ov-card .v .unit { color: var(--t3); font-size: 11px; margin-left: 3px; font-weight: 400; }
+    .ov-card .l { color: var(--t3); font-size: 0.625rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; font-weight: 600; font-family: var(--mono); }
+    .ov-card .v { color: var(--t1); font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+    .ov-card .v .unit { color: var(--t3); font-size: 0.6875rem; margin-left: 3px; font-weight: 400; }
 
     .legend {
-      position: absolute; left: 22px; bottom: 18px;
+      position: absolute; left: 1rem; bottom: 1rem;
       display: flex; flex-direction: column; gap: 4px;
-      background: rgba(17,22,39,0.7);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 11px;
+      background: hsl(220 20% 10% / 0.75);
+      border: 1px solid hsl(220 15% 18% / 0.7);
+      border-radius: var(--r-sm);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.6875rem;
       backdrop-filter: blur(8px);
     }
     .legend .row { display: flex; align-items: center; gap: 8px; }
     .legend .sw { width: 12px; height: 2px; }
     .legend .sw.solid { height: 12px; border-radius: 50%; }
 
-    /* Bento grid dashboard (adapted from example_ui2.html) */
+    /* Bento dashboard — cognitum card with gradient + subtle border */
     .bento {
-      background: rgba(0,0,0,0.4);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--grad-card);
+      border-radius: var(--r);
+      border: 1px solid hsl(220 15% 18% / 0.6);
+      box-shadow: var(--shadow-card);
       overflow: hidden;
       position: relative;
     }
     .bento::before {
-      content:''; position: absolute; top: -40px; right: -40px;
-      width: 224px; height: 224px;
-      background: rgba(78,205,196,0.10);
+      content:''; position: absolute; top: -60px; right: -60px;
+      width: 280px; height: 280px;
+      background: hsl(185 80% 50% / 0.08);
       border-radius: 50%;
-      filter: blur(60px);
+      filter: blur(80px);
+      pointer-events: none;
     }
     .bento-topbar {
       display: flex; justify-content: space-between; align-items: center;
-      background: rgba(0,0,0,0.3);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding: 12px 20px;
+      background: hsl(220 20% 8% / 0.6);
+      border-bottom: 1px solid hsl(220 15% 18% / 0.5);
+      padding: 0.75rem 1.25rem;
       position: relative;
     }
-    .bento-topbar .crumbs { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--t2); }
-    .bento-topbar .crumbs a { color: #fff; }
-    .bento-topbar .crumbs .sep { opacity: 0.6; }
+    .bento-topbar .crumbs { display: flex; align-items: center; gap: 0.625rem; font-size: 0.8125rem; color: var(--t2); }
+    .bento-topbar .crumbs a { color: var(--t1); text-decoration: none; font-weight: 500; }
+    .bento-topbar .crumbs a:hover { color: var(--cyan); }
+    .bento-topbar .crumbs .sep { opacity: 0.5; }
     .bento-topbar .crumbs .badge {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 2px 8px; border-radius: 999px;
-      background: var(--cyan-d); color: var(--cyan);
-      border: 1px solid rgba(78,205,196,0.25);
-      font-size: 11px;
+      padding: 0.125rem 0.5rem; border-radius: 9999px;
+      background: hsl(185 80% 50% / 0.12); color: hsl(185 80% 65%);
+      border: 1px solid hsl(185 80% 50% / 0.25);
+      font-size: 0.6875rem; font-weight: 600;
     }
     .bento-topbar .crumbs .badge .dot {
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--cyan);
       animation: pulse 1.6s infinite;
     }
-    .bento-topbar .actions { display: flex; align-items: center; gap: 12px; }
+    .bento-topbar .actions { display: flex; align-items: center; gap: 0.5rem; }
     .input-shell {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 0 10px; height: 32px;
+      display: flex; align-items: center; gap: 0.5rem;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18%);
+      border-radius: var(--r-sm);
+      padding: 0 0.625rem; height: 2.25rem;
+      transition: all 0.15s;
+    }
+    .input-shell:focus-within {
+      border-color: hsl(185 80% 50%);
+      box-shadow: 0 0 0 2px hsl(185 80% 50% / 0.25);
     }
     .input-shell input {
       background: transparent; border: 0; outline: none;
-      color: var(--t1); font-size: 13px; width: 200px;
+      color: var(--t1); font-size: 0.8125rem; width: 200px;
+      font-family: var(--font);
     }
     .input-shell input::placeholder { color: var(--t3); }
     .btn-mini {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 8px;
-      background: rgba(255,255,255,0.05); color: #fff;
-      border: 1px solid rgba(255,255,255,0.1);
-      font-size: 12px; cursor: pointer;
-      transition: 0.2s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.75rem; border-radius: var(--r-sm);
+      background: hsl(220 20% 14%); color: var(--t1);
+      border: 1px solid hsl(220 15% 18%);
+      font-size: 0.75rem; cursor: pointer;
+      font-family: var(--font); font-weight: 500;
+      transition: all 0.2s;
     }
-    .btn-mini:hover { background: rgba(255,255,255,0.1); }
+    .btn-mini:hover { background: hsl(220 20% 14% / 0.7); border-color: hsl(185 80% 50% / 0.5); }
 
     .bento-grid {
       display: grid;
@@ -267,183 +308,218 @@
       .bento-grid > .side { display: none; }
     }
     .bento-grid > .side {
-      background: rgba(0,0,0,0.2);
-      padding: 16px;
+      background: hsl(220 25% 6% / 0.4);
+      padding: 1rem;
     }
-    .bento-grid > .side.left { border-right: 1px solid rgba(255,255,255,0.1); }
-    .bento-grid > .side.right { border-left: 1px solid rgba(255,255,255,0.1); }
+    .bento-grid > .side.left  { border-right: 1px solid hsl(220 15% 18% / 0.5); }
+    .bento-grid > .side.right { border-left:  1px solid hsl(220 15% 18% / 0.5); }
 
-    .nav-section { margin-bottom: 18px; }
+    .nav-section { margin-bottom: 1.25rem; }
     .nav-section .h {
-      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--t3); padding: 0 8px; margin-bottom: 6px;
+      font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--t3); padding: 0 0.5rem; margin-bottom: 0.4rem;
+      font-weight: 600; font-family: var(--mono);
     }
     .nav-section ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
     .nav-section a {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 10px; border-radius: 6px;
-      font-size: 13px; color: var(--t2); text-decoration: none;
-      transition: 0.15s;
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0.625rem; border-radius: var(--r-sm);
+      font-size: 0.8125rem; color: var(--t2); text-decoration: none;
+      transition: all 0.2s; font-weight: 500;
     }
-    .nav-section a:hover { background: rgba(255,255,255,0.05); color: var(--t1); }
+    .nav-section a:hover { background: hsl(220 20% 14%); color: var(--t1); }
     .nav-section a.active {
-      color: #fff; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      color: hsl(185 80% 60%); background: hsl(185 80% 50% / 0.1);
+      border: 1px solid hsl(185 80% 50% / 0.2);
+      font-weight: 600;
     }
     .nav-section a .ico { width: 14px; height: 14px; opacity: 0.7; }
 
     .bento-main { display: flex; flex-direction: column; min-width: 0; }
     .bento-tabs {
-      display: flex; align-items: center; gap: 22px;
-      padding: 12px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid hsl(220 15% 18% / 0.5);
       overflow-x: auto;
     }
     .bento-tabs button {
-      background: transparent; border: 0; cursor: pointer;
-      font-size: 13px; color: var(--t3);
-      padding: 4px 0;
-      transition: color 0.15s;
-      position: relative;
-      white-space: nowrap;
+      background: transparent; border: 1px solid transparent; cursor: pointer;
+      font-size: 0.8125rem; color: var(--t2);
+      padding: 0.45rem 0.95rem; border-radius: var(--r-sm);
+      transition: all 0.15s;
+      white-space: nowrap; font-family: var(--font); font-weight: 500;
     }
-    .bento-tabs button:hover { color: var(--t1); }
-    .bento-tabs button.active { color: #fff; }
-    .bento-tabs button.active::after {
-      content: ''; position: absolute;
-      left: 0; right: 0; bottom: -13px;
-      height: 2px; background: var(--cyan);
+    .bento-tabs button:hover { color: var(--t1); background: hsl(220 20% 14% / 0.6); }
+    .bento-tabs button.active {
+      color: hsl(220 25% 6%); background: hsl(185 80% 50%);
+      border-color: hsl(185 80% 50%); font-weight: 600;
+      box-shadow: 0 4px 8px -2px hsl(185 80% 50% / 0.3);
     }
 
     .bento-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 1.125rem 1.25rem;
+      border-bottom: 1px solid hsl(220 15% 18% / 0.5);
     }
     .bento-header .row1 { display: flex; align-items: center; justify-content: space-between; }
     .bento-header h3 {
-      font-size: 22px; font-weight: 300; letter-spacing: -0.01em; color: #fff;
-      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; color: var(--t1);
+      display: inline-flex; align-items: center; gap: 0.625rem;
     }
     .bento-header h3 .badge {
-      font-size: 11px; padding: 2px 8px; border-radius: 6px;
-      background: var(--cyan-d); color: var(--cyan);
-      border: 1px solid rgba(78,205,196,0.25);
+      font-size: 0.6875rem; padding: 0.15rem 0.55rem; border-radius: 9999px;
+      background: hsl(185 80% 50% / 0.12); color: hsl(185 80% 65%);
+      border: 1px solid hsl(185 80% 50% / 0.25);
+      font-weight: 600; font-family: var(--mono);
     }
-    .bento-header .upd { font-size: 12px; color: var(--t3); }
-    .bento-header .sub { margin-top: 6px; font-size: 13px; color: var(--t2); }
+    .bento-header .upd { font-size: 0.75rem; color: var(--t3); font-family: var(--mono); }
+    .bento-header .sub { margin-top: 0.375rem; font-size: 0.8125rem; color: var(--t2); }
     .bento-header .sub a { color: var(--cyan); text-decoration: none; }
+    .bento-header .sub a:hover { text-decoration: underline; }
 
-    .feed { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .feed { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .feed-card {
-      border-radius: 12px; padding: 14px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--r);
+      padding: 1rem 1.125rem;
+      background: var(--grad-card);
+      border: 1px solid hsl(220 15% 18% / 0.5);
+      transition: all 0.2s;
     }
-    .feed-card.accent { background: rgba(0,0,0,0.4); border-color: rgba(78,205,196,0.25); }
-    .fc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .fc-title { font-size: 13px; color: #fff; }
-    .fc-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
-    .fc-badge { font-size: 10px; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; white-space: nowrap; }
-    .fc-badge.ok { background: var(--cyan-d); color: var(--cyan); border: 1px solid rgba(78,205,196,0.25); }
-    .fc-badge.warn { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(212,165,116,0.3); }
-    .fc-badge.crit { background: var(--red-d); color: var(--red); border: 1px solid rgba(224,96,96,0.3); }
+    .feed-card:hover { border-color: hsl(185 80% 50% / 0.3); }
+    .feed-card.accent {
+      background: linear-gradient(135deg, hsl(185 80% 50% / 0.08), hsl(142 70% 50% / 0.04)), var(--grad-card);
+      border-color: hsl(185 80% 50% / 0.3);
+    }
+    .fc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.625rem; }
+    .fc-title { font-size: 0.9375rem; color: var(--t1); font-weight: 600; line-height: 1.3; }
+    .fc-sub { font-size: 0.75rem; color: var(--t2); margin-top: 0.2rem; line-height: 1.45; }
+    .fc-badge {
+      font-size: 0.5625rem; padding: 0.15rem 0.5rem; border-radius: 9999px;
+      letter-spacing: 0.06em; white-space: nowrap; text-transform: uppercase;
+      font-weight: 600; font-family: var(--mono);
+    }
+    .fc-badge.ok   { background: hsl(142 70% 50% / 0.12); color: hsl(142 70% 65%); border: 1px solid hsl(142 70% 50% / 0.25); }
+    .fc-badge.warn { background: hsl(35 85% 55% / 0.12);  color: hsl(35 85% 70%);  border: 1px solid hsl(35 85% 55% / 0.3); }
+    .fc-badge.crit { background: hsl(0 65% 50% / 0.12);   color: hsl(0 70% 70%);   border: 1px solid hsl(0 65% 50% / 0.3); }
     .fc-code {
-      margin-top: 12px; padding: 10px;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      font-family: var(--mono); font-size: 11px;
+      margin-top: 0.75rem; padding: 0.625rem 0.75rem;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18% / 0.6);
+      border-radius: var(--r-sm);
+      font-family: var(--mono); font-size: 0.6875rem;
       color: var(--t2);
       overflow-x: auto; white-space: nowrap;
+      line-height: 1.55;
     }
     .fc-code .arrow { color: var(--t3); }
-    .fc-code .v { color: var(--cyan); }
-    .fc-code .v.warn { color: var(--amber); }
+    .fc-code .v { color: hsl(185 80% 65%); font-weight: 500; }
+    .fc-code .v.warn { color: hsl(35 85% 70%); }
 
     .fc-progress {
-      margin-top: 12px; display: flex; align-items: center; gap: 10px;
-      font-size: 11px; color: var(--t2);
+      margin-top: 0.75rem; display: flex; align-items: center; gap: 0.625rem;
+      font-size: 0.6875rem; color: var(--t2); font-family: var(--mono);
     }
     .fc-bar {
-      flex: 1; height: 6px; border-radius: 999px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      flex: 1; height: 5px; border-radius: 9999px;
+      background: hsl(220 20% 14%);
+      border: 1px solid hsl(220 15% 18% / 0.5);
       overflow: hidden;
     }
     .fc-bar .fill {
-      height: 100%; border-radius: 999px;
-      background: linear-gradient(90deg, var(--cyan), #6ee7e0);
+      height: 100%; border-radius: 9999px;
+      background: linear-gradient(90deg, hsl(185 80% 50%), hsl(142 70% 55%));
       transition: width 0.4s ease;
+      box-shadow: 0 0 8px hsl(185 80% 50% / 0.4);
     }
-    .fc-actions { margin-top: 10px; display: flex; gap: 8px; }
+    .fc-actions { margin-top: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .fc-btn {
-      font-size: 11px; padding: 4px 10px; border-radius: 6px;
-      background: rgba(255,255,255,0.05); color: #fff;
-      border: 1px solid rgba(255,255,255,0.1);
-      cursor: pointer;
+      font-size: 0.6875rem; padding: 0.35rem 0.75rem; border-radius: var(--r-sm);
+      background: hsl(220 20% 14%); color: var(--t1);
+      border: 1px solid hsl(220 15% 18%);
+      cursor: pointer; font-family: var(--font); font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      transition: all 0.15s;
     }
+    .fc-btn:hover { background: hsl(220 20% 14% / 0.7); border-color: hsl(185 80% 50% / 0.5); }
     .fc-btn.cyan {
-      background: var(--cyan-d); color: var(--cyan); border-color: rgba(78,205,196,0.3);
+      background: hsl(185 80% 50%); color: hsl(220 25% 6%);
+      border-color: hsl(185 80% 50%);
+      box-shadow: 0 4px 8px -2px hsl(185 80% 50% / 0.3);
     }
+    .fc-btn.cyan:hover { background: hsl(185 80% 50% / 0.9); }
 
-    /* Right sidebar */
+    /* Right sidebar — cognitum stat cards */
     .stat-card {
-      border-radius: 12px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 14px;
-      margin-bottom: 12px;
+      border-radius: var(--r);
+      background: var(--grad-card);
+      border: 1px solid hsl(220 15% 18% / 0.5);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
     }
     .stat-card .h {
-      font-size: 11px; color: var(--t2); margin-bottom: 10px;
-      letter-spacing: 0.05em;
+      font-size: 0.6875rem; color: var(--t2); margin-bottom: 0.625rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      font-weight: 600; font-family: var(--mono);
     }
     .stats-grid {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 0.5rem;
     }
     .stat-tile {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 10px;
+      background: hsl(220 25% 6% / 0.6);
+      border: 1px solid hsl(220 15% 18% / 0.5);
+      border-radius: var(--r-sm);
+      padding: 0.625rem 0.75rem;
     }
-    .stat-tile .l { font-size: 11px; color: var(--t3); margin-bottom: 4px; }
-    .stat-tile .v { font-size: 18px; font-weight: 300; color: #fff; font-variant-numeric: tabular-nums; }
-    .stat-tile .v .unit { font-size: 11px; color: var(--t3); margin-left: 2px; }
+    .stat-tile .l {
+      font-size: 0.625rem; color: var(--t3); margin-bottom: 0.25rem;
+      letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600;
+      font-family: var(--mono);
+    }
+    .stat-tile .v {
+      font-size: 1.125rem; font-weight: 600; color: var(--t1);
+      font-variant-numeric: tabular-nums; font-family: var(--mono);
+      line-height: 1.15;
+    }
+    .stat-tile .v .unit { font-size: 0.6875rem; color: var(--t3); margin-left: 2px; font-weight: 400; }
 
-    .tog-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-    .tog-row .lbl { font-size: 13px; color: var(--t2); }
+    .tog-row { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; }
+    .tog-row .lbl { font-size: 0.8125rem; color: var(--t1); }
     .tog {
-      position: relative; width: 40px; height: 22px;
-      border-radius: 999px;
-      background: var(--cyan-d);
-      border: 1px solid rgba(78,205,196,0.3);
+      position: relative; width: 36px; height: 20px;
+      border-radius: 9999px;
+      background: hsl(185 80% 50% / 0.2);
+      border: 1px solid hsl(185 80% 50% / 0.4);
       cursor: pointer;
+      transition: all 0.18s;
+      padding: 0;
     }
     .tog .knob {
-      position: absolute; top: 2px; left: 2px;
+      position: absolute; top: 1px; left: 1px;
       width: 16px; height: 16px; border-radius: 50%;
-      background: var(--cyan);
+      background: hsl(185 80% 55%);
       transition: transform 0.18s;
-      transform: translateX(18px);
+      transform: translateX(16px);
+      box-shadow: 0 1px 3px hsl(220 25% 2% / 0.4);
     }
-    .tog.off { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+    .tog.off { background: hsl(220 20% 14%); border-color: hsl(220 15% 18%); }
     .tog.off .knob { background: var(--t3); transform: translateX(0); }
 
     /* Footer note */
     .foot {
-      margin-top: 24px;
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid hsl(220 15% 18% / 0.5);
       text-align: center;
-      font-size: 11px;
+      font-size: 0.75rem;
       color: var(--t3);
+      line-height: 1.8;
     }
-    .foot .mono { color: var(--t2); }
+    .foot .mono { color: var(--t2); font-size: 0.6875rem; }
 
     /* ----- Modal dialogs (Docs / Source / Settings) ------------------- */
     .modal-backdrop {
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.65);
+      background: hsl(220 25% 6% / 0.78);
       backdrop-filter: blur(6px);
       display: none;
       animation: fadeIn 0.18s ease;
@@ -452,15 +528,15 @@
     .modal {
       position: fixed; z-index: 210;
       top: 50%; left: 50%;
-      width: min(720px, calc(100vw - 32px));
+      width: min(720px, calc(100vw - 2rem));
       max-height: 84vh;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
+      background: hsl(220 20% 10%);
+      border: 1px solid hsl(220 15% 18%);
+      border-radius: var(--r);
       display: none;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+      box-shadow: var(--shadow-card);
       transform: translate(-50%, -50%);
     }
     .modal.open {
@@ -475,146 +551,168 @@
 
     .modal-head {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(0,0,0,0.25);
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid hsl(220 15% 18% / 0.5);
+      background: hsl(220 25% 6% / 0.4);
     }
     .modal-head h2 {
-      font-size: 14px; font-weight: 500; color: #fff;
-      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 1rem; font-weight: 600; color: var(--t1);
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      letter-spacing: -0.01em;
     }
-    .modal-head h2 .mono { color: var(--cyan); font-size: 13px; }
+    .modal-head h2 .mono { color: hsl(185 80% 65%); font-size: 0.8125rem; font-weight: 500; }
     .modal-close {
       width: 28px; height: 28px;
-      border-radius: 6px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--r-sm);
+      background: hsl(220 20% 14%);
+      border: 1px solid hsl(220 15% 18%);
       color: var(--t2);
       cursor: pointer;
       font-size: 16px; line-height: 1;
       display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
-    .modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .modal-close:hover { background: hsl(220 20% 14% / 0.7); color: var(--t1); }
     .modal-body {
-      padding: 18px;
+      padding: 1.25rem;
       overflow-y: auto;
       flex: 1;
     }
     .modal-foot {
-      padding: 12px 18px;
-      border-top: 1px solid var(--border);
-      display: flex; justify-content: flex-end; gap: 8px;
-      background: rgba(0,0,0,0.2);
+      padding: 0.875rem 1.25rem;
+      border-top: 1px solid hsl(220 15% 18% / 0.5);
+      display: flex; justify-content: flex-end; gap: 0.5rem;
+      background: hsl(220 25% 6% / 0.3);
     }
-    .doc-section { margin-bottom: 18px; }
+    .doc-section { margin-bottom: 1.25rem; }
     .doc-section:last-child { margin-bottom: 0; }
     .doc-section h3 {
-      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--cyan); margin-bottom: 10px;
+      font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--t2); margin-bottom: 0.625rem;
+      font-weight: 600; font-family: var(--mono);
     }
-    .doc-section p { font-size: 13px; color: var(--t2); }
+    .doc-section p { font-size: 0.875rem; color: var(--t2); line-height: 1.55; }
 
-    .event-list { list-style: none; display: grid; gap: 6px; }
+    .event-list { list-style: none; display: grid; gap: 0.4rem; }
     .event-list li {
       display: flex; align-items: center; justify-content: space-between;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18% / 0.6);
+      border-radius: var(--r-sm);
+      padding: 0.55rem 0.875rem;
       font-family: var(--mono);
-      font-size: 12px;
-      gap: 12px;
+      font-size: 0.75rem;
+      gap: 0.75rem;
     }
-    .event-list .name { color: var(--cyan); }
-    .event-list .schema { color: var(--t3); font-size: 11px; text-align: right; }
+    .event-list .name { color: hsl(185 80% 65%); font-weight: 500; }
+    .event-list .schema { color: var(--t3); font-size: 0.6875rem; text-align: right; }
 
     .code-block {
-      background: rgba(0,0,0,0.55);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18% / 0.6);
+      border-radius: var(--r-sm);
+      padding: 0.75rem 0.875rem;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 0.75rem;
       line-height: 1.6;
       color: var(--t1);
       overflow-x: auto;
       white-space: pre;
     }
     .code-block .c { color: var(--t3); }
-    .code-block .k { color: var(--cyan); }
-    .code-block .s { color: var(--green); }
+    .code-block .k { color: hsl(185 80% 65%); }
+    .code-block .s { color: hsl(142 70% 65%); }
 
-    .tree { font-family: var(--mono); font-size: 12px; }
+    .tree { font-family: var(--mono); font-size: 0.75rem; }
     .tree-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 8px;
-      border-radius: 6px;
+      padding: 0.3rem 0.55rem;
+      border-radius: var(--r-sm);
     }
-    .tree-row:hover { background: rgba(255,255,255,0.04); }
-    .tree-row .l { color: var(--t1); display: flex; align-items: center; gap: 6px; }
+    .tree-row:hover { background: hsl(220 20% 14% / 0.5); }
+    .tree-row .l { color: var(--t1); display: flex; align-items: center; gap: 0.4rem; }
     .tree-row .l .indent { color: var(--t3); white-space: pre; }
-    .tree-row .meta { color: var(--t3); font-size: 11px; }
-    .tree-row .ico { color: var(--cyan); width: 12px; text-align: center; }
-    .tree-row .ico.dir { color: var(--amber); }
+    .tree-row .meta { color: var(--t3); font-size: 0.6875rem; }
+    .tree-row .ico { color: hsl(185 80% 65%); width: 12px; text-align: center; }
+    .tree-row .ico.dir { color: hsl(35 85% 65%); }
 
     .repo-meta {
-      font-family: var(--mono); font-size: 12px; color: var(--t2);
-      display: flex; flex-wrap: wrap; gap: 8px 16px;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--t2);
+      display: flex; flex-wrap: wrap; gap: 0.5rem 1rem;
     }
-    .repo-meta b { color: var(--t1); font-weight: 500; }
+    .repo-meta b { color: var(--t1); font-weight: 600; }
 
     .set-row {
-      display: grid; grid-template-columns: 1fr auto; gap: 14px;
+      display: grid; grid-template-columns: 1fr auto; gap: 0.875rem;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 0;
+      border-bottom: 1px solid hsl(220 15% 18% / 0.4);
     }
     .set-row:last-child { border-bottom: 0; }
-    .set-row .lbl { font-size: 13px; color: var(--t1); }
-    .set-row .lbl .desc { font-size: 11px; color: var(--t3); margin-top: 2px; display: block; }
+    .set-row .lbl { font-size: 0.875rem; color: var(--t1); font-weight: 500; }
+    .set-row .lbl .desc { font-size: 0.75rem; color: var(--t3); margin-top: 0.2rem; display: block; font-weight: 400; }
     .set-input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18%);
+      border-radius: var(--r-sm);
+      padding: 0.4rem 0.75rem;
       color: var(--t1);
-      font-size: 13px;
+      font-size: 0.8125rem;
       font-family: var(--font);
       outline: none;
       min-width: 160px;
+      transition: all 0.15s;
     }
-    .set-input:focus { border-color: var(--cyan); }
+    .set-input:focus { border-color: hsl(185 80% 50%); box-shadow: 0 0 0 2px hsl(185 80% 50% / 0.25); }
     .set-select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
+      background: hsl(220 25% 6%);
+      border: 1px solid hsl(220 15% 18%);
+      border-radius: var(--r-sm);
+      padding: 0.4rem 0.75rem;
       color: var(--t1);
-      font-size: 13px;
+      font-size: 0.8125rem;
       outline: none;
       cursor: pointer;
       font-family: var(--font);
+      transition: all 0.15s;
     }
-    .set-select:focus { border-color: var(--cyan); }
+    .set-select:focus { border-color: hsl(185 80% 50%); box-shadow: 0 0 0 2px hsl(185 80% 50% / 0.25); }
 
     /* Toast confirmation when "Save changes" fires */
     .toast {
       position: fixed;
-      bottom: 24px; left: 50%;
+      bottom: 1.5rem; left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: var(--card);
-      border: 1px solid var(--cyan);
-      color: var(--cyan);
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 13px;
+      background: hsl(220 20% 10%);
+      border: 1px solid hsl(185 80% 50% / 0.5);
+      color: hsl(185 80% 65%);
+      padding: 0.625rem 1rem;
+      border-radius: var(--r-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
       z-index: 300;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s, transform 0.2s;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      box-shadow: 0 12px 32px hsl(220 25% 2% / 0.5);
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* "+ New Capture" button in the left sidebar */
+    .new-capture-btn {
+      width: 100%; padding: 0.55rem 0.75rem;
+      border-radius: var(--r-sm);
+      background: hsl(185 80% 50%);
+      border: 1px solid hsl(185 80% 50%);
+      color: hsl(220 25% 6%);
+      font-size: 0.8125rem; font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      margin-bottom: 1.25rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 8px -2px hsl(185 80% 50% / 0.3);
+    }
+    .new-capture-btn:hover { background: hsl(185 80% 50% / 0.9); }
   </style>
 </head>
 <body>
@@ -722,7 +820,7 @@
       <div class="bento-grid">
         <!-- Left navigation -->
         <aside class="side left">
-          <button style="width:100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--t1); font-size:13px; cursor:pointer; margin-bottom:18px;">+ New Capture</button>
+          <button class="new-capture-btn">+ New Capture</button>
 
           <div class="nav-section">
             <div class="h">Streams</div>
@@ -1085,143 +1183,300 @@
       class Person {
         constructor({x, y, scale, mode, hr, resp, label}) {
           this.x = x; this.y = y; this.scale = scale;
-          this.mode = mode;          // 'walk' | 'sit' | 'wave' | 'fall'
+          this.mode = mode;          // 'walk' | 'sit' | 'wave'
           this.hr = hr; this.resp = resp;
           this.label = label;
           this.t = Math.random() * 4;
-          this.kp = {};
-          this.bob = 0;
+          // No more keypoint skeleton. Animation state is just a few
+          // scalar values: the figure's current X, Y, breath phase,
+          // and per-mode auxiliary state.
+          this.dx = 0;       // horizontal travel offset (walker)
+          this.dy = 0;       // vertical bob offset
+          this.breath = 0;   // chest-expansion offset
+          this.wavePh = 0;   // wave hand phase (waver)
         }
         update(dt) {
           this.t += dt;
-          const s = this.scale, cx = this.x, cy = this.y;
-          // breathing micro-motion
-          const breath = Math.sin(this.t * (this.resp / 60) * Math.PI * 2) * 1.2;
+          const s = this.scale;
+          // Slow breath cycle drives subtle Y-axis pulse on the body
+          this.breath = Math.sin(this.t * (this.resp / 60) * Math.PI * 2);
+
           if (this.mode === 'walk') {
-            const ph = this.t * 3.2;
-            const sw = Math.sin(ph) * 14 * s;
-            const armSw = Math.sin(ph) * 16 * s;
-            this.bob = Math.abs(Math.sin(ph)) * 3 * s;
-            const oy = -this.bob;
-            this.kp.nose = [cx, cy - 88*s + oy + breath];
-            this.kp.leye = [cx-4*s, cy - 93*s + oy];
-            this.kp.reye = [cx+4*s, cy - 93*s + oy];
-            this.kp.lear = [cx-7*s, cy - 90*s + oy];
-            this.kp.rear = [cx+7*s, cy - 90*s + oy];
-            this.kp.lsh  = [cx-15*s, cy - 68*s + oy + breath*0.5];
-            this.kp.rsh  = [cx+15*s, cy - 68*s + oy + breath*0.5];
-            this.kp.lel  = [cx-19*s + armSw*0.4, cy - 42*s + oy];
-            this.kp.rel  = [cx+19*s - armSw*0.4, cy - 42*s + oy];
-            this.kp.lwr  = [cx-22*s + armSw, cy - 18*s + oy];
-            this.kp.rwr  = [cx+22*s - armSw, cy - 18*s + oy];
-            this.kp.lhi  = [cx-10*s, cy - 18*s + oy];
-            this.kp.rhi  = [cx+10*s, cy - 18*s + oy];
-            this.kp.lkn  = [cx-10*s - sw*0.4, cy + 22*s];
-            this.kp.rkn  = [cx+10*s + sw*0.4, cy + 22*s];
-            this.kp.lan  = [cx-12*s - sw, cy + 60*s];
-            this.kp.ran  = [cx+12*s + sw, cy + 60*s];
+            // Walker physically TRAVELS back and forth across its room
+            // (which is what distinguishes "walking" from "standing in
+            // place flailing"). Slow horizontal sine + gait bob.
+            const roomW = (this.roomRight - this.roomLeft) - 40;
+            this.dx = Math.sin(this.t * 0.55) * roomW * 0.32;
+            const gait = this.t * 2.4;
+            this.dy = -Math.abs(Math.sin(gait * Math.PI)) * 3 * s;
           } else if (this.mode === 'sit') {
-            const ph = this.t * 1.5;
-            const sway = Math.sin(ph) * 1.5 * s;
-            this.kp.nose = [cx + sway, cy - 50*s + breath];
-            this.kp.leye = [cx-4*s + sway, cy - 55*s];
-            this.kp.reye = [cx+4*s + sway, cy - 55*s];
-            this.kp.lear = [cx-7*s + sway, cy - 52*s];
-            this.kp.rear = [cx+7*s + sway, cy - 52*s];
-            this.kp.lsh  = [cx-15*s + sway*0.6, cy - 30*s + breath*0.5];
-            this.kp.rsh  = [cx+15*s + sway*0.6, cy - 30*s + breath*0.5];
-            // arms forward (resting)
-            this.kp.lel  = [cx-16*s, cy - 8*s];
-            this.kp.rel  = [cx+16*s, cy - 8*s];
-            this.kp.lwr  = [cx-12*s, cy + 10*s];
-            this.kp.rwr  = [cx+12*s, cy + 10*s];
-            this.kp.lhi  = [cx-10*s, cy + 12*s];
-            this.kp.rhi  = [cx+10*s, cy + 12*s];
-            // knees bent forward
-            this.kp.lkn  = [cx-12*s, cy + 38*s];
-            this.kp.rkn  = [cx+12*s, cy + 38*s];
-            this.kp.lan  = [cx-22*s, cy + 58*s];
-            this.kp.ran  = [cx+22*s, cy + 58*s];
-          } else if (this.mode === 'wave') {
-            const ph = this.t * 4;
-            const wav = Math.sin(ph) * 12 * s;
-            this.kp.nose = [cx, cy - 88*s + breath];
-            this.kp.leye = [cx-4*s, cy - 93*s];
-            this.kp.reye = [cx+4*s, cy - 93*s];
-            this.kp.lear = [cx-7*s, cy - 90*s];
-            this.kp.rear = [cx+7*s, cy - 90*s];
-            this.kp.lsh  = [cx-15*s, cy - 68*s + breath*0.5];
-            this.kp.rsh  = [cx+15*s, cy - 68*s + breath*0.5];
-            this.kp.lel  = [cx-20*s, cy - 42*s];
-            this.kp.lwr  = [cx-22*s, cy - 18*s];
-            // waving arm raised
-            this.kp.rel  = [cx+22*s, cy - 78*s];
-            this.kp.rwr  = [cx+30*s + wav, cy - 100*s];
-            this.kp.lhi  = [cx-10*s, cy - 18*s];
-            this.kp.rhi  = [cx+10*s, cy - 18*s];
-            this.kp.lkn  = [cx-11*s, cy + 22*s];
-            this.kp.rkn  = [cx+11*s, cy + 22*s];
-            this.kp.lan  = [cx-12*s, cy + 60*s];
-            this.kp.ran  = [cx+12*s, cy + 60*s];
+            // Sitter is anchored — only breath bob and a tiny lateral sway.
+            this.dx = Math.sin(this.t * 0.55) * 1.2 * s;
+            this.dy = this.breath * 1.4;
+          } else { // wave
+            // Standing waver — anchor, gentle weight shift.
+            this.dx = Math.sin(this.t * 0.6) * 1.5 * s;
+            this.dy = this.breath * 0.8;
+            this.wavePh = this.t * 4.5;
           }
         }
+        // Pose-presence heat indicator. NO skeleton, NO limbs, NO joint
+        // dots — the previous keypoint system was inherently prone to
+        // looking like jumping jacks. Each figure is now an abstract
+        // vertical heat pillar whose SHAPE encodes the pose:
+        //   • walker — tall vertical glow, translates across the room
+        //   • sitter — short squat glow, stationary
+        //   • waver  — tall glow with a side-extending wave arc
+        // No moving body parts to misanimate.
         draw(ctx) {
           const s = this.scale;
-          // draw label above head
-          ctx.fillStyle = 'rgba(78,205,196,0.85)';
-          ctx.font = '500 10px ' + getComputedStyle(document.body).getPropertyValue('--mono');
-          ctx.textAlign = 'center';
-          const head = this.kp.nose;
-          ctx.fillText(this.label, head[0], head[1] - 18);
+          const t = this.t;
+          const isSit = this.mode === 'sit';
 
-          // draw skeleton edges with cyan glow
-          ctx.lineCap = 'round';
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = 'rgba(78,205,196,0.6)';
-          ctx.shadowBlur = 8;
-          ctx.strokeStyle = 'rgba(78,205,196,0.85)';
-          EDGES.forEach(([a, b]) => {
-            const pa = this.kp[a], pb = this.kp[b];
-            if (!pa || !pb) return;
-            ctx.beginPath();
-            ctx.moveTo(pa[0], pa[1]);
-            ctx.lineTo(pb[0], pb[1]);
-            ctx.stroke();
-          });
-          ctx.shadowBlur = 0;
+          // Anchor / framing
+          const feetY = this.y + 60 * s;
+          const cx    = this.x + (this.dx || 0);
+          const bobY  = (this.dy || 0);
 
-          // draw 17 keypoint dots
-          KP.forEach(name => {
-            const p = this.kp[name];
-            if (!p) return;
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+          // Per-mode anatomical anchor heights (in CANVAS px above feetY).
+          // Standing figures use a full ~135 px column; the seated figure
+          // is anchored at "hips on chair seat", so its head sits much
+          // lower — feet still on the floor in front of the chair.
+          const HEAD_TOP   = (isSit ? 90 : 135) * s;
+          const HEAD_BOT   = (isSit ? 75 : 116) * s;
+          const NECK_Y     = (isSit ? 68 : 108) * s;
+          const SHOULDER_Y = (isSit ? 62 : 100) * s;
+          const CHEST_Y    = (isSit ? 54 : 86)  * s;
+          const WAIST_Y    = (isSit ? 42 : 64)  * s;
+          const HIP_Y      = (isSit ? 32 : 50)  * s;
+          const KNEE_Y     = (isSit ? 22 : 24)  * s;   // for seated, knees are forward
+          const FOOT_Y     =  0;                       // feet at floor
+
+          // Per-mode anatomical widths
+          const HEAD_W       = 14 * s;
+          const NECK_W       = 6  * s;
+          const SHOULDER_W   = 22 * s;
+          const CHEST_W      = 18 * s;
+          const WAIST_W      = 14 * s;
+          const HIP_W        = 17 * s;
+          const THIGH_W      = 9  * s;
+          const SHIN_W       = 7  * s;
+          const ARM_W        = 7  * s;
+
+          // Convert local Y (height above feet) → canvas Y, with bob.
+          const Y = (localY) => feetY - localY + bobY;
+
+          // Walker leaves a brief motion trail so the translation
+          // reads as actual locomotion (no limb swing required).
+          if (this.mode === 'walk') {
+            ctx.save();
+            const trailLen = 22;
+            const roomW = (this.roomRight - this.roomLeft) - 40;
+            for (let i = 1; i <= trailLen; i++) {
+              const lag = i * 0.020;
+              const tx = this.x + Math.sin((this.t - lag) * 0.55) * roomW * 0.32;
+              const a = (1 - i / trailLen) * 0.18;
+              ctx.fillStyle = `hsla(190, 100%, 65%, ${a})`;
+              ctx.beginPath();
+              ctx.ellipse(tx, feetY + 2, 12 * s, 4 * s, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          // Helper: paint a soft cyan radial-gradient ellipse blob.
+          // Used for every body segment so the figure reads as a fuzzy
+          // heat signature rather than a hard silhouette.
+          function paintBlob(x, y, halfW, halfH, intensity) {
+            const r = Math.max(halfW, halfH) * 2.0;
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0.00, `hsla(190, 100%, 84%, ${0.55 * intensity})`);
+            g.addColorStop(0.35, `hsla(200, 100%, 60%, ${0.30 * intensity})`);
+            g.addColorStop(1.00, `hsla(220, 95%, 45%, 0)`);
+            ctx.fillStyle = g;
             ctx.beginPath();
-            ctx.arc(p[0], p[1], 2.2, 0, Math.PI * 2);
+            ctx.ellipse(x, y, halfW, halfH, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = 'rgba(78,205,196,0.5)';
-            ctx.beginPath();
-            ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
-            ctx.fill();
-          });
+          }
+          // Helper: paint a vertical "column" body segment by stacking
+          // multiple blobs between two body anchor heights, lerping
+          // width and intensity smoothly. Used for arms / legs / torso.
+          function paintColumn(xLow, yLow, xHigh, yHigh, wLow, wHigh, iLow, iHigh, steps) {
+            for (let i = 0; i <= steps; i++) {
+              const u = i / steps;
+              const x = xLow * (1 - u) + xHigh * u;
+              const y = yLow * (1 - u) + yHigh * u;
+              const w = wLow * (1 - u) + wHigh * u;
+              const I = iLow * (1 - u) + iHigh * u;
+              paintBlob(x, y, w * 0.5, 7 * s, I);
+            }
+          }
 
-          // vital sign pulse — small pink dot pulsing at heart rate, near torso
-          const sh = this.kp.lsh, sh2 = this.kp.rsh;
-          const hx = (sh[0] + sh2[0]) / 2;
-          const hy = (sh[1] + sh2[1]) / 2 + 18 * s;
-          const hp = (Math.sin(this.t * (this.hr / 60) * Math.PI * 2) + 1) / 2;
-          ctx.fillStyle = `rgba(244,114,182,${0.35 + 0.55 * hp})`;
-          ctx.shadowColor = 'rgba(244,114,182,0.6)';
-          ctx.shadowBlur = 10 * hp + 4;
+          // Breath modulates the chest column width slightly.
+          const breathW = 1 + this.breath * 0.04;
+
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+
+          if (isSit) {
+            // === SEATED PROFILE ===========================================
+            // Hips are at chair-seat height. Thighs project FORWARD from
+            // the hip (toward camera in our front view, we render them as
+            // a short forward column going out to the right at knee level),
+            // shins drop down to the floor.
+            // Torso column (hip → shoulder)
+            paintColumn(cx, Y(HIP_Y), cx, Y(SHOULDER_Y),
+                        HIP_W * breathW, SHOULDER_W * breathW,
+                        0.78, 0.95, 8);
+            // Waist pinch — overpaint with a narrower blob
+            paintBlob(cx, Y(WAIST_Y), WAIST_W * 0.5 * breathW, 7 * s, 0.55);
+            // Neck constriction between shoulders and head
+            paintBlob(cx, Y(NECK_Y), NECK_W * 0.5, 6 * s, 0.7);
+            // Thighs — pair of short forward extensions at hip level.
+            // We draw them as two side-by-side blobs so it reads as
+            // "knees forward" instead of a single tube.
+            const thighFwd = 22 * s;
+            paintBlob(cx - 6 * s, Y(HIP_Y - 4 * s), thighFwd * 0.5, 7 * s, 0.78);
+            paintBlob(cx + 6 * s, Y(HIP_Y - 4 * s), thighFwd * 0.5, 7 * s, 0.78);
+            // Shins — drop from knees down to feet
+            const kneeX = cx + 16 * s;
+            paintColumn(kneeX - 6 * s, feetY + bobY,    kneeX - 6 * s, Y(KNEE_Y),
+                        SHIN_W, SHIN_W, 0.55, 0.75, 5);
+            paintColumn(kneeX + 6 * s, feetY + bobY,    kneeX + 6 * s, Y(KNEE_Y),
+                        SHIN_W, SHIN_W, 0.55, 0.75, 5);
+            // Arms — resting on lap, two forward stubs
+            paintColumn(cx - SHOULDER_W * 0.45, Y(SHOULDER_Y), cx - SHOULDER_W * 0.45 - 4 * s, Y(WAIST_Y),
+                        ARM_W, ARM_W, 0.7, 0.65, 5);
+            paintColumn(cx + SHOULDER_W * 0.45, Y(SHOULDER_Y), cx + SHOULDER_W * 0.45 + 4 * s, Y(WAIST_Y),
+                        ARM_W, ARM_W, 0.7, 0.65, 5);
+          } else {
+            // === STANDING PROFILE =========================================
+            // Two parallel leg columns (no animation — figure translates
+            // as a whole for walking).
+            const LEG_DX = 6 * s;
+            // Left leg
+            paintColumn(cx - LEG_DX, feetY + bobY, cx - LEG_DX, Y(HIP_Y),
+                        SHIN_W, THIGH_W, 0.55, 0.80, 8);
+            // Right leg
+            paintColumn(cx + LEG_DX, feetY + bobY, cx + LEG_DX, Y(HIP_Y),
+                        SHIN_W, THIGH_W, 0.55, 0.80, 8);
+            // Hip flare
+            paintBlob(cx, Y(HIP_Y), HIP_W * 0.5 * breathW, 8 * s, 0.85);
+            // Torso (hip → shoulder) with waist pinch
+            paintColumn(cx, Y(HIP_Y), cx, Y(SHOULDER_Y),
+                        HIP_W * breathW, SHOULDER_W * breathW,
+                        0.85, 0.95, 9);
+            // Waist pinch — narrower blob to suggest the V-taper
+            paintBlob(cx, Y(WAIST_Y), WAIST_W * 0.5 * breathW, 7 * s, 0.55);
+            // Shoulder cap
+            paintBlob(cx, Y(SHOULDER_Y), SHOULDER_W * 0.5, 7 * s, 0.95);
+            // Neck constriction between shoulders and head
+            paintBlob(cx, Y(NECK_Y), NECK_W * 0.5, 6 * s, 0.7);
+            // Arms — two static vertical columns at the sides
+            // (don't animate them; locomotion comes from whole-body
+            // travel). For the WAVER, the RIGHT arm is drawn later as
+            // a raised waving arm — skip it here.
+            const shoulderEdgeX = SHOULDER_W * 0.45;
+            paintColumn(cx - shoulderEdgeX - 2 * s, Y(WAIST_Y - 6 * s),
+                        cx - shoulderEdgeX,         Y(SHOULDER_Y - 4 * s),
+                        ARM_W, ARM_W, 0.55, 0.75, 6);
+            if (this.mode !== 'wave') {
+              paintColumn(cx + shoulderEdgeX + 2 * s, Y(WAIST_Y - 6 * s),
+                          cx + shoulderEdgeX,         Y(SHOULDER_Y - 4 * s),
+                          ARM_W, ARM_W, 0.55, 0.75, 6);
+            }
+          }
+
+          // Head — egg-shaped bright cyan blob, drawn last so it sits
+          // on top of the neck column.
+          const headCy = Y((HEAD_TOP + HEAD_BOT) / 2);
+          const headRy = (HEAD_TOP - HEAD_BOT) / 2;
+          paintBlob(cx, headCy, HEAD_W * 0.5, headRy, 1.0);
+          // Brighter head core
+          const headG = ctx.createRadialGradient(cx, headCy, 0, cx, headCy, HEAD_W);
+          headG.addColorStop(0.00, `hsla(190, 100%, 94%, 0.85)`);
+          headG.addColorStop(0.55, `hsla(195, 100%, 72%, 0.40)`);
+          headG.addColorStop(1.00, `hsla(220, 95%, 45%, 0)`);
+          ctx.fillStyle = headG;
           ctx.beginPath();
-          ctx.arc(hx, hy, 3 + 3 * hp, 0, Math.PI * 2);
+          ctx.ellipse(cx, headCy, HEAD_W * 0.65, headRy * 0.95, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
 
-          // HR readout above
-          ctx.fillStyle = 'rgba(244,114,182,0.95)';
+          // WAVE: thick raised arm — proper upper-arm + forearm columns
+          // connecting shoulder → elbow → hand. The hand oscillates;
+          // the upper arm stays mostly fixed, so the wave reads as a
+          // real waving arm, not a stub blob floating beside the head.
+          if (this.mode === 'wave') {
+            const WAVE_ARM_W = 11 * s;          // thicker than ARM_W (7*s)
+            const shoulderX = cx + SHOULDER_W * 0.40;
+            const shoulderY = Y(SHOULDER_Y - 2 * s);
+            // Elbow sits up and out from the shoulder (arm raised)
+            const elbowX = cx + SHOULDER_W * 0.40 + 16 * s;
+            const elbowY = Y(NECK_Y + 4 * s);
+            // Hand pivots side-to-side around a vertical axis above
+            // the elbow (the wrist twist). wavePh drives this.
+            const wavePh = this.wavePh || 0;
+            const handX = elbowX + Math.sin(wavePh) * 14 * s;
+            const handY = Y(HEAD_TOP - 6 * s);
+            // Upper arm — shoulder → elbow
+            paintColumn(shoulderX, shoulderY, elbowX, elbowY,
+                        WAVE_ARM_W, WAVE_ARM_W * 0.95,
+                        0.85, 0.90, 6);
+            // Forearm — elbow → hand
+            paintColumn(elbowX, elbowY, handX, handY,
+                        WAVE_ARM_W * 0.95, WAVE_ARM_W * 0.85,
+                        0.90, 0.92, 7);
+            // Hand — chunky bright blob at the end
+            paintBlob(handX, handY, 10 * s, 10 * s, 1.0);
+            // Bright inner hand core
+            const handG = ctx.createRadialGradient(handX, handY, 0, handX, handY, 10 * s);
+            handG.addColorStop(0.00, `hsla(190, 100%, 94%, 0.85)`);
+            handG.addColorStop(0.55, `hsla(195, 100%, 70%, 0.40)`);
+            handG.addColorStop(1.00, `hsla(220, 95%, 45%, 0)`);
+            ctx.fillStyle = handG;
+            ctx.beginPath();
+            ctx.arc(handX, handY, 7 * s, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.restore();
+
+          // ── Ground footprint at the feet ──
+          ctx.save();
+          ctx.fillStyle = 'hsla(190, 100%, 60%, 0.28)';
+          ctx.shadowColor = 'hsla(190, 100%, 65%, 0.55)';
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.ellipse(cx, feetY + 2, 20 * s, 5 * s, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // ── Activity label above the head ──
+          ctx.save();
+          ctx.fillStyle = 'hsl(190 100% 82% / 0.95)';
+          ctx.font = '600 10px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+          ctx.textAlign = 'center';
+          ctx.fillText(this.label, cx, Y(HEAD_TOP) - 8);
+          ctx.restore();
+
+          // ── Heart-rate pulse + HR readout at chest ──
+          const px = cx + SHOULDER_W * 0.55;
+          const py = Y(CHEST_Y);
+          const hp = (Math.sin(t * (this.hr / 60) * Math.PI * 2) + 1) / 2;
+          ctx.save();
+          ctx.fillStyle = `hsl(320 75% 72% / ${0.45 + 0.5 * hp})`;
+          ctx.shadowColor = 'hsl(320 75% 60% / 0.75)';
+          ctx.shadowBlur = 12 * hp + 4;
+          ctx.beginPath();
+          ctx.arc(px, py, 3 + 3 * hp, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          ctx.save();
+          ctx.fillStyle = 'hsl(320 75% 80% / 0.95)';
           ctx.font = '500 9px ' + getComputedStyle(document.body).getPropertyValue('--mono');
           ctx.textAlign = 'left';
-          ctx.fillText(`♥ ${Math.round(this.hr)} bpm`, hx + 10*s, hy + 3);
+          ctx.fillText(`♥ ${Math.round(this.hr)} bpm`, px + 8, py + 3);
+          ctx.restore();
         }
       }
 
@@ -1299,10 +1554,18 @@
         // 3 humans, one per room
         const baseY = (top + bot) / 2 + 30;
         const scale = Math.min(1.0, Math.max(0.55, (H - padY * 2) / 280));
+        // Each Person also gets its room bounds so the walker can
+        // figure out how far to translate along its room.
+        const mkPerson = (cfg, roomL, roomR) => {
+          const p = new Person(cfg);
+          p.roomLeft = roomL;
+          p.roomRight = roomR;
+          return p;
+        };
         people = [
-          new Person({ x: (padX + w1) / 2,  y: baseY, scale, mode: 'walk', hr: 78, resp: 16, label: 'person · walking' }),
-          new Person({ x: (w1 + w2) / 2,    y: baseY, scale, mode: 'sit',  hr: 68, resp: 14, label: 'person · sitting' }),
-          new Person({ x: (w2 + W - padX) / 2, y: baseY, scale, mode: 'wave', hr: 82, resp: 17, label: 'person · waving' }),
+          mkPerson({ x: (padX + w1) / 2,        y: baseY, scale, mode: 'walk', hr: 78, resp: 16, label: 'person · walking' }, padX,     w1),
+          mkPerson({ x: (w1 + w2) / 2,          y: baseY, scale, mode: 'sit',  hr: 68, resp: 14, label: 'person · sitting' }, w1,       w2),
+          mkPerson({ x: (w2 + W - padX) / 2,    y: baseY, scale, mode: 'wave', hr: 82, resp: 17, label: 'person · waving' }, w2,       W - padX),
         ];
 
         sensors = [

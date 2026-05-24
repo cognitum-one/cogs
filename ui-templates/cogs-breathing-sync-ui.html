@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Breathing Sync — Live Coherence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --surface-elevated:220 20% 12%;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 14px -4px hsl(var(--primary) / 0.5);
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand-breath svg{animation:brand-breathe 4s ease-in-out infinite}
+@keyframes brand-breathe{
+  0%,100%{transform:scale(0.92)}
+  50%{transform:scale(1.08)}
+}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a:hover,.nav a.active{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1rem;max-width:48rem}
+.crumbs{
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  margin-bottom:0.75rem;font-family:var(--font-mono);
+}
+.crumbs a{color:hsl(var(--muted-foreground))}
+.crumbs a:hover{color:hsl(var(--primary))}
+.crumbs .sep{margin:0 0.4rem;color:hsl(var(--border))}
+.meta-row{
+  display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;
+  margin-bottom:1.25rem;
+}
+.meta-row .spacer{flex:1}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* Page header: template-style title + lede + meta row */
+.page-h{
+  display:flex;align-items:center;gap:0.75rem;margin-bottom:0.4rem;
+}
+.page-icon{
+  width:36px;height:36px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  border:1px solid hsl(var(--primary) / 0.25);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.page-icon svg{width:20px;height:20px;stroke:hsl(var(--primary));fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.18rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.cat{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.ver{background:hsl(var(--secondary));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.size{background:hsl(var(--muted));color:hsl(var(--foreground));border-color:hsl(var(--border))}
+.badge.diff-medium{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.diff-easy{background:hsl(142 70% 50% / 0.12);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.diff-hard{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.live{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.idle{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));display:inline-block;flex-shrink:0}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.6)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.pulse{animation:pulse-dot 1.6s ease-in-out infinite}
+@keyframes pulse-dot{
+  0%,100%{box-shadow:0 0 0 0 hsl(142 70% 50% / 0.5)}
+  50%{box-shadow:0 0 0 6px hsl(142 70% 50% / 0)}
+}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.55rem 0.95rem;border-radius:0.45rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 12px -4px hsl(var(--primary) / 0.45);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:hsl(var(--muted-foreground))}
+.btn.ghost:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+
+/* Inputs */
+input,select,textarea{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.45rem 0.7rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+
+/* KPI strip */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+  transition:border-color 0.2s;
+}
+.kpi:hover{border-color:hsl(var(--primary) / 0.3)}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.15;margin-top:0.125rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem;font-family:var(--font-mono)}
+
+/* Coherence panel */
+.coherence{
+  display:grid;gap:0.875rem;
+  grid-template-columns:1.4fr 1fr;
+}
+@media (max-width:980px){.coherence{grid-template-columns:1fr}}
+
+.waveform-card{padding:1.25rem}
+.waveform-host{
+  width:100%;height:280px;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.6rem;
+  position:relative;overflow:hidden;
+}
+.waveform-host canvas{display:block;width:100%;height:100%}
+.wf-legend{
+  display:flex;flex-wrap:wrap;gap:0.75rem;
+  margin-top:0.75rem;font-size:0.75rem;
+  font-family:var(--font-mono);color:hsl(var(--muted-foreground));
+}
+.wf-legend .swatch{
+  display:inline-block;width:10px;height:10px;border-radius:2px;
+  margin-right:0.4rem;vertical-align:middle;
+}
+
+/* Pulse ring */
+.pulse-card{
+  padding:1.25rem;display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+.pulse-ring{
+  width:220px;height:220px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  margin:0.5rem 0 1rem;
+}
+.pulse-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.pulse-ring .track{stroke:hsl(var(--border));stroke-width:6;fill:none}
+.pulse-ring .arc{
+  stroke:hsl(var(--primary));stroke-width:6;fill:none;
+  stroke-linecap:round;transition:stroke-dashoffset 0.4s ease,stroke 0.4s ease;
+  filter:drop-shadow(0 0 6px hsl(var(--primary) / 0.5));
+}
+.pulse-core{
+  position:relative;z-index:1;width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle at 50% 45%,hsl(var(--primary) / 0.25) 0%,hsl(var(--primary) / 0.06) 60%,transparent 100%);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid hsl(var(--primary) / 0.4);
+}
+.pulse-core::before{
+  content:"";position:absolute;inset:-20px;border-radius:50%;
+  border:1px solid hsl(var(--primary) / 0.2);
+  animation:breathe 4s ease-in-out infinite;
+}
+.pulse-core::after{
+  content:"";position:absolute;inset:-40px;border-radius:50%;
+  border:1px solid hsl(var(--primary) / 0.1);
+  animation:breathe 4s ease-in-out infinite 0.6s;
+}
+@keyframes breathe{
+  0%,100%{transform:scale(0.92);opacity:0.4}
+  50%{transform:scale(1.08);opacity:0.9}
+}
+.pulse-val{font-size:2.2rem;font-weight:600;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.pulse-unit{font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.2rem}
+.pulse-label{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));font-weight:600;margin-bottom:0.5rem;
+}
+.pulse-status{
+  font-size:0.8125rem;color:hsl(var(--foreground));margin-top:0.4rem;
+  display:inline-flex;align-items:center;gap:0.4rem;
+}
+
+/* People grid */
+.people-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+}
+.person{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:0.9rem 1rem;
+  display:flex;flex-direction:column;gap:0.5rem;
+  transition:border-color 0.2s;
+}
+.person.synced{border-color:hsl(var(--accent) / 0.5);box-shadow:0 0 18px -8px hsl(var(--accent) / 0.45)}
+.person-h{display:flex;align-items:center;justify-content:space-between;gap:0.4rem}
+.person-name{
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.875rem;font-weight:600;
+}
+.person-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:hsl(var(--secondary));
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.75rem;font-weight:600;color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.3);
+}
+.person-bpm{
+  font-family:var(--font-mono);font-size:1.35rem;
+  font-weight:500;color:hsl(var(--foreground));font-variant-numeric:tabular-nums;
+  line-height:1.1;
+}
+.person-bpm small{font-size:0.65rem;color:hsl(var(--muted-foreground));margin-left:0.2rem;font-weight:400}
+
+/* Per-person body: clock on left, instantaneous stats on right */
+.person-body{
+  display:grid;grid-template-columns:64px 1fr;
+  gap:0.75rem;align-items:center;
+}
+.phase-clock{
+  width:64px;height:64px;position:relative;flex-shrink:0;
+}
+.phase-clock svg{width:100%;height:100%;display:block}
+.phase-clock .pc-track{fill:none;stroke:hsl(var(--border));stroke-width:3}
+.phase-clock .pc-dot{transition:none;filter:drop-shadow(0 0 4px currentColor)}
+.phase-clock .pc-inh,.phase-clock .pc-exh{
+  font-family:var(--font-mono);font-size:6.5px;
+  fill:hsl(var(--muted-foreground));
+}
+.person-stats{display:flex;flex-direction:column;gap:0.25rem;min-width:0}
+.person-stats-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.person-stats-row .lbl{text-transform:uppercase;letter-spacing:0.04em}
+.person-stats-row .val{color:hsl(var(--foreground));font-variant-numeric:tabular-nums}
+
+/* Breath cycle indicator */
+.cycle{
+  display:flex;align-items:center;gap:0.4rem;
+  margin-top:0.5rem;font-size:0.6875rem;font-family:var(--font-mono);
+}
+.cycle .cycle-end{
+  color:hsl(var(--muted-foreground));min-width:34px;
+}
+.cycle .cycle-end.on{color:hsl(var(--primary));font-weight:600}
+.cycle-track{
+  flex:1;height:6px;border-radius:9999px;
+  background:linear-gradient(90deg,hsl(var(--accent) / 0.25) 0%,hsl(var(--accent) / 0.05) 45%,hsl(var(--primary) / 0.05) 55%,hsl(var(--primary) / 0.25) 100%);
+  position:relative;overflow:visible;
+}
+.cycle-marker{
+  position:absolute;top:50%;width:10px;height:10px;border-radius:50%;
+  background:currentColor;transform:translate(-50%,-50%);
+  box-shadow:0 0 6px currentColor;
+}
+
+/* Depth bar */
+.depth-row{
+  display:grid;grid-template-columns:auto 1fr auto;
+  gap:0.5rem;align-items:center;margin-top:0.4rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.depth-bar{
+  height:5px;border-radius:9999px;
+  background:hsl(var(--secondary));overflow:hidden;
+}
+.depth-fill{
+  height:100%;background:linear-gradient(90deg,hsl(var(--primary) / 0.6),currentColor);
+  border-radius:9999px;transition:width 0.3s ease;
+}
+
+/* Events feed */
+.events-card{padding:0}
+.events-h{padding:1rem 1.25rem;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.events-list{
+  max-height:340px;overflow-y:auto;
+  padding:0.5rem;
+}
+.event{
+  display:grid;grid-template-columns:auto 1fr auto;gap:0.75rem;
+  align-items:center;padding:0.6rem 0.85rem;
+  border-radius:0.5rem;
+  font-size:0.8125rem;
+  transition:background 0.2s;
+}
+.event:hover{background:hsl(var(--secondary) / 0.4)}
+.event + .event{margin-top:0.2rem}
+.event-ic{
+  width:30px;height:30px;border-radius:0.4rem;
+  background:hsl(var(--accent) / 0.12);
+  color:hsl(var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.event-ic svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.event-body{min-width:0}
+.event-title{font-size:0.8125rem;font-weight:500;color:hsl(var(--foreground))}
+.event-meta{font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);margin-top:0.1rem}
+.event-time{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));white-space:nowrap;
+}
+.event.faint .event-ic{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}
+
+/* Two-col config + metadata */
+.two-col{
+  display:grid;gap:0.875rem;
+  grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+}
+
+/* Definition list */
+.dl{
+  display:grid;grid-template-columns:140px 1fr;
+  gap:0.55rem 1rem;font-size:0.8125rem;
+}
+.dl dt{color:hsl(var(--muted-foreground));font-size:0.75rem}
+.dl dd{
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--foreground));word-break:break-all;
+}
+.dl dd .chip{
+  display:inline-block;padding:0.1rem 0.4rem;border-radius:0.3rem;
+  background:hsl(var(--muted));font-size:0.6875rem;
+  border:1px solid hsl(var(--border));margin-right:0.3rem;
+}
+
+/* Config rows */
+.config-row{
+  display:grid;grid-template-columns:1fr auto;align-items:center;
+  gap:0.75rem;padding:0.6rem 0;
+  border-bottom:1px solid hsl(var(--border) / 0.35);
+}
+.config-row:last-child{border-bottom:none}
+.config-label{font-size:0.8125rem;font-weight:500}
+.config-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem;line-height:1.4}
+.config-input{
+  width:120px;text-align:right;font-family:var(--font-mono);
+}
+.range-row{
+  display:grid;grid-template-columns:1fr 60px;
+  gap:0.6rem;align-items:center;width:180px;
+}
+.range-row input[type=range]{
+  width:100%;background:transparent;border:0;padding:0;
+  -webkit-appearance:none;height:4px;
+}
+.range-row input[type=range]::-webkit-slider-runnable-track{
+  height:4px;background:hsl(var(--secondary));border-radius:2px;
+}
+.range-row input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:hsl(var(--primary));margin-top:-5px;cursor:pointer;
+  box-shadow:0 0 6px hsl(var(--primary) / 0.5);
+}
+.range-row .val{
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+  text-align:right;
+}
+
+/* Toggle */
+.toggle{
+  position:relative;width:38px;height:20px;
+  background:hsl(var(--secondary));border-radius:9999px;
+  border:1px solid hsl(var(--border));cursor:pointer;
+  transition:background 0.2s,border-color 0.2s;
+}
+.toggle::after{
+  content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;
+  border-radius:50%;background:hsl(var(--muted-foreground));
+  transition:transform 0.2s,background 0.2s;
+}
+.toggle.on{background:hsl(var(--primary) / 0.25);border-color:hsl(var(--primary) / 0.4)}
+.toggle.on::after{transform:translateX(18px);background:hsl(var(--primary))}
+
+/* View switching (hash routing) */
+.view{display:none}
+.view.on{display:block;animation:view-in 0.18s ease-out}
+@keyframes view-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Sessions table */
+.sess-table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+.sess-table thead th{
+  text-align:left;padding:0.5rem 0.6rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+.sess-table tbody td{
+  padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+.sess-table tbody tr{transition:background 0.15s}
+.sess-table tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+.sess-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.bar-mini{
+  display:inline-block;width:60px;height:5px;border-radius:9999px;
+  background:hsl(var(--secondary));position:relative;vertical-align:middle;margin-right:0.4rem;
+}
+.bar-mini > span{
+  position:absolute;left:0;top:0;height:100%;border-radius:9999px;
+  background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));
+}
+
+/* About: feature list */
+.feat-list{display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem}
+.feat{
+  display:grid;grid-template-columns:32px 1fr;gap:0.75rem;
+  padding:0.55rem 0;border-bottom:1px solid hsl(var(--border) / 0.3);
+}
+.feat:last-child{border-bottom:none}
+.feat-ic{
+  width:32px;height:32px;border-radius:0.4rem;
+  background:hsl(var(--primary) / 0.1);
+  color:hsl(var(--primary));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.feat-ic svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.feat-title{font-size:0.875rem;font-weight:600;color:hsl(var(--foreground));margin-bottom:0.15rem}
+.feat-sub{font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.5}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+@media (max-width:720px){
+  .pulse-ring{width:180px;height:180px}
+  .pulse-core{width:120px;height:120px}
+  h1.page{font-size:1.25rem}
+  .meta-row .spacer{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark brand-breath">
+        <svg viewBox="0 0 24 24"><path d="M3 7h12a3 3 0 0 0 0-6"/><path d="M3 12h16a3 3 0 0 1 0 6"/><path d="M3 17h10"/></svg>
+      </div>
+      <span class="brand-text"><b>Breathing&nbsp;Sync</b><span class="slash">/</span>Live Coherence<span class="brand-ver mono">v0.8.0</span></span>
+    </div>
+    <nav class="nav">
+      <a href="#live" data-route="live" class="active">Live</a>
+      <a href="#sessions" data-route="sessions">Sessions</a>
+      <a href="#events" data-route="events">Events</a>
+      <a href="#tuning" data-route="tuning">Tuning</a>
+      <a href="#about" data-route="about">About</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="crumbs">
+    <span style="color:hsl(var(--foreground))" id="crumb-label">Live session</span>
+    <span class="sep">/</span>
+    <span id="crumb-elapsed">00:00</span> elapsed
+    <span class="sep">/</span>
+    <span id="crumb-best">peak ratio 0.00</span>
+  </div>
+
+  <!-- Page header (template style) -->
+  <div class="section">
+    <div class="page-h">
+      <div class="page-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 7h12a3 3 0 0 0 0-6"/><path d="M3 12h16a3 3 0 0 1 0 6"/><path d="M3 17h10"/></svg>
+      </div>
+      <h1 class="page">Breathing Sync</h1>
+    </div>
+    <p class="lede">Multi-person breathing synchronization detection — useful for meditation groups, therapy sessions, and research.</p>
+    <div class="meta-row">
+      <span class="badge cat">Health</span>
+      <span class="badge ver mono">v0.8.0</span>
+      <span class="badge size mono">20 KB</span>
+      <span class="badge diff-medium">Medium</span>
+      <span class="badge live" id="live-badge"><span class="dot up pulse"></span> Streaming · 50 Hz</span>
+      <span class="spacer"></span>
+      <button class="btn outline" id="btn-pause">Pause stream</button>
+      <button class="btn primary" id="btn-install">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+        Install on seed
+      </button>
+    </div>
+  </div>
+
+  <!-- ─────────────────── LIVE ─────────────────── -->
+  <section class="view on" data-view="live">
+
+  <!-- Live KPI strip -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/><path d="M12 8v4l3 2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Group sync ratio</div>
+          <div class="kpi-val" id="kpi-ratio">—</div>
+          <div class="kpi-sub" id="kpi-ratio-sub">phase coherence</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">People detected</div>
+          <div class="kpi-val" id="kpi-people">—</div>
+          <div class="kpi-sub" id="kpi-people-sub">via CSI breathing</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M2 12h3l3-9 4 18 3-9h7"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Mean rate</div>
+          <div class="kpi-val" id="kpi-bpm">—</div>
+          <div class="kpi-sub">breaths / min</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M12 2l2.39 4.84L20 8l-4 3.9.94 5.5L12 14.77l-4.94 2.63L8 11.9 4 8l5.61-1.16L12 2z"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Sync events (5m)</div>
+          <div class="kpi-val" id="kpi-events">—</div>
+          <div class="kpi-sub" id="kpi-events-sub">sync_detected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coherence: waveforms + pulse ring -->
+  <div class="section coherence">
+    <div class="card waveform-card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Live breathing waveforms</div>
+          <div class="card-sub">CSI amplitude · per-person band-pass (0.1–0.5 Hz) · 30 s window</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <button class="btn sm outline" data-window="15">15s</button>
+          <button class="btn sm primary" data-window="30">30s</button>
+          <button class="btn sm outline" data-window="60">60s</button>
+        </div>
+      </div>
+      <div class="waveform-host"><canvas id="waveform"></canvas></div>
+      <div class="wf-legend" id="wf-legend"></div>
+    </div>
+
+    <div class="card pulse-card">
+      <div class="pulse-label">Group coherence</div>
+      <div class="pulse-ring">
+        <svg viewBox="0 0 200 200">
+          <circle class="track" cx="100" cy="100" r="92"/>
+          <circle class="arc" id="ring-arc" cx="100" cy="100" r="92"
+                  stroke-dasharray="578" stroke-dashoffset="578"/>
+        </svg>
+        <div class="pulse-core">
+          <div>
+            <div class="pulse-val" id="pulse-val">—</div>
+            <div class="pulse-unit">sync_ratio</div>
+          </div>
+        </div>
+      </div>
+      <div class="pulse-status" id="pulse-status">
+        <span class="dot"></span><span>Initializing…</span>
+      </div>
+      <div style="margin-top:0.75rem;font-size:0.75rem;color:hsl(var(--muted-foreground));max-width:24rem">
+        Sync is detected when the Kuramoto order parameter sustains above the configured threshold for the dwell window.
+      </div>
+    </div>
+  </div>
+
+  <!-- People grid -->
+  <div class="section">
+    <div class="card-h" style="padding:0 0.25rem">
+      <h2 style="margin:0">Detected people</h2>
+      <span class="card-sub" id="people-sub">—</span>
+    </div>
+    <div class="people-grid" id="people-grid"></div>
+  </div>
+
+  </section>
+  <!-- ─────────────────── /LIVE ─────────────────── -->
+
+  <!-- ─────────────────── SESSIONS ─────────────────── -->
+  <section class="view" data-view="sessions">
+    <div class="section">
+      <h2>Past sessions</h2>
+      <div class="card" style="padding:0">
+        <div class="card-h" style="padding:1rem 1.25rem;margin:0">
+          <div>
+            <div class="card-title">Recent breathing sessions</div>
+            <div class="card-sub">Captured locally · click a row to inspect</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <select id="sess-range">
+              <option>Last 7 days</option>
+              <option>Last 30 days</option>
+              <option>All</option>
+            </select>
+            <button class="btn sm outline" id="sess-export">Export CSV</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="sess-table">
+            <thead>
+              <tr>
+                <th>Started</th>
+                <th>Duration</th>
+                <th>People</th>
+                <th>Peak ratio</th>
+                <th>Mean rate</th>
+                <th class="num">sync_detected</th>
+              </tr>
+            </thead>
+            <tbody id="sess-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>This session (live)</h2>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">In progress</div>
+            <div class="card-sub" id="live-sess-sub">Started at page load · streaming</div>
+          </div>
+          <a class="btn sm outline" href="#live">View live →</a>
+        </div>
+        <div class="kpi-grid" style="margin-top:0.25rem">
+          <div class="kpi">
+            <div class="kpi-info">
+              <div class="kpi-label">Elapsed</div>
+              <div class="kpi-val" id="sess-elapsed">00:00</div>
+              <div class="kpi-sub">since session start</div>
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-info">
+              <div class="kpi-label">Peak ratio</div>
+              <div class="kpi-val" id="sess-peak">—</div>
+              <div class="kpi-sub">max group coherence</div>
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-info">
+              <div class="kpi-label">Events fired</div>
+              <div class="kpi-val" id="sess-evcount">—</div>
+              <div class="kpi-sub">sync_detected total</div>
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-info">
+              <div class="kpi-label">People seen</div>
+              <div class="kpi-val" id="sess-people-max">—</div>
+              <div class="kpi-sub">max concurrent</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ─────────────────── /SESSIONS ─────────────────── -->
+
+  <!-- ─────────────────── EVENTS ─────────────────── -->
+  <section class="view" data-view="events">
+    <div class="section two-col">
+      <div class="card events-card">
+        <div class="events-h card-h" style="margin:0;padding:1rem 1.25rem">
+          <div>
+            <div class="card-title">Event stream</div>
+            <div class="card-sub">cog.breathing-sync emits — most recent first</div>
+          </div>
+          <button class="btn sm ghost" id="clear-events">Clear</button>
+        </div>
+        <div class="events-list" id="events-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Sample payloads</div>
+            <div class="card-sub">Latest event body (subscribe over MCP or MQTT)</div>
+          </div>
+          <button class="btn sm ghost" id="copy-sample">Copy</button>
+        </div>
+        <pre id="sample-payload" style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.875rem;font-family:var(--font-mono);font-size:0.7rem;line-height:1.6;overflow-x:auto;color:hsl(var(--foreground));white-space:pre-wrap">{}</pre>
+        <div style="margin-top:0.75rem;font-size:0.75rem;color:hsl(var(--muted-foreground))">
+          Sampled at 50 Hz on-device, decimated to 5 Hz before publish. Phase estimate via Hilbert transform on the band-passed amplitude.
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ─────────────────── /EVENTS ─────────────────── -->
+
+  <!-- ─────────────────── TUNING ─────────────────── -->
+  <section class="view" data-view="tuning">
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Configuration</div>
+            <div class="card-sub">Persisted per-seed in <code>cog.config.json</code></div>
+          </div>
+          <button class="btn sm primary" id="save-cfg">Apply</button>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Sync threshold</div>
+            <div class="config-sub">Order parameter required to fire <code>sync_detected</code>.</div>
+          </div>
+          <div class="range-row">
+            <input type="range" id="cfg-threshold" min="0.5" max="0.99" step="0.01" value="0.8">
+            <span class="val" id="cfg-threshold-val">0.80</span>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Dwell window</div>
+            <div class="config-sub">Seconds the threshold must hold before emitting.</div>
+          </div>
+          <div class="range-row">
+            <input type="range" id="cfg-dwell" min="2" max="30" step="1" value="6">
+            <span class="val" id="cfg-dwell-val">6 s</span>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Min persons</div>
+            <div class="config-sub">Minimum detected breathing streams.</div>
+          </div>
+          <input type="number" class="config-input" id="cfg-minpersons" min="2" max="8" value="2">
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">CSI subcarrier band</div>
+            <div class="config-sub">Sub-carriers used for thoracic motion extraction.</div>
+          </div>
+          <select id="cfg-band">
+            <option>26–38 (default)</option>
+            <option>14–50 (wide)</option>
+            <option>30–34 (narrow)</option>
+          </select>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Publish to MQTT</div>
+            <div class="config-sub">Forward events to <code>cogs/breathing-sync/#</code>.</div>
+          </div>
+          <div class="toggle on" id="cfg-mqtt" role="switch" aria-checked="true"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ─────────────────── /TUNING ─────────────────── -->
+
+  <!-- ─────────────────── ABOUT ─────────────────── -->
+  <section class="view" data-view="about">
+    <div class="section two-col">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Cog manifest</div>
+            <div class="card-sub">Static metadata from the registry</div>
+          </div>
+        </div>
+        <dl class="dl">
+          <dt>Identifier</dt><dd>cog.breathing-sync</dd>
+          <dt>Version</dt><dd>0.8.0</dd>
+          <dt>Category</dt><dd><span class="chip">Health</span></dd>
+          <dt>Footprint</dt><dd>20 KB · Medium complexity</dd>
+          <dt>Hardware</dt><dd><span class="chip">ESP32-S3</span></dd>
+          <dt>Input</dt><dd><span class="chip">CSI breathing</span></dd>
+          <dt>Events</dt><dd>
+            <span class="chip">sync_detected</span>
+            <span class="chip">sync_ratio</span>
+            <span class="chip">person_count</span>
+          </dd>
+          <dt>Source</dt><dd>cognitum-one/cogs/src/cogs/breathing-sync</dd>
+        </dl>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">How it works</div>
+            <div class="card-sub">Detection pipeline overview</div>
+          </div>
+        </div>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M2 12h3l3-9 4 18 3-9h7"/></svg></div>
+            <div>
+              <div class="feat-title">CSI extraction</div>
+              <div class="feat-sub">ESP32-S3 captures Wi-Fi Channel State Information from ambient packets, isolating sub-carriers sensitive to thoracic motion.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/></svg></div>
+            <div>
+              <div class="feat-title">Per-person band-pass</div>
+              <div class="feat-sub">Source separation splits the signal into individual breathing streams (0.1–0.5 Hz band, ~6–30 BPM).</div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l5 3"/></svg></div>
+            <div>
+              <div class="feat-title">Phase &amp; coherence</div>
+              <div class="feat-sub">Hilbert transform yields instantaneous phase per person; the Kuramoto order parameter quantifies group coherence.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+            <div>
+              <div class="feat-title">Sync detection</div>
+              <div class="feat-sub">Emits <code>sync_detected</code> when the order parameter holds above threshold for the configured dwell window.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Use cases</div>
+            <div class="card-sub">Where this cog is being deployed</div>
+          </div>
+        </div>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-7 11-7 11"/></svg></div>
+            <div>
+              <div class="feat-title">Meditation groups</div>
+              <div class="feat-sub">Visualize collective breath in real time; quantify the moment a group enters a shared rhythm.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+            <div>
+              <div class="feat-title">Therapy &amp; co-regulation</div>
+              <div class="feat-sub">Track therapist–client breathing entrainment as a non-verbal measure of attunement.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
+            <div>
+              <div class="feat-title">Research</div>
+              <div class="feat-sub">Contactless, ambient measurement of inter-personal physiological synchrony for behavioural studies.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ─────────────────── /ABOUT ─────────────────── -->
+
+  <footer class="appfoot">
+    <div><span class="mono">cog.breathing-sync@0.8.0</span> · ESP32-S3 · CSI breathing input</div>
+    <div style="margin-top:0.4rem">
+      <a href="#">Manifest</a> · <a href="#">Telemetry</a> · <a href="#">Source</a> · <a href="#">Pair seed</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+// ─────────────────────────────────────────────────────────────────────
+// Simulated multi-person breathing model. Each person has a base rate
+// (breaths/min) that drifts toward the group average when high coherence
+// keeps them entrained. Phase is integrated continuously.
+// ─────────────────────────────────────────────────────────────────────
+// Restrained palette in the template's cyan / green / teal family.
+// All hues are tonal variations of --primary (185) and --accent (142)
+// so the multi-person traces still look like one design system.
+const PALETTE = [
+  '185 80% 55%',   // primary cyan
+  '142 70% 55%',   // accent green
+  '195 75% 65%',   // sky
+  '160 60% 55%',   // teal
+  '175 70% 60%',   // mint
+];
+const NAMES = ['Asha', 'Theo', 'Mira', 'Luca', 'Quinn'];
+
+function makePerson(i, baseRate){
+  return {
+    i, id: 'p' + (i+1),
+    name: NAMES[i] || ('P' + (i+1)),
+    color: PALETTE[i % PALETTE.length],
+    baseRate,                     // breaths / minute
+    phase: Math.random() * Math.PI * 2,
+    history: [],                  // {t, amp}
+    bpm: baseRate,
+  };
+}
+
+const STATE = {
+  startedAt: performance.now(),
+  paused: false,
+  windowSec: 30,
+  people: [],
+  syncRatio: 0,
+  syncSmooth: 0,
+  events: [],
+  eventsInWindow: [],            // last 5 min
+  threshold: 0.80,
+  dwell: 6,
+  minPersons: 2,
+  aboveSince: null,
+  lastEmit: 0,
+  samplePayload: {},
+};
+
+function spawnPeople(n){
+  STATE.people = [];
+  const groupTarget = 6 + Math.random() * 2; // ~6–8 bpm
+  for (let i = 0; i < n; i++){
+    const drift = (Math.random() - 0.5) * 1.6; // small spread
+    STATE.people.push(makePerson(i, groupTarget + drift));
+  }
+}
+spawnPeople(4);
+
+// ─── Step physics
+function stepPeople(dt){
+  // Coherence drives a pull toward the mean rate (Kuramoto-style)
+  const meanRate = STATE.people.reduce((s,p) => s + p.bpm, 0) / Math.max(1, STATE.people.length);
+  const K = 0.55 * STATE.syncSmooth; // coupling strength scales with coherence
+
+  for (const p of STATE.people){
+    // Slow drift toward group mean modulated by coupling
+    p.bpm += (meanRate - p.bpm) * K * dt * 0.4;
+    // Tiny natural jitter
+    p.bpm += (Math.random() - 0.5) * 0.04 * dt;
+    p.bpm = Math.max(3, Math.min(18, p.bpm));
+
+    const omega = (p.bpm / 60) * Math.PI * 2;     // rad/s
+    p.phase += omega * dt;
+    // Phase pull toward mean phase (also Kuramoto coupling)
+    p.phase += K * meanPhasePull(p.phase) * dt;
+
+    const amp = Math.sin(p.phase);
+    const t = (performance.now() - STATE.startedAt) / 1000;
+    p.history.push({ t, amp, bpm: p.bpm });
+    // Prune older than 65s (we draw up to 60s)
+    while (p.history.length && t - p.history[0].t > 65) p.history.shift();
+  }
+}
+
+function meanPhasePull(phi){
+  // Order-parameter-style attractor
+  let sx = 0, sy = 0;
+  for (const p of STATE.people){ sx += Math.cos(p.phase); sy += Math.sin(p.phase); }
+  const meanPhi = Math.atan2(sy, sx);
+  let d = meanPhi - phi;
+  while (d > Math.PI) d -= 2*Math.PI;
+  while (d < -Math.PI) d += 2*Math.PI;
+  return d;
+}
+
+function computeSyncRatio(){
+  // Kuramoto order parameter R = |⟨ e^{iφ} ⟩|
+  let sx = 0, sy = 0;
+  for (const p of STATE.people){ sx += Math.cos(p.phase); sy += Math.sin(p.phase); }
+  const n = STATE.people.length || 1;
+  return Math.sqrt((sx/n)**2 + (sy/n)**2);
+}
+
+// Periodically introduce a coherence "breeze": briefly increase coupling
+function ambientNudge(){
+  // Occasionally tighten everyone's phase a hair to mimic group breathing
+  if (Math.random() < 0.04){
+    const target = (Math.random() - 0.5) * 0.6;
+    for (const p of STATE.people){
+      p.phase += (target - meanPhasePull(p.phase)) * 0.08;
+    }
+  }
+}
+setInterval(ambientNudge, 1100);
+
+// ─── Event detection: emit sync_detected when ratio holds above threshold
+function maybeEmit(){
+  const now = performance.now();
+  const above = STATE.syncSmooth >= STATE.threshold && STATE.people.length >= STATE.minPersons;
+  if (above){
+    if (STATE.aboveSince === null) STATE.aboveSince = now;
+    const heldSec = (now - STATE.aboveSince) / 1000;
+    if (heldSec >= STATE.dwell && (now - STATE.lastEmit) > 5000){
+      emitSyncDetected();
+      STATE.lastEmit = now;
+    }
+  } else {
+    STATE.aboveSince = null;
+  }
+}
+
+function pushEvent(ev){
+  ev.id = 'e' + Math.random().toString(36).slice(2,9);
+  ev.atMs = performance.now();
+  STATE.events.unshift(ev);
+  if (STATE.events.length > 80) STATE.events.length = 80;
+  STATE.eventsInWindow.push(ev);
+  // 5-min window
+  const cutoff = performance.now() - 5*60*1000;
+  while (STATE.eventsInWindow.length && STATE.eventsInWindow[0].atMs < cutoff){
+    STATE.eventsInWindow.shift();
+  }
+  renderEvents();
+}
+
+function emitSyncDetected(){
+  const meanBpm = STATE.people.reduce((s,p)=>s+p.bpm,0) / STATE.people.length;
+  pushEvent({
+    kind: 'sync_detected',
+    label: 'sync_detected',
+    detail: 'ratio ' + STATE.syncSmooth.toFixed(3) + ' · ' + STATE.people.length + ' people · ' + meanBpm.toFixed(1) + ' bpm',
+    severity: 'accent',
+    payload: {
+      event: 'sync_detected',
+      sync_ratio: +STATE.syncSmooth.toFixed(3),
+      person_count: STATE.people.length,
+      mean_bpm: +meanBpm.toFixed(2),
+      dwell_s: STATE.dwell,
+      ts: new Date().toISOString(),
+    },
+  });
+  STATE.samplePayload = STATE.events[0].payload;
+  updateSamplePayload();
+}
+
+function emitPeriodic(){
+  // Throttled ratio sample (every ~2s)
+  pushEvent({
+    kind: 'sync_ratio',
+    label: 'sync_ratio',
+    detail: 'ratio ' + STATE.syncSmooth.toFixed(3),
+    severity: 'muted',
+    payload: { event:'sync_ratio', sync_ratio:+STATE.syncSmooth.toFixed(3), ts:new Date().toISOString() },
+  });
+}
+setInterval(()=> { if (!STATE.paused) emitPeriodic(); }, 2200);
+
+// Person-count changes
+function setPeopleCount(n){
+  const prev = STATE.people.length;
+  if (n === prev) return;
+  spawnPeople(n);
+  pushEvent({
+    kind: 'person_count',
+    label: 'person_count',
+    detail: prev + ' → ' + n,
+    severity: 'primary',
+    payload: { event:'person_count', person_count:n, ts:new Date().toISOString() },
+  });
+}
+
+// Occasionally simulate someone entering/leaving the room
+setInterval(() => {
+  if (STATE.paused) return;
+  if (Math.random() < 0.18){
+    const next = Math.max(2, Math.min(5, STATE.people.length + (Math.random() < 0.5 ? -1 : 1)));
+    setPeopleCount(next);
+  }
+}, 12000);
+
+// ─── Render: waveform canvas
+const cvs = $('#waveform');
+const ctx = cvs.getContext('2d');
+function resizeCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = cvs.getBoundingClientRect();
+  cvs.width = Math.floor(rect.width * dpr);
+  cvs.height = Math.floor(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+new ResizeObserver(resizeCanvas).observe(cvs);
+resizeCanvas();
+
+function drawWaveforms(){
+  const rect = cvs.getBoundingClientRect();
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'hsl(220 15% 18% / 0.6)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++){
+    const y = (H * i) / 6;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  for (let i = 1; i < 6; i++){
+    const x = (W * i) / 6;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+
+  // Time window
+  const tNow = (performance.now() - STATE.startedAt) / 1000;
+  const tStart = tNow - STATE.windowSec;
+
+  const laneH = H / Math.max(1, STATE.people.length);
+  STATE.people.forEach((p, idx) => {
+    const cy = laneH * idx + laneH / 2;
+    const colorBg = `hsl(${p.color} / 0.10)`;
+    const color   = `hsl(${p.color})`;
+
+    // Lane fill
+    ctx.fillStyle = colorBg;
+    ctx.fillRect(0, laneH*idx + 4, W, laneH - 8);
+
+    // Waveform path
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    let first = true;
+    for (const s of p.history){
+      if (s.t < tStart) continue;
+      const x = ((s.t - tStart) / STATE.windowSec) * W;
+      const y = cy - s.amp * (laneH * 0.36);
+      if (first){ ctx.moveTo(x, y); first = false; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Label
+    ctx.fillStyle = `hsl(${p.color})`;
+    ctx.font = '500 11px "JetBrains Mono", monospace';
+    ctx.fillText(p.name + '  ' + p.bpm.toFixed(1) + ' bpm', 10, laneH*idx + 16);
+  });
+}
+
+// Group mean phase for Δφ display
+function groupMeanPhase(){
+  let sx = 0, sy = 0;
+  for (const p of STATE.people){ sx += Math.cos(p.phase); sy += Math.sin(p.phase); }
+  return Math.atan2(sy, sx);
+}
+function wrapPhase(d){
+  while (d > Math.PI) d -= 2*Math.PI;
+  while (d < -Math.PI) d += 2*Math.PI;
+  return d;
+}
+
+// ─── Render: people grid — instantaneous phase + cycle state (NOT a waveform)
+//   • phase clock = where this person is in their breath cycle (rotating dot)
+//   • cycle bar   = inhale ↔ exhale position
+//   • depth bar   = instantaneous amplitude relative to recent peak
+//   • Δφ          = phase offset from group mean (0 = in lockstep)
+function renderPeople(){
+  const grid = $('#people-grid');
+  const synced = STATE.syncSmooth >= STATE.threshold;
+  $('#people-sub').textContent = STATE.people.length + ' active · ' +
+    (synced ? 'all entrained' : 'free-running');
+
+  const meanPhi = groupMeanPhase();
+
+  grid.innerHTML = STATE.people.map(p => {
+    const colorBg = `hsl(${p.color} / 0.12)`;
+    const colorBd = `hsl(${p.color} / 0.4)`;
+    const colorTx = `hsl(${p.color})`;
+    const phi = (((p.phase % (Math.PI*2)) + Math.PI*2) % (Math.PI*2));
+    // Clock dot position (radius 22, center 32, 0 rad = top, rotate -90)
+    const cx = 32 + 22 * Math.cos(phi - Math.PI/2);
+    const cy = 32 + 22 * Math.sin(phi - Math.PI/2);
+
+    const amp = Math.sin(p.phase);                         // -1..1
+    const inhaling = Math.cos(p.phase) > 0;                // dφ/dt > 0 phase region
+    // Cycle marker x% along Inhale ←→ Exhale  (sin progresses 0→1→0→-1→0)
+    // Map phase to 0..100 (peak inhale = 50, exhale low = 100)
+    const cyclePct = ((Math.cos(p.phase - Math.PI/2) + 1) / 2) * 100;
+    // Depth: rectified amplitude
+    const depthPct = Math.abs(amp) * 100;
+    const dphi = wrapPhase(p.phase - meanPhi);             // rad offset from group
+
+    return `
+      <div class="person ${synced ? 'synced' : ''}" data-pid="${p.id}" style="color:${colorTx}">
+        <div class="person-h">
+          <div class="person-name">
+            <span class="person-avatar" style="background:${colorBg};border-color:${colorBd};color:${colorTx}">${p.name[0]}</span>
+            <span style="color:hsl(var(--foreground))">${p.name}</span>
+          </div>
+          <span class="badge ${synced ? 'live' : 'idle'}">
+            <span class="dot ${synced ? 'up' : ''}"></span>${synced ? 'in phase' : 'tracking'}
+          </span>
+        </div>
+
+        <div class="person-body">
+          <div class="phase-clock" aria-label="breath phase clock">
+            <svg viewBox="0 0 64 64">
+              <circle class="pc-track" cx="32" cy="32" r="22"/>
+              <line x1="32" y1="6" x2="32" y2="12" stroke="hsl(var(--muted-foreground))" stroke-width="1"/>
+              <line x1="32" y1="52" x2="32" y2="58" stroke="hsl(var(--muted-foreground))" stroke-width="1"/>
+              <text class="pc-inh" x="32" y="5" text-anchor="middle">INH</text>
+              <text class="pc-exh" x="32" y="63" text-anchor="middle">EXH</text>
+              <circle class="pc-dot" cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="4" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="person-stats">
+            <div><span class="person-bpm">${p.bpm.toFixed(1)}<small>bpm</small></span></div>
+            <div class="person-stats-row">
+              <span class="lbl">Δφ to group</span>
+              <span class="val" style="color:${Math.abs(dphi) < 0.25 ? 'hsl(142 70% 65%)' : 'hsl(var(--foreground))'}">${dphi >= 0 ? '+' : ''}${dphi.toFixed(2)} rad</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cycle">
+          <span class="cycle-end ${inhaling ? 'on' : ''}">Inhale</span>
+          <div class="cycle-track">
+            <span class="cycle-marker" style="left:${cyclePct.toFixed(1)}%"></span>
+          </div>
+          <span class="cycle-end ${!inhaling ? 'on' : ''}">Exhale</span>
+        </div>
+
+        <div class="depth-row">
+          <span class="lbl">depth</span>
+          <div class="depth-bar"><div class="depth-fill" style="width:${depthPct.toFixed(0)}%"></div></div>
+          <span class="val" style="color:hsl(var(--foreground))">${depthPct.toFixed(0)}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── Render: events list
+function formatRel(ms){
+  const sec = Math.max(0, (performance.now() - ms) / 1000);
+  if (sec < 1) return 'just now';
+  if (sec < 60) return sec.toFixed(0) + 's ago';
+  const min = sec / 60;
+  if (min < 60) return min.toFixed(0) + 'm ago';
+  const hr = min / 60;
+  return hr.toFixed(1) + 'h ago';
+}
+function eventIcon(kind){
+  if (kind === 'sync_detected') return '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>';
+  if (kind === 'person_count') return '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>';
+  return '<svg viewBox="0 0 24 24"><path d="M2 12h3l3-9 4 18 3-9h7"/></svg>';
+}
+function renderEvents(){
+  const list = $('#events-list');
+  if (!STATE.events.length){
+    list.innerHTML = `<div style="padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.8125rem">No events yet — waiting for breathing data.</div>`;
+    return;
+  }
+  list.innerHTML = STATE.events.slice(0, 30).map(e => {
+    const cls = e.severity === 'accent' ? '' : (e.severity === 'muted' ? 'faint' : '');
+    return `
+      <div class="event ${cls}">
+        <div class="event-ic">${eventIcon(e.kind)}</div>
+        <div class="event-body">
+          <div class="event-title">${e.label}</div>
+          <div class="event-meta">${e.detail}</div>
+        </div>
+        <div class="event-time" data-t="${e.atMs}">${formatRel(e.atMs)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Refresh event timestamps
+setInterval(() => {
+  $$('#events-list .event-time').forEach(el => {
+    const t = parseFloat(el.dataset.t);
+    if (!isNaN(t)) el.textContent = formatRel(t);
+  });
+}, 1000);
+
+// ─── Render: KPI strip
+function renderKpis(){
+  const r = STATE.syncSmooth;
+  $('#kpi-ratio').textContent = (r * 100).toFixed(0) + '%';
+  $('#kpi-ratio-sub').textContent = r >= STATE.threshold
+    ? 'above threshold (' + STATE.threshold.toFixed(2) + ')'
+    : 'below threshold (' + STATE.threshold.toFixed(2) + ')';
+  $('#kpi-people').textContent = STATE.people.length;
+  $('#kpi-people-sub').textContent = STATE.people.length >= STATE.minPersons
+    ? 'min ' + STATE.minPersons + ' satisfied'
+    : 'need ' + STATE.minPersons;
+  const mean = STATE.people.reduce((s,p)=>s+p.bpm,0) / Math.max(1,STATE.people.length);
+  $('#kpi-bpm').textContent = mean.toFixed(1);
+  $('#kpi-events').textContent = STATE.eventsInWindow.filter(e => e.kind === 'sync_detected').length;
+}
+
+// ─── Render: pulse ring & status
+function renderPulse(){
+  const r = STATE.syncSmooth;
+  $('#pulse-val').textContent = r.toFixed(3);
+
+  const arc = $('#ring-arc');
+  const C = 2 * Math.PI * 92; // 578
+  arc.style.strokeDashoffset = (C * (1 - r)).toFixed(1);
+  // Color shifts from primary (cyan) to accent (green) above threshold
+  if (r >= STATE.threshold){
+    arc.style.stroke = 'hsl(var(--accent))';
+    arc.style.filter = 'drop-shadow(0 0 8px hsl(var(--accent) / 0.6))';
+  } else {
+    arc.style.stroke = 'hsl(var(--primary))';
+    arc.style.filter = 'drop-shadow(0 0 6px hsl(var(--primary) / 0.5))';
+  }
+
+  const status = $('#pulse-status');
+  if (r >= STATE.threshold){
+    status.innerHTML = '<span class="dot up pulse"></span><span style="color:hsl(142 70% 70%)">Group is synchronized</span>';
+  } else if (r >= STATE.threshold - 0.12){
+    status.innerHTML = '<span class="dot" style="background:hsl(35 85% 60%)"></span><span style="color:hsl(35 85% 75%)">Converging…</span>';
+  } else {
+    status.innerHTML = '<span class="dot down"></span><span style="color:hsl(var(--muted-foreground))">Free-running</span>';
+  }
+}
+
+// ─── Legend
+function renderLegend(){
+  const el = $('#wf-legend');
+  el.innerHTML = STATE.people.map(p =>
+    `<span><span class="swatch" style="background:hsl(${p.color})"></span>${p.name} · ${p.bpm.toFixed(1)} bpm</span>`
+  ).join('');
+}
+
+function updateSamplePayload(){
+  if (!STATE.samplePayload || !Object.keys(STATE.samplePayload).length){
+    $('#sample-payload').textContent = JSON.stringify({
+      event: 'sync_ratio',
+      sync_ratio: +STATE.syncSmooth.toFixed(3),
+      person_count: STATE.people.length,
+      ts: new Date().toISOString(),
+    }, null, 2);
+    return;
+  }
+  $('#sample-payload').textContent = JSON.stringify(STATE.samplePayload, null, 2);
+}
+updateSamplePayload();
+setInterval(() => { if (!STATE.paused) updateSamplePayload(); }, 1500);
+
+// ─── Main loop
+let lastFrame = performance.now();
+let peakRatio = 0;
+function loop(now){
+  const dt = Math.min(0.1, (now - lastFrame) / 1000);
+  lastFrame = now;
+  if (!STATE.paused){
+    stepPeople(dt);
+    const raw = computeSyncRatio();
+    // Smooth over ~1.2s
+    STATE.syncSmooth += (raw - STATE.syncSmooth) * Math.min(1, dt * 1.5);
+    STATE.syncRatio = raw;
+    if (STATE.syncSmooth > peakRatio) peakRatio = STATE.syncSmooth;
+    maybeEmit();
+  }
+  drawWaveforms();
+  renderPulse();
+  renderKpis();
+  updatePeopleLive();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// Crumb: elapsed time + peak ratio
+setInterval(() => {
+  const sec = Math.floor((performance.now() - STATE.startedAt) / 1000);
+  const m = String(Math.floor(sec / 60)).padStart(2,'0');
+  const s = String(sec % 60).padStart(2,'0');
+  const el = document.getElementById('crumb-elapsed'); if (el) el.textContent = m + ':' + s;
+  const bp = document.getElementById('crumb-best'); if (bp) bp.textContent = 'peak ratio ' + peakRatio.toFixed(2);
+}, 500);
+
+// Full rebuild only when people enter/leave (or sync band crosses) — every 800ms
+let lastPeopleSig = '';
+setInterval(() => {
+  if (STATE.paused) return;
+  const sig = STATE.people.map(p => p.id).join(',') + '|' + (STATE.syncSmooth >= STATE.threshold ? '1' : '0');
+  if (sig !== lastPeopleSig){ renderPeople(); renderLegend(); lastPeopleSig = sig; }
+}, 800);
+// Smooth per-frame updates of just the moving bits (clock dot, cycle marker, depth, Δφ)
+function updatePeopleLive(){
+  const grid = $('#people-grid');
+  if (!grid) return;
+  const meanPhi = groupMeanPhase();
+  STATE.people.forEach(p => {
+    const tile = grid.querySelector(`[data-pid="${p.id}"]`);
+    if (!tile) return;
+    const phi = (((p.phase % (Math.PI*2)) + Math.PI*2) % (Math.PI*2));
+    const cx = 32 + 22 * Math.cos(phi - Math.PI/2);
+    const cy = 32 + 22 * Math.sin(phi - Math.PI/2);
+    const dot = tile.querySelector('.pc-dot');
+    if (dot){ dot.setAttribute('cx', cx.toFixed(2)); dot.setAttribute('cy', cy.toFixed(2)); }
+
+    const amp = Math.sin(p.phase);
+    const inhaling = Math.cos(p.phase) > 0;
+    const cyclePct = ((Math.cos(p.phase - Math.PI/2) + 1) / 2) * 100;
+    const depthPct = Math.abs(amp) * 100;
+    const dphi = wrapPhase(p.phase - meanPhi);
+
+    const marker = tile.querySelector('.cycle-marker');
+    if (marker) marker.style.left = cyclePct.toFixed(1) + '%';
+    const fill = tile.querySelector('.depth-fill');
+    if (fill) fill.style.width = depthPct.toFixed(0) + '%';
+    const depthVal = tile.querySelector('.depth-row .val');
+    if (depthVal) depthVal.textContent = depthPct.toFixed(0) + '%';
+    const bpmEl = tile.querySelector('.person-bpm');
+    if (bpmEl) bpmEl.innerHTML = p.bpm.toFixed(1) + '<small>bpm</small>';
+    const dphiEl = tile.querySelectorAll('.person-stats-row .val')[0];
+    if (dphiEl){
+      dphiEl.textContent = (dphi >= 0 ? '+' : '') + dphi.toFixed(2) + ' rad';
+      dphiEl.style.color = Math.abs(dphi) < 0.25 ? 'hsl(142 70% 65%)' : 'hsl(var(--foreground))';
+    }
+    const inh = tile.querySelectorAll('.cycle-end')[0];
+    const exh = tile.querySelectorAll('.cycle-end')[1];
+    if (inh) inh.classList.toggle('on', inhaling);
+    if (exh) exh.classList.toggle('on', !inhaling);
+  });
+}
+renderPeople(); renderLegend(); renderEvents();
+
+// ─── Controls
+$('#btn-pause').addEventListener('click', e => {
+  STATE.paused = !STATE.paused;
+  e.currentTarget.textContent = STATE.paused ? 'Resume stream' : 'Pause stream';
+  const badge = $('#live-badge');
+  if (STATE.paused){
+    badge.innerHTML = '<span class="dot down"></span> Paused';
+    badge.classList.remove('live'); badge.classList.add('idle');
+  } else {
+    badge.innerHTML = '<span class="dot up pulse"></span> Streaming · 50 Hz';
+    badge.classList.add('live'); badge.classList.remove('idle');
+  }
+});
+
+$('#btn-install').addEventListener('click', () => {
+  pushEvent({
+    kind:'sync_detected', // reuse styling
+    label:'install requested',
+    detail:'cog.breathing-sync@0.8.0 → seed-XX (queued)',
+    severity:'primary',
+    payload:{},
+  });
+});
+
+$$('[data-window]').forEach(b => {
+  b.addEventListener('click', () => {
+    const w = parseInt(b.dataset.window, 10);
+    STATE.windowSec = w;
+    $$('[data-window]').forEach(x => {
+      x.classList.toggle('primary', x === b);
+      x.classList.toggle('outline', x !== b);
+    });
+  });
+});
+
+const cfgT = $('#cfg-threshold'), cfgTv = $('#cfg-threshold-val');
+cfgT.addEventListener('input', () => {
+  STATE.threshold = parseFloat(cfgT.value);
+  cfgTv.textContent = STATE.threshold.toFixed(2);
+});
+const cfgD = $('#cfg-dwell'), cfgDv = $('#cfg-dwell-val');
+cfgD.addEventListener('input', () => {
+  STATE.dwell = parseInt(cfgD.value, 10);
+  cfgDv.textContent = STATE.dwell + ' s';
+});
+$('#cfg-minpersons').addEventListener('change', e => {
+  STATE.minPersons = Math.max(2, Math.min(8, parseInt(e.target.value || '2', 10)));
+});
+$('#cfg-mqtt').addEventListener('click', e => {
+  e.currentTarget.classList.toggle('on');
+});
+$('#save-cfg').addEventListener('click', () => {
+  const btn = $('#save-cfg');
+  const old = btn.textContent;
+  btn.textContent = 'Applied ✓';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1400);
+});
+$('#clear-events').addEventListener('click', () => {
+  STATE.events = []; renderEvents();
+});
+$('#copy-sample').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#sample-payload').textContent); } catch(_){}
+  const b = $('#copy-sample'); const o = b.textContent;
+  b.textContent = 'Copied'; setTimeout(()=>b.textContent=o, 1200);
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Hash-routed view switching: Live / Sessions / Events / Tuning / About
+// ─────────────────────────────────────────────────────────────────────
+const ROUTES = ['live','sessions','events','tuning','about'];
+const CRUMB_LABEL = {
+  live:     'Live session',
+  sessions: 'Past sessions',
+  events:   'Event stream',
+  tuning:   'Configuration',
+  about:    'About this cog',
+};
+
+function applyRoute(){
+  const hash = (location.hash || '').replace(/^#/, '');
+  const route = ROUTES.includes(hash) ? hash : 'live';
+  $$('.view').forEach(v => v.classList.toggle('on', v.dataset.view === route));
+  $$('.nav a[data-route]').forEach(a => a.classList.toggle('active', a.dataset.route === route));
+  const crumbLabel = $('#crumb-label');
+  if (crumbLabel) crumbLabel.textContent = CRUMB_LABEL[route] || 'Live session';
+  // When returning to Live, re-fit the canvas (display:none lost its size).
+  if (route === 'live') requestAnimationFrame(resizeCanvas);
+  if (route === 'sessions') renderSessions();
+  // Scroll to top of content so the user sees the new view's header.
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+window.addEventListener('hashchange', applyRoute);
+// Intercept nav clicks to keep focus + smooth feel even if hash didn't change
+$$('.nav a[data-route]').forEach(a => {
+  a.addEventListener('click', e => {
+    const r = a.dataset.route;
+    if ((location.hash || '#live') === '#' + r){
+      // Same route — just re-apply (and refit canvas on Live)
+      e.preventDefault();
+      applyRoute();
+    }
+  });
+});
+
+// ─── Sessions: synthesized history + live-session KPI roll-up
+const SESS_HISTORY = (() => {
+  // Build deterministic-looking but varied set of past sessions
+  const now = new Date();
+  const rows = [];
+  const offsets = [
+    {h:-12,  dur:24*60+18, ppl:4, peak:0.91, mean:6.8, ev:7},
+    {h:-37,  dur:18*60+42, ppl:3, peak:0.87, mean:7.1, ev:4},
+    {h:-54,  dur:32*60+1,  ppl:5, peak:0.94, mean:6.4, ev:12},
+    {h:-66,  dur:11*60+8,  ppl:3, peak:0.78, mean:7.3, ev:2},
+    {h:-89,  dur:27*60+35, ppl:4, peak:0.89, mean:6.9, ev:6},
+    {h:-110, dur:14*60+12, ppl:2, peak:0.72, mean:8.0, ev:1},
+    {h:-138, dur:41*60+27, ppl:5, peak:0.96, mean:6.1, ev:15},
+    {h:-162, dur:22*60+50, ppl:4, peak:0.83, mean:7.0, ev:5},
+  ];
+  for (const o of offsets){
+    const t = new Date(now.getTime() + o.h*3600*1000);
+    rows.push({ start: t, dur: o.dur, ppl: o.ppl, peak: o.peak, mean: o.mean, ev: o.ev });
+  }
+  return rows;
+})();
+
+function fmtDate(d){
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + String(d.getDate()).padStart(2,'0') + '  ' +
+         String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDur(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+let _renderedSessionsOnce = false;
+function renderSessions(){
+  const tbody = $('#sess-tbody');
+  if (tbody && !_renderedSessionsOnce){
+    tbody.innerHTML = SESS_HISTORY.map(r => `
+      <tr>
+        <td>${fmtDate(r.start)}</td>
+        <td>${fmtDur(r.dur)}</td>
+        <td>${r.ppl}</td>
+        <td><span class="bar-mini"><span style="width:${(r.peak*100).toFixed(0)}%"></span></span>${r.peak.toFixed(2)}</td>
+        <td>${r.mean.toFixed(1)} bpm</td>
+        <td class="num">${r.ev}</td>
+      </tr>
+    `).join('');
+    _renderedSessionsOnce = true;
+  }
+  updateLiveSessionKpis();
+}
+
+let _maxPeople = 0;
+function updateLiveSessionKpis(){
+  _maxPeople = Math.max(_maxPeople, STATE.people.length);
+  const sec = Math.floor((performance.now() - STATE.startedAt) / 1000);
+  const el = $('#sess-elapsed'); if (el) el.textContent = fmtDur(sec);
+  const pk = $('#sess-peak'); if (pk) pk.textContent = peakRatio.toFixed(3);
+  const ec = $('#sess-evcount');
+  if (ec) ec.textContent = STATE.events.filter(e => e.kind === 'sync_detected').length;
+  const pm = $('#sess-people-max'); if (pm) pm.textContent = _maxPeople;
+}
+setInterval(updateLiveSessionKpis, 1000);
+
+// Sessions: export CSV
+const _exportBtn = $('#sess-export');
+if (_exportBtn){
+  _exportBtn.addEventListener('click', () => {
+    const header = ['started','duration_s','people','peak_ratio','mean_bpm','sync_events'];
+    const rows = SESS_HISTORY.map(r => [
+      r.start.toISOString(), r.dur, r.ppl, r.peak.toFixed(3), r.mean.toFixed(2), r.ev,
+    ].join(','));
+    const csv = [header.join(','), ...rows].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'breathing-sync-sessions.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+}
+
+// Initial route
+applyRoute();
+
+})();
+</script>
+</body>
+</html>

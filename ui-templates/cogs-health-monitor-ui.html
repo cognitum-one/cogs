@@ -8,46 +8,57 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
+    /* Aligned with cognitum-one/management design tokens (v0-chrome.css) */
     :root {
-      --bg: #07090c;
-      --panel: #0c1014;
-      --panel-2: #0f1419;
-      --border: rgba(255,255,255,0.06);
-      --border-strong: rgba(255,255,255,0.10);
-      --cyan: #22d3ee;
-      --green: #22c55e;
-      --green-soft: rgba(34,197,94,0.12);
-      --cyan-soft: rgba(34,211,238,0.12);
+      --background: 220 25% 6%;
+      --foreground: 210 20% 92%;
+      --card: 220 20% 10%;
+      --card-foreground: 210 20% 92%;
+      --primary: 185 80% 50%;
+      --primary-foreground: 220 25% 6%;
+      --secondary: 220 20% 14%;
+      --accent: 142 70% 50%;
+      --muted: 220 15% 15%;
+      --muted-foreground: 215 15% 55%;
+      --border: 220 15% 18%;
+      --radius: 0.75rem;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      --gradient-card: linear-gradient(180deg, hsl(220 20% 12%) 0%, hsl(220 20% 8%) 100%);
+      --shadow-card: 0 8px 32px -8px hsl(220 25% 2% / 0.8);
     }
-    html { background: var(--bg); }
-    body { font-family: 'Inter', system-ui, sans-serif; color: #cbd5e1; background: transparent; }
+    html { background: hsl(var(--background)); }
+    body { font-family: var(--font-display); color: hsl(var(--foreground)); background: transparent; -webkit-font-smoothing: antialiased; line-height: 1.5; }
     #vanta-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .mono { font-family: var(--font-mono); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { scrollbar-width: none; }
-    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 1rem; }
-    .panel-2 { background: var(--panel-2); border: 1px solid var(--border); border-radius: 1rem; }
-    .pill { display: inline-flex; align-items: center; gap: .375rem; padding: .25rem .625rem; border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: .02em; }
-    .pill-cyan { background: var(--cyan-soft); color: var(--cyan); border: 1px solid rgba(34,211,238,.18); }
-    .pill-green { background: var(--green-soft); color: var(--green); border: 1px solid rgba(34,197,94,.18); }
-    .pill-mute { background: rgba(255,255,255,.04); color: #94a3b8; border: 1px solid var(--border); }
-    .pill-amber { background: rgba(245,158,11,.10); color: #fbbf24; border: 1px solid rgba(245,158,11,.18); }
-    .pill-red { background: rgba(239,68,68,.10); color: #f87171; border: 1px solid rgba(239,68,68,.18); }
-    .glow-green { box-shadow: 0 0 40px -10px rgba(34,197,94,.35); }
-    .glow-cyan { box-shadow: 0 0 40px -10px rgba(34,211,238,.30); }
+    h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; }
+    .panel { background: var(--gradient-card); border: 1px solid hsl(var(--border) / 0.5); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+    .panel-2 { background: hsl(var(--background)); border: 1px solid hsl(var(--border) / 0.6); border-radius: 0.5rem; }
+    .pill { display: inline-flex; align-items: center; gap: .375rem; padding: .125rem .5rem; border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: .02em; border: 1px solid transparent; }
+    .pill-cyan { background: hsl(var(--primary) / 0.10); color: hsl(var(--primary)); border-color: hsl(var(--primary) / 0.25); }
+    .pill-green { background: hsl(var(--accent) / 0.10); color: hsl(142 70% 65%); border-color: hsl(var(--accent) / 0.25); }
+    .pill-mute { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); border-color: hsl(var(--border)); }
+    .pill-amber { background: hsl(35 85% 55% / 0.12); color: hsl(35 85% 70%); border-color: hsl(35 85% 55% / 0.25); }
+    .pill-red { background: hsl(0 65% 50% / 0.12); color: hsl(0 70% 70%); border-color: hsl(0 65% 50% / 0.25); }
+    .glow-green { box-shadow: 0 0 40px -10px hsl(var(--accent) / 0.35); }
+    .glow-cyan { box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.30); }
     .ring-pulse { animation: ringPulse 2s ease-out infinite; }
     @keyframes ringPulse {
-      0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
-      70% { box-shadow: 0 0 0 14px rgba(34,197,94,0); }
-      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+      0% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0.55); }
+      70% { box-shadow: 0 0 0 14px hsl(var(--accent) / 0); }
+      100% { box-shadow: 0 0 0 0 hsl(var(--accent) / 0); }
     }
-    .dot-live { width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.18); }
+    .dot-live { width: 8px; height: 8px; border-radius: 9999px; background: hsl(142 70% 50%); box-shadow: 0 0 6px hsl(142 70% 50% / 0.5); flex-shrink: 0; display: inline-block; }
     .grid-bg {
       background-image:
-        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+        linear-gradient(hsl(var(--foreground) / 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, hsl(var(--foreground) / 0.025) 1px, transparent 1px);
       background-size: 32px 32px;
     }
     .stat-spark { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -68,7 +79,7 @@
     }
     .scanline {
       position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 0%, rgba(34,211,238,.06) 50%, transparent 100%);
+      background: linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.06) 50%, transparent 100%);
       animation: scan 6s linear infinite;
       pointer-events: none;
     }
@@ -76,15 +87,89 @@
       0% { transform: translateY(-100%); }
       100% { transform: translateY(100%); }
     }
-    .tab-active { color: #fff; border-bottom: 1px solid var(--cyan); }
-    .row-hover:hover { background: rgba(255,255,255,.025); }
-    .focus-ring:focus { outline: 2px solid rgba(34,211,238,.5); outline-offset: 2px; }
-    .corner-tag {
-      position: absolute; top: 0; right: 0;
-      width: 0; height: 0;
-      border-top: 28px solid rgba(34,197,94,.18);
-      border-left: 28px solid transparent;
+    .row-hover:hover { background: hsl(var(--secondary) / 0.5); }
+    .focus-ring:focus { outline: 2px solid hsl(var(--primary) / 0.5); outline-offset: 2px; }
+
+    /* Cognitum appbar — mirrors v0-chrome.css */
+    .appbar {
+      position: sticky; top: 0; z-index: 50;
+      background: hsl(var(--background) / 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid hsl(var(--border) / 0.5);
+      padding: 0.875rem 1.25rem;
     }
+    .appbar-row {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 0.625rem; font-size: 0.9375rem; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 0.5rem;
+      background: hsl(var(--primary) / 0.12);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-mark svg { width: 18px; height: 18px; stroke: hsl(var(--primary)); fill: none; stroke-width: 2; }
+    .brand-text { font-weight: 500; color: hsl(var(--muted-foreground)); }
+    .brand-text b { color: hsl(var(--foreground)); font-weight: 600; }
+    .brand-text .slash { color: hsl(var(--primary)); margin: 0 0.3rem; font-weight: 600; }
+    .brand-ver { font-family: var(--font-mono); font-size: 0.6875rem; color: hsl(var(--muted-foreground) / 0.7); margin-left: 0.5rem; }
+    .nav { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+    .nav a {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.4rem 0.75rem; border-radius: 0.4rem;
+      font-size: 0.8125rem; color: hsl(var(--muted-foreground));
+      font-weight: 500; text-decoration: none; transition: all 0.2s;
+      cursor: pointer;
+    }
+    .nav a:hover { color: hsl(var(--foreground)); background: hsl(var(--secondary)); }
+    .nav a.active {
+      color: hsl(var(--primary));
+      background: hsl(var(--primary) / 0.10);
+      border: 1px solid hsl(var(--primary) / 0.25);
+      padding: calc(0.4rem - 1px) calc(0.75rem - 1px);
+    }
+    .nav a.back {
+      color: hsl(var(--muted-foreground));
+      border: 1px solid hsl(var(--border));
+      padding: calc(0.4rem - 1px) calc(0.7rem - 1px);
+      margin-right: 0.25rem;
+    }
+    .nav a.back:hover { color: hsl(var(--foreground)); border-color: hsl(var(--primary) / 0.5); background: transparent; }
+    .nav .nav-sep { width: 1px; height: 18px; background: hsl(var(--border)); margin: 0 0.25rem; }
+    .nav a svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* Smooth scroll + offset so the sticky appbar doesn't cover anchored sections */
+    html { scroll-behavior: smooth; }
+    [data-section] { scroll-margin-top: 5.5rem; }
+
+    /* Cognitum buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 0.875rem; border-radius: 0.4rem;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--secondary)); color: hsl(var(--foreground));
+      font-family: var(--font-display); font-size: 0.8125rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn:hover { background: hsl(var(--secondary) / 0.7); border-color: hsl(var(--primary) / 0.5); }
+    .btn.primary {
+      background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+      border-color: hsl(var(--primary)); font-weight: 600;
+      box-shadow: 0 4px 8px -2px hsl(var(--primary) / 0.3);
+    }
+    .btn.primary:hover { background: hsl(var(--primary) / 0.9); }
+    .btn.lg { padding: 0.65rem 1.125rem; font-size: 0.875rem; }
+
+    /* Cognitum footer */
+    .appfoot {
+      margin-top: 1rem; padding: 1.25rem 1.25rem 2rem;
+      border-top: 1px solid hsl(var(--border) / 0.5);
+      font-size: 0.75rem; color: hsl(var(--muted-foreground));
+      max-width: 1400px; margin-left: auto; margin-right: auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
+    .appfoot .mono { font-size: 0.6875rem; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -92,67 +177,77 @@
   <!-- Site-wide motion background -->
   <div id="vanta-bg"></div>
 
-  <!-- Top nav: matches cognitum.one/store chrome -->
-  <header class="sticky top-0 z-30 backdrop-blur-md bg-[#07090c]/80 border-b border-white/5">
-    <div class="max-w-[1400px] mx-auto px-6 h-14 flex items-center gap-6">
-      <a href="#" class="flex items-center gap-2.5 group">
-        <div class="w-7 h-7 rounded-md bg-gradient-to-br from-cyan-400/20 to-cyan-500/5 border border-cyan-400/30 flex items-center justify-center text-cyan-400 font-bold">
-          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2.2">
-            <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" />
-          </svg>
+  <!-- Cognitum V0 Appliance appbar -->
+  <div class="appbar">
+    <div class="appbar-row">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
         </div>
-        <span class="text-white font-semibold tracking-tight">Cognitum</span>
-        <span class="text-slate-500 text-xs font-mono ml-1">/ cog-store</span>
-      </a>
-
-      <nav class="hidden md:flex items-center gap-1 ml-4">
-        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">Guide</button>
-        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">Status</button>
-        <button class="px-3 py-1.5 text-sm text-slate-400 hover:text-white rounded-md transition-colors">ESP32 Setup</button>
-        <button class="px-3 py-1.5 text-sm text-white bg-white/5 border border-white/10 rounded-md">Cog Store</button>
-      </nav>
-
-      <div class="ml-auto flex items-center gap-3">
-        <span class="pill pill-mute"><i data-lucide="package" class="w-3 h-3"></i>Available <span class="text-white">42</span></span>
-        <span class="pill pill-green"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Installed <span class="text-white">7</span></span>
-        <button class="w-9 h-9 rounded-md bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-slate-300 transition-colors">
-          <i data-lucide="search" class="w-4 h-4"></i>
-        </button>
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500/30 to-emerald-500/30 border border-white/10 flex items-center justify-center text-xs font-semibold text-white">NR</div>
+        <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Health Monitor</span>
       </div>
-    </div>
-  </header>
-
-  <!-- Breadcrumb -->
-  <div class="max-w-[1400px] mx-auto px-6 pt-6">
-    <div class="flex items-center gap-2 text-xs text-slate-500 mono">
-      <a href="#" class="hover:text-slate-300">cog-store</a>
-      <i data-lucide="chevron-right" class="w-3 h-3"></i>
-      <a href="#" class="hover:text-slate-300">health</a>
-      <i data-lucide="chevron-right" class="w-3 h-3"></i>
-      <span class="text-slate-300">health-monitor</span>
+      <nav class="nav" id="cog-nav">
+        <a href="https://seed.cognitum.one/store" class="back" title="Back to Cog Store">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Cogs
+        </a>
+        <span class="nav-sep"></span>
+        <a href="#overview" data-nav="overview" class="active">Overview</a>
+        <a href="#live" data-nav="live">
+          <svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+          Live
+        </a>
+        <a href="#vitals" data-nav="vitals">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          Vitals
+        </a>
+        <a href="#events" data-nav="events">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Events
+        </a>
+        <a href="#activity" data-nav="activity">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Activity
+        </a>
+        <a href="#hardware" data-nav="hardware">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+          Hardware
+        </a>
+        <a href="#install" data-nav="install">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Install
+        </a>
+      </nav>
     </div>
   </div>
 
-  <!-- Header / Title block -->
-  <section class="max-w-[1400px] mx-auto px-6 pt-5 pb-6">
-    <div class="flex flex-col lg:flex-row lg:items-end gap-6 justify-between">
-      <div class="flex items-start gap-5">
+  <!-- Breadcrumb + title block (Cognitum h1.page + lede pattern) -->
+  <section id="overview" data-section class="max-w-[1400px] mx-auto px-5 pt-6">
+    <div class="flex items-center gap-2 text-xs mono" style="color: hsl(var(--muted-foreground));">
+      <a href="https://seed.cognitum.one/store" style="color: hsl(var(--muted-foreground));">store</a>
+      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+      <a href="https://seed.cognitum.one/store#health" style="color: hsl(var(--muted-foreground));">health</a>
+      <i data-lucide="chevron-right" class="w-3 h-3"></i>
+      <span style="color: hsl(var(--foreground));">health-monitor</span>
+    </div>
+
+    <div class="flex flex-col lg:flex-row lg:items-end gap-5 justify-between mt-4 pb-5">
+      <div class="flex items-start gap-4">
         <div class="relative">
-          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-700/5 border border-emerald-500/25 flex items-center justify-center text-3xl glow-green ring-pulse">
+          <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl glow-green ring-pulse"
+               style="background: hsl(var(--accent) / 0.12); border: 1px solid hsl(var(--accent) / 0.25);">
             💚
           </div>
         </div>
         <div>
-          <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-3xl md:text-4xl font-semibold text-white tracking-tight">Health Monitor</h1>
-            <span class="text-amber-400" title="Featured">⭐</span>
+          <div class="flex items-center gap-2.5 mb-1">
+            <h1 style="font-size: 1.5rem; font-weight: 600; color: hsl(var(--foreground)); letter-spacing: -0.02em;">Health Monitor</h1>
             <span class="pill pill-green"><span class="dot-live"></span>Featured</span>
           </div>
-          <p class="text-slate-400 text-base max-w-2xl leading-relaxed">
-            Contactless vital signs: breathing, heart rate, sleep apnea, fall detection.
+          <p style="font-size: 0.875rem; color: hsl(var(--muted-foreground)); max-width: 48rem; line-height: 1.55;">
+            Contactless vital signs cog — breathing, heart rate, sleep apnea, and fall detection from CSI signals.
           </p>
-          <div class="flex flex-wrap items-center gap-2 mt-4">
+          <div class="flex flex-wrap items-center gap-1.5 mt-3">
             <span class="pill pill-cyan"><i data-lucide="heart-pulse" class="w-3 h-3"></i>Health</span>
             <span class="pill pill-mute mono">v2.2.0</span>
             <span class="pill pill-mute"><i data-lucide="hard-drive" class="w-3 h-3"></i>32 KB</span>
@@ -162,13 +257,9 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button class="px-4 py-2.5 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
-          <i data-lucide="info" class="w-4 h-4"></i> Details
-        </button>
-        <button class="px-5 py-2.5 text-sm font-semibold text-black bg-emerald-500 hover:bg-emerald-400 rounded-xl glow-green flex items-center gap-2 transition-colors">
-          <i data-lucide="download" class="w-4 h-4"></i> Install
-        </button>
+      <div class="flex items-center gap-2">
+        <a href="#hardware" class="btn"><i data-lucide="info" class="w-4 h-4"></i> Details</a>
+        <a href="#install" class="btn primary"><i data-lucide="download" class="w-4 h-4"></i> Install</a>
       </div>
     </div>
   </section>
@@ -178,7 +269,7 @@
 
     <!-- 3 ROOM HEROS — each with its own vanta dynamic graphic + sensor list + ECG -->
     <!-- Bedroom 1 -->
-    <section class="col-span-12 md:col-span-6 xl:col-span-4 panel relative overflow-hidden">
+    <section id="live" data-section class="col-span-12 md:col-span-6 xl:col-span-4 panel relative overflow-hidden">
       <div class="scanline"></div>
       <div class="relative z-10 p-5 h-[520px] flex flex-col">
         <div class="flex items-start justify-between gap-3">
@@ -348,7 +439,7 @@
     </section>
 
     <!-- Vitals row: breathing | sleep | fall (across all rooms) -->
-    <div class="col-span-12 md:col-span-6 lg:col-span-6 panel p-5 relative overflow-hidden">
+    <div id="vitals" data-section class="col-span-12 md:col-span-6 lg:col-span-6 panel p-5 relative overflow-hidden">
       <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-cyan-500/10 blur-3xl"></div>
       <div class="flex items-center justify-between">
         <span class="pill pill-cyan"><i data-lucide="wind" class="w-3 h-3"></i>BREATHING</span>
@@ -433,7 +524,7 @@
     </section>
 
     <!-- Hardware / Source -->
-    <section class="col-span-12 lg:col-span-4 panel p-6">
+    <section id="hardware" data-section class="col-span-12 lg:col-span-4 panel p-6">
       <div class="flex items-center gap-2 mb-4">
         <span class="pill pill-cyan mono">DEPLOY</span>
         <h3 class="text-white text-lg font-semibold tracking-tight">Hardware</h3>
@@ -484,7 +575,7 @@
     </section>
 
     <!-- Events -->
-    <section class="col-span-12 lg:col-span-5 panel p-6">
+    <section id="events" data-section class="col-span-12 lg:col-span-5 panel p-6">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <span class="pill pill-cyan mono">EVENTS</span>
@@ -558,7 +649,7 @@
     </section>
 
     <!-- Recent activity feed -->
-    <section class="col-span-12 lg:col-span-7 panel p-6">
+    <section id="activity" data-section class="col-span-12 lg:col-span-7 panel p-6">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <span class="pill pill-mute mono">FEED</span>
@@ -627,17 +718,19 @@
     </section>
 
     <!-- Install / Configure footer panel -->
-    <section class="col-span-12 panel relative overflow-hidden grid-bg">
-      <div class="absolute -bottom-20 -right-10 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+    <section id="install" data-section class="col-span-12 panel relative overflow-hidden grid-bg">
+      <div class="absolute -bottom-20 -right-10 w-72 h-72 rounded-full pointer-events-none"
+           style="background: hsl(var(--accent) / 0.10); filter: blur(60px);"></div>
       <div class="relative p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div class="flex items-start gap-4">
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+               style="background: hsl(var(--accent) / 0.12); border: 1px solid hsl(var(--accent) / 0.25); color: hsl(142 70% 65%);">
             <i data-lucide="download" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="text-white text-xl font-semibold tracking-tight">Ready to install on your ESP32-S3</h3>
-            <p class="text-slate-400 text-sm mt-1">Flashes in ~12s over USB-C · 32 KB firmware delta · no hardware changes required.</p>
-            <div class="flex flex-wrap items-center gap-2 mt-3">
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: hsl(var(--foreground));">Ready to install on your ESP32-S3</h3>
+            <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">Flashes in ~12s over USB-C · 32 KB firmware delta · no hardware changes required.</p>
+            <div class="flex flex-wrap items-center gap-1.5 mt-3">
               <span class="pill pill-mute mono">cogs/src/cogs/health-monitor</span>
               <span class="pill pill-mute mono">v2.2.0</span>
               <span class="pill pill-green"><i data-lucide="lock" class="w-3 h-3"></i>signed</span>
@@ -645,24 +738,23 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3 md:flex-shrink-0">
-          <button class="px-4 py-3 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
-            <i data-lucide="settings" class="w-4 h-4"></i> Configure
-          </button>
-          <button class="px-4 py-3 text-sm text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors flex items-center gap-2">
-            <i data-lucide="info" class="w-4 h-4"></i> Details
-          </button>
-          <button class="px-6 py-3 text-sm font-semibold text-black bg-emerald-500 hover:bg-emerald-400 rounded-xl glow-green flex items-center gap-2 transition-colors">
-            <i data-lucide="download" class="w-4 h-4"></i> Install Cog
-          </button>
+        <div class="flex items-center gap-2 md:flex-shrink-0">
+          <button class="btn"><i data-lucide="settings" class="w-4 h-4"></i> Configure</button>
+          <button class="btn"><i data-lucide="info" class="w-4 h-4"></i> Details</button>
+          <button class="btn primary lg"><i data-lucide="download" class="w-4 h-4"></i> Install Cog</button>
         </div>
       </div>
     </section>
 
   </main>
 
-  <footer class="max-w-[1400px] mx-auto px-6 pb-10 flex items-center justify-between text-xs text-slate-600">
-    <span class="mono">cognitum.one · cog-store</span>
+  <footer class="appfoot">
+    <div>
+      <span class="mono">appliance: cognitum-v0</span> &middot;
+      <span class="mono">v0.7</span> &middot;
+      <a href="/guide" style="color: hsl(var(--primary));">guide</a> &middot;
+      <a href="https://github.com/cognitum-one/v0-appliance" style="color: hsl(var(--primary));">GitHub</a>
+    </div>
     <span class="mono">build 2026.05.06 · ESP32-S3 · CSI vitals pipeline</span>
   </footer>
 
@@ -670,9 +762,43 @@
     // Init icons
     lucide.createIcons();
 
+    // ----- Nav: active-section highlighting via IntersectionObserver -----
+    // The nav links use plain #anchors so they work without JS (and the
+    // browser handles the smooth scroll via `scroll-behavior: smooth`).
+    // This bit just keeps the highlight in sync with the viewport.
+    (function () {
+      const links = document.querySelectorAll('#cog-nav a[data-nav]');
+      const byId = {};
+      links.forEach(a => { byId[a.getAttribute('data-nav')] = a; });
+      const sections = document.querySelectorAll('[data-section]');
+      if (!sections.length) return;
+
+      function setActive(id) {
+        links.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === id));
+      }
+
+      const io = new IntersectionObserver((entries) => {
+        // Pick the entry closest to the top of the viewport that is visible.
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) setActive(visible[0].target.id);
+      }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+
+      sections.forEach(s => io.observe(s));
+
+      // Click → optimistic active state so the highlight moves immediately,
+      // before the scroll animation arrives at the target.
+      document.querySelectorAll('#cog-nav a[data-nav]').forEach(a => {
+        a.addEventListener('click', () => setActive(a.getAttribute('data-nav')));
+      });
+    })();
+
     // ----- Vanta dynamic background — single site-wide instance (green-tuned for health) -----
     document.addEventListener('DOMContentLoaded', () => {
       if (window.VANTA && window.VANTA.NET) {
+        // Color tuned to Cognitum primary (hsl 185 80% 50%) so the backdrop
+        // reads as part of the V0 Appliance chrome, not a separate site.
         VANTA.NET({
           el: '#vanta-bg',
           mouseControls: true,
@@ -682,9 +808,9 @@
           minWidth: 200,
           scale: 1.0,
           scaleMobile: 1.0,
-          color: 0x22c55e,
-          backgroundColor: 0x07090c,
-          points: 11,
+          color: 0x1ad1e6,
+          backgroundColor: 0x0b0f14,
+          points: 10,
           maxDistance: 22,
           spacing: 18,
           showDots: true

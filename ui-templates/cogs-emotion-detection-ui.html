@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Emotion Detection — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warning:35 90% 55%;
+  --calm:200 75% 60%;
+  --stress:15 80% 60%;
+  --arousal:280 70% 65%;
+  --valence:142 70% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:var(--font-display)}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:34px;height:34px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at center,hsl(var(--primary) / 0.25),transparent 70%);
+  animation:pulse 3s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2;position:relative;z-index:1}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.brand-badge{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;margin-left:0.5rem;
+  background:hsl(var(--warning) / 0.12);color:hsl(var(--warning));
+  border:1px solid hsl(var(--warning) / 0.3);vertical-align:middle;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav button{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;background:transparent;border:none;cursor:pointer;
+  transition:all 0.2s;
+}
+.nav button:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.nav button.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+.nav button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+.page-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem;letter-spacing:-0.02em}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));max-width:48rem}
+.page-actions{display:flex;gap:0.5rem;flex-wrap:wrap}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+  position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:hsl(var(--kpi-color,var(--primary)));opacity:0.6;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--kpi-color,var(--primary)) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--kpi-color,var(--primary)));fill:none;stroke-width:2}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-feature-settings:"tnum"}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+
+/* Gauge cards */
+.gauge-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.gauge{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.25rem;
+  display:flex;flex-direction:column;align-items:center;gap:0.75rem;
+  position:relative;
+}
+.gauge-title{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));font-weight:600;
+}
+.gauge-svg{width:160px;height:160px}
+.gauge-track{fill:none;stroke:hsl(var(--secondary));stroke-width:10}
+.gauge-fill{fill:none;stroke:hsl(var(--g-color,var(--primary)));stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease}
+.gauge-val{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-12%);
+  font-size:1.75rem;font-weight:600;color:hsl(var(--foreground));
+  font-feature-settings:"tnum";
+}
+.gauge-unit{
+  position:absolute;top:32%;left:50%;transform:translate(-50%,-50%);
+  font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  text-transform:uppercase;letter-spacing:0.1em;
+}
+.gauge-meta{font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;font-family:var(--font-mono)}
+
+/* Emotion state hero */
+.emotion-hero{
+  background:var(--gradient-hero);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1.5rem;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.emotion-hero::before{
+  content:"";position:absolute;top:-50%;right:-20%;width:60%;height:200%;
+  background:radial-gradient(ellipse,hsl(var(--state-color,var(--primary)) / 0.15) 0%,transparent 60%);
+  pointer-events:none;
+}
+.emotion-state-block{position:relative;z-index:1}
+.emotion-state-lbl{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));font-weight:600;margin-bottom:0.4rem;
+}
+.emotion-state-val{
+  font-size:2.5rem;font-weight:600;color:hsl(var(--state-color,var(--primary)));
+  letter-spacing:-0.03em;line-height:1;
+}
+.emotion-state-sub{
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.4rem;
+  font-family:var(--font-mono);
+}
+.emotion-conf{
+  display:flex;align-items:center;gap:0.625rem;
+  background:hsl(var(--secondary) / 0.5);padding:0.625rem 1rem;border-radius:0.5rem;
+  position:relative;z-index:1;
+}
+.emotion-conf-bar{
+  width:140px;height:6px;background:hsl(var(--secondary));
+  border-radius:3px;overflow:hidden;
+}
+.emotion-conf-fill{
+  height:100%;background:hsl(var(--accent));
+  border-radius:3px;transition:width 0.5s ease;
+}
+.emotion-conf-val{font-family:var(--font-mono);font-size:0.875rem;font-weight:600}
+
+/* Signal waveforms */
+.signal-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+}
+.signal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.5rem;gap:0.5rem;
+}
+.signal-name{font-size:0.8125rem;font-weight:600}
+.signal-rate{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.signal-svg{width:100%;height:80px;display:block}
+.signal-meta{
+  display:flex;justify-content:space-between;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  margin-top:0.4rem;
+}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;border:1px solid transparent;
+}
+.badge.calm{background:hsl(var(--calm) / 0.12);color:hsl(var(--calm));border-color:hsl(var(--calm) / 0.3)}
+.badge.stress{background:hsl(var(--stress) / 0.12);color:hsl(var(--stress));border-color:hsl(var(--stress) / 0.3)}
+.badge.arousal{background:hsl(var(--arousal) / 0.12);color:hsl(var(--arousal));border-color:hsl(var(--arousal) / 0.3)}
+.badge.valence{background:hsl(var(--valence) / 0.12);color:hsl(var(--valence));border-color:hsl(var(--valence) / 0.3)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.warning{background:hsl(var(--warning) / 0.12);color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.3)}
+.badge.experimental{background:hsl(var(--warning) / 0.12);color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.3)}
+.badge.research{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.badge.hard{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.3)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 8px hsl(142 70% 50% / 0.6);animation:dot-pulse 2s ease-in-out infinite}
+.dot.down{background:hsl(0 65% 50%)}
+@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.625rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.5rem 0.625rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.3)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.accent{
+  background:hsl(var(--accent));color:hsl(var(--accent-foreground));
+  border-color:hsl(var(--accent));font-weight:600;
+}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.9)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox]{accent-color:hsl(var(--primary))}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:6px;
+  background:hsl(var(--secondary));border-radius:3px;padding:0;border:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:16px;height:16px;
+  background:hsl(var(--primary));border-radius:50%;cursor:pointer;
+  box-shadow:0 2px 6px hsl(var(--primary) / 0.4);
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;background:hsl(var(--primary));
+  border-radius:50%;cursor:pointer;border:none;
+}
+.input-row{display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.875rem}
+.input-row label{
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:0.05em;color:hsl(var(--muted-foreground));
+}
+.input-row .help{font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap;margin-bottom:1rem}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-left:3px solid hsl(var(--primary));
+  border-radius:0.5rem;padding:0.75rem 1rem;
+  box-shadow:var(--shadow-card);
+  font-size:0.8125rem;color:hsl(var(--foreground));
+  min-width:240px;max-width:380px;
+  display:flex;align-items:center;gap:0.5rem;
+  opacity:0;transform:translateY(8px);pointer-events:none;
+  transition:opacity 0.2s,transform 0.2s;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-left-color:hsl(var(--accent))}
+.toast.warn{border-left-color:hsl(var(--warning))}
+.toast.err{border-left-color:hsl(var(--destructive))}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:1rem;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem;
+  max-width:520px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.cal-progress{
+  height:8px;background:hsl(var(--secondary));border-radius:4px;
+  overflow:hidden;margin:0.75rem 0;
+}
+.cal-progress-bar{
+  height:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));
+  border-radius:4px;width:0%;transition:width 0.2s ease;
+}
+.cal-step{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.5rem}
+
+/* Meta rows */
+.meta-list{display:grid;gap:0.5rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.meta-item{display:flex;flex-direction:column;gap:0.2rem}
+.meta-lbl{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));font-weight:600}
+.meta-val{font-size:0.875rem;color:hsl(var(--foreground));font-weight:500;font-family:var(--font-mono)}
+
+.tag-row{display:flex;gap:0.4rem;flex-wrap:wrap}
+.tag{
+  padding:0.2rem 0.5rem;border-radius:0.3rem;
+  font-size:0.6875rem;font-weight:500;
+  background:hsl(var(--muted));color:hsl(var(--muted-foreground));
+  font-family:var(--font-mono);
+}
+
+[data-view]{display:none}
+[data-view].active{display:block;animation:fade-in 0.25s ease}
+@keyframes fade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.event-filter{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.875rem}
+
+.hint{
+  padding:0.75rem 0.875rem;border-radius:0.5rem;
+  background:hsl(var(--warning) / 0.08);border:1px solid hsl(var(--warning) / 0.25);
+  color:hsl(var(--warning));font-size:0.8125rem;
+  display:flex;gap:0.5rem;align-items:flex-start;
+  margin-bottom:1rem;
+}
+.hint svg{flex-shrink:0;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;margin-top:0.1rem}
+
+.event-row td{font-feature-settings:"tnum"}
+.event-time{color:hsl(var(--muted-foreground))}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-11a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 6.5-7 11-7 11z"/></svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Emotion Detection
+        <span class="brand-ver mono">0.6.0</span>
+        <span class="brand-badge">EXPERIMENTAL</span>
+      </span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-route="dashboard" class="active">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button data-route="live">
+        <svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+        Live
+      </button>
+      <button data-route="events">
+        <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
+        Events
+      </button>
+      <button data-route="signals">
+        <svg viewBox="0 0 24 24"><path d="M2 12c2 0 2-4 4-4s2 8 4 8 2-12 4-12 2 8 4 8 2-4 4-4"/></svg>
+        Signals
+      </button>
+      <button data-route="model">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Model
+      </button>
+      <button data-route="calibration">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.36.17.66.42.88.74"/></svg>
+        Calibration
+      </button>
+      <button data-route="settings">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.36.17.66.42.88.74"/></svg>
+        Settings
+      </button>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============================== DASHBOARD ============================== -->
+  <div data-view="dashboard" class="active">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Emotion Detection</h1>
+        <div class="lede">Infers emotional states — arousal, stress, calm — from combined gait analysis and breathing pattern features. Research build, ESP32-S3.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn outline" id="btn-refresh">
+          <svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+        <button class="btn primary" data-route-trigger="live">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Open Live
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="emotion-hero" id="emo-hero">
+        <div class="emotion-state-block">
+          <div class="emotion-state-lbl">Current emotion state</div>
+          <div class="emotion-state-val" id="emo-state-val">CALM</div>
+          <div class="emotion-state-sub" id="emo-state-sub">stable · last update —</div>
+        </div>
+        <div class="emotion-conf">
+          <div>
+            <div class="emotion-state-lbl" style="margin-bottom:0.3rem">Confidence</div>
+            <div class="emotion-conf-bar"><div class="emotion-conf-fill" id="emo-conf-fill" style="width:78%"></div></div>
+          </div>
+          <div class="emotion-conf-val" id="emo-conf-val">0.78</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Live signal metrics</h2>
+      <div class="kpi-grid">
+        <div class="kpi" style="--kpi-color:var(--arousal)">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Arousal level</div><div class="kpi-val" id="kpi-arousal">—</div><div class="kpi-sub">0.0 – 1.0 range</div></div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--stress)">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Stress score</div><div class="kpi-val" id="kpi-stress">—</div><div class="kpi-sub">windowed avg</div></div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--calm)">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12c4-4 8-4 12 0s4 8 0 0"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Calm index</div><div class="kpi-val" id="kpi-calm">—</div><div class="kpi-sub">parasympathetic</div></div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--valence)">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Valence</div><div class="kpi-val" id="kpi-valence">—</div><div class="kpi-sub">negative ↔ positive</div></div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--primary)">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Breathing rate</div><div class="kpi-val" id="kpi-bpm">—</div><div class="kpi-sub">breaths / minute</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Input pipeline</div>
+            <div class="card-sub">CSI motion + breathing fusion</div>
+          </div>
+          <span class="badge online"><span class="dot up"></span>streaming</span>
+        </div>
+        <div class="meta-list">
+          <div class="meta-item"><div class="meta-lbl">Hardware</div><div class="meta-val">ESP32-S3</div></div>
+          <div class="meta-item"><div class="meta-lbl">Sample rate</div><div class="meta-val">50 Hz</div></div>
+          <div class="meta-item"><div class="meta-lbl">Window</div><div class="meta-val">8.0 s</div></div>
+          <div class="meta-item"><div class="meta-lbl">Stride</div><div class="meta-val">1.0 s</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent emissions</div>
+            <div class="card-sub">last 60 seconds</div>
+          </div>
+          <button class="btn sm outline" data-route-trigger="events">View all</button>
+        </div>
+        <div class="meta-list">
+          <div class="meta-item"><div class="meta-lbl">emotion_state</div><div class="meta-val" id="em-count-state">—</div></div>
+          <div class="meta-item"><div class="meta-lbl">arousal_level</div><div class="meta-val" id="em-count-arousal">—</div></div>
+          <div class="meta-item"><div class="meta-lbl">stress_score</div><div class="meta-val" id="em-count-stress">—</div></div>
+          <div class="meta-item"><div class="meta-lbl">valence</div><div class="meta-val" id="em-count-valence">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Recent events</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th style="width:9rem">Time</th><th style="width:9rem">Event</th><th>Value</th><th style="width:7rem">Confidence</th></tr></thead>
+          <tbody id="dash-events-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== LIVE ============================== -->
+  <div data-view="live">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Live inference</h1>
+        <div class="lede">Real-time arousal, stress and calm gauges. Streaming gait + breathing features at 50 Hz, inference window 8 s.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn outline" id="btn-stream-pause">
+          <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <span id="btn-stream-pause-lbl">Pause</span>
+        </button>
+        <button class="btn accent" id="btn-snapshot">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Snapshot
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="gauge-grid">
+        <div class="gauge" style="--g-color:var(--arousal)">
+          <div class="gauge-title">Arousal</div>
+          <div style="position:relative;width:160px;height:160px">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="g-arousal" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="gauge-val" id="g-arousal-val">0.00</div>
+            <div class="gauge-unit">level</div>
+          </div>
+          <div class="gauge-meta" id="g-arousal-meta">σ 0.00 · 30s</div>
+        </div>
+        <div class="gauge" style="--g-color:var(--stress)">
+          <div class="gauge-title">Stress</div>
+          <div style="position:relative;width:160px;height:160px">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="g-stress" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="gauge-val" id="g-stress-val">0.00</div>
+            <div class="gauge-unit">score</div>
+          </div>
+          <div class="gauge-meta" id="g-stress-meta">σ 0.00 · 30s</div>
+        </div>
+        <div class="gauge" style="--g-color:var(--calm)">
+          <div class="gauge-title">Calm</div>
+          <div style="position:relative;width:160px;height:160px">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="g-calm" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="gauge-val" id="g-calm-val">0.00</div>
+            <div class="gauge-unit">index</div>
+          </div>
+          <div class="gauge-meta" id="g-calm-meta">σ 0.00 · 30s</div>
+        </div>
+        <div class="gauge" style="--g-color:var(--valence)">
+          <div class="gauge-title">Valence</div>
+          <div style="position:relative;width:160px;height:160px">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="42"/>
+              <circle class="gauge-fill" id="g-valence" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="gauge-val" id="g-valence-val">0.00</div>
+            <div class="gauge-unit">−1 ↔ +1</div>
+          </div>
+          <div class="gauge-meta" id="g-valence-meta">σ 0.00 · 30s</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="signal-card">
+        <div class="signal-head">
+          <div class="signal-name">CSI motion · gait</div>
+          <span class="signal-rate">50 Hz · channel 0</span>
+        </div>
+        <svg class="signal-svg" id="sig-gait" viewBox="0 0 400 80" preserveAspectRatio="none">
+          <polyline id="sig-gait-line" fill="none" stroke="hsl(var(--arousal))" stroke-width="1.5"/>
+        </svg>
+        <div class="signal-meta"><span id="gait-rms">rms 0.000</span><span id="gait-stride">stride 1.12 s</span></div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-head">
+          <div class="signal-name">Breathing pattern</div>
+          <span class="signal-rate">50 Hz · band 0.1–0.7 Hz</span>
+        </div>
+        <svg class="signal-svg" id="sig-breath" viewBox="0 0 400 80" preserveAspectRatio="none">
+          <polyline id="sig-breath-line" fill="none" stroke="hsl(var(--calm))" stroke-width="1.5"/>
+        </svg>
+        <div class="signal-meta"><span id="breath-bpm">— bpm</span><span id="breath-ie">i:e 1 : 1.5</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Inference trace</h2>
+      <div class="card">
+        <div class="card-h">
+          <div class="card-sub">last 30 windows · 1 s stride</div>
+          <div class="tag-row">
+            <span class="tag" style="color:hsl(var(--arousal))">arousal</span>
+            <span class="tag" style="color:hsl(var(--stress))">stress</span>
+            <span class="tag" style="color:hsl(var(--calm))">calm</span>
+          </div>
+        </div>
+        <svg id="trace-svg" viewBox="0 0 600 140" preserveAspectRatio="none" style="width:100%;height:160px;display:block">
+          <polyline id="trace-arousal" fill="none" stroke="hsl(var(--arousal))" stroke-width="2"/>
+          <polyline id="trace-stress" fill="none" stroke="hsl(var(--stress))" stroke-width="2"/>
+          <polyline id="trace-calm" fill="none" stroke="hsl(var(--calm))" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== EVENTS ============================== -->
+  <div data-view="events">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Events</h1>
+        <div class="lede">Live emission log — emotion_state, arousal_level, stress_score, valence. Filter by type or export.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn outline" id="btn-clear-events">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Clear
+        </button>
+        <button class="btn primary" id="btn-export">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export JSON
+        </button>
+      </div>
+    </div>
+
+    <div class="event-filter" id="event-filter">
+      <button class="pill-tab on" data-evfilter="all">All</button>
+      <button class="pill-tab" data-evfilter="emotion_state">emotion_state</button>
+      <button class="pill-tab" data-evfilter="arousal_level">arousal_level</button>
+      <button class="pill-tab" data-evfilter="stress_score">stress_score</button>
+      <button class="pill-tab" data-evfilter="valence">valence</button>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead><tr>
+          <th style="width:9rem">Time</th>
+          <th style="width:11rem">Event</th>
+          <th>Value</th>
+          <th style="width:7rem">Confidence</th>
+          <th style="width:8rem">Source</th>
+        </tr></thead>
+        <tbody id="events-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================== SIGNALS ============================== -->
+  <div data-view="signals">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Input signals</h1>
+        <div class="lede">CSI motion features for gait analysis and band-passed respiration envelope. Both streams fused into the inference window.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn outline" id="btn-resync">
+          <svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Resync sensors
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">CSI motion (gait)</div>
+              <div class="card-sub">Wi-Fi channel state information, 56 subcarriers</div>
+            </div>
+            <span class="badge online"><span class="dot up"></span>locked</span>
+          </div>
+          <div class="meta-list">
+            <div class="meta-item"><div class="meta-lbl">Sample rate</div><div class="meta-val">50 Hz</div></div>
+            <div class="meta-item"><div class="meta-lbl">Subcarriers</div><div class="meta-val">56</div></div>
+            <div class="meta-item"><div class="meta-lbl">Stride period</div><div class="meta-val" id="sig-stride">1.12 s</div></div>
+            <div class="meta-item"><div class="meta-lbl">Cadence</div><div class="meta-val" id="sig-cadence">107 spm</div></div>
+            <div class="meta-item"><div class="meta-lbl">Gait variance</div><div class="meta-val" id="sig-gv">0.043</div></div>
+            <div class="meta-item"><div class="meta-lbl">RSSI</div><div class="meta-val">−42 dBm</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Breathing</div>
+              <div class="card-sub">Band-passed 0.1–0.7 Hz from CSI doppler envelope</div>
+            </div>
+            <span class="badge online"><span class="dot up"></span>locked</span>
+          </div>
+          <div class="meta-list">
+            <div class="meta-item"><div class="meta-lbl">Rate</div><div class="meta-val" id="sig-brate">15.2 bpm</div></div>
+            <div class="meta-item"><div class="meta-lbl">Depth</div><div class="meta-val" id="sig-bdepth">0.62</div></div>
+            <div class="meta-item"><div class="meta-lbl">I:E ratio</div><div class="meta-val">1 : 1.5</div></div>
+            <div class="meta-item"><div class="meta-lbl">HRV proxy</div><div class="meta-val" id="sig-hrv">41 ms</div></div>
+            <div class="meta-item"><div class="meta-lbl">SNR</div><div class="meta-val">18.4 dB</div></div>
+            <div class="meta-item"><div class="meta-lbl">Window</div><div class="meta-val">8.0 s</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Live waveforms</h2>
+      <div class="grid-2">
+        <div class="signal-card">
+          <div class="signal-head">
+            <div class="signal-name">Gait envelope</div>
+            <span class="signal-rate">50 Hz · 8.0 s</span>
+          </div>
+          <svg class="signal-svg" viewBox="0 0 400 80" preserveAspectRatio="none" style="height:120px">
+            <polyline id="sig-gait-line-2" fill="none" stroke="hsl(var(--arousal))" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="signal-card">
+          <div class="signal-head">
+            <div class="signal-name">Breathing envelope</div>
+            <span class="signal-rate">50 Hz · 8.0 s</span>
+          </div>
+          <svg class="signal-svg" viewBox="0 0 400 80" preserveAspectRatio="none" style="height:120px">
+            <polyline id="sig-breath-line-2" fill="none" stroke="hsl(var(--calm))" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Extracted features</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th style="width:14rem">Feature</th><th style="width:6rem">Channel</th><th>Value</th><th style="width:8rem">Updated</th></tr></thead>
+          <tbody id="features-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== MODEL ============================== -->
+  <div data-view="model">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Model</h1>
+        <div class="lede">Inference model metadata, weights, and runtime stats.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn outline" id="btn-reload-model">
+          <svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Reload weights
+        </button>
+        <button class="btn primary" id="btn-publish">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Publish to fleet
+        </button>
+      </div>
+    </div>
+
+    <div class="hint">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>Experimental research build. Inferences are illustrative and not clinically validated. Do not use for medical decisions.</div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Identity</div>
+            <div class="card-sub">cogs/emotion-detect</div>
+          </div>
+          <div class="tag-row">
+            <span class="badge research">research</span>
+            <span class="badge experimental">experimental</span>
+            <span class="badge hard">hard</span>
+          </div>
+        </div>
+        <div class="meta-list">
+          <div class="meta-item"><div class="meta-lbl">Version</div><div class="meta-val">0.6.0</div></div>
+          <div class="meta-item"><div class="meta-lbl">Size</div><div class="meta-val">30 KB</div></div>
+          <div class="meta-item"><div class="meta-lbl">Hardware</div><div class="meta-val">ESP32-S3</div></div>
+          <div class="meta-item"><div class="meta-lbl">Difficulty</div><div class="meta-val">hard</div></div>
+          <div class="meta-item"><div class="meta-lbl">Source</div><div class="meta-val" style="font-size:0.75rem">cogs/src/cogs/emotion-detect</div></div>
+          <div class="meta-item"><div class="meta-lbl">Status</div><div class="meta-val">loaded</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Emitted events</div>
+            <div class="card-sub">topics the cog publishes</div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Event</th><th style="width:7rem">Type</th><th style="width:6rem">Rate</th></tr></thead>
+          <tbody>
+            <tr><td>emotion_state</td><td>enum</td><td>1 / window</td></tr>
+            <tr><td>arousal_level</td><td>float</td><td>1 Hz</td></tr>
+            <tr><td>stress_score</td><td>float</td><td>1 Hz</td></tr>
+            <tr><td>valence</td><td>float</td><td>1 Hz</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Runtime</h2>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="kpi-info"><div class="kpi-label">Inference latency</div><div class="kpi-val" id="m-latency">—</div><div class="kpi-sub">ms / window</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="kpi-info"><div class="kpi-label">Windows / min</div><div class="kpi-val" id="m-wpm">—</div><div class="kpi-sub">stride 1 s</div></div></div>
+        <div class="kpi" style="--kpi-color:var(--accent)"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="kpi-info"><div class="kpi-label">Mean confidence</div><div class="kpi-val" id="m-conf">—</div><div class="kpi-sub">rolling 5 min</div></div></div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="kpi-info"><div class="kpi-label">Memory</div><div class="kpi-val">30 KB</div><div class="kpi-sub">on-device</div></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Class distribution (last 5 min)</h2>
+      <div class="card">
+        <div id="class-dist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== CALIBRATION ============================== -->
+  <div data-view="calibration">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Calibration</h1>
+        <div class="lede">Capture a personal baseline so arousal, stress and calm scores are relative to your resting state.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn primary" id="btn-start-cal">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Start calibration
+        </button>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Current baseline</div>
+            <div class="card-sub" id="cal-when">Last captured —</div>
+          </div>
+          <span class="badge online" id="cal-status"><span class="dot up"></span>active</span>
+        </div>
+        <div class="meta-list">
+          <div class="meta-item"><div class="meta-lbl">Resting BPM</div><div class="meta-val" id="cal-bpm">14.3</div></div>
+          <div class="meta-item"><div class="meta-lbl">Resting HRV</div><div class="meta-val" id="cal-hrv">52 ms</div></div>
+          <div class="meta-item"><div class="meta-lbl">Cadence</div><div class="meta-val" id="cal-cad">98 spm</div></div>
+          <div class="meta-item"><div class="meta-lbl">Gait var</div><div class="meta-val" id="cal-gv">0.038</div></div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem">
+          <button class="btn outline sm" id="btn-cal-reset">Reset baseline</button>
+          <button class="btn outline sm" id="btn-cal-export">Export</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Thresholds</div>
+            <div class="card-sub">override class boundaries</div>
+          </div>
+        </div>
+        <div class="input-row">
+          <label>Arousal threshold <span class="help mono" id="th-arousal-val">0.65</span></label>
+          <input type="range" min="0" max="100" value="65" id="th-arousal">
+        </div>
+        <div class="input-row">
+          <label>Stress threshold <span class="help mono" id="th-stress-val">0.70</span></label>
+          <input type="range" min="0" max="100" value="70" id="th-stress">
+        </div>
+        <div class="input-row">
+          <label>Calm threshold <span class="help mono" id="th-calm-val">0.55</span></label>
+          <input type="range" min="0" max="100" value="55" id="th-calm">
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+          <button class="btn outline sm" id="btn-th-default">Defaults</button>
+          <button class="btn primary sm" id="btn-th-save">Save thresholds</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== SETTINGS ============================== -->
+  <div data-view="settings">
+    <div class="page-head">
+      <div>
+        <h1 class="page">Settings</h1>
+        <div class="lede">Hardware bindings, runtime parameters, and emission targets for the emotion detection cog.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn primary" id="btn-settings-save">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save settings
+        </button>
+      </div>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Hardware</div><div class="card-sub">target device binding</div></div></div>
+        <div class="input-row">
+          <label>Device</label>
+          <select id="set-device">
+            <option>ESP32-S3</option>
+            <option>ESP32-S3 (DevKitC-1)</option>
+            <option>ESP32-S3 + IMU shield</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>CSI antenna</label>
+          <select id="set-antenna">
+            <option>Auto (best RSSI)</option>
+            <option>Antenna A</option>
+            <option>Antenna B</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>Source path</label>
+          <input type="text" value="cogs/src/cogs/emotion-detect" readonly>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Runtime</div><div class="card-sub">windowing + inference</div></div></div>
+        <div class="input-row">
+          <label>Sample rate (Hz)</label>
+          <input type="number" value="50" min="10" max="200" id="set-rate">
+        </div>
+        <div class="input-row">
+          <label>Window (s)</label>
+          <input type="number" value="8" min="2" max="30" step="0.5" id="set-window">
+        </div>
+        <div class="input-row">
+          <label>Stride (s)</label>
+          <input type="number" value="1" min="0.25" max="5" step="0.25" id="set-stride">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Emission</div><div class="card-sub">events published by the cog</div></div></div>
+        <div class="input-row">
+          <label><input type="checkbox" checked id="emit-state"> emotion_state</label>
+          <div class="help">enum: calm · neutral · aroused · stressed</div>
+        </div>
+        <div class="input-row">
+          <label><input type="checkbox" checked id="emit-arousal"> arousal_level</label>
+          <div class="help">continuous float 0.0 – 1.0</div>
+        </div>
+        <div class="input-row">
+          <label><input type="checkbox" checked id="emit-stress"> stress_score</label>
+          <div class="help">continuous float 0.0 – 1.0</div>
+        </div>
+        <div class="input-row">
+          <label><input type="checkbox" checked id="emit-valence"> valence</label>
+          <div class="help">continuous float −1.0 – +1.0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Privacy</div><div class="card-sub">on-device data handling</div></div></div>
+        <div class="input-row">
+          <label><input type="checkbox" checked id="priv-local"> Process on device only</label>
+          <div class="help">no raw signals leave the ESP32-S3</div>
+        </div>
+        <div class="input-row">
+          <label><input type="checkbox" id="priv-log"> Log inference results</label>
+          <div class="help">ring buffer, 24 h retention</div>
+        </div>
+        <div class="input-row">
+          <label><input type="checkbox" id="priv-share"> Share aggregated metrics</label>
+          <div class="help">opt-in research telemetry</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cogs/emotion-detect</span> · <span class="mono">0.6.0</span> · <span class="mono">30 KB</span> · ESP32-S3</div>
+    <div style="margin-top:0.4rem">Arousal, stress, calm inference from gait + breathing · research build</div>
+  </footer>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-msg">Saved</span></div>
+
+<!-- Calibration modal -->
+<div class="modal-bg" id="cal-modal">
+  <div class="modal">
+    <h3>Calibrating baseline</h3>
+    <div class="modal-sub">Sit still and breathe normally for 30 seconds. Capturing resting cadence, breathing rate and HRV.</div>
+    <div class="cal-progress"><div class="cal-progress-bar" id="cal-bar"></div></div>
+    <div class="cal-step" id="cal-step">Initialising…</div>
+    <div class="modal-actions">
+      <button class="btn outline" id="cal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Snapshot modal -->
+<div class="modal-bg" id="snap-modal">
+  <div class="modal">
+    <h3>Snapshot captured</h3>
+    <div class="modal-sub">Inference snapshot at <span id="snap-time" class="mono"></span></div>
+    <pre style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.75rem;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));white-space:pre-wrap;max-height:18rem;overflow:auto" id="snap-body"></pre>
+    <div class="modal-actions">
+      <button class="btn outline" id="snap-close">Close</button>
+      <button class="btn primary" id="snap-copy">Copy JSON</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+// =============================== ROUTER ===============================
+const VALID_ROUTES = ["dashboard","live","events","signals","model","calibration","settings"];
+
+function setRoute(route, opts){
+  if (!VALID_ROUTES.includes(route)) route = "dashboard";
+  $$("[data-view]").forEach(el => el.classList.toggle("active", el.dataset.view === route));
+  $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.route === route));
+  if (!opts || !opts.noHash) {
+    history.replaceState(null, "", "#" + route);
+  }
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+document.addEventListener("click", e => {
+  const navBtn = e.target.closest("#nav button[data-route]");
+  if (navBtn) { setRoute(navBtn.dataset.route); return; }
+  const trig = e.target.closest("[data-route-trigger]");
+  if (trig) { setRoute(trig.dataset.routeTrigger); return; }
+});
+
+window.addEventListener("hashchange", () => {
+  const r = (location.hash || "#dashboard").replace("#","");
+  setRoute(r, {noHash:true});
+});
+
+// =============================== TOAST ===============================
+let toastTimer = null;
+function toast(msg, kind){
+  const t = $("#toast");
+  const m = $("#toast-msg");
+  t.className = "toast show" + (kind ? " " + kind : "");
+  m.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+// =============================== SIMULATED STATE ===============================
+const STATE = {
+  paused: false,
+  arousal: 0.32,
+  stress: 0.18,
+  calm: 0.72,
+  valence: 0.21,
+  bpm: 15.2,
+  history: { arousal:[], stress:[], calm:[] },
+  gait: Array(80).fill(0).map((_,i) => Math.sin(i/4) * 0.3 + Math.random()*0.1),
+  breath: Array(80).fill(0).map((_,i) => Math.sin(i/12) * 0.6),
+  events: [],
+  classCounts: { calm: 0, neutral: 0, aroused: 0, stressed: 0 },
+  t0: Date.now()
+};
+
+const STATE_COLORS = {
+  calm: "var(--calm)",
+  neutral: "var(--primary)",
+  aroused: "var(--arousal)",
+  stressed: "var(--stress)"
+};
+
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+function clampN1(x){ return Math.max(-1, Math.min(1, x)); }
+function smoothStep(prev, target, k){ return prev + (target - prev) * k; }
+
+function classify(){
+  const { arousal, stress, calm } = STATE;
+  if (stress > 0.65) return "stressed";
+  if (arousal > 0.6) return "aroused";
+  if (calm > 0.6) return "calm";
+  return "neutral";
+}
+
+function fmtTime(d){
+  const x = d || new Date();
+  return x.toTimeString().slice(0,8);
+}
+function shortAgo(ms){
+  const s = Math.floor((Date.now()-ms)/1000);
+  if (s < 5) return "just now";
+  if (s < 60) return s+"s ago";
+  const m = Math.floor(s/60);
+  return m+"m ago";
+}
+
+// =============================== TICK ===============================
+function tick(){
+  if (STATE.paused) return;
+
+  // Drift with random walk
+  STATE.arousal = clamp01(smoothStep(STATE.arousal, Math.random()*0.8 + 0.1, 0.08) + (Math.random()-0.5)*0.05);
+  STATE.stress  = clamp01(smoothStep(STATE.stress,  Math.random()*0.7 + 0.1, 0.06) + (Math.random()-0.5)*0.04);
+  STATE.calm    = clamp01(1 - 0.6*STATE.stress - 0.3*STATE.arousal + (Math.random()-0.5)*0.05);
+  STATE.valence = clampN1(smoothStep(STATE.valence, (STATE.calm - STATE.stress) * 0.8, 0.1) + (Math.random()-0.5)*0.05);
+  STATE.bpm     = 15 + (STATE.arousal - 0.3) * 8 + (Math.random()-0.5)*0.6;
+
+  // Push to history (cap 30)
+  STATE.history.arousal.push(STATE.arousal); if (STATE.history.arousal.length > 30) STATE.history.arousal.shift();
+  STATE.history.stress.push(STATE.stress);   if (STATE.history.stress.length > 30) STATE.history.stress.shift();
+  STATE.history.calm.push(STATE.calm);       if (STATE.history.calm.length > 30) STATE.history.calm.shift();
+
+  // Push signal samples
+  for (let i = 0; i < 4; i++){
+    const phase = (Date.now()/100 + i*0.25);
+    STATE.gait.push(Math.sin(phase * (1 + STATE.arousal*0.5)) * (0.4 + STATE.arousal*0.5) + (Math.random()-0.5)*0.12);
+    if (STATE.gait.length > 200) STATE.gait.shift();
+    STATE.breath.push(Math.sin(phase * 0.15) * (0.5 + STATE.calm*0.3) + (Math.random()-0.5)*0.05);
+    if (STATE.breath.length > 200) STATE.breath.shift();
+  }
+
+  // Classify + counts
+  const cls = classify();
+  STATE.classCounts[cls] = (STATE.classCounts[cls]||0) + 1;
+
+  // Generate events
+  const now = new Date();
+  const conf = 0.6 + Math.random()*0.35;
+  pushEvent({ ts: now, name: "arousal_level", value: STATE.arousal.toFixed(3), conf, source: "fusion" });
+  if (Math.random() < 0.7) pushEvent({ ts: now, name: "stress_score", value: STATE.stress.toFixed(3), conf, source: "fusion" });
+  if (Math.random() < 0.5) pushEvent({ ts: now, name: "valence", value: STATE.valence.toFixed(3), conf, source: "fusion" });
+  if (Math.random() < 0.18) pushEvent({ ts: now, name: "emotion_state", value: cls, conf, source: "classifier" });
+
+  render();
+}
+
+function pushEvent(e){
+  STATE.events.unshift(e);
+  if (STATE.events.length > 400) STATE.events.pop();
+}
+
+// =============================== RENDER ===============================
+function setGauge(id, val, range){
+  range = range || [0,1];
+  const t = clamp01((val - range[0]) / (range[1] - range[0]));
+  const circumference = 2 * Math.PI * 42;
+  const offset = circumference - (t * circumference * 0.75); // 3/4 arc feel? Actually full circle. Keep full.
+  const fullOffset = circumference - (t * circumference);
+  const el = $("#"+id);
+  if (el) el.setAttribute("stroke-dashoffset", String(fullOffset));
+}
+
+function setSigPath(id, arr, w, h){
+  const el = $("#"+id);
+  if (!el) return;
+  const n = arr.length;
+  const step = w / (n-1);
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  const range = (max - min) || 1;
+  const pts = arr.map((v, i) => {
+    const x = i * step;
+    const y = h - ((v - min) / range) * h * 0.9 - h*0.05;
+    return x.toFixed(1)+","+y.toFixed(1);
+  }).join(" ");
+  el.setAttribute("points", pts);
+}
+
+function setTracePath(id, arr, w, h, lo, hi){
+  const el = $("#"+id);
+  if (!el || !arr.length) return;
+  const n = Math.max(arr.length, 2);
+  const step = w / (n-1);
+  const range = hi - lo;
+  const pts = arr.map((v, i) => {
+    const x = i * step;
+    const y = h - ((v - lo) / range) * h * 0.9 - h*0.05;
+    return x.toFixed(1)+","+y.toFixed(1);
+  }).join(" ");
+  el.setAttribute("points", pts);
+}
+
+function stdev(arr){
+  if (arr.length < 2) return 0;
+  const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+  const v = arr.reduce((a,b)=>a+(b-mean)*(b-mean),0) / arr.length;
+  return Math.sqrt(v);
+}
+
+function render(){
+  // KPIs (dashboard)
+  const aEl = $("#kpi-arousal"); if (aEl) aEl.textContent = STATE.arousal.toFixed(2);
+  const sEl = $("#kpi-stress");  if (sEl) sEl.textContent = STATE.stress.toFixed(2);
+  const cEl = $("#kpi-calm");    if (cEl) cEl.textContent = STATE.calm.toFixed(2);
+  const vEl = $("#kpi-valence"); if (vEl) vEl.textContent = (STATE.valence>=0?"+":"") + STATE.valence.toFixed(2);
+  const bEl = $("#kpi-bpm");     if (bEl) bEl.textContent = STATE.bpm.toFixed(1);
+
+  // Emotion hero
+  const cls = classify();
+  const hero = $("#emo-hero");
+  hero.style.setProperty("--state-color", STATE_COLORS[cls]);
+  $("#emo-state-val").style.color = "hsl(" + STATE_COLORS[cls] + ")";
+  $("#emo-state-val").textContent = cls.toUpperCase();
+  $("#emo-state-sub").textContent = "trend " + (STATE.arousal > 0.5 ? "rising" : "stable") + " · " + fmtTime();
+  const conf = 0.62 + STATE.calm*0.3;
+  $("#emo-conf-fill").style.width = (conf*100).toFixed(0) + "%";
+  $("#emo-conf-val").textContent = conf.toFixed(2);
+
+  // Event counts (last 60s)
+  const cutoff = Date.now() - 60_000;
+  const recent = STATE.events.filter(e => e.ts.getTime() > cutoff);
+  const cnt = name => recent.filter(e => e.name === name).length;
+  const u = (id,n) => { const el = $(id); if (el) el.textContent = String(cnt(n)); };
+  u("#em-count-state","emotion_state");
+  u("#em-count-arousal","arousal_level");
+  u("#em-count-stress","stress_score");
+  u("#em-count-valence","valence");
+
+  // Dashboard recent events
+  const dashTbody = $("#dash-events-tbody");
+  if (dashTbody){
+    const rows = STATE.events.slice(0,8).map(e => `
+      <tr class="event-row">
+        <td class="event-time">${fmtTime(e.ts)}</td>
+        <td><span class="badge ${badgeFor(e.name)}">${e.name}</span></td>
+        <td>${e.value}</td>
+        <td>${e.conf.toFixed(2)}</td>
+      </tr>`).join("");
+    dashTbody.innerHTML = rows || `<tr><td colspan="4" style="text-align:center;color:hsl(var(--muted-foreground))">no events yet</td></tr>`;
+  }
+
+  // Live gauges
+  if ($("#g-arousal")){
+    setGauge("g-arousal", STATE.arousal);
+    setGauge("g-stress", STATE.stress);
+    setGauge("g-calm", STATE.calm);
+    setGauge("g-valence", (STATE.valence+1)/2);
+    $("#g-arousal-val").textContent = STATE.arousal.toFixed(2);
+    $("#g-stress-val").textContent  = STATE.stress.toFixed(2);
+    $("#g-calm-val").textContent    = STATE.calm.toFixed(2);
+    $("#g-valence-val").textContent = (STATE.valence>=0?"+":"") + STATE.valence.toFixed(2);
+    $("#g-arousal-meta").textContent = "σ " + stdev(STATE.history.arousal).toFixed(2) + " · 30s";
+    $("#g-stress-meta").textContent  = "σ " + stdev(STATE.history.stress).toFixed(2) + " · 30s";
+    $("#g-calm-meta").textContent    = "σ " + stdev(STATE.history.calm).toFixed(2) + " · 30s";
+    $("#g-valence-meta").textContent = "trend " + (STATE.valence>0 ? "↑ pos" : "↓ neg");
+  }
+
+  // Signals
+  setSigPath("sig-gait-line", STATE.gait, 400, 80);
+  setSigPath("sig-breath-line", STATE.breath, 400, 80);
+  setSigPath("sig-gait-line-2", STATE.gait, 400, 80);
+  setSigPath("sig-breath-line-2", STATE.breath, 400, 80);
+
+  $("#gait-rms").textContent = "rms " + (Math.sqrt(STATE.gait.reduce((a,b)=>a+b*b,0)/STATE.gait.length)).toFixed(3);
+  $("#breath-bpm").textContent = STATE.bpm.toFixed(1) + " bpm";
+
+  // Trace
+  setTracePath("trace-arousal", STATE.history.arousal, 600, 140, 0, 1);
+  setTracePath("trace-stress",  STATE.history.stress,  600, 140, 0, 1);
+  setTracePath("trace-calm",    STATE.history.calm,    600, 140, 0, 1);
+
+  // Signals page features
+  const ftEl = $("#features-tbody");
+  if (ftEl){
+    const updated = "just now";
+    ftEl.innerHTML = [
+      ["stride_period","gait", (1.0 + (STATE.arousal-0.3)*0.4).toFixed(3)+" s"],
+      ["cadence","gait", (100 + STATE.arousal*30).toFixed(0)+" spm"],
+      ["gait_variance","gait", (0.04 + STATE.stress*0.04).toFixed(3)],
+      ["step_symmetry","gait", (0.92 - STATE.stress*0.12).toFixed(3)],
+      ["breath_rate","breath", STATE.bpm.toFixed(2)+" bpm"],
+      ["breath_depth","breath", (0.6 + STATE.calm*0.3).toFixed(3)],
+      ["ie_ratio","breath", "1 : "+(1.4 + STATE.calm*0.3).toFixed(2)],
+      ["hrv_proxy","breath", (40 + STATE.calm*20).toFixed(0)+" ms"],
+    ].map(([f,c,v]) => `<tr><td>${f}</td><td>${c}</td><td>${v}</td><td>${updated}</td></tr>`).join("");
+  }
+
+  const sigStride = $("#sig-stride"); if (sigStride) sigStride.textContent = (1.0 + (STATE.arousal-0.3)*0.4).toFixed(2)+" s";
+  const sigCad = $("#sig-cadence"); if (sigCad) sigCad.textContent = (100 + STATE.arousal*30).toFixed(0)+" spm";
+  const sigGv = $("#sig-gv"); if (sigGv) sigGv.textContent = (0.04 + STATE.stress*0.04).toFixed(3);
+  const sigBr = $("#sig-brate"); if (sigBr) sigBr.textContent = STATE.bpm.toFixed(2)+" bpm";
+  const sigBd = $("#sig-bdepth"); if (sigBd) sigBd.textContent = (0.6 + STATE.calm*0.3).toFixed(3);
+  const sigHrv = $("#sig-hrv"); if (sigHrv) sigHrv.textContent = (40 + STATE.calm*20).toFixed(0)+" ms";
+
+  // Model runtime
+  const ml = $("#m-latency"); if (ml) ml.textContent = (12 + Math.random()*4).toFixed(1);
+  const mw = $("#m-wpm"); if (mw) mw.textContent = "60";
+  const mc = $("#m-conf"); if (mc) mc.textContent = (0.68 + STATE.calm*0.15).toFixed(2);
+
+  // Class distribution
+  const cdEl = $("#class-dist");
+  if (cdEl){
+    const total = Object.values(STATE.classCounts).reduce((a,b)=>a+b,0) || 1;
+    cdEl.innerHTML = ["calm","neutral","aroused","stressed"].map(k => {
+      const pct = (STATE.classCounts[k]/total)*100;
+      return `<div style="margin-bottom:0.625rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:0.25rem">
+          <span style="color:hsl(${STATE_COLORS[k]});font-weight:600">${k}</span>
+          <span class="mono" style="color:hsl(var(--muted-foreground))">${STATE.classCounts[k]} · ${pct.toFixed(1)}%</span>
+        </div>
+        <div style="height:6px;background:hsl(var(--secondary));border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:hsl(${STATE_COLORS[k]});width:${pct.toFixed(1)}%;transition:width 0.3s"></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  renderEventsTable();
+}
+
+function badgeFor(name){
+  if (name === "emotion_state") return "valence";
+  if (name === "arousal_level") return "arousal";
+  if (name === "stress_score") return "stress";
+  if (name === "valence") return "calm";
+  return "";
+}
+
+// =============================== EVENTS PAGE ===============================
+let evFilter = "all";
+function renderEventsTable(){
+  const tbody = $("#events-tbody");
+  if (!tbody) return;
+  const list = evFilter === "all" ? STATE.events : STATE.events.filter(e => e.name === evFilter);
+  if (list.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:hsl(var(--muted-foreground));padding:1.5rem">no events match filter</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.slice(0, 80).map(e => `
+    <tr class="event-row">
+      <td class="event-time">${fmtTime(e.ts)}</td>
+      <td><span class="badge ${badgeFor(e.name)}">${e.name}</span></td>
+      <td>${e.value}</td>
+      <td>${e.conf.toFixed(2)}</td>
+      <td>${e.source}</td>
+    </tr>
+  `).join("");
+}
+
+$$("#event-filter .pill-tab").forEach(b => {
+  b.addEventListener("click", () => {
+    $$("#event-filter .pill-tab").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    evFilter = b.dataset.evfilter;
+    renderEventsTable();
+  });
+});
+
+// =============================== BUTTONS ===============================
+$("#btn-refresh").addEventListener("click", () => {
+  tick(); render();
+  toast("Refreshed", "ok");
+});
+
+$("#btn-stream-pause").addEventListener("click", () => {
+  STATE.paused = !STATE.paused;
+  $("#btn-stream-pause-lbl").textContent = STATE.paused ? "Resume" : "Pause";
+  toast(STATE.paused ? "Stream paused" : "Stream resumed", STATE.paused ? "warn" : "ok");
+});
+
+$("#btn-snapshot").addEventListener("click", () => {
+  const snap = {
+    ts: new Date().toISOString(),
+    emotion_state: classify(),
+    arousal_level: +STATE.arousal.toFixed(3),
+    stress_score: +STATE.stress.toFixed(3),
+    calm_index: +STATE.calm.toFixed(3),
+    valence: +STATE.valence.toFixed(3),
+    breathing_bpm: +STATE.bpm.toFixed(2),
+    confidence: +(0.62 + STATE.calm*0.3).toFixed(3),
+    source: "cogs/emotion-detect@0.6.0",
+    hardware: "ESP32-S3"
+  };
+  $("#snap-time").textContent = snap.ts;
+  $("#snap-body").textContent = JSON.stringify(snap, null, 2);
+  $("#snap-modal").classList.add("show");
+});
+$("#snap-close").addEventListener("click", () => $("#snap-modal").classList.remove("show"));
+$("#snap-copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("#snap-body").textContent); toast("Copied snapshot", "ok"); }
+  catch(_){ toast("Clipboard unavailable", "err"); }
+});
+$("#snap-modal").addEventListener("click", e => { if (e.target.id === "snap-modal") $("#snap-modal").classList.remove("show"); });
+
+$("#btn-clear-events").addEventListener("click", () => {
+  STATE.events = [];
+  renderEventsTable();
+  toast("Events cleared", "ok");
+});
+
+$("#btn-export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(STATE.events.map(e => ({
+    ts: e.ts.toISOString(), name: e.name, value: e.value, confidence: +e.conf.toFixed(3), source: e.source
+  })), null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "emotion-events-"+Date.now()+".json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast("Exported "+STATE.events.length+" events", "ok");
+});
+
+$("#btn-resync").addEventListener("click", () => {
+  toast("Resyncing sensors…", "warn");
+  setTimeout(() => toast("Sensors locked", "ok"), 900);
+});
+
+$("#btn-reload-model").addEventListener("click", () => {
+  toast("Reloading weights…", "warn");
+  setTimeout(() => toast("Model 0.6.0 reloaded", "ok"), 700);
+});
+
+$("#btn-publish").addEventListener("click", () => {
+  toast("Published to fleet", "ok");
+});
+
+// Calibration
+let calTimer = null;
+function startCalibration(){
+  const modal = $("#cal-modal");
+  const bar = $("#cal-bar");
+  const step = $("#cal-step");
+  modal.classList.add("show");
+  bar.style.width = "0%";
+  let pct = 0;
+  const steps = ["Initialising…","Capturing resting breath…","Estimating cadence…","Sampling HRV…","Finalising baseline…"];
+  let si = 0;
+  step.textContent = steps[0];
+  clearInterval(calTimer);
+  calTimer = setInterval(() => {
+    pct += 100/60;
+    bar.style.width = Math.min(100, pct) + "%";
+    const newSi = Math.min(steps.length-1, Math.floor((pct/100)*steps.length));
+    if (newSi !== si){ si = newSi; step.textContent = steps[si]; }
+    if (pct >= 100){
+      clearInterval(calTimer);
+      setTimeout(() => {
+        modal.classList.remove("show");
+        $("#cal-bpm").textContent = (14 + Math.random()*1.5).toFixed(1);
+        $("#cal-hrv").textContent = (50 + Math.random()*5).toFixed(0) + " ms";
+        $("#cal-cad").textContent = (96 + Math.random()*5).toFixed(0) + " spm";
+        $("#cal-gv").textContent = (0.035 + Math.random()*0.01).toFixed(3);
+        $("#cal-when").textContent = "Last captured " + fmtTime();
+        toast("Baseline captured", "ok");
+      }, 400);
+    }
+  }, 250);
+}
+$("#btn-start-cal").addEventListener("click", startCalibration);
+$("#cal-cancel").addEventListener("click", () => {
+  clearInterval(calTimer);
+  $("#cal-modal").classList.remove("show");
+  toast("Calibration cancelled", "warn");
+});
+$("#cal-modal").addEventListener("click", e => {
+  if (e.target.id === "cal-modal"){ clearInterval(calTimer); $("#cal-modal").classList.remove("show"); }
+});
+$("#btn-cal-reset").addEventListener("click", () => {
+  $("#cal-bpm").textContent = "—";
+  $("#cal-hrv").textContent = "—";
+  $("#cal-cad").textContent = "—";
+  $("#cal-gv").textContent = "—";
+  $("#cal-when").textContent = "Not captured";
+  toast("Baseline reset", "warn");
+});
+$("#btn-cal-export").addEventListener("click", () => {
+  const payload = {
+    captured_at: new Date().toISOString(),
+    resting_bpm: $("#cal-bpm").textContent,
+    resting_hrv: $("#cal-hrv").textContent,
+    cadence: $("#cal-cad").textContent,
+    gait_variance: $("#cal-gv").textContent
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "baseline-"+Date.now()+".json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast("Baseline exported", "ok");
+});
+
+// Threshold sliders
+function bindThreshold(id, lblId, defaultVal){
+  const el = $(id), lbl = $(lblId);
+  el.addEventListener("input", () => { lbl.textContent = (el.value/100).toFixed(2); });
+}
+bindThreshold("#th-arousal", "#th-arousal-val", 65);
+bindThreshold("#th-stress", "#th-stress-val", 70);
+bindThreshold("#th-calm", "#th-calm-val", 55);
+
+$("#btn-th-default").addEventListener("click", () => {
+  $("#th-arousal").value = 65; $("#th-arousal-val").textContent = "0.65";
+  $("#th-stress").value = 70; $("#th-stress-val").textContent = "0.70";
+  $("#th-calm").value = 55; $("#th-calm-val").textContent = "0.55";
+  toast("Thresholds reset", "ok");
+});
+$("#btn-th-save").addEventListener("click", () => toast("Thresholds saved", "ok"));
+
+$("#btn-settings-save").addEventListener("click", () => {
+  toast("Settings saved to ESP32-S3", "ok");
+});
+
+// =============================== INIT ===============================
+const initialRoute = (location.hash || "#dashboard").replace("#","");
+setRoute(initialRoute, {noHash:true});
+
+// First synthetic burst so page isn't empty
+for (let i = 0; i < 30; i++){
+  STATE.history.arousal.push(0.3 + Math.random()*0.2);
+  STATE.history.stress.push(0.2 + Math.random()*0.15);
+  STATE.history.calm.push(0.6 + Math.random()*0.2);
+}
+for (let i = 0; i < 60; i++){
+  const now = new Date(Date.now() - (60-i)*1000);
+  pushEvent({ ts: now, name: "arousal_level", value: (0.3+Math.random()*0.3).toFixed(3), conf: 0.7+Math.random()*0.2, source: "fusion" });
+  if (i % 2) pushEvent({ ts: now, name: "stress_score", value: (0.2+Math.random()*0.3).toFixed(3), conf: 0.7+Math.random()*0.2, source: "fusion" });
+  if (i % 3) pushEvent({ ts: now, name: "valence", value: ((Math.random()*2-1)*0.5).toFixed(3), conf: 0.7+Math.random()*0.2, source: "fusion" });
+  if (i % 7 === 0) pushEvent({ ts: now, name: "emotion_state", value: ["calm","neutral","aroused","stressed"][Math.floor(Math.random()*4)], conf: 0.7+Math.random()*0.2, source: "classifier" });
+}
+STATE.classCounts = { calm: 22, neutral: 14, aroused: 8, stressed: 4 };
+
+render();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

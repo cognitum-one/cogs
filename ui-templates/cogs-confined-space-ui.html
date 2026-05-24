@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Confined Space — Worker Presence &amp; Vital Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+ * Cognitum chrome — pulled from the shared design system and
+ * trimmed for this single-page Confined Space build.
+ * ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warn:35 90% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem;scroll-margin-top:74px}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* Page header */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.page-meta{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.tag{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.2rem 0.55rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;letter-spacing:0.02em;
+  background:hsl(var(--secondary));color:hsl(var(--muted-foreground));
+  border:1px solid hsl(var(--border));
+}
+.tag.industrial{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.tag.osha{background:hsl(var(--warn) / 0.12);color:hsl(var(--warn) / 1);border-color:hsl(var(--warn) / 0.3)}
+.tag.hard{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* KPI grid */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.14)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.14)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 70%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Grids */
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.split{display:grid;gap:0.75rem;grid-template-columns:2fr 1fr}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+
+/* Worker card */
+.worker{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;flex-direction:column;gap:0.75rem;
+  position:relative;
+}
+.worker.alert{border-color:hsl(var(--destructive) / 0.55);box-shadow:0 0 0 1px hsl(var(--destructive) / 0.25),0 8px 32px -8px hsl(var(--destructive) / 0.4)}
+.worker.warn{border-color:hsl(var(--warn) / 0.55)}
+.worker-h{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+.worker-id{display:flex;align-items:center;gap:0.625rem}
+.avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:hsl(var(--primary) / 0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:0.8125rem;color:hsl(var(--primary));
+  border:1px solid hsl(var(--primary) / 0.3);
+  flex-shrink:0;
+}
+.avatar.warn{background:hsl(var(--warn) / 0.18);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.4)}
+.avatar.alert{background:hsl(var(--destructive) / 0.2);color:hsl(0 70% 75%);border-color:hsl(var(--destructive) / 0.5)}
+.worker-name{font-size:0.9375rem;font-weight:600;line-height:1.1}
+.worker-role{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.worker-vitals{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;
+  padding:0.625rem;border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;background:hsl(var(--background) / 0.4);
+}
+.vital{display:flex;flex-direction:column;gap:0.15rem}
+.vital-label{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground))}
+.vital-val{font-family:var(--font-mono);font-size:0.95rem;font-weight:600;color:hsl(var(--foreground));line-height:1.1}
+.vital-val .u{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-left:0.15rem;font-weight:400}
+.vital-val.ok{color:hsl(142 70% 65%)}
+.vital-val.warn{color:hsl(var(--warn))}
+.vital-val.alert{color:hsl(0 70% 72%)}
+.worker-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap}
+
+/* Sparkline */
+.spark{width:100%;height:36px;display:block}
+.spark path.line{fill:none;stroke:hsl(var(--primary));stroke-width:1.5}
+.spark path.area{fill:hsl(var(--primary) / 0.15);stroke:none}
+.spark.warn path.line{stroke:hsl(var(--warn))}
+.spark.warn path.area{fill:hsl(var(--warn) / 0.15)}
+.spark.alert path.line{stroke:hsl(0 70% 70%)}
+.spark.alert path.area{fill:hsl(0 65% 50% / 0.18)}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.ok{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.warn{background:hsl(var(--warn) / 0.12);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3)}
+.badge.alert{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 72%);border-color:hsl(0 65% 50% / 0.3)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.inside{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.outside{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(0.82)}}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.625rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{padding:0.55rem 0.625rem;border-bottom:1px solid hsl(var(--border) / 0.3);font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+
+/* Event log */
+.event-log{max-height:540px;overflow-y:auto;display:flex;flex-direction:column;gap:0.4rem}
+.event{
+  display:flex;gap:0.625rem;align-items:flex-start;
+  padding:0.55rem 0.75rem;border-radius:0.5rem;
+  background:hsl(var(--background) / 0.4);border:1px solid hsl(var(--border) / 0.4);
+  font-size:0.8125rem;
+}
+.event.alert{border-color:hsl(var(--destructive) / 0.45);background:hsl(0 65% 50% / 0.06)}
+.event.warn{border-color:hsl(var(--warn) / 0.45);background:hsl(var(--warn) / 0.05)}
+.event.entry{border-color:hsl(var(--accent) / 0.4)}
+.event.exit{border-color:hsl(var(--muted-foreground) / 0.25)}
+.event-ic{width:28px;height:28px;border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:hsl(var(--secondary))}
+.event-ic svg{width:14px;height:14px;stroke:hsl(var(--foreground));fill:none;stroke-width:2}
+.event.alert .event-ic{background:hsl(var(--destructive) / 0.16)}
+.event.alert .event-ic svg{stroke:hsl(0 70% 75%)}
+.event.warn .event-ic{background:hsl(var(--warn) / 0.16)}
+.event.warn .event-ic svg{stroke:hsl(var(--warn))}
+.event.entry .event-ic{background:hsl(var(--accent) / 0.16)}
+.event.entry .event-ic svg{stroke:hsl(var(--accent))}
+.event-body{flex:1;min-width:0}
+.event-title{font-size:0.8125rem;font-weight:500;color:hsl(var(--foreground));margin-bottom:0.1rem}
+.event-meta{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.event-time{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));flex-shrink:0;text-align:right;min-width:62px}
+
+/* Site map (confined space layout) */
+.sitemap{
+  position:relative;width:100%;aspect-ratio:16/9;max-height:420px;
+  background:radial-gradient(ellipse at 50% 50%,hsl(220 20% 10%) 0%,hsl(220 25% 6%) 75%);
+  border:1px solid hsl(var(--border));border-radius:0.6rem;overflow:hidden;
+}
+.sitemap-svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.75rem;font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.legend-item{display:inline-flex;align-items:center;gap:0.35rem}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* Compliance banner */
+.banner{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.75rem 1rem;border-radius:0.6rem;
+  border:1px solid hsl(var(--accent) / 0.3);
+  background:hsl(var(--accent) / 0.08);
+  font-size:0.8125rem;color:hsl(var(--foreground));
+}
+.banner.warn{border-color:hsl(var(--warn) / 0.4);background:hsl(var(--warn) / 0.08)}
+.banner.alert{border-color:hsl(var(--destructive) / 0.5);background:hsl(var(--destructive) / 0.08)}
+.banner-ic{width:32px;height:32px;border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:hsl(var(--accent) / 0.18)}
+.banner-ic svg{width:16px;height:16px;stroke:hsl(var(--accent));fill:none;stroke-width:2}
+.banner.warn .banner-ic{background:hsl(var(--warn) / 0.18)}
+.banner.warn .banner-ic svg{stroke:hsl(var(--warn))}
+.banner.alert .banner-ic{background:hsl(var(--destructive) / 0.18)}
+.banner.alert .banner-ic svg{stroke:hsl(0 70% 75%)}
+.banner b{color:hsl(var(--foreground));font-weight:600}
+
+/* Pill tabs */
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Hardware row */
+.hw-row{display:flex;gap:0.6rem;flex-wrap:wrap;font-size:0.75rem;color:hsl(var(--muted-foreground))}
+.hw-chip{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.25rem 0.6rem;border-radius:0.4rem;
+  background:hsl(var(--secondary));border:1px solid hsl(var(--border));
+  font-family:var(--font-mono);font-size:0.6875rem;
+}
+.hw-chip b{color:hsl(var(--foreground));font-weight:600;font-family:var(--font-display)}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+      </div>
+      <span class="brand-text">
+        <b>Cognitum</b><span class="slash">/</span>Confined Space<span class="brand-ver mono">v1.2.0</span>
+      </span>
+    </div>
+    <nav class="nav">
+      <a class="active" data-view="overview">Overview</a>
+      <a data-view="workers">Workers</a>
+      <a data-view="vitals">Vitals</a>
+      <a data-view="events">Events</a>
+      <a data-view="compliance">Compliance</a>
+      <a data-view="hardware">Hardware</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Page header -->
+  <div class="section">
+    <div class="page-head">
+      <div>
+        <h1 class="page">👷 Confined Space</h1>
+        <div class="lede">Worker presence and vital monitoring per OSHA 29 CFR 1910.146. Tracks entry/exit, breathing patterns, and heart rate via CSI presence sensing on ESP32-S3.</div>
+        <div class="page-meta">
+          <span class="tag industrial">Industrial</span>
+          <span class="tag osha">OSHA 1910.146</span>
+          <span class="tag hard">Hard install</span>
+          <span class="tag">v1.2.0</span>
+          <span class="tag">24 KB</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <button class="btn outline sm" id="btn-export"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export shift log</button>
+        <button class="btn primary sm" id="btn-evac"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>Sound evac</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active banner -->
+  <div class="section">
+    <div class="banner warn" id="status-banner">
+      <div class="banner-ic"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg></div>
+      <div><b>1 vital alert</b> &middot; M. Alvarez breathing rate 7 bpm (below threshold 8). Permit-required entry window expires in <span id="permit-clock" class="mono">42:18</span>. Attendant ack required.</div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="section" id="section-overview">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Workers inside</div><div class="kpi-val" id="kpi-inside">3</div><div class="kpi-sub" id="kpi-inside-sub">of 4 authorised</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Avg breathing rate</div><div class="kpi-val" id="kpi-breath">14<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));margin-left:0.25rem">bpm</span></div><div class="kpi-sub">normal 12–20</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Avg heart rate</div><div class="kpi-val" id="kpi-hr">78<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));margin-left:0.25rem">bpm</span></div><div class="kpi-sub">across active workers</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Active alerts</div><div class="kpi-val" id="kpi-alerts">1</div><div class="kpi-sub">vital_alert &middot; last 5 min</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Permit time left</div><div class="kpi-val mono" id="kpi-permit">42:18</div><div class="kpi-sub">entry permit #CS-2026-0084</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workers + Events split -->
+  <div class="section" id="section-workers">
+    <div class="split">
+      <!-- Workers -->
+      <div>
+        <div class="card-h" style="margin-bottom:0.75rem">
+          <h2 style="margin:0">Active workers</h2>
+          <div class="pill-tabs" id="worker-filter">
+            <div class="pill-tab on" data-filter="all">All</div>
+            <div class="pill-tab" data-filter="inside">Inside</div>
+            <div class="pill-tab" data-filter="alert">Alerts</div>
+          </div>
+        </div>
+        <div class="grid" id="workers"></div>
+      </div>
+
+      <!-- Event stream -->
+      <div>
+        <div class="card-h" style="margin-bottom:0.75rem">
+          <h2 style="margin:0">Live event stream</h2>
+          <span class="badge ok"><span class="dot up pulse"></span>streaming</span>
+        </div>
+        <div class="card" style="padding:0.875rem">
+          <div class="event-log" id="events"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site map -->
+  <div class="section" id="section-events">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Confined space map &mdash; Tank 7B</div>
+          <div class="card-sub" id="map-sub">CSI presence zones &middot; sensor anchored at hatch (north)</div>
+        </div>
+        <div class="pill-tabs" id="map-mode">
+          <div class="pill-tab on" data-mode="now">Now</div>
+          <div class="pill-tab" data-mode="heatmap">Heatmap (1h)</div>
+          <div class="pill-tab" data-mode="shift">Shift</div>
+        </div>
+      </div>
+      <div class="sitemap">
+        <svg class="sitemap-svg" viewBox="0 0 800 450" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="presenceGrad" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="hsl(185 80% 50%)" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="alertGrad" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="hsl(0 70% 60%)" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="hsl(0 70% 60%)" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="heatHot" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="hsl(35 90% 55%)" stop-opacity="0.7"/>
+              <stop offset="60%" stop-color="hsl(35 90% 55%)" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="hsl(35 90% 55%)" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="heatWarm" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%" stop-color="hsl(185 80% 50%)" stop-opacity="0.55"/>
+              <stop offset="70%" stop-color="hsl(185 80% 50%)" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+            </radialGradient>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0H0V40" fill="none" stroke="hsl(220 15% 18% / 0.6)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="800" height="450" fill="url(#grid)"/>
+
+          <!-- Tank outline -->
+          <rect x="120" y="60" width="560" height="330" rx="24"
+                fill="hsl(220 20% 9%)" stroke="hsl(185 80% 50% / 0.4)" stroke-width="2"/>
+          <text x="140" y="88" font-family="Outfit" font-size="13" fill="hsl(215 15% 55%)" font-weight="600">TANK 7B &middot; 4.2 m × 8.5 m</text>
+
+          <!-- Hatch -->
+          <rect x="370" y="48" width="60" height="24" rx="4"
+                fill="hsl(220 20% 14%)" stroke="hsl(185 80% 50%)" stroke-width="1.5"/>
+          <text x="400" y="64" font-family="JetBrains Mono" font-size="10" fill="hsl(185 80% 50%)" text-anchor="middle">HATCH</text>
+          <!-- Sensor anchor -->
+          <circle cx="400" cy="78" r="6" fill="hsl(185 80% 50%)"/>
+          <circle cx="400" cy="78" r="14" fill="none" stroke="hsl(185 80% 50% / 0.4)" stroke-width="1">
+            <animate attributeName="r" from="14" to="60" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from="0.6" to="0" dur="2.4s" repeatCount="indefinite"/>
+          </circle>
+          <text x="400" y="42" font-family="JetBrains Mono" font-size="10" fill="hsl(185 80% 50%)" text-anchor="middle">ESP32-S3 CSI</text>
+
+          <!-- Ladder -->
+          <line x1="400" y1="78" x2="400" y2="180" stroke="hsl(215 15% 35%)" stroke-width="2" stroke-dasharray="6 4"/>
+
+          <!-- ============ NOW LAYER (real-time positions) ============ -->
+          <g id="layer-now">
+            <!-- W1: Alvarez - alert -->
+            <circle cx="260" cy="290" r="55" fill="url(#alertGrad)"/>
+            <circle cx="260" cy="290" r="14" fill="hsl(0 70% 50%)" stroke="hsl(0 80% 80%)" stroke-width="2"/>
+            <text x="260" y="294" font-family="Outfit" font-size="11" font-weight="700" fill="hsl(220 25% 6%)" text-anchor="middle">MA</text>
+            <text x="260" y="325" font-family="JetBrains Mono" font-size="10" fill="hsl(0 70% 75%)" text-anchor="middle">Alvarez · 7 bpm</text>
+            <!-- W2: Chen -->
+            <circle cx="480" cy="220" r="50" fill="url(#presenceGrad)"/>
+            <circle cx="480" cy="220" r="14" fill="hsl(185 80% 50%)" stroke="hsl(185 80% 80%)" stroke-width="2"/>
+            <text x="480" y="224" font-family="Outfit" font-size="11" font-weight="700" fill="hsl(220 25% 6%)" text-anchor="middle">JC</text>
+            <text x="480" y="255" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 70%)" text-anchor="middle">Chen · 16 bpm</text>
+            <!-- W3: Okafor -->
+            <circle cx="580" cy="320" r="50" fill="url(#presenceGrad)"/>
+            <circle cx="580" cy="320" r="14" fill="hsl(185 80% 50%)" stroke="hsl(185 80% 80%)" stroke-width="2"/>
+            <text x="580" y="324" font-family="Outfit" font-size="11" font-weight="700" fill="hsl(220 25% 6%)" text-anchor="middle">DO</text>
+            <text x="580" y="355" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 70%)" text-anchor="middle">Okafor · 15 bpm</text>
+            <!-- W4: attendant outside -->
+            <circle cx="60" cy="40" r="14" fill="hsl(220 15% 25%)" stroke="hsl(215 15% 55%)" stroke-width="2"/>
+            <text x="60" y="44" font-family="Outfit" font-size="11" font-weight="700" fill="hsl(210 20% 92%)" text-anchor="middle">RP</text>
+            <text x="60" y="22" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 55%)" text-anchor="middle">Attendant</text>
+          </g>
+
+          <!-- ============ HEATMAP LAYER (presence density, last hour) ============ -->
+          <g id="layer-heatmap" style="display:none">
+            <!-- hot zones near hatch + work positions -->
+            <circle cx="400" cy="160" r="95" fill="url(#heatHot)"/>
+            <circle cx="260" cy="290" r="110" fill="url(#heatHot)"/>
+            <circle cx="500" cy="240" r="105" fill="url(#heatHot)"/>
+            <!-- warm zones (transit) -->
+            <circle cx="340" cy="220" r="80" fill="url(#heatWarm)"/>
+            <circle cx="430" cy="280" r="85" fill="url(#heatWarm)"/>
+            <circle cx="580" cy="320" r="90" fill="url(#heatWarm)"/>
+            <circle cx="200" cy="200" r="60" fill="url(#heatWarm)"/>
+            <circle cx="620" cy="200" r="55" fill="url(#heatWarm)"/>
+            <!-- legend swatches -->
+            <g transform="translate(140,360)">
+              <rect width="14" height="14" rx="3" fill="hsl(35 90% 55% / 0.7)"/>
+              <text x="22" y="11" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 70%)">high dwell (&gt;15 min)</text>
+              <rect x="170" width="14" height="14" rx="3" fill="hsl(185 80% 50% / 0.5)"/>
+              <text x="192" y="11" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 70%)">transit</text>
+            </g>
+          </g>
+
+          <!-- ============ SHIFT LAYER (entry/exit paths over the shift) ============ -->
+          <g id="layer-shift" style="display:none">
+            <!-- Alvarez path: hatch -> work zone -->
+            <path d="M400 78 L390 160 L320 220 L280 270 L260 290"
+                  stroke="hsl(0 70% 60%)" stroke-width="2.5" fill="none"
+                  stroke-dasharray="4 3" opacity="0.85"/>
+            <circle cx="260" cy="290" r="6" fill="hsl(0 70% 60%)"/>
+            <text x="270" y="295" font-family="JetBrains Mono" font-size="10" fill="hsl(0 70% 75%)">MA · 07:14 entry</text>
+
+            <!-- Chen path -->
+            <path d="M400 78 L420 150 L460 200 L480 220"
+                  stroke="hsl(185 80% 50%)" stroke-width="2.5" fill="none"
+                  stroke-dasharray="4 3" opacity="0.85"/>
+            <circle cx="480" cy="220" r="6" fill="hsl(185 80% 50%)"/>
+            <text x="490" y="225" font-family="JetBrains Mono" font-size="10" fill="hsl(185 80% 70%)">JC · 07:09 entry</text>
+
+            <!-- Okafor path -->
+            <path d="M400 78 L440 180 L510 260 L580 320"
+                  stroke="hsl(142 70% 50%)" stroke-width="2.5" fill="none"
+                  stroke-dasharray="4 3" opacity="0.85"/>
+            <circle cx="580" cy="320" r="6" fill="hsl(142 70% 50%)"/>
+            <text x="500" y="345" font-family="JetBrains Mono" font-size="10" fill="hsl(142 70% 70%)">DO · 07:08 entry</text>
+
+            <!-- Rivera (exited) -->
+            <path d="M380 230 L370 180 L390 100 L400 78"
+                  stroke="hsl(215 15% 55%)" stroke-width="2" fill="none"
+                  stroke-dasharray="2 4" opacity="0.7"/>
+            <circle cx="400" cy="78" r="5" fill="hsl(215 15% 55%)"/>
+            <text x="200" y="160" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 55%)">KR · 06:55 exit</text>
+
+            <!-- shift summary -->
+            <g transform="translate(140,360)">
+              <text font-family="Outfit" font-size="11" font-weight="600" fill="hsl(210 20% 92%)">Shift 2026-05-15 · 07:00 — now</text>
+              <text y="16" font-family="JetBrains Mono" font-size="10" fill="hsl(215 15% 55%)">4 entries · 1 exit · 0 evac · cumulative inside-time 4h 30m</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="dot up"></span>presence detected</span>
+        <span class="legend-item"><span class="dot down"></span>vital alert</span>
+        <span class="legend-item"><span class="dot warn"></span>attendant (outside)</span>
+        <span class="legend-item"><span class="mono">CSI</span> channel-state-information presence</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telemetry & Compliance row -->
+  <div class="section" id="section-vitals">
+    <div class="card-h" style="margin-bottom:0.75rem">
+      <div>
+        <h2 style="margin:0;font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));font-weight:600">Vitals &middot; live telemetry</h2>
+      </div>
+      <span class="badge ok"><span class="dot up pulse"></span>tracking</span>
+    </div>
+    <div class="grid-3">
+      <!-- Breathing rate trend -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Breathing rate <span class="mono" id="trend-breath-now" style="font-size:0.8125rem;color:hsl(185 80% 60%);margin-left:0.35rem">— bpm</span></div>
+            <div class="card-sub">avg across workers inside &middot; rolling 30 min</div>
+          </div>
+          <span class="badge ok" id="trend-breath-badge"><span class="dot up pulse"></span>nominal</span>
+        </div>
+        <svg id="trend-breath" viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px;display:block"></svg>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.4rem">
+          <span>-30 min</span><span>now</span>
+        </div>
+      </div>
+      <!-- Heart rate trend -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Heart rate <span class="mono" id="trend-hr-now" style="font-size:0.8125rem;color:hsl(35 90% 65%);margin-left:0.35rem">— bpm</span></div>
+            <div class="card-sub">avg bpm across workers inside &middot; rolling 30 min</div>
+          </div>
+          <span class="badge warn" id="trend-hr-badge"><span class="dot warn pulse"></span>elevated</span>
+        </div>
+        <svg id="trend-hr" viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px;display:block"></svg>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.4rem">
+          <span>-30 min</span><span>now</span>
+        </div>
+      </div>
+      <!-- Compliance card -->
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">OSHA 1910.146 checklist</div>
+            <div class="card-sub">permit-required confined space</div>
+          </div>
+          <span class="badge ok">3 / 4</span>
+        </div>
+        <table>
+          <tbody>
+            <tr><td>Atmospheric test &middot; pre-entry</td><td style="text-align:right"><span class="badge ok">passed</span></td></tr>
+            <tr><td>Attendant on standby</td><td style="text-align:right"><span class="badge ok">R. Park</span></td></tr>
+            <tr><td>Continuous vital monitoring</td><td style="text-align:right"><span class="badge ok">active</span></td></tr>
+            <tr><td>Rescue plan acknowledged</td><td style="text-align:right"><span class="badge warn">pending</span></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:0.75rem;display:flex;gap:0.4rem">
+          <button class="btn sm outline">View permit</button>
+          <button class="btn sm primary">Acknowledge rescue plan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry/Exit log -->
+  <div class="section" id="section-compliance">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Entry / exit log &mdash; shift 2026-05-15 07:00</div>
+          <div class="card-sub">authoritative record &middot; persisted to RVF index</div>
+        </div>
+        <button class="btn sm outline">Filter…</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Time</th><th>Worker</th><th>Direction</th><th>Permit</th><th>Duration inside</th><th>Notes</th></tr></thead>
+          <tbody id="entry-log">
+            <tr><td>07:02:14</td><td>R. Park</td><td><span class="badge outside">attendant</span></td><td class="mono">CS-2026-0084</td><td>&mdash;</td><td>shift attendant</td></tr>
+            <tr><td>07:08:31</td><td>D. Okafor</td><td><span class="badge inside">entry</span></td><td class="mono">CS-2026-0084</td><td>1h 12m</td><td>&mdash;</td></tr>
+            <tr><td>07:09:02</td><td>J. Chen</td><td><span class="badge inside">entry</span></td><td class="mono">CS-2026-0084</td><td>1h 11m</td><td>&mdash;</td></tr>
+            <tr><td>07:14:48</td><td>M. Alvarez</td><td><span class="badge inside">entry</span></td><td class="mono">CS-2026-0084</td><td>1h 06m</td><td><span class="badge alert">vital_alert</span></td></tr>
+            <tr><td>06:55:11</td><td>K. Rivera</td><td><span class="badge outside">exit</span></td><td class="mono">CS-2026-0083</td><td>2h 41m</td><td>handover to Chen</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hardware -->
+  <div class="section" id="section-hardware">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Hardware &amp; signal source</div>
+          <div class="card-sub">ESP32-S3 channel-state-information (CSI) presence &amp; breathing detection</div>
+        </div>
+        <span class="badge ok"><span class="dot up"></span>online</span>
+      </div>
+      <div class="hw-row">
+        <div class="hw-chip"><b>MCU</b> ESP32-S3-WROOM-1</div>
+        <div class="hw-chip"><b>radio</b> 2.4 GHz Wi-Fi CSI</div>
+        <div class="hw-chip"><b>fw</b> cs-csi-1.2.0</div>
+        <div class="hw-chip"><b>uptime</b> 4d 17h</div>
+        <div class="hw-chip"><b>rssi</b> -54 dBm</div>
+        <div class="hw-chip"><b>frame</b> 25 ms</div>
+        <div class="hw-chip"><b>vectors</b> 124 / s &rarr; RVF</div>
+      </div>
+      <div style="margin-top:0.875rem;font-size:0.8125rem;color:hsl(var(--muted-foreground))">
+        Emits <code class="mono">worker_present</code>, <code class="mono">vital_alert</code>, <code class="mono">entry</code>, <code class="mono">exit</code>, <code class="mono">breathing_rate</code> events
+        to the V0 appliance &middot; signal source: <code class="mono">CSI presence, breathing</code>.
+      </div>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: confined-space@1.2.0</span> &middot; <span class="mono">tank: 7B</span> &middot; <span class="mono">permit: CS-2026-0084</span></div>
+    <div style="margin-top:0.4rem">Per 29 CFR 1910.146 &middot; data retained 30 days &middot; <a href="#">permit log</a> &middot; <a href="#">incident response</a></div>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+ * Confined Space — demo data + render
+ * Single file; no backend; values animate to feel live.
+ * ============================================================ */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const WORKERS = [
+  { id:'w-alvarez', initials:'MA', name:'M. Alvarez',  role:'authorised entrant', inside:true,
+    breathing:7,  hr:62,  spo2:91, since:'07:14',
+    state:'alert', note:'breathing rate below 8 bpm',
+    breath_history:[14,13,13,12,11,10,9,8,8,7,7,8,7,7] },
+  { id:'w-chen',    initials:'JC', name:'J. Chen',     role:'authorised entrant', inside:true,
+    breathing:16, hr:84,  spo2:97, since:'07:09',
+    state:'ok',    note:'',
+    breath_history:[15,16,16,15,16,17,16,15,16,16,17,16,16,16] },
+  { id:'w-okafor',  initials:'DO', name:'D. Okafor',   role:'authorised entrant', inside:true,
+    breathing:15, hr:88,  spo2:96, since:'07:08',
+    state:'warn',  note:'hr trending up — monitor',
+    breath_history:[13,14,14,15,14,15,15,15,14,15,16,15,15,15] },
+  { id:'w-park',    initials:'RP', name:'R. Park',     role:'attendant',          inside:false,
+    breathing:14, hr:72,  spo2:98, since:'07:02',
+    state:'ok',    note:'standby at hatch',
+    breath_history:[14,14,14,14,15,14,14,14,14,14,14,14,14,14] },
+];
+
+const EVENTS = [
+  { t:'just now', kind:'alert', title:'vital_alert · M. Alvarez',
+    meta:'breathing_rate=7 bpm · threshold=8 · attendant ack required' },
+  { t:'12s',  kind:'breath', title:'breathing_rate · M. Alvarez',
+    meta:'7 bpm (3-sample avg, was 8 bpm)' },
+  { t:'48s',  kind:'breath', title:'breathing_rate · J. Chen',
+    meta:'16 bpm (nominal)' },
+  { t:'1m',   kind:'warn',   title:'heart_rate elevated · D. Okafor',
+    meta:'88 bpm sustained 60 s (baseline 74)' },
+  { t:'4m',   kind:'breath', title:'breathing_rate · D. Okafor',
+    meta:'15 bpm (nominal)' },
+  { t:'14m',  kind:'entry',  title:'entry · M. Alvarez',
+    meta:'permit CS-2026-0084 · via hatch' },
+  { t:'20m',  kind:'entry',  title:'entry · J. Chen',
+    meta:'permit CS-2026-0084 · via hatch' },
+  { t:'21m',  kind:'entry',  title:'entry · D. Okafor',
+    meta:'permit CS-2026-0084 · via hatch' },
+  { t:'27m',  kind:'present',title:'worker_present · attendant R. Park',
+    meta:'CSI lock acquired at hatch' },
+  { t:'34m',  kind:'exit',   title:'exit · K. Rivera',
+    meta:'handover to J. Chen · permit CS-2026-0083 closed' },
+];
+
+const EVENT_ICONS = {
+  alert:   '<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>',
+  warn:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+  entry:   '<svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>',
+  exit:    '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+  breath:  '<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  present: '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+};
+
+/* -------- Sparkline -------- */
+function spark(values, klass){
+  const w = 200, h = 36, pad = 2;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const step = (w - pad*2) / (values.length - 1);
+  const pts = values.map((v, i) => {
+    const x = pad + i * step;
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return [x, y];
+  });
+  const line = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ' L' + pts[pts.length-1][0].toFixed(1) + ' ' + (h - pad) + ' L' + pts[0][0].toFixed(1) + ' ' + (h - pad) + ' Z';
+  return '<svg class="spark ' + (klass||'') + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+           '<path class="area" d="' + area + '"/>' +
+           '<path class="line" d="' + line + '"/>' +
+         '</svg>';
+}
+
+/* -------- Render workers -------- */
+function renderWorkers(filter){
+  const list = WORKERS.filter(w => {
+    if (filter === 'inside') return w.inside;
+    if (filter === 'alert')  return w.state === 'alert' || w.state === 'warn';
+    return true;
+  });
+  $('#workers').innerHTML = list.map(w => {
+    const cls = w.state === 'alert' ? 'alert' : (w.state === 'warn' ? 'warn' : '');
+    const sparkCls = w.state === 'alert' ? 'alert' : (w.state === 'warn' ? 'warn' : '');
+    const breathCls = w.state === 'alert' ? 'alert' : (w.state === 'warn' ? 'warn' : 'ok');
+    const hrCls = w.hr > 85 ? 'warn' : (w.hr < 50 ? 'alert' : 'ok');
+    const spo2Cls = w.spo2 < 92 ? 'alert' : (w.spo2 < 95 ? 'warn' : 'ok');
+    const statusBadge = w.state === 'alert' ? '<span class="badge alert"><span class="dot down pulse"></span>alert</span>'
+                      : w.state === 'warn'  ? '<span class="badge warn"><span class="dot warn"></span>watch</span>'
+                                             : '<span class="badge ok"><span class="dot up"></span>nominal</span>';
+    const where = w.inside ? '<span class="badge inside">inside</span>' : '<span class="badge outside">outside</span>';
+    return `
+      <div class="worker ${cls}" data-id="${w.id}">
+        <div class="worker-h">
+          <div class="worker-id">
+            <div class="avatar ${cls}">${w.initials}</div>
+            <div>
+              <div class="worker-name">${w.name}</div>
+              <div class="worker-role">${w.role}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
+            ${statusBadge}
+            ${where}
+          </div>
+        </div>
+        <div class="worker-vitals">
+          <div class="vital">
+            <span class="vital-label">Breathing</span>
+            <span class="vital-val ${breathCls}" data-vital="breathing">${w.breathing}<span class="u">bpm</span></span>
+          </div>
+          <div class="vital">
+            <span class="vital-label">Heart</span>
+            <span class="vital-val ${hrCls}" data-vital="hr">${w.hr}<span class="u">bpm</span></span>
+          </div>
+          <div class="vital">
+            <span class="vital-label">SpO₂</span>
+            <span class="vital-val ${spo2Cls}" data-vital="spo2">${w.spo2}<span class="u">%</span></span>
+          </div>
+        </div>
+        ${spark(w.breath_history, sparkCls)}
+        <div class="worker-meta">
+          <span>since ${w.since}</span>
+          <span>${w.note ? w.note : '&middot;'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* -------- Render events -------- */
+function renderEvents(){
+  $('#events').innerHTML = EVENTS.map(e => {
+    const cls = (e.kind === 'alert' || e.kind === 'warn' || e.kind === 'entry' || e.kind === 'exit') ? e.kind : '';
+    const ic = EVENT_ICONS[e.kind] || EVENT_ICONS.present;
+    return `
+      <div class="event ${cls}">
+        <div class="event-ic">${ic}</div>
+        <div class="event-body">
+          <div class="event-title">${e.title}</div>
+          <div class="event-meta">${e.meta}</div>
+        </div>
+        <div class="event-time">${e.t}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* -------- Trend lines -------- */
+function trendLine(svgSel, series, color, gridColor){
+  const svg = $(svgSel);
+  const w = 400, h = 120, padX = 4, padY = 10;
+  const min = Math.min(...series) - 1, max = Math.max(...series) + 1;
+  const range = max - min;
+  const step = (w - padX*2) / (series.length - 1);
+  const pts = series.map((v, i) => {
+    const x = padX + i * step;
+    const y = h - padY - ((v - min) / range) * (h - padY*2);
+    return [x, y];
+  });
+  const line = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length-1][0].toFixed(1)} ${h-padY} L${pts[0][0].toFixed(1)} ${h-padY} Z`;
+  const gridlines = [0.25, 0.5, 0.75].map(p => {
+    const y = padY + (h - padY*2) * p;
+    return `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="2 4"/>`;
+  }).join('');
+  svg.innerHTML =
+    gridlines +
+    `<path d="${area}" fill="${color}" fill-opacity="0.12"/>` +
+    `<path d="${line}" fill="none" stroke="${color}" stroke-width="1.75"/>` +
+    pts.map((p,i) => i === pts.length-1
+      ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${color}"/><circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${color}" fill-opacity="0.25"/>`
+      : '').join('');
+}
+
+/* Rolling 30-sample series for live trends */
+const TREND = {
+  breath: [14,14,13,14,15,14,15,14,13,14,14,13,12,13,12,13,14,13,12,11,12,13,12,12,13,14,13,12,13,13],
+  hr:     [72,73,72,74,75,74,76,77,76,78,79,80,79,81,80,82,81,80,82,84,85,84,86,85,87,86,85,84,86,87],
+};
+
+function drawTrends(){
+  trendLine('#trend-breath', TREND.breath, 'hsl(185 80% 50%)', 'hsl(220 15% 18%)');
+  trendLine('#trend-hr',     TREND.hr,     'hsl(35 90% 55%)',  'hsl(220 15% 18%)');
+  const bNow = TREND.breath[TREND.breath.length-1];
+  const hNow = TREND.hr[TREND.hr.length-1];
+  const bEl = $('#trend-breath-now'); if (bEl) bEl.textContent = bNow + ' bpm';
+  const hEl = $('#trend-hr-now');     if (hEl) hEl.textContent = hNow + ' bpm';
+
+  // Update status badges from current value
+  const bBadge = $('#trend-breath-badge');
+  if (bBadge){
+    if (bNow < 10){ bBadge.className = 'badge alert'; bBadge.innerHTML = '<span class="dot down pulse"></span>low'; }
+    else if (bNow > 22){ bBadge.className = 'badge warn'; bBadge.innerHTML = '<span class="dot warn pulse"></span>high'; }
+    else { bBadge.className = 'badge ok'; bBadge.innerHTML = '<span class="dot up pulse"></span>nominal'; }
+  }
+  const hBadge = $('#trend-hr-badge');
+  if (hBadge){
+    if (hNow > 90){ hBadge.className = 'badge alert'; hBadge.innerHTML = '<span class="dot down pulse"></span>elevated'; }
+    else if (hNow > 82){ hBadge.className = 'badge warn'; hBadge.innerHTML = '<span class="dot warn pulse"></span>elevated'; }
+    else { hBadge.className = 'badge ok'; hBadge.innerHTML = '<span class="dot up pulse"></span>nominal'; }
+  }
+}
+
+function pushTrendSamples(){
+  const inside = WORKERS.filter(w => w.inside);
+  if (!inside.length) return;
+  const bAvg = Math.round(inside.reduce((s,w)=>s+w.breathing,0) / inside.length);
+  const hAvg = Math.round(inside.reduce((s,w)=>s+w.hr,0)        / inside.length);
+  TREND.breath = [...TREND.breath.slice(1), bAvg];
+  TREND.hr     = [...TREND.hr.slice(1),     hAvg];
+  drawTrends();
+}
+
+/* -------- Filter pills -------- */
+$$('#worker-filter .pill-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    $$('#worker-filter .pill-tab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    renderWorkers(t.dataset.filter);
+  });
+});
+
+/* -------- Nav tabs — smooth scroll to corresponding section -------- */
+$$('.nav a').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    $$('.nav a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    const v = a.dataset.view;
+    const el = document.getElementById('section-' + v);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+});
+
+/* -------- Site map mode (Now / Heatmap / Shift) -------- */
+const MAP_SUBS = {
+  now:     'CSI presence zones · sensor anchored at hatch (north)',
+  heatmap: 'Presence density · cumulative dwell over last hour',
+  shift:   'Entry/exit paths · shift 2026-05-15 07:00 → now',
+};
+$$('#map-mode .pill-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    $$('#map-mode .pill-tab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    const mode = t.dataset.mode;
+    $('#layer-now').style.display     = mode === 'now'     ? '' : 'none';
+    $('#layer-heatmap').style.display = mode === 'heatmap' ? '' : 'none';
+    $('#layer-shift').style.display   = mode === 'shift'   ? '' : 'none';
+    $('#map-sub').textContent = MAP_SUBS[mode];
+  });
+});
+
+/* -------- Buttons -------- */
+$('#btn-export').addEventListener('click', () => {
+  alert('Export shift log: a CSV of all entry/exit and vital events for permit CS-2026-0084 would be generated.');
+});
+$('#btn-evac').addEventListener('click', () => {
+  if (confirm('Sound evacuation alarm for Tank 7B?\nAll 3 workers inside will be notified and the attendant will be paged.')) {
+    document.querySelector('#status-banner').className = 'banner alert';
+    document.querySelector('#status-banner').innerHTML =
+      '<div class="banner-ic"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg></div>' +
+      '<div><b>EVACUATION ORDERED</b> &middot; alarm sounded, attendant paged. Workers inside: 3. ' +
+      'Awaiting exit confirmation via CSI.</div>';
+  }
+});
+
+/* -------- Permit countdown -------- */
+let secs = 42 * 60 + 18;
+function tickPermit(){
+  secs = Math.max(0, secs - 1);
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  $('#permit-clock').textContent = m + ':' + s;
+  $('#kpi-permit').textContent = m + ':' + s;
+}
+
+/* -------- Live vital jitter -------- */
+function jitter(){
+  WORKERS.forEach(w => {
+    if (w.state === 'alert'){
+      w.breathing = Math.max(6, Math.min(9, w.breathing + (Math.random() < 0.4 ? (Math.random() < 0.5 ? -1 : 1) : 0)));
+    } else {
+      w.breathing = Math.max(12, Math.min(20, w.breathing + (Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0)));
+    }
+    w.hr   = Math.max(55, Math.min(95, w.hr   + (Math.random() < 0.4 ? (Math.random() < 0.5 ? -1 : 1) : 0)));
+    w.spo2 = Math.max(89, Math.min(99, w.spo2 + (Math.random() < 0.2 ? (Math.random() < 0.5 ? -1 : 1) : 0)));
+    w.breath_history = [...w.breath_history.slice(1), w.breathing];
+  });
+  const active = $('#worker-filter .pill-tab.on');
+  renderWorkers(active ? active.dataset.filter : 'all');
+  const inside = WORKERS.filter(w => w.inside);
+  $('#kpi-breath').innerHTML = Math.round(inside.reduce((s,w)=>s+w.breathing,0)/inside.length) +
+    '<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));margin-left:0.25rem">bpm</span>';
+  $('#kpi-hr').innerHTML = Math.round(inside.reduce((s,w)=>s+w.hr,0)/inside.length) +
+    '<span style="font-size:0.875rem;color:hsl(var(--muted-foreground));margin-left:0.25rem">bpm</span>';
+  $('#kpi-inside').textContent = inside.length;
+  $('#kpi-inside-sub').textContent = inside.length + ' inside · ' + (WORKERS.length - inside.length) + ' on standby';
+}
+
+renderWorkers('all');
+renderEvents();
+drawTrends();
+setInterval(tickPermit, 1000);
+setInterval(() => { jitter(); pushTrendSamples(); }, 2500);
+</script>
+</body>
+</html>

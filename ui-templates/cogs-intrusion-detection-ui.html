@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intrusion Detection — Cognitum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --accent:142 70% 50%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --warning:35 85% 55%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-display);background:hsl(var(--background));color:hsl(var(--foreground));min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{position:sticky;top:0;z-index:50;background:hsl(var(--background) / 0.9);backdrop-filter:blur(8px);border-bottom:1px solid hsl(var(--border) / 0.5);padding:0.875rem 1.25rem}
+.appbar-row{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{width:32px;height:32px;border-radius:0.5rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center;position:relative}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-mark::after{content:'';position:absolute;inset:-4px;border-radius:0.625rem;border:1px solid hsl(var(--primary) / 0.4);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:0;transform:scale(1.25)}}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;font-size:0.8125rem;color:hsl(var(--muted-foreground));font-weight:500;cursor:pointer;transition:all 0.2s}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* Cards */
+.card{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.25rem}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* KPI grid */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi{background:var(--gradient-card);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1rem 1.125rem;display:flex;align-items:center;gap:0.875rem}
+.kpi-ic{width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warning) / 0.12)}
+.kpi-ic.warn svg{stroke:hsl(var(--warning))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(0 70% 70%)}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-feature-settings:'tnum'}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Grids */
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+
+/* Badges + dots */
+.badge{display:inline-flex;align-items:center;gap:0.3rem;padding:0.15rem 0.55rem;border-radius:9999px;font-size:0.6875rem;font-weight:600;border:1px solid transparent}
+.badge.online{background:hsl(142 70% 50% / 0.12);color:hsl(142 70% 65%);border-color:hsl(142 70% 50% / 0.3)}
+.badge.warn{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.3)}
+.badge.danger{background:hsl(0 65% 50% / 0.14);color:hsl(0 70% 72%);border-color:hsl(0 65% 50% / 0.3)}
+.badge.info{background:hsl(var(--primary) / 0.12);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.badge.muted{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.6)}
+.dot.warn{background:hsl(35 85% 55%);box-shadow:0 0 6px hsl(35 85% 55% / 0.6)}
+.dot.down{background:hsl(0 65% 50%);box-shadow:0 0 6px hsl(0 65% 50% / 0.6)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 0.875rem;border-radius:0.4rem;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground));font-family:var(--font-display);font-size:0.8125rem;font-weight:500;cursor:pointer;transition:all 0.18s}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600;box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3)}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.14);color:hsl(0 70% 72%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.22)}
+
+/* Inputs */
+input,textarea,select{background:hsl(var(--input));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:0.4rem;padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+input:focus,textarea:focus,select:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input[type=range]{accent-color:hsl(var(--primary));padding:0;border:none;background:transparent;width:100%}
+.input{width:100%;height:2.4rem;border:1px solid hsl(var(--input));background:hsl(var(--background))}
+
+/* Tabs (pages) */
+.page-panel{display:none}
+.page-panel.on{display:block}
+
+/* Hero status banner */
+.status-banner{background:var(--gradient-hero);border:1px solid hsl(var(--border) / 0.5);border-radius:var(--radius);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.status-banner.armed{box-shadow:inset 0 0 60px -10px hsl(142 70% 50% / 0.25)}
+.status-banner.alert{box-shadow:inset 0 0 60px -10px hsl(0 65% 50% / 0.35);animation:alertPulse 1.6s ease-in-out infinite}
+@keyframes alertPulse{0%,100%{box-shadow:inset 0 0 60px -10px hsl(0 65% 50% / 0.2)}50%{box-shadow:inset 0 0 80px -10px hsl(0 65% 50% / 0.5)}}
+.status-banner.disarmed{box-shadow:inset 0 0 60px -10px hsl(35 85% 55% / 0.18)}
+.status-left{display:flex;align-items:center;gap:1rem;min-width:0}
+.status-icon{width:54px;height:54px;border-radius:0.75rem;background:hsl(var(--primary) / 0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.status-banner.armed .status-icon{background:hsl(142 70% 50% / 0.14)}
+.status-banner.armed .status-icon svg{stroke:hsl(142 70% 60%)}
+.status-banner.alert .status-icon{background:hsl(0 65% 50% / 0.16)}
+.status-banner.alert .status-icon svg{stroke:hsl(0 70% 72%)}
+.status-banner.disarmed .status-icon{background:hsl(35 85% 55% / 0.14)}
+.status-banner.disarmed .status-icon svg{stroke:hsl(35 85% 70%)}
+.status-icon svg{width:28px;height:28px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.status-info h2{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--muted-foreground));font-weight:600;margin-bottom:0.2rem}
+.status-info .label{font-size:1.5rem;font-weight:600;letter-spacing:-0.02em}
+.status-info .sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;font-family:var(--font-mono)}
+.status-actions{display:flex;gap:0.4rem;flex-wrap:wrap}
+
+/* Section divider title */
+.row-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;gap:0.5rem;flex-wrap:wrap}
+.row-h h2{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground));text-transform:none;letter-spacing:-0.01em;margin:0}
+.row-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* SVG charts */
+.chart-host{width:100%;display:block}
+.chart-host svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-legend{display:flex;gap:0.875rem;flex-wrap:wrap;margin-top:0.625rem;font-size:0.75rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.chart-legend .leg{display:inline-flex;align-items:center;gap:0.3rem}
+.leg-sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* Signal chart multi-panel */
+.signal-grid{display:grid;grid-template-columns:minmax(0, 1.65fr) minmax(0, 1fr);gap:0.875rem;align-items:stretch;margin-bottom:0.875rem}
+.signal-panel{background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.4);border-radius:0.5rem;padding:0.625rem 0.875rem 0.625rem;display:flex;flex-direction:column;min-width:0}
+.signal-panel h4{font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em;color:hsl(var(--muted-foreground));font-weight:600;margin-bottom:0.45rem;display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem}
+.signal-panel h4 .mono{font-size:0.6875rem;color:hsl(var(--muted-foreground));font-weight:500;font-family:var(--font-mono);text-transform:none;letter-spacing:0}
+#chart-signal-waterfall{width:100%;line-height:0}
+#chart-signal-polar{display:flex;align-items:center;justify-content:center;min-height:240px}
+.signal-stat-row{display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.5rem;margin-top:0.5rem}
+.signal-stat{background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.4);border-radius:0.4rem;padding:0.5rem 0.75rem}
+.signal-stat-label{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+.signal-stat-val{font-family:var(--font-mono);font-size:1.0625rem;color:hsl(var(--foreground));margin-top:0.125rem;font-feature-settings:'tnum';line-height:1.2}
+.signal-stat-sub{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+@media (max-width:980px){.signal-grid{grid-template-columns:1fr}}
+
+/* Zone map */
+.zone-map{position:relative;width:100%;aspect-ratio:22/10;background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:0.5rem;overflow:hidden}
+.zone-map svg{position:absolute;inset:0;width:100%;height:100%}
+.zone-rect{cursor:pointer;transition:all 0.2s}
+.zone-rect:hover{filter:brightness(1.3)}
+.zone-rect.selected{stroke-width:3}
+.zone-pip{transform-origin:center;animation:pip 1.4s ease-out infinite}
+@keyframes pip{0%{opacity:0.9;r:5}100%{opacity:0;r:18}}
+
+/* Heatmap (24h × 7d) + trend visualization */
+.heat-wrap{display:flex;flex-direction:column;gap:1rem;padding:0.25rem 0}
+.heat-scroll{overflow-x:auto}
+.heatmap{display:grid;gap:3px;grid-template-columns:36px repeat(24, minmax(14px, 1fr)) 56px;align-items:center;min-width:640px}
+.heat-cell{height:20px;border-radius:2px;background:hsl(var(--muted));cursor:pointer;transition:transform 0.1s,box-shadow 0.15s;position:relative}
+.heat-cell:hover{transform:scale(1.4);z-index:2}
+.heat-cell.peak{box-shadow:0 0 0 1.5px hsl(0, 70%, 65%) inset, 0 0 4px hsl(0, 70%, 55%)}
+.heat-label{color:hsl(var(--muted-foreground));font-size:0.75rem;text-align:right;padding-right:0.4rem;font-family:var(--font-mono);font-weight:500}
+.heat-tot-cell{display:flex;align-items:center;gap:0.4rem;height:20px;padding-left:0.4rem;font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+.heat-tot-cell .heat-tot-dot{border-radius:50%;flex-shrink:0;display:inline-block}
+.heat-axis{display:grid;grid-template-columns:36px repeat(24, minmax(14px, 1fr)) 56px;gap:3px;margin-top:0.4rem;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono);min-width:640px}
+.heat-axis span{text-align:center}
+.heat-axis span:first-child{text-align:right;padding-right:0.4rem}
+.heat-axis span:last-child{text-align:left;padding-left:0.4rem;text-transform:uppercase;font-size:0.625rem;letter-spacing:0.05em;font-weight:600}
+.heat-legend{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+.heat-scale{display:flex;align-items:center;gap:0.4rem}
+.heat-scale-grad{width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg, hsl(220, 15%, 15%) 0%, hsl(185, 80%, 25%) 25%, hsl(185, 80%, 40%) 55%, hsl(185, 80%, 60%) 100%);border:1px solid hsl(var(--border) / 0.4)}
+.heat-trend-row{padding-top:0.75rem;border-top:1px solid hsl(var(--border) / 0.4)}
+.heat-trend-label{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));font-weight:600;margin-bottom:0.45rem;display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap}
+.heat-trend-host{width:100%;height:110px}
+.heat-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.625rem;padding-top:0.75rem;border-top:1px solid hsl(var(--border) / 0.4)}
+.heat-stat{background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;padding:0.625rem 0.875rem}
+.heat-stat-label{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:0.25rem}
+.heat-stat-val{font-size:1.125rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;font-feature-settings:'tnum'}
+.heat-stat-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem;font-family:var(--font-mono)}
+
+/* Event log */
+.event-list{display:flex;flex-direction:column;gap:0.4rem}
+.event-row{display:grid;grid-template-columns:90px 130px 130px 1fr auto;gap:0.75rem;align-items:center;padding:0.55rem 0.75rem;background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;font-size:0.8125rem;font-family:var(--font-mono);transition:border-color 0.15s}
+.event-row:hover{border-color:hsl(var(--primary) / 0.4)}
+.event-row .ts{color:hsl(var(--muted-foreground));font-size:0.75rem}
+.event-row .kind{font-weight:600}
+.event-row .zone{color:hsl(var(--foreground))}
+.event-row .conf{color:hsl(var(--muted-foreground));font-size:0.75rem}
+@media (max-width:680px){
+  .event-row{grid-template-columns:1fr;gap:0.2rem}
+  .event-row .ts,.event-row .conf{font-size:0.6875rem}
+}
+
+/* Toolbar */
+.toolbar{display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-bottom:0.75rem}
+.toolbar .input{max-width:280px;height:2rem}
+.toolbar select{height:2rem;background:hsl(var(--background))}
+
+/* Form fields */
+.kv-row{display:grid;grid-template-columns:1fr 2fr;gap:0.75rem;align-items:center;padding:0.55rem 0;border-bottom:1px solid hsl(var(--border) / 0.4)}
+.kv-row:last-child{border-bottom:none}
+.kv-row label{font-size:0.8125rem;color:hsl(var(--muted-foreground))}
+.kv-row .val{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--foreground))}
+.range-row{display:flex;align-items:center;gap:0.75rem}
+.range-row output{font-family:var(--font-mono);font-size:0.8125rem;color:hsl(var(--primary));min-width:3rem;text-align:right}
+.zone-form{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 0.75rem;margin-top:0.5rem}
+.zone-form label{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));display:block;margin-bottom:0.2rem}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:0.5rem;padding:0.75rem 1rem;font-size:0.8125rem;color:hsl(var(--foreground));box-shadow:var(--shadow-card);display:none;animation:slideIn 0.2s ease-out;max-width:380px}
+.toast.show{display:block}
+.toast.ok{border-color:hsl(142 70% 50% / 0.5);background:hsl(142 70% 50% / 0.08)}
+.toast.err{border-color:hsl(var(--destructive) / 0.5);background:hsl(var(--destructive) / 0.08)}
+.toast.info{border-color:hsl(var(--primary) / 0.5);background:hsl(var(--primary) / 0.08)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Footer */
+footer.appfoot{margin-top:2.5rem;padding-top:1.25rem;border-top:1px solid hsl(var(--border) / 0.5);font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center;line-height:1.8}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;z-index:200;background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1.5rem;max-width:520px;width:100%}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{display:block;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:hsl(var(--muted-foreground));margin-bottom:0.3rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5-3.5 9.3-9 10-5.5-.7-9-5-9-10V6l9-4z"/><circle cx="12" cy="11" r="2.5"/><path d="M12 13.5v2"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Intrusion Detection<span class="brand-ver mono">v2.0.0</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-page="overview" class="active">Overview</a>
+      <a data-page="zones">Zones</a>
+      <a data-page="events">Events</a>
+      <a data-page="calibration">Calibration</a>
+      <a data-page="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ════════════ OVERVIEW ════════════ -->
+<div class="page-panel on" id="page-overview">
+
+  <div class="status-banner armed" id="status-banner">
+    <div class="status-left">
+      <div class="status-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2l9 4v6c0 5-3.5 9.3-9 10-5.5-.7-9-5-9-10V6l9-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div class="status-info">
+        <h2>System Status</h2>
+        <div class="label" id="status-label">Armed · Monitoring</div>
+        <div class="sub" id="status-sub">All zones nominal · CSI link healthy</div>
+      </div>
+    </div>
+    <div class="status-actions">
+      <button class="btn outline" id="btn-disarm">Disarm</button>
+      <button class="btn primary" id="btn-test-alert">Trigger Test Alert</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Active zones</div><div class="kpi-val" id="kpi-zones">4</div><div class="kpi-sub">of 4 configured</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M2 12h4l3-9 6 18 3-9h4"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">CSI signal</div><div class="kpi-val" id="kpi-csi">—</div><div class="kpi-sub" id="kpi-csi-sub">subcarrier RMS</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Events today</div><div class="kpi-val" id="kpi-events">—</div><div class="kpi-sub" id="kpi-events-sub">— alerts</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Last detection</div><div class="kpi-val" id="kpi-last" style="font-size:1rem">—</div><div class="kpi-sub" id="kpi-last-sub">—</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic danger"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+        <div class="kpi-info"><div class="kpi-label">Sensor</div><div class="kpi-val" id="kpi-sensor" style="font-size:1rem">ESP32-S3</div><div class="kpi-sub" id="kpi-sensor-sub">CSI · 80MHz · ch 6</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Live CSI presence signal</div>
+          <div class="card-sub" id="signal-sub">24 subcarriers · 80 MHz channel · 4 Hz sample · 30 s window</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <span class="badge info mono" id="signal-state">monitoring</span>
+          <button class="btn sm outline" id="btn-clear-signal">Clear</button>
+        </div>
+      </div>
+
+      <div class="signal-grid">
+        <div class="signal-panel">
+          <h4>Mean amplitude · time series <span class="mono" id="ts-meta">—</span></h4>
+          <div class="chart-host" id="chart-signal-ts"></div>
+          <div class="chart-legend" style="margin-top:0.4rem">
+            <span class="leg"><span class="leg-sw" style="background:hsl(185 80% 58%)"></span>mean</span>
+            <span class="leg"><span class="leg-sw" style="background:hsl(185 80% 58% / 0.35)"></span>24-sub envelope</span>
+            <span class="leg"><span class="leg-sw" style="background:hsl(142 70% 55%)"></span>baseline</span>
+            <span class="leg"><span class="leg-sw" style="background:hsl(0 65% 60%)"></span>threshold</span>
+            <span class="leg"><span class="leg-sw" style="background:hsl(0 65% 62%);border-radius:50%"></span>trigger</span>
+          </div>
+        </div>
+
+        <div class="signal-panel">
+          <h4>Subcarrier polar · instant <span class="mono" id="polar-meta">—</span></h4>
+          <div id="chart-signal-polar"></div>
+        </div>
+
+        <div class="signal-panel" style="grid-column:1/-1">
+          <h4>Waterfall spectrogram · 24 subcarriers × time <span class="mono" id="waterfall-meta">—</span></h4>
+          <div id="chart-signal-waterfall"></div>
+        </div>
+      </div>
+
+      <div class="signal-stat-row" id="signal-stats"></div>
+    </div>
+  </div>
+
+  <div class="section grid-3">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Detection confidence</div>
+          <div class="card-sub">Current model output · live</div>
+        </div>
+        <span class="badge info mono" id="conf-state">idle</span>
+      </div>
+      <div class="chart-host" id="chart-gauge" style="margin-top:0.5rem"></div>
+      <div style="margin-top:0.4rem;font-size:0.75rem;color:hsl(var(--muted-foreground));text-align:center" id="gauge-label">—</div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Events by zone</div>
+          <div class="card-sub">Distribution · last 24h</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div class="chart-host" id="chart-donut" style="width:180px;flex-shrink:0"></div>
+        <div id="donut-legend" style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:0.4rem;font-size:0.8125rem"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Recent events</div>
+          <div class="card-sub">Last 5 detections</div>
+        </div>
+        <a class="btn sm outline" data-nav="events">View all</a>
+      </div>
+      <div class="event-list" id="recent-events"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Weekly activity heatmap</div>
+          <div class="card-sub" id="heat-card-sub">Detections by hour and day · with daily totals, hourly trend, and week-over-week change</div>
+        </div>
+        <span class="badge info mono" id="heat-peak-badge">—</span>
+      </div>
+      <div class="heat-wrap">
+        <div class="heat-scroll">
+          <div class="heatmap" id="heatmap"></div>
+          <div class="heat-axis" id="heat-axis"></div>
+        </div>
+        <div class="heat-legend">
+          <div class="heat-scale"><span>quiet</span><div class="heat-scale-grad"></div><span>busy</span><span style="margin-left:0.5rem;color:hsl(0, 70%, 70%)">◻ peak cell</span></div>
+          <div id="heat-range" class="mono">—</div>
+        </div>
+        <div class="heat-trend-row">
+          <div class="heat-trend-label">
+            <span>Hourly average · 7-day trend</span>
+            <span id="heat-trend-meta" style="color:hsl(var(--muted-foreground))">—</span>
+          </div>
+          <div class="heat-trend-host" id="heat-hourly-trend"></div>
+        </div>
+        <div class="heat-stat-grid" id="heat-stats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ ZONES ════════════ -->
+<div class="page-panel" id="page-zones">
+  <div class="section">
+    <h1 class="page">Zones</h1>
+    <p class="lede">Define the monitored areas of your space. Each zone has its own sensitivity, schedule and alert routing. Click a zone in the map below to edit, or use <b>+ Add zone</b> to drag a new rectangle.</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Floor plan</div>
+          <div class="card-sub" id="zones-summary">— zones · — armed</div>
+        </div>
+        <div style="display:flex;gap:0.4rem">
+          <button class="btn sm outline" id="btn-zone-reset">Reset layout</button>
+          <button class="btn sm primary" id="btn-zone-add">+ Add zone</button>
+        </div>
+      </div>
+      <div class="zone-map" id="zone-map">
+        <svg id="zone-svg" viewBox="0 0 1100 500" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div style="margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid hsl(var(--border) / 0.4);display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap;font-size:0.6875rem;color:hsl(var(--muted-foreground));font-family:var(--font-mono)">
+        <div style="display:flex;gap:0.875rem;flex-wrap:wrap;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:0.35rem"><span style="width:10px;height:10px;border-radius:50%;background:hsl(35, 85%, 55%);display:inline-block"></span>door</span>
+          <span style="display:inline-flex;align-items:center;gap:0.35rem"><span style="width:9px;height:9px;background:hsl(50, 80%, 60%);display:inline-block"></span>window</span>
+          <span style="display:inline-flex;align-items:center;gap:0.35rem"><span style="width:14px;height:9px;background:hsl(35, 70%, 50% / 0.3);border:1px dashed hsl(35, 70%, 60%);display:inline-block"></span>perimeter</span>
+          <span style="display:inline-flex;align-items:center;gap:0.35rem"><span style="width:14px;height:9px;background:hsl(185, 70%, 50% / 0.3);border:1px solid hsl(185, 70%, 60%);display:inline-block"></span>interior</span>
+          <span style="display:inline-flex;align-items:center;gap:0.35rem"><span style="width:10px;height:10px;border-radius:50%;background:hsl(185, 80%, 55%);display:inline-block"></span>sensor</span>
+        </div>
+        <span>ESP32-S3 · CSI scan through exterior walls · click any zone to edit</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card" id="zone-editor">
+      <div class="card-h">
+        <div>
+          <div class="card-title" id="zone-edit-title">Select a zone to alert on</div>
+          <div class="card-sub" id="zone-edit-sub">Click a rectangle on the map above to edit which zone triggers an alert, its sensitivity, and priority.</div>
+        </div>
+        <span class="badge muted" id="zone-edit-badge">—</span>
+      </div>
+      <div id="zone-edit-body" style="display:none">
+        <div class="kv-row">
+          <label for="zf-name">Name</label>
+          <input class="input" id="zf-name" placeholder="e.g. Hallway">
+        </div>
+        <div class="kv-row">
+          <label for="zf-armed">Armed</label>
+          <div><label class="mono" style="font-size:0.8125rem"><input type="checkbox" id="zf-armed"> Generate alerts for this zone</label></div>
+        </div>
+        <div class="kv-row">
+          <label for="zf-sens">Sensitivity</label>
+          <div class="range-row">
+            <input type="range" min="1" max="10" id="zf-sens" value="5">
+            <output id="zf-sens-out">5</output>
+          </div>
+        </div>
+        <div class="kv-row">
+          <label for="zf-priority">Priority</label>
+          <select class="input" id="zf-priority" style="height:2rem">
+            <option value="low">Low</option>
+            <option value="normal" selected>Normal</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div class="kv-row">
+          <label for="zf-type">Type</label>
+          <select class="input" id="zf-type" style="height:2rem">
+            <option value="perimeter">Perimeter (outdoor)</option>
+            <option value="interior" selected>Interior (room)</option>
+            <option value="vehicle">Vehicle (garage)</option>
+          </select>
+        </div>
+        <div class="zone-form">
+          <div><label>X</label><input class="input" type="number" id="zf-x" style="height:2rem"></div>
+          <div><label>Y</label><input class="input" type="number" id="zf-y" style="height:2rem"></div>
+          <div><label>Width</label><input class="input" type="number" id="zf-w" style="height:2rem"></div>
+          <div><label>Height</label><input class="input" type="number" id="zf-h" style="height:2rem"></div>
+        </div>
+        <div style="display:flex;gap:0.4rem;margin-top:1rem;justify-content:flex-end">
+          <button class="btn danger sm" id="btn-zone-delete">Delete</button>
+          <button class="btn primary sm" id="btn-zone-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row-h">
+      <h2>Zone activity (live)</h2>
+      <span class="row-sub">Detection probability per zone · updated every second</span>
+    </div>
+    <div class="grid-3" id="zone-strips"></div>
+  </div>
+</div>
+
+<!-- ════════════ EVENTS ════════════ -->
+<div class="page-panel" id="page-events">
+  <div class="section">
+    <h1 class="page">Events</h1>
+    <p class="lede">Chronological feed of <code>intrusion_detected</code>, <code>zone_breach</code> and <code>alert</code> events. Filter by type or zone, search by text, and export the visible set as JSON.</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="toolbar">
+        <input class="input" id="ev-search" placeholder="Search zone or note…">
+        <select id="ev-type">
+          <option value="">All types</option>
+          <option value="intrusion_detected">intrusion_detected</option>
+          <option value="zone_breach">zone_breach</option>
+          <option value="alert">alert</option>
+        </select>
+        <select id="ev-zone"><option value="">All zones</option></select>
+        <select id="ev-range">
+          <option value="24">Last 24h</option>
+          <option value="168">Last 7 days</option>
+          <option value="0">All time</option>
+        </select>
+        <span style="flex:1"></span>
+        <button class="btn sm outline" id="btn-export">Export JSON</button>
+        <button class="btn sm outline" id="btn-clear-events">Clear filters</button>
+      </div>
+      <div id="ev-count" style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.5rem;font-family:var(--font-mono)">—</div>
+      <div class="event-list" id="all-events"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ CALIBRATION ════════════ -->
+<div class="page-panel" id="page-calibration">
+  <div class="section">
+    <h1 class="page">Calibration</h1>
+    <p class="lede">Tune CSI presence detection for your space. Run a baseline scan with the room empty, then walk through to capture human signatures. Sensitivity controls the trade-off between false positives and missed detections.</p>
+  </div>
+
+  <div class="section grid-2">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Baseline scan</div>
+          <div class="card-sub">Empty-room CSI fingerprint</div>
+        </div>
+        <span class="badge online" id="baseline-badge">Captured</span>
+      </div>
+      <div style="font-size:0.8125rem;color:hsl(var(--muted-foreground));line-height:1.6">
+        Last baseline: <span class="mono" style="color:hsl(var(--foreground))" id="baseline-when">3 hours ago</span><br>
+        Samples: <span class="mono" style="color:hsl(var(--foreground))" id="baseline-samples">512 / 512</span><br>
+        Stability: <span class="mono" style="color:hsl(142 70% 60%)" id="baseline-stab">0.94</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-top:1rem">
+        <button class="btn outline" id="btn-baseline-clear">Clear</button>
+        <button class="btn primary" id="btn-baseline-run">Run new baseline</button>
+      </div>
+      <div id="baseline-progress" style="display:none;margin-top:1rem">
+        <div style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-bottom:0.3rem;font-family:var(--font-mono)" id="baseline-progress-text">Scanning…</div>
+        <div style="height:6px;background:hsl(var(--muted));border-radius:3px;overflow:hidden">
+          <div id="baseline-progress-fill" style="height:100%;background:hsl(var(--primary));width:0%;transition:width 0.3s"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Detection thresholds</div>
+          <div class="card-sub">Adjust to reduce false positives</div>
+        </div>
+      </div>
+      <div class="kv-row">
+        <label for="cal-sens">Global sensitivity</label>
+        <div class="range-row">
+          <input type="range" min="1" max="10" id="cal-sens" value="6">
+          <output id="cal-sens-out">6</output>
+        </div>
+      </div>
+      <div class="kv-row">
+        <label for="cal-thresh">Detection threshold</label>
+        <div class="range-row">
+          <input type="range" min="0" max="100" id="cal-thresh" value="65">
+          <output id="cal-thresh-out">0.65</output>
+        </div>
+      </div>
+      <div class="kv-row">
+        <label for="cal-dwell">Dwell time (ms)</label>
+        <div class="range-row">
+          <input type="range" min="100" max="5000" step="100" id="cal-dwell" value="800">
+          <output id="cal-dwell-out">800</output>
+        </div>
+      </div>
+      <div class="kv-row">
+        <label for="cal-debounce">Alert debounce (s)</label>
+        <div class="range-row">
+          <input type="range" min="0" max="120" id="cal-debounce" value="30">
+          <output id="cal-debounce-out">30</output>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-top:1rem;justify-content:flex-end">
+        <button class="btn outline" id="btn-cal-reset">Reset defaults</button>
+        <button class="btn primary" id="btn-cal-save">Save thresholds</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Threshold preview</div>
+          <div class="card-sub">Simulated signal over current threshold · adjust sliders to see how many of the last 60 samples would trigger</div>
+        </div>
+        <span class="badge info mono" id="preview-count">— / 60 trigger</span>
+      </div>
+      <div class="chart-host" id="chart-preview"></div>
+      <div class="chart-legend">
+        <span class="leg"><span class="leg-sw" style="background:hsl(185 80% 55%)"></span>presence signal</span>
+        <span class="leg"><span class="leg-sw" style="background:hsl(0 65% 60%)"></span>threshold</span>
+        <span class="leg"><span class="leg-sw" style="background:hsl(142 70% 50%)"></span>triggered sample</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SETTINGS ════════════ -->
+<div class="page-panel" id="page-settings">
+  <div class="section">
+    <h1 class="page">Settings</h1>
+    <p class="lede">General preferences for the intrusion detection cog. Hardware identity is read-only.</p>
+  </div>
+
+  <div class="section grid-2">
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Hardware</div><div class="card-sub">Read-only sensor info</div></div></div>
+      <div class="kv-row"><label>Sensor</label><span class="val">ESP32-S3 (CSI)</span></div>
+      <div class="kv-row"><label>Cog version</label><span class="val">v2.0.0</span></div>
+      <div class="kv-row"><label>Size</label><span class="val">16 KB</span></div>
+      <div class="kv-row"><label>Difficulty</label><span class="val">Easy</span></div>
+      <div class="kv-row"><label>Category</label><span class="val">Security</span></div>
+      <div class="kv-row"><label>Channel</label><span class="val">6 · 80 MHz</span></div>
+      <div class="kv-row"><label>Device ID</label><span class="val" id="set-device-id">cog-id-•••</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">Alert routing</div><div class="card-sub">Where to send events</div></div></div>
+      <div class="kv-row">
+        <label for="set-webhook">Webhook URL</label>
+        <input class="input" id="set-webhook" placeholder="https://example.com/hook" style="height:2rem">
+      </div>
+      <div class="kv-row">
+        <label for="set-min-prio">Minimum priority</label>
+        <select class="input" id="set-min-prio" style="height:2rem">
+          <option value="low">Low</option>
+          <option value="normal" selected>Normal</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+      <div class="kv-row">
+        <label for="set-quiet">Quiet hours</label>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+          <input type="time" class="input" id="set-quiet-start" value="23:00" style="height:2rem;max-width:120px">
+          <span style="color:hsl(var(--muted-foreground));font-size:0.8125rem">to</span>
+          <input type="time" class="input" id="set-quiet-end" value="07:00" style="height:2rem;max-width:120px">
+        </div>
+      </div>
+      <div class="kv-row">
+        <label for="set-tone">Audible alert</label>
+        <select class="input" id="set-tone" style="height:2rem">
+          <option value="off">Off</option>
+          <option value="soft" selected>Soft chime</option>
+          <option value="siren">Siren</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-top:1rem;justify-content:flex-end">
+        <button class="btn outline" id="btn-test-webhook">Send test</button>
+        <button class="btn primary" id="btn-save-settings">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card" style="border-color:hsl(var(--destructive) / 0.4)">
+      <div class="card-h"><div><div class="card-title" style="color:hsl(0 70% 72%)">Danger zone</div><div class="card-sub">Irreversible actions</div></div></div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        <button class="btn danger" id="btn-clear-history">Clear event history</button>
+        <button class="btn danger" id="btn-factory-reset">Factory reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="appfoot">
+  <div><span class="mono" id="foot-id">device: cog-id-•••</span> &middot; <span class="mono">intrusion-detection v2.0.0</span></div>
+  <div style="margin-top:0.4rem">Events: <code>intrusion_detected</code> · <code>zone_breach</code> · <code>alert</code> &middot; Hardware: ESP32-S3 &middot; Input: CSI presence</div>
+</footer>
+
+</div>
+
+<!-- Toast + modal -->
+<div class="toast" id="toast"></div>
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3 id="m-title">Confirm</h3>
+    <div class="modal-sub" id="m-sub">—</div>
+    <div class="modal-actions">
+      <button class="btn outline" id="m-cancel">Cancel</button>
+      <button class="btn danger" id="m-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ───────────────────────────── State ─────────────────────────────
+const N_SUBS = 24;          // CSI subcarriers monitored per sample
+const SIG_BUF_LEN = 120;    // 30 s @ 4 Hz
+
+const STATE = {
+  armed: true,
+  alert: false,
+  selectedZone: null,
+  signalBuf: [],      // [{t, subs:[24], mean, max, min, variance}]
+  baseline: 0.22,
+  threshold: 0.65,
+  sensitivity: 6,
+  dwell: 800,
+  debounce: 30,
+  zones: [
+    // Outdoor perimeter — first line of detection (approach)
+    { id:'zp1', name:'Front yard',     type:'perimeter', x:80,   y:20,  w:940, h:80,  armed:true,  sensitivity:6, priority:'normal',   color:35  },
+    { id:'zp2', name:'Backyard',       type:'perimeter', x:80,   y:400, w:940, h:100, armed:true,  sensitivity:7, priority:'high',     color:280 },
+    { id:'zp3', name:'West approach',  type:'perimeter', x:20,   y:100, w:60,  h:300, armed:true,  sensitivity:5, priority:'normal',   color:200 },
+    { id:'zp4', name:'East approach',  type:'perimeter', x:1020, y:100, w:60,  h:300, armed:true,  sensitivity:5, priority:'normal',   color:200 },
+    // Interior — after-breach tracking
+    { id:'zi1', name:'Foyer',          type:'interior',  x:80,   y:100, w:200, h:100, armed:true,  sensitivity:7, priority:'high',     color:185 },
+    { id:'zi2', name:'Living room',    type:'interior',  x:280,  y:100, w:400, h:100, armed:true,  sensitivity:5, priority:'normal',   color:142 },
+    { id:'zi3', name:'Kitchen',        type:'interior',  x:680,  y:100, w:340, h:100, armed:true,  sensitivity:6, priority:'normal',   color:50  },
+    { id:'zi4', name:'Garage',         type:'vehicle',   x:80,   y:200, w:240, h:200, armed:true,  sensitivity:7, priority:'high',     color:0   },
+    { id:'zi5', name:'Hallway',        type:'interior',  x:320,  y:200, w:240, h:200, armed:true,  sensitivity:4, priority:'low',      color:300 },
+    { id:'zi6', name:'Master bedroom', type:'interior',  x:560,  y:200, w:460, h:200, armed:true,  sensitivity:8, priority:'critical', color:170 },
+  ],
+  entryPoints: [
+    { id:'ep1', name:'Front door',        x:180,  y:100, kind:'door',   wall:'top'    },
+    { id:'ep2', name:'Garage door',       x:80,   y:300, kind:'door',   wall:'left'   },
+    { id:'ep3', name:'Back door',         x:780,  y:400, kind:'door',   wall:'bottom' },
+    { id:'ep4', name:'Kitchen window',    x:1020, y:150, kind:'window', wall:'right'  },
+    { id:'ep5', name:'Bedroom window',    x:1020, y:320, kind:'window', wall:'right'  },
+    { id:'ep6', name:'Living rm window',  x:480,  y:100, kind:'window', wall:'top'    },
+    { id:'ep7', name:'Kitchen window 2',  x:850,  y:100, kind:'window', wall:'top'    },
+  ],
+  defaultZones: null, // captured on init for reset
+  events: [],
+  filtered: [],
+  heatmap: [],
+  deviceId: 'cog-id-' + Math.random().toString(36).slice(2, 10),
+  webhook: '',
+  minPrio: 'normal',
+  quiet: { start:'23:00', end:'07:00' },
+  tone: 'soft',
+};
+STATE.defaultZones = JSON.parse(JSON.stringify(STATE.zones));
+STATE.defaultEntryPoints = JSON.parse(JSON.stringify(STATE.entryPoints));
+
+// ───────────────────────────── Utils ─────────────────────────────
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function rand(min, max){ return Math.random() * (max - min) + min; }
+function fmtTime(ts){
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const ss = String(d.getSeconds()).padStart(2,'0');
+  return hh + ':' + mm + ':' + ss;
+}
+function fmtRel(ts){
+  const diff = Math.round((Date.now() - ts) / 1000);
+  if (diff < 5) return 'just now';
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.round(diff/60) + 'm ago';
+  if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+  return Math.round(diff/86400) + 'd ago';
+}
+function toast(msg, kind){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || 'info');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+// ───────────────────────────── Navigation ─────────────────────────────
+function showPage(name){
+  $$('.page-panel').forEach(p => p.classList.toggle('on', p.id === 'page-' + name));
+  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.page === name));
+  if (name === 'zones') renderZoneMap();
+  if (name === 'events') renderAllEvents();
+  if (name === 'calibration') renderPreview();
+}
+$('#nav').addEventListener('click', e => {
+  const a = e.target.closest('a[data-page]');
+  if (!a) return;
+  showPage(a.dataset.page);
+});
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-nav]');
+  if (a) { showPage(a.dataset.nav); e.preventDefault(); }
+});
+
+// ───────────────────────────── Status banner ─────────────────────────────
+function setStatus(){
+  const banner = $('#status-banner');
+  banner.classList.remove('armed','alert','disarmed');
+  if (STATE.alert) {
+    banner.classList.add('alert');
+    $('#status-label').textContent = 'ALERT · Intrusion detected';
+    $('#status-sub').textContent = 'Zone breach in progress · review events';
+    $('#btn-disarm').textContent = 'Acknowledge';
+  } else if (STATE.armed) {
+    banner.classList.add('armed');
+    $('#status-label').textContent = 'Armed · Monitoring';
+    $('#status-sub').textContent = 'All zones nominal · CSI link healthy';
+    $('#btn-disarm').textContent = 'Disarm';
+  } else {
+    banner.classList.add('disarmed');
+    $('#status-label').textContent = 'Disarmed';
+    $('#status-sub').textContent = 'No detection · monitoring paused';
+    $('#btn-disarm').textContent = 'Arm system';
+  }
+}
+$('#btn-disarm').addEventListener('click', () => {
+  if (STATE.alert) {
+    STATE.alert = false;
+    toast('Alert acknowledged', 'ok');
+  } else {
+    STATE.armed = !STATE.armed;
+    toast(STATE.armed ? 'System armed' : 'System disarmed', STATE.armed ? 'ok' : 'info');
+  }
+  setStatus();
+});
+$('#btn-test-alert').addEventListener('click', () => {
+  STATE.alert = true;
+  const z = STATE.zones[Math.floor(Math.random()*STATE.zones.length)];
+  STATE.events.unshift({
+    ts: Date.now(),
+    type: 'alert',
+    zoneId: z.id,
+    zoneName: z.name,
+    confidence: 0.92,
+    note: 'Test alert triggered manually',
+  });
+  setStatus();
+  renderRecentEvents();
+  renderHeatmap();
+  renderDonut();
+  refreshOverviewKpis();
+  toast('Test alert fired in ' + z.name, 'err');
+});
+
+// ───────────────────────────── Signal chart (live) ─────────────────────────────
+function pollSignal(){
+  const t = Date.now();
+  // Slow ambient envelope (room HVAC, distant motion etc.)
+  const ambient = STATE.baseline + Math.sin(t / 4200) * 0.03 + Math.sin(t / 1700) * 0.015;
+
+  // Decaying spike for presence events. Refresh occasionally when armed.
+  STATE.spikeDecay = Math.max(0, (STATE.spikeDecay || 0) - 0.025);
+  if (STATE.armed && Math.random() < 0.022) STATE.spikeDecay = rand(0.35, 0.6);
+  if (STATE.alert) STATE.spikeDecay = Math.max(STATE.spikeDecay, 0.45 + Math.random() * 0.25);
+
+  // A "hot band" — when a body is present, certain subcarriers light up more
+  // than others. Pick a centre subcarrier and spread the spike around it.
+  if (STATE.spikeDecay > 0 && (!STATE.hotCenter || Math.random() < 0.05)) {
+    STATE.hotCenter = Math.floor(Math.random() * N_SUBS);
+    STATE.hotWidth = 3 + Math.random() * 5;
+  }
+
+  // Generate N_SUBS subcarriers — each gets its own phase, slow modulation,
+  // and a Gaussian bump from the hot centre when a spike is active.
+  const subs = new Array(N_SUBS);
+  let mean = 0, min = 1, max = 0;
+  for (let i = 0; i < N_SUBS; i++) {
+    let v = ambient
+      + Math.sin(t / 350 + i * 0.42) * 0.035
+      + Math.cos(t / 620 + i * 0.27) * 0.025
+      + Math.sin(i / 5 + t / 9000) * 0.04
+      + (Math.random() - 0.5) * 0.05;
+    if (STATE.spikeDecay > 0) {
+      const d = i - (STATE.hotCenter || 0);
+      const bump = Math.exp(-(d * d) / (2 * (STATE.hotWidth || 4) * (STATE.hotWidth || 4)));
+      v += STATE.spikeDecay * (0.4 + 0.6 * bump);
+    }
+    if (v < 0) v = 0; else if (v > 1) v = 1;
+    subs[i] = v;
+    mean += v;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  mean /= N_SUBS;
+  let variance = 0;
+  for (let i = 0; i < N_SUBS; i++) { const d = subs[i] - mean; variance += d * d; }
+  variance /= N_SUBS;
+
+  STATE.signalBuf.push({ t, subs, mean, min, max, variance });
+  if (STATE.signalBuf.length > SIG_BUF_LEN) STATE.signalBuf.shift();
+
+  renderSignalChart();
+  // KPIs
+  $('#kpi-csi').textContent = mean.toFixed(2);
+  $('#kpi-csi-sub').textContent = mean > STATE.threshold ? 'above threshold' : 'nominal';
+  renderGauge(mean);
+
+  // Auto-detect: simulated detections when sustained over threshold
+  if (STATE.armed && !STATE.alert && mean > STATE.threshold && Math.random() < 0.12) {
+    const armed = STATE.zones.filter(z => z.armed);
+    const z = armed[Math.floor(Math.random() * armed.length)];
+    if (z) {
+      const isPerimeter = z.type === 'perimeter';
+      const ev = {
+        ts: t,
+        type: isPerimeter
+          ? (Math.random() < 0.7 ? 'zone_breach' : 'intrusion_detected')
+          : (Math.random() < 0.5 ? 'intrusion_detected' : 'alert'),
+        zoneId: z.id,
+        zoneName: z.name,
+        confidence: mean,
+        note: isPerimeter ? 'Approach detected at ' + z.name : 'CSI variance exceeded threshold',
+      };
+      STATE.events.unshift(ev);
+      if (STATE.events.length > 500) STATE.events.length = 500;
+      renderRecentEvents();
+      renderDonut();
+      renderHeatmap();
+      refreshOverviewKpis();
+    }
+  }
+}
+function renderSignalChart(){
+  renderSignalTimeSeries();
+  renderSubcarrierPolar();
+  renderSignalWaterfall();
+  renderSignalStats();
+  // Header state badge
+  const buf = STATE.signalBuf;
+  const badge = $('#signal-state');
+  if (badge && buf.length) {
+    const m = buf[buf.length - 1].mean;
+    if (STATE.alert)              { badge.textContent = 'alert';      badge.className = 'badge mono danger'; }
+    else if (m > STATE.threshold) { badge.textContent = 'detecting';  badge.className = 'badge mono warn';   }
+    else if (!STATE.armed)        { badge.textContent = 'disarmed';   badge.className = 'badge mono muted';  }
+    else                          { badge.textContent = 'monitoring'; badge.className = 'badge mono info';   }
+  }
+}
+
+// ── Time-series panel ───────────────────────────────────────────────
+function renderSignalTimeSeries(){
+  const host = $('#chart-signal-ts');
+  if (!host) return;
+  const buf = STATE.signalBuf;
+  const W = host.clientWidth || 600, H = 210, PL = 32, PR = 42, PT = 10, PB = 22;
+  if (buf.length < 2) {
+    host.innerHTML = '<div style="padding:1rem 0;color:hsl(var(--muted-foreground));font-size:0.8125rem">Collecting samples…</div>';
+    return;
+  }
+  const n = buf.length;
+  const xat = i => PL + (i / (n - 1)) * (W - PL - PR);
+  const yat = v => H - PB - v * (H - PT - PB);
+  const baselineY = yat(STATE.baseline);
+  const threshY   = yat(STATE.threshold);
+  const lastMean  = buf[n - 1].mean;
+  const over      = lastMean > STATE.threshold;
+  const meanColor = over ? 'hsl(0, 65%, 62%)' : 'hsl(185, 80%, 58%)';
+
+  // Envelope (min/max across 24 subs)
+  let envTop = '', envBot = '';
+  for (let i = 0; i < n; i++) {
+    envTop += (i === 0 ? 'M' : 'L') + xat(i).toFixed(1) + ',' + yat(buf[i].max).toFixed(1) + ' ';
+    envBot = 'L' + xat(i).toFixed(1) + ',' + yat(buf[i].min).toFixed(1) + ' ' + envBot;
+  }
+  const envPath = envTop + envBot + 'Z';
+
+  // Mean
+  let meanPath = '';
+  for (let i = 0; i < n; i++) meanPath += (i === 0 ? 'M' : 'L') + xat(i).toFixed(1) + ',' + yat(buf[i].mean).toFixed(1) + ' ';
+
+  // Trigger crossings
+  const triggers = [];
+  for (let i = 1; i < n; i++) {
+    if (buf[i].mean > STATE.threshold && buf[i - 1].mean <= STATE.threshold) triggers.push(i);
+  }
+
+  const lastX = xat(n - 1), lastY = yat(lastMean);
+
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:' + H + 'px;display:block">';
+  svg += '<defs>';
+  svg += '<linearGradient id="tsEnv" x1="0" y1="0" x2="0" y2="1">';
+  svg += '<stop offset="0%" stop-color="' + meanColor + '" stop-opacity="0.32"/>';
+  svg += '<stop offset="100%" stop-color="' + meanColor + '" stop-opacity="0.02"/>';
+  svg += '</linearGradient>';
+  svg += '<filter id="tsGlow" x="-50%" y="-50%" width="200%" height="200%">';
+  svg += '<feGaussianBlur stdDeviation="2.5" result="b"/>';
+  svg += '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>';
+  svg += '</filter></defs>';
+
+  // Y grid + labels
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = yat(t).toFixed(1);
+    svg += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W - PR) + '" y2="' + y + '" stroke="hsl(220, 15%, 18%)" stroke-width="1"/>';
+    svg += '<text x="' + (PL - 4) + '" y="' + (parseFloat(y) + 3) + '" font-size="9" fill="hsl(215, 15%, 55%)" font-family="JetBrains Mono" text-anchor="end">' + t.toFixed(2) + '</text>';
+  });
+  // X axis
+  [0, 0.33, 0.66, 1].forEach(f => {
+    const x = (PL + f * (W - PL - PR)).toFixed(1);
+    const label = f === 1 ? 'now' : '-' + Math.round((1 - f) * 30) + 's';
+    svg += '<text x="' + x + '" y="' + (H - 6) + '" font-size="9" fill="hsl(215, 15%, 55%)" font-family="JetBrains Mono" text-anchor="middle">' + label + '</text>';
+  });
+
+  // Threshold wash above the line
+  if (over) {
+    const yTop = (H - PB - 1 * (H - PT - PB));
+    svg += '<rect x="' + PL + '" y="' + yTop + '" width="' + (W - PL - PR) + '" height="' + (threshY - yTop).toFixed(1) + '" fill="hsl(0, 65%, 50% / 0.06)"/>';
+  }
+
+  // Baseline + threshold
+  svg += '<line x1="' + PL + '" y1="' + baselineY + '" x2="' + (W - PR) + '" y2="' + baselineY + '" stroke="hsl(142, 70%, 55%)" stroke-width="1" stroke-dasharray="4 3" opacity="0.55"/>';
+  svg += '<text x="' + (W - PR + 3) + '" y="' + (baselineY + 3) + '" font-size="9" fill="hsl(142, 70%, 60%)" font-family="JetBrains Mono">base</text>';
+  svg += '<line x1="' + PL + '" y1="' + threshY + '" x2="' + (W - PR) + '" y2="' + threshY + '" stroke="hsl(0, 65%, 60%)" stroke-width="1.2" stroke-dasharray="2 2"/>';
+  svg += '<text x="' + (W - PR + 3) + '" y="' + (threshY + 3) + '" font-size="9" fill="hsl(0, 65%, 65%)" font-family="JetBrains Mono">t=' + STATE.threshold.toFixed(2) + '</text>';
+
+  // Envelope
+  svg += '<path d="' + envPath + '" fill="url(#tsEnv)" stroke="hsl(185, 80%, 60% / 0.25)" stroke-width="0.5"/>';
+  // Mean
+  svg += '<path d="' + meanPath + '" fill="none" stroke="' + meanColor + '" stroke-width="2.2" stroke-linejoin="round"' + (over ? ' filter="url(#tsGlow)"' : '') + '/>';
+  // Triggers
+  triggers.forEach(i => {
+    svg += '<circle cx="' + xat(i).toFixed(1) + '" cy="' + yat(buf[i].mean).toFixed(1) + '" r="3" fill="hsl(0, 65%, 62%)" opacity="0.85"/>';
+  });
+  // Leading dot
+  svg += '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="3.5" fill="' + meanColor + '"/>';
+  svg += '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="6" fill="none" stroke="' + meanColor + '" stroke-width="1.5">';
+  svg += '<animate attributeName="r" values="5;14;5" dur="1.6s" repeatCount="indefinite"/>';
+  svg += '<animate attributeName="opacity" values="0.7;0;0.7" dur="1.6s" repeatCount="indefinite"/>';
+  svg += '</circle>';
+  // Now line
+  svg += '<line x1="' + lastX.toFixed(1) + '" y1="' + PT + '" x2="' + lastX.toFixed(1) + '" y2="' + (H - PB) + '" stroke="' + meanColor + '" stroke-width="0.5" opacity="0.3" stroke-dasharray="2 3"/>';
+
+  svg += '</svg>';
+  host.innerHTML = svg;
+
+  const meta = $('#ts-meta');
+  if (meta) meta.textContent = 'mean ' + lastMean.toFixed(3) + ' · ' + (over ? '⚠ over threshold' : 'nominal');
+}
+
+// ── Polar (radar) panel ─────────────────────────────────────────────
+function renderSubcarrierPolar(){
+  const host = $('#chart-signal-polar');
+  if (!host) return;
+  const buf = STATE.signalBuf;
+  if (buf.length === 0) return;
+  const last = buf[buf.length - 1];
+  const N = N_SUBS;
+  const W = 280, H = 250;
+  const cx = W / 2, cy = H / 2 + 4, rMax = 96;
+
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block">';
+  svg += '<defs><radialGradient id="polarFill" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="hsl(185, 80%, 55%)" stop-opacity="0.32"/><stop offset="100%" stop-color="hsl(185, 80%, 55%)" stop-opacity="0.08"/></radialGradient></defs>';
+
+  // Concentric rings + tick labels
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rMax * f).toFixed(1) + '" fill="none" stroke="hsl(220, 15%, 18%)" stroke-width="0.5"/>';
+    svg += '<text x="' + (cx + 3) + '" y="' + (cy - rMax * f + 3).toFixed(1) + '" font-size="8" font-family="JetBrains Mono" fill="hsl(215, 15%, 45%)">' + f.toFixed(2) + '</text>';
+  });
+
+  // Spoke axes (every 6th sub)
+  for (let i = 0; i < N; i += 6) {
+    const a = -Math.PI / 2 + (i / N) * 2 * Math.PI;
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.cos(a) * rMax).toFixed(1) + '" y2="' + (cy + Math.sin(a) * rMax).toFixed(1) + '" stroke="hsl(220, 15%, 18%)" stroke-width="0.5"/>';
+  }
+
+  // Baseline ring
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rMax * STATE.baseline).toFixed(1) + '" fill="hsl(142, 70%, 55% / 0.06)" stroke="hsl(142, 70%, 55%)" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.65"/>';
+  // Threshold ring
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rMax * STATE.threshold).toFixed(1) + '" fill="none" stroke="hsl(0, 65%, 60%)" stroke-width="1.2" stroke-dasharray="3 3"/>';
+
+  // Subcarrier polygon
+  const pts = new Array(N);
+  let overCount = 0;
+  for (let i = 0; i < N; i++) {
+    const a = -Math.PI / 2 + (i / N) * 2 * Math.PI;
+    const r = last.subs[i] * rMax;
+    pts[i] = [cx + Math.cos(a) * r, cy + Math.sin(a) * r, last.subs[i] > STATE.threshold];
+    if (pts[i][2]) overCount++;
+  }
+  const poly = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  svg += '<polygon points="' + poly + '" fill="url(#polarFill)" stroke="hsl(185, 80%, 62%)" stroke-width="1.4" stroke-linejoin="round"/>';
+
+  // Spokes + dots
+  for (let i = 0; i < N; i++) {
+    const a = -Math.PI / 2 + (i / N) * 2 * Math.PI;
+    const tipX = pts[i][0], tipY = pts[i][1], over = pts[i][2];
+    const color = over ? 'hsl(0, 70%, 65%)' : 'hsl(185, 80%, 62%)';
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + tipX.toFixed(1) + '" y2="' + tipY.toFixed(1) + '" stroke="' + color + '" stroke-width="0.6" opacity="0.32"/>';
+    svg += '<circle cx="' + tipX.toFixed(1) + '" cy="' + tipY.toFixed(1) + '" r="' + (over ? 2.8 : 2) + '" fill="' + color + '"/>';
+  }
+
+  // Spoke labels (every 6th)
+  for (let i = 0; i < N; i += 6) {
+    const a = -Math.PI / 2 + (i / N) * 2 * Math.PI;
+    const lx = cx + Math.cos(a) * (rMax + 10);
+    const ly = cy + Math.sin(a) * (rMax + 10);
+    svg += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono" fill="hsl(215, 15%, 60%)">#' + (i + 1) + '</text>';
+  }
+
+  // Centre dot
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="2" fill="hsl(215, 15%, 65%)"/>';
+
+  svg += '</svg>';
+  host.innerHTML = svg;
+
+  const meta = $('#polar-meta');
+  if (meta) meta.textContent = overCount + ' / ' + N + ' subs over t';
+}
+
+// ── Waterfall spectrogram (canvas) ──────────────────────────────────
+function renderSignalWaterfall(){
+  const host = $('#chart-signal-waterfall');
+  if (!host) return;
+  let canvas = host.querySelector('canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.display = 'block';
+    host.innerHTML = '';
+    host.appendChild(canvas);
+  }
+  const W = host.clientWidth || 800;
+  const H = 160;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.height = H + 'px';
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+
+  // Bg
+  ctx.fillStyle = 'hsl(220, 18%, 9%)';
+  ctx.fillRect(0, 0, W, H);
+
+  const PL = 32, PR = 38, PT = 4, PB = 20;
+  const plotW = W - PL - PR;
+  const plotH = H - PT - PB;
+  const cellW = plotW / SIG_BUF_LEN;
+  const cellH = plotH / N_SUBS;
+
+  const buf = STATE.signalBuf;
+  if (buf.length === 0) return;
+
+  // Newest sample column on the right
+  const offset = SIG_BUF_LEN - buf.length;
+  for (let i = 0; i < buf.length; i++) {
+    const sample = buf[i];
+    const x = PL + (offset + i) * cellW;
+    for (let s = 0; s < N_SUBS; s++) {
+      const v = sample.subs[s];
+      let color;
+      if (v > STATE.threshold) {
+        const f = Math.min(1, (v - STATE.threshold) / Math.max(0.01, 1 - STATE.threshold));
+        color = 'hsl(' + (10 - f * 8).toFixed(0) + ', 90%, ' + (44 + f * 22).toFixed(0) + '%)';
+      } else if (v > STATE.baseline + 0.08) {
+        const f = Math.min(1, (v - STATE.baseline - 0.08) / Math.max(0.01, STATE.threshold - STATE.baseline - 0.08));
+        color = 'hsl(' + (40 - f * 25).toFixed(0) + ', 88%, ' + (38 + f * 15).toFixed(0) + '%)';
+      } else {
+        const f = Math.max(0, Math.min(1, v / Math.max(0.01, STATE.baseline + 0.08)));
+        color = 'hsl(195, 80%, ' + (10 + f * 32).toFixed(0) + '%)';
+      }
+      ctx.fillStyle = color;
+      ctx.fillRect(x, PT + s * cellH, cellW + 0.6, cellH + 0.6);
+    }
+  }
+
+  // Threshold-pixel-overlay: outline cells over threshold with a thin red border
+  ctx.strokeStyle = 'hsl(0, 70%, 65%)';
+  ctx.lineWidth = 0.5;
+  for (let i = Math.max(0, buf.length - 20); i < buf.length; i++) {
+    const sample = buf[i];
+    const x = PL + (offset + i) * cellW;
+    for (let s = 0; s < N_SUBS; s++) {
+      if (sample.subs[s] > STATE.threshold) {
+        ctx.strokeRect(x + 0.5, PT + s * cellH + 0.5, cellW - 0.5, cellH - 0.5);
+      }
+    }
+  }
+
+  // Axes
+  ctx.font = '9px "JetBrains Mono", monospace';
+  ctx.fillStyle = 'hsl(215, 15%, 55%)';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  for (let s = 0; s < N_SUBS; s += 4) {
+    ctx.fillText('#' + (s + 1), PL - 4, PT + s * cellH + cellH / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'center';
+  [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+    const x = PL + f * plotW;
+    const label = f === 1 ? 'now' : '-' + Math.round((1 - f) * 30) + 's';
+    ctx.fillText(label, x, H - 5);
+  });
+
+  // Rotated "sub#" label
+  ctx.save();
+  ctx.translate(10, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'hsl(215, 15%, 60%)';
+  ctx.fillText('subcarrier #', 0, 0);
+  ctx.restore();
+
+  // Color-scale legend on the right
+  const legX = W - PR + 8, legY = PT, legW = 8, legH = plotH;
+  const grad = ctx.createLinearGradient(0, legY, 0, legY + legH);
+  grad.addColorStop(0, 'hsl(2, 90%, 60%)');
+  grad.addColorStop(0.35 * (1 - STATE.threshold), 'hsl(15, 88%, 50%)');
+  grad.addColorStop(1 - STATE.threshold, 'hsl(40, 88%, 45%)');
+  grad.addColorStop(1 - STATE.baseline, 'hsl(195, 80%, 32%)');
+  grad.addColorStop(1, 'hsl(195, 80%, 10%)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(legX, legY, legW, legH);
+  ctx.strokeStyle = 'hsl(220, 15%, 25%)';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(legX + 0.25, legY + 0.25, legW - 0.5, legH - 0.5);
+  ctx.fillStyle = 'hsl(215, 15%, 55%)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1.0', legX + legW + 3, legY + 2);
+  ctx.fillText('t', legX + legW + 3, legY + (1 - STATE.threshold) * legH);
+  ctx.fillText('b', legX + legW + 3, legY + (1 - STATE.baseline) * legH);
+  ctx.fillText('0', legX + legW + 3, legY + legH - 2);
+
+  const meta = $('#waterfall-meta');
+  if (meta) {
+    const last = buf[buf.length - 1];
+    const overCells = last.subs.filter(v => v > STATE.threshold).length;
+    meta.textContent = buf.length + '/' + SIG_BUF_LEN + ' samples · ' + overCells + ' hot subs';
+  }
+}
+
+// ── Stats footer ────────────────────────────────────────────────────
+function renderSignalStats(){
+  const host = $('#signal-stats');
+  if (!host) return;
+  const buf = STATE.signalBuf;
+  if (buf.length === 0) { host.innerHTML = ''; return; }
+  const last = buf[buf.length - 1];
+
+  let rmsSum = 0;
+  for (let i = 0; i < buf.length; i++) rmsSum += buf[i].mean * buf[i].mean;
+  const rms = Math.sqrt(rmsSum / buf.length);
+
+  // SNR estimate: distance from baseline in standard-deviations of the window mean
+  let mu = 0;
+  for (let i = 0; i < buf.length; i++) mu += buf[i].mean;
+  mu /= buf.length;
+  let v = 0;
+  for (let i = 0; i < buf.length; i++) { const d = buf[i].mean - mu; v += d * d; }
+  v /= buf.length;
+  const std = Math.sqrt(v);
+  const snr = std > 0 ? Math.max(0, (last.mean - STATE.baseline) / std) : 0;
+
+  let triggers = 0;
+  for (let i = 1; i < buf.length; i++) {
+    if (buf[i].mean > STATE.threshold && buf[i - 1].mean <= STATE.threshold) triggers++;
+  }
+  let lastTrigT = null;
+  for (let i = buf.length - 1; i >= 0; i--) {
+    if (buf[i].mean > STATE.threshold) { lastTrigT = buf[i].t; break; }
+  }
+  const lastTrigStr = lastTrigT ? Math.max(0, Math.round((Date.now() - lastTrigT) / 1000)) + 's ago' : 'none';
+
+  let maxSubVal = 0, maxSubIdx = 0;
+  for (let i = 0; i < N_SUBS; i++) {
+    if (last.subs[i] > maxSubVal) { maxSubVal = last.subs[i]; maxSubIdx = i; }
+  }
+
+  host.innerHTML = ''
+    + sigStatTile('Mean', last.mean.toFixed(3), 'last sample')
+    + sigStatTile('Variance', last.variance.toFixed(4), 'across 24 subs')
+    + sigStatTile('Max sub', '#' + (maxSubIdx + 1) + ' · ' + maxSubVal.toFixed(2), 'peak carrier')
+    + sigStatTile('RMS', rms.toFixed(3), '30 s window')
+    + sigStatTile('SNR', snr.toFixed(1) + 'σ', 'over baseline')
+    + sigStatTile('Triggers', triggers, '30 s · last ' + lastTrigStr);
+}
+function sigStatTile(label, val, sub){
+  return '<div class="signal-stat"><div class="signal-stat-label">' + label + '</div><div class="signal-stat-val">' + val + '</div><div class="signal-stat-sub">' + sub + '</div></div>';
+}
+$('#btn-clear-signal').addEventListener('click', () => { STATE.signalBuf = []; renderSignalChart(); toast('Buffer cleared', 'info'); });
+
+// ───────────────────────────── Confidence gauge ─────────────────────────────
+function renderGauge(value){
+  // value 0..1
+  const host = $('#chart-gauge');
+  const W = 220, H = 130;
+  const cx = W/2, cy = 110, r = 80;
+  const startA = Math.PI, endA = 2 * Math.PI;
+  const valA = startA + (endA - startA) * value;
+  function pt(a){ return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; }
+  function arc(a1, a2, color, width, opacity){
+    const [x1,y1] = pt(a1), [x2,y2] = pt(a2);
+    const large = (a2 - a1) > Math.PI ? 1 : 0;
+    return '<path d="M' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ',' + y2.toFixed(1) + '" fill="none" stroke="' + color + '" stroke-width="' + width + '" stroke-linecap="round" opacity="' + (opacity ?? 1) + '"/>';
+  }
+  let color = 'hsl(185, 80%, 55%)';
+  let label = 'Idle';
+  if (value > STATE.threshold) { color = 'hsl(0, 65%, 60%)'; label = 'Detection'; }
+  else if (value > STATE.threshold * 0.7) { color = 'hsl(35, 85%, 60%)'; label = 'Elevated'; }
+  // Threshold tick
+  const tA = startA + (endA - startA) * STATE.threshold;
+  const [tx1, ty1] = [cx + Math.cos(tA) * (r - 8), cy + Math.sin(tA) * (r - 8)];
+  const [tx2, ty2] = [cx + Math.cos(tA) * (r + 8), cy + Math.sin(tA) * (r + 8)];
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+  svg += arc(startA, endA, 'hsl(220, 15%, 18%)', 14);
+  svg += arc(startA, valA, color, 14);
+  svg += '<line x1="' + tx1.toFixed(1) + '" y1="' + ty1.toFixed(1) + '" x2="' + tx2.toFixed(1) + '" y2="' + ty2.toFixed(1) + '" stroke="hsl(0, 65%, 60%)" stroke-width="2" stroke-linecap="round"/>';
+  svg += '<text x="' + cx + '" y="' + (cy - 18) + '" text-anchor="middle" font-size="28" font-weight="600" fill="hsl(210, 20%, 92%)" font-family="Outfit" font-feature-settings="\'tnum\'">' + Math.round(value * 100) + '%</text>';
+  svg += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="10" fill="' + color + '" font-family="JetBrains Mono">' + label + '</text>';
+  svg += '</svg>';
+  host.innerHTML = svg;
+  $('#gauge-label').textContent = 'Threshold tick at ' + Math.round(STATE.threshold * 100) + '% · current ' + label.toLowerCase();
+  const stateBadge = $('#conf-state');
+  stateBadge.textContent = label.toLowerCase();
+  stateBadge.className = 'badge mono ' + (value > STATE.threshold ? 'danger' : value > STATE.threshold*0.7 ? 'warn' : 'info');
+}
+
+// ───────────────────────────── Donut (events by zone) ─────────────────────────────
+function renderDonut(){
+  const host = $('#chart-donut');
+  const legend = $('#donut-legend');
+  const counts = {};
+  const since = Date.now() - 24*3600*1000;
+  STATE.events.forEach(e => { if (e.ts >= since) counts[e.zoneId] = (counts[e.zoneId] || 0) + 1; });
+  const entries = STATE.zones.map(z => ({ z, n: counts[z.id] || 0 })).filter(x => x.n > 0);
+  const total = entries.reduce((s, x) => s + x.n, 0);
+  if (total === 0) {
+    host.innerHTML = '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="70" fill="none" stroke="hsl(220, 15%, 18%)" stroke-width="22"/><text x="100" y="100" text-anchor="middle" font-size="14" fill="hsl(215, 15%, 55%)" font-family="JetBrains Mono">no events</text><text x="100" y="118" text-anchor="middle" font-size="10" fill="hsl(215, 15%, 55%)" font-family="JetBrains Mono">last 24h</text></svg>';
+    legend.innerHTML = '<div style="color:hsl(var(--muted-foreground));font-size:0.75rem">No events in the last 24 hours.</div>';
+    return;
+  }
+  const cx = 100, cy = 100, r = 70, sw = 22;
+  let acc = 0;
+  let svg = '<svg viewBox="0 0 200 200">';
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="hsl(220, 15%, 14%)" stroke-width="' + sw + '"/>';
+  entries.forEach(({z, n}) => {
+    const frac = n / total;
+    const a1 = -Math.PI/2 + acc * 2*Math.PI;
+    const a2 = -Math.PI/2 + (acc + frac) * 2*Math.PI;
+    const x1 = cx + Math.cos(a1) * r, y1 = cy + Math.sin(a1) * r;
+    const x2 = cx + Math.cos(a2) * r, y2 = cy + Math.sin(a2) * r;
+    const large = frac > 0.5 ? 1 : 0;
+    svg += '<path d="M' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ',' + y2.toFixed(1) + '" fill="none" stroke="hsl(' + z.color + ', 70%, 55%)" stroke-width="' + sw + '" stroke-linecap="butt"/>';
+    acc += frac;
+  });
+  svg += '<text x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle" font-size="26" font-weight="600" fill="hsl(210, 20%, 92%)" font-family="Outfit" font-feature-settings="\'tnum\'">' + total + '</text>';
+  svg += '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" font-size="9" fill="hsl(215, 15%, 55%)" font-family="JetBrains Mono">events / 24h</text>';
+  svg += '</svg>';
+  host.innerHTML = svg;
+  legend.innerHTML = entries.map(({z, n}) => {
+    const pct = (n / total * 100).toFixed(0);
+    return '<div style="display:flex;align-items:center;gap:0.5rem">'
+      + '<span class="leg-sw" style="background:hsl(' + z.color + ', 70%, 55%)"></span>'
+      + '<span style="flex:1;color:hsl(var(--foreground))">' + esc(z.name) + '</span>'
+      + '<span class="mono" style="color:hsl(var(--muted-foreground))">' + n + ' · ' + pct + '%</span>'
+      + '</div>';
+  }).join('');
+}
+
+// ───────────────────────────── Heatmap (24h × 7d) ─────────────────────────────
+function buildHeatmap(){
+  // 7 days × 24 hours. Seed pseudo data; events bump current hour.
+  const m = Array.from({length:7}, () => Array.from({length:24}, () => 0));
+  // background activity
+  for (let d=0; d<7; d++){
+    for (let h=0; h<24; h++){
+      // typical pattern: more activity 8-22
+      const peak = (h >= 7 && h <= 22) ? 1 : 0.2;
+      if (Math.random() < 0.25 * peak) m[d][h] = Math.floor(rand(1, 6));
+    }
+  }
+  // overlay real events
+  const now = new Date();
+  STATE.events.forEach(e => {
+    const dt = new Date(e.ts);
+    const dayDiff = Math.floor((now.setHours(0,0,0,0) - new Date(dt).setHours(0,0,0,0)) / 86400000);
+    if (dayDiff >= 0 && dayDiff < 7) {
+      const dayIdx = 6 - dayDiff;
+      const hr = new Date(e.ts).getHours();
+      m[dayIdx][hr]++;
+    }
+  });
+  STATE.heatmap = m;
+}
+function renderHeatmap(){
+  const grid = $('#heatmap');
+  const axis = $('#heat-axis');
+  const trendHost = $('#heat-hourly-trend');
+  const statsHost = $('#heat-stats');
+  const peakBadge = $('#heat-peak-badge');
+  const rangeEl = $('#heat-range');
+  const trendMeta = $('#heat-trend-meta');
+  if (STATE.heatmap.length === 0) buildHeatmap();
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const m = STATE.heatmap;
+
+  // ── Aggregations ─────────────────────────────────────────────
+  const dayTotals  = m.map(row => row.reduce((s, v) => s + v, 0));
+  const hourTotals = Array.from({length:24}, (_, h) => m.reduce((s, row) => s + row[h], 0));
+  const hourAvgs   = hourTotals.map(v => v / 7);
+  const weekTotal  = dayTotals.reduce((s, v) => s + v, 0);
+  let max = 1;
+  let peakV = 0, peakD = -1, peakH = -1;
+  m.forEach((row, d) => row.forEach((v, h) => {
+    if (v > max) max = v;
+    if (v > peakV) { peakV = v; peakD = d; peakH = h; }
+  }));
+  const maxHour = Math.max(1, ...hourTotals);
+  const maxDay  = Math.max(1, ...dayTotals);
+  const peakHourIdx = hourTotals.indexOf(Math.max(...hourTotals));
+  const peakDayIdx  = dayTotals.indexOf(Math.max(...dayTotals));
+
+  // Day-grouping helpers for the trend line
+  const morning = hourTotals.slice(6, 12).reduce((s, v) => s + v, 0);
+  const evening = hourTotals.slice(18, 24).reduce((s, v) => s + v, 0);
+  const overnight = hourTotals.slice(0, 6).reduce((s, v) => s + v, 0);
+
+  // ── Main grid + inline daily-total column ────────────────────
+  const cells = [];
+  for (let d = 0; d < 7; d++) {
+    cells.push('<div class="heat-label">' + labels[d] + '</div>');
+    for (let h = 0; h < 24; h++) {
+      const v = m[d][h];
+      const intensity = v / max;
+      const bg = v === 0
+        ? 'hsl(220, 15%, 15%)'
+        : 'hsl(185, 80%, ' + (16 + intensity * 44) + '%)';
+      const isPeak = (d === peakD && h === peakH && v > 0);
+      cells.push('<div class="heat-cell ' + (isPeak ? 'peak' : '') + '" style="background:' + bg + '" title="' + labels[d] + ' ' + String(h).padStart(2,'0') + ':00 · ' + v + ' event' + (v === 1 ? '' : 's') + '"></div>');
+    }
+    // Daily total — dot sized by intensity + count
+    const dv = dayTotals[d];
+    const di = dv / maxDay;
+    const dotSize = (3 + di * 8).toFixed(1);
+    const dotColor = di > 0.8 ? 'hsl(0, 70%, 62%)' : di > 0.5 ? 'hsl(35, 85%, 60%)' : 'hsl(185, 80%, 55%)';
+    cells.push('<div class="heat-tot-cell" title="' + labels[d] + ' total: ' + dv + '"><span class="heat-tot-dot" style="width:' + dotSize + 'px;height:' + dotSize + 'px;background:' + dotColor + '"></span>' + dv + '</div>');
+  }
+  grid.innerHTML = cells.join('');
+
+  // ── Axis row (hour ticks + "total" label) ────────────────────
+  let ax = ['<span></span>'];
+  for (let h = 0; h < 24; h++) ax.push('<span>' + (h % 3 === 0 ? String(h).padStart(2,'0') : '') + '</span>');
+  ax.push('<span>total</span>');
+  axis.innerHTML = ax.join('');
+
+  // ── Badge + range ────────────────────────────────────────────
+  if (peakBadge) peakBadge.textContent = 'peak ' + labels[peakDayIdx] + ' ' + String(peakHourIdx).padStart(2,'0') + ':00';
+  if (rangeEl)   rangeEl.textContent = '0 – ' + max + ' events / hour cell · ' + weekTotal + ' events / week';
+
+  // ── Hourly trend sparkline (smooth area chart) ───────────────
+  if (trendHost) {
+    const W = trendHost.clientWidth || 600;
+    const H = 110, PL = 30, PR = 12, PT = 14, PB = 22;
+    const xat = h => PL + (h / 23) * (W - PL - PR);
+    const yat = v => H - PB - (v / maxHour) * (H - PT - PB);
+
+    let path = '';
+    for (let h = 0; h < 24; h++) path += (h === 0 ? 'M' : 'L') + xat(h).toFixed(1) + ',' + yat(hourTotals[h]).toFixed(1) + ' ';
+    const area = path + 'L' + xat(23).toFixed(1) + ',' + (H - PB) + ' L' + PL + ',' + (H - PB) + ' Z';
+
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:' + H + 'px;display:block">';
+    svg += '<defs>';
+    svg += '<linearGradient id="hTrendFill" x1="0" y1="0" x2="0" y2="1">';
+    svg += '<stop offset="0%" stop-color="hsl(185, 80%, 55%)" stop-opacity="0.45"/>';
+    svg += '<stop offset="100%" stop-color="hsl(185, 80%, 55%)" stop-opacity="0.02"/>';
+    svg += '</linearGradient>';
+    svg += '</defs>';
+
+    // Daypart bands (subtle background shading)
+    svg += '<rect x="' + xat(0).toFixed(1) + '" y="' + PT + '" width="' + (xat(6) - xat(0)).toFixed(1) + '" height="' + (H - PT - PB) + '" fill="hsl(220, 30%, 18%)" opacity="0.18"/>';
+    svg += '<rect x="' + xat(18).toFixed(1) + '" y="' + PT + '" width="' + (xat(23) - xat(18)).toFixed(1) + '" height="' + (H - PT - PB) + '" fill="hsl(280, 30%, 18%)" opacity="0.18"/>';
+
+    // Y-axis gridlines + labels
+    [0, 0.5, 1].forEach(f => {
+      const y = yat(maxHour * f).toFixed(1);
+      svg += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W - PR) + '" y2="' + y + '" stroke="hsl(220, 15%, 18%)" stroke-width="1" stroke-dasharray="' + (f === 0 ? '0' : '2 3') + '"/>';
+      svg += '<text x="' + (PL - 4) + '" y="' + (parseFloat(y) + 3) + '" text-anchor="end" font-size="9" font-family="JetBrains Mono" fill="hsl(215, 15%, 55%)">' + Math.round(maxHour * f) + '</text>';
+    });
+
+    // Area + line
+    svg += '<path d="' + area + '" fill="url(#hTrendFill)"/>';
+    svg += '<path d="' + path + '" fill="none" stroke="hsl(185, 80%, 60%)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+
+    // Hour dots (subtle)
+    for (let h = 0; h < 24; h++) {
+      svg += '<circle cx="' + xat(h).toFixed(1) + '" cy="' + yat(hourTotals[h]).toFixed(1) + '" r="1.6" fill="hsl(185, 80%, 65%)"/>';
+    }
+
+    // Peak hour marker
+    svg += '<circle cx="' + xat(peakHourIdx).toFixed(1) + '" cy="' + yat(hourTotals[peakHourIdx]).toFixed(1) + '" r="4.5" fill="hsl(0, 70%, 62%)" stroke="hsl(0, 0%, 6%)" stroke-width="1.5"/>';
+    const peakLabelX = Math.min(W - PR - 50, Math.max(PL + 4, xat(peakHourIdx) - 30));
+    svg += '<text x="' + peakLabelX.toFixed(1) + '" y="' + (yat(hourTotals[peakHourIdx]) - 8).toFixed(1) + '" font-size="9.5" font-family="JetBrains Mono" fill="hsl(0, 70%, 75%)">peak ' + String(peakHourIdx).padStart(2,'0') + ':00 · ' + hourTotals[peakHourIdx] + '</text>';
+
+    // X-axis tick labels (every 3h)
+    for (let h = 0; h <= 24; h += 3) {
+      const hx = h === 24 ? 23 : h;
+      svg += '<text x="' + xat(hx).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono" fill="hsl(215, 15%, 55%)">' + String(h % 24).padStart(2,'0') + '</text>';
+    }
+
+    // Daypart band labels
+    svg += '<text x="' + ((xat(0) + xat(6)) / 2).toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle" font-size="8.5" font-family="JetBrains Mono" fill="hsl(215, 15%, 55%)" opacity="0.7">overnight</text>';
+    svg += '<text x="' + ((xat(6) + xat(18)) / 2).toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle" font-size="8.5" font-family="JetBrains Mono" fill="hsl(215, 15%, 55%)" opacity="0.7">daytime</text>';
+    svg += '<text x="' + ((xat(18) + xat(23)) / 2).toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle" font-size="8.5" font-family="JetBrains Mono" fill="hsl(215, 15%, 55%)" opacity="0.7">evening</text>';
+
+    svg += '</svg>';
+    trendHost.innerHTML = svg;
+
+    if (trendMeta) trendMeta.textContent = 'overnight ' + overnight + ' · daytime ' + morning + ' · evening ' + evening + ' · max/hr ' + maxHour;
+  }
+
+  // ── Stat cards (week-over-week trend, peaks, totals) ─────────
+  if (statsHost) {
+    // Synthesize prior-week total for week-over-week change (deterministic per session)
+    if (STATE._priorWeekTotal === undefined) STATE._priorWeekTotal = Math.max(0, Math.round(weekTotal * (0.7 + Math.random() * 0.6)));
+    const prev = STATE._priorWeekTotal;
+    const change = prev > 0 ? ((weekTotal - prev) / prev * 100) : 0;
+    const changeStr = (change >= 0 ? '+' : '') + change.toFixed(0) + '%';
+    let changeColor = 'hsl(var(--muted-foreground))';
+    let arrow = '→';
+    if (change > 5)  { changeColor = 'hsl(35, 85%, 65%)'; arrow = '↗'; }
+    if (change < -5) { changeColor = 'hsl(142, 70%, 60%)'; arrow = '↘'; }
+
+    const avgDaily = (weekTotal / 7).toFixed(1);
+
+    statsHost.innerHTML = ''
+      + '<div class="heat-stat"><div class="heat-stat-label">Peak hour</div><div class="heat-stat-val mono">' + String(peakHourIdx).padStart(2,'0') + ':00</div><div class="heat-stat-sub">' + hourTotals[peakHourIdx] + ' events across week</div></div>'
+      + '<div class="heat-stat"><div class="heat-stat-label">Busiest day</div><div class="heat-stat-val">' + labels[peakDayIdx] + '</div><div class="heat-stat-sub">' + dayTotals[peakDayIdx] + ' events · ' + (dayTotals[peakDayIdx] / Math.max(1, weekTotal) * 100).toFixed(0) + '% of week</div></div>'
+      + '<div class="heat-stat"><div class="heat-stat-label">Daily avg</div><div class="heat-stat-val mono">' + avgDaily + '</div><div class="heat-stat-sub">' + weekTotal + ' events total · 7 days</div></div>'
+      + '<div class="heat-stat"><div class="heat-stat-label">vs prior week</div><div class="heat-stat-val mono" style="color:' + changeColor + '">' + arrow + ' ' + changeStr + '</div><div class="heat-stat-sub">' + prev + ' last week → ' + weekTotal + ' now</div></div>';
+  }
+}
+
+// ───────────────────────────── Zone map ─────────────────────────────
+function renderZoneMap(){
+  const svg = $('#zone-svg');
+  const HOUSE = { x:80, y:100, w:940, h:300 };
+  let html = '';
+
+  // ── Defs: patterns + filters ──────────────────────────────────────
+  html += '<defs>';
+  html += '<pattern id="grass" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">';
+  html += '<rect width="22" height="22" fill="hsl(140, 28%, 7%)"/>';
+  html += '<circle cx="6" cy="6" r="0.7" fill="hsl(140, 28%, 16%)"/>';
+  html += '<circle cx="16" cy="14" r="0.6" fill="hsl(140, 28%, 14%)"/>';
+  html += '<circle cx="11" cy="18" r="0.5" fill="hsl(140, 28%, 18%)"/>';
+  html += '</pattern>';
+  html += '<pattern id="floor" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">';
+  html += '<rect width="32" height="32" fill="hsl(220, 18%, 11%)"/>';
+  html += '<line x1="0" y1="0" x2="32" y2="0" stroke="hsl(220, 15%, 16%)" stroke-width="0.5"/>';
+  html += '<line x1="0" y1="0" x2="0" y2="32" stroke="hsl(220, 15%, 16%)" stroke-width="0.5"/>';
+  html += '</pattern>';
+  html += '<filter id="entryGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  html += '</defs>';
+
+  // ── Outdoor backdrop (grass) ──────────────────────────────────────
+  html += '<rect x="0" y="0" width="1100" height="500" fill="url(#grass)"/>';
+
+  // Compass rose (top-right of the canvas)
+  html += '<g transform="translate(1060, 40)" style="pointer-events:none">';
+  html += '<circle r="14" fill="hsl(220, 20%, 8% / 0.7)" stroke="hsl(220, 15%, 25%)" stroke-width="0.5"/>';
+  html += '<path d="M0,-10 L3,0 L0,10 L-3,0 Z" fill="hsl(185, 80%, 55%)" opacity="0.7"/>';
+  html += '<text y="-16" text-anchor="middle" font-size="9" font-family="JetBrains Mono" fill="hsl(185, 80%, 70%)">N</text>';
+  html += '</g>';
+
+  // ── Zones ─────────────────────────────────────────────────────────
+  // Draw perimeter zones first (behind house outline)
+  STATE.zones.filter(z => z.type === 'perimeter').forEach(z => {
+    html += drawZone(z);
+  });
+
+  // House footprint — solid floor + thick walls
+  html += '<rect x="' + HOUSE.x + '" y="' + HOUSE.y + '" width="' + HOUSE.w + '" height="' + HOUSE.h + '" fill="url(#floor)" stroke="hsl(220, 15%, 38%)" stroke-width="4" rx="2"/>';
+  // Wall shadow
+  html += '<rect x="' + HOUSE.x + '" y="' + HOUSE.y + '" width="' + HOUSE.w + '" height="' + HOUSE.h + '" fill="none" stroke="hsl(0, 0%, 0% / 0.4)" stroke-width="6" rx="2" transform="translate(2,2)" opacity="0.4"/>';
+
+  // Interior rooms
+  STATE.zones.filter(z => z.type !== 'perimeter').forEach(z => {
+    html += drawZone(z);
+  });
+
+  // Interior wall lines (between rooms) — drawn after zones so they show on top
+  html += '<g style="pointer-events:none" stroke="hsl(220, 15%, 35%)" stroke-width="2" stroke-linecap="round">';
+  // Horizontal split between top-row rooms and bottom-row rooms
+  html += '<line x1="80"  y1="200" x2="1020" y2="200"/>';
+  // Vertical separators on top row (Foyer | Living room | Kitchen)
+  html += '<line x1="280" y1="100" x2="280" y2="200"/>';
+  html += '<line x1="680" y1="100" x2="680" y2="200"/>';
+  // Vertical separators on bottom row (Garage | Hallway | Master bedroom)
+  html += '<line x1="320" y1="200" x2="320" y2="400"/>';
+  html += '<line x1="560" y1="200" x2="560" y2="400"/>';
+  html += '</g>';
+
+  // ── Entry points (doors + windows) ────────────────────────────────
+  STATE.entryPoints.forEach(ep => {
+    html += drawEntryPoint(ep);
+  });
+
+  // ── Sensor (placed centrally in living room) ──────────────────────
+  html += '<g transform="translate(480, 150)" style="pointer-events:none">';
+  // scan radius — extends through walls (CSI works through walls)
+  html += '<circle r="400" fill="none" stroke="hsl(185, 80%, 55% / 0.08)" stroke-width="1" stroke-dasharray="2 5"/>';
+  html += '<circle r="260" fill="none" stroke="hsl(185, 80%, 55% / 0.15)" stroke-width="1" stroke-dasharray="2 4"/>';
+  html += '<circle class="zone-pip" cx="0" cy="0" r="5" fill="hsl(185, 80%, 55% / 0.6)"/>';
+  html += '<circle r="9" fill="hsl(185, 80%, 55%)"/>';
+  html += '<circle r="13" fill="none" stroke="hsl(185, 80%, 55%)" stroke-width="1.5"/>';
+  html += '<text y="30" text-anchor="middle" font-size="10" font-family="JetBrains Mono" fill="hsl(185, 80%, 75%)">ESP32-S3 · CSI</text>';
+  html += '</g>';
+
+  svg.innerHTML = html;
+
+  // ── Bind ──────────────────────────────────────────────────────────
+  svg.querySelectorAll('.zone-rect').forEach(rect => {
+    rect.addEventListener('click', () => selectZone(rect.dataset.zone));
+  });
+
+  const armed = STATE.zones.filter(z => z.armed).length;
+  const peri = STATE.zones.filter(z => z.type === 'perimeter').length;
+  const inter = STATE.zones.filter(z => z.type === 'interior' || z.type === 'vehicle').length;
+  $('#zones-summary').textContent = STATE.zones.length + ' zones · ' + armed + ' armed · ' + peri + ' perimeter · ' + inter + ' interior · ' + STATE.entryPoints.length + ' entry points';
+  renderZoneStrips();
+}
+
+function drawZone(z){
+  const sel = STATE.selectedZone === z.id ? 'selected' : '';
+  const armedAlpha = z.armed ? 1 : 0.45;
+  let fillA = z.type === 'perimeter' ? 0.16 : (z.type === 'vehicle' ? 0.18 : 0.16);
+  if (!z.armed) fillA *= 0.4;
+  const fill = 'hsl(' + z.color + ', 70%, 50% / ' + fillA.toFixed(3) + ')';
+  const stroke = 'hsl(' + z.color + ', 70%, 60% / ' + armedAlpha.toFixed(2) + ')';
+  const dashTrim = z.type === 'perimeter' ? '6 4' : (z.armed ? '0' : '4 3');
+  const tag = z.type === 'perimeter' ? '◇' : (z.type === 'vehicle' ? '◈' : '◆');
+  const labelColor = 'hsl(' + z.color + ', 70%, 78%)';
+  const metaColor = 'hsl(215, 15%, 62%)';
+  const labelText = tag + ' ' + esc(z.name);
+  const metaText = (z.armed ? '● armed' : '○ off') + ' · s' + z.sensitivity + ' · ' + z.priority;
+  let s = '';
+  s += '<rect class="zone-rect ' + sel + '" data-zone="' + z.id + '" x="' + z.x + '" y="' + z.y + '" width="' + z.w + '" height="' + z.h + '" rx="4" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + (STATE.selectedZone === z.id ? 3 : 1.5) + '" stroke-dasharray="' + dashTrim + '"/>';
+
+  // Narrow tall zones (e.g. side approaches) — rotate labels 90° so they read
+  // bottom-to-top. The two lines sit as parallel columns (label on the left
+  // column, meta on the right) so they don't overlap inside the narrow strip.
+  const narrow = z.w < 110 && z.h > 120;
+  if (narrow) {
+    const cx = z.x + z.w / 2;
+    const cy = z.y + z.h / 2;
+    const labelX = cx - 8;
+    const metaX  = cx + 8;
+    s += '<text transform="rotate(-90 ' + labelX + ' ' + cy + ')" x="' + labelX + '" y="' + cy + '" text-anchor="middle" fill="' + labelColor + '" font-size="11" font-weight="600" font-family="Outfit" style="pointer-events:none">' + labelText + '</text>';
+    s += '<text transform="rotate(-90 ' + metaX + ' ' + cy + ')" x="' + metaX + '" y="' + cy + '" text-anchor="middle" fill="' + metaColor + '" font-size="9" font-family="JetBrains Mono" style="pointer-events:none">' + metaText + '</text>';
+  } else {
+    s += '<text x="' + (z.x + 8) + '" y="' + (z.y + 18) + '" fill="' + labelColor + '" font-size="11" font-weight="600" font-family="Outfit" style="pointer-events:none">' + labelText + '</text>';
+    s += '<text x="' + (z.x + 8) + '" y="' + (z.y + 32) + '" fill="' + metaColor + '" font-size="9" font-family="JetBrains Mono" style="pointer-events:none">' + metaText + '</text>';
+  }
+  return s;
+}
+
+function drawEntryPoint(ep){
+  const isDoor = ep.kind === 'door';
+  // Base (the dot/rect on the wall) stays the same size — but the surrounding
+  // pulsing ring and label are smaller and pushed INSIDE the room the entry
+  // leads into, so they don't bleed across the wall into adjacent zone meta
+  // text (e.g. the West/East approach rotated labels).
+  let s = '<g style="pointer-events:none">';
+  if (isDoor) {
+    const r = 8;
+    const color = 'hsl(35, 85%, 55%)';
+    // background pad on the wall
+    s += '<circle cx="' + ep.x + '" cy="' + ep.y + '" r="' + (r + 2) + '" fill="hsl(220, 20%, 8%)" stroke="' + color + '" stroke-width="1.5"/>';
+    s += '<circle cx="' + ep.x + '" cy="' + ep.y + '" r="' + r + '" fill="' + color + '" filter="url(#entryGlow)"/>';
+    // door icon (vertical bar)
+    s += '<rect x="' + (ep.x - 1) + '" y="' + (ep.y - 4.5) + '" width="2" height="9" fill="hsl(220, 20%, 8%)"/>';
+    // tighter pulsing ring (max expansion +8 instead of +14)
+    s += '<circle cx="' + ep.x + '" cy="' + ep.y + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="1.5" opacity="0.7">';
+    s += '<animate attributeName="r" from="' + r + '" to="' + (r + 8) + '" dur="2s" repeatCount="indefinite"/>';
+    s += '<animate attributeName="opacity" from="0.7" to="0" dur="2s" repeatCount="indefinite"/>';
+    s += '</circle>';
+    // Label points INTO the room the door enters (not into the perimeter zone)
+    let lx = ep.x, ly = ep.y, anchor = 'middle';
+    if      (ep.wall === 'left')   { lx = ep.x + r + 6;  ly = ep.y + 3;       anchor = 'start';  }
+    else if (ep.wall === 'right')  { lx = ep.x - r - 6;  ly = ep.y + 3;       anchor = 'end';    }
+    else if (ep.wall === 'bottom') { lx = ep.x;          ly = ep.y - r - 6;   anchor = 'middle'; }
+    else /* top */                 { lx = ep.x;          ly = ep.y + r + 13;  anchor = 'middle'; }
+    s += '<text x="' + lx + '" y="' + ly + '" text-anchor="' + anchor + '" font-size="8" font-family="JetBrains Mono" fill="' + color + '" font-weight="600">' + esc(ep.name) + '</text>';
+  } else {
+    // window — rectangle aligned to wall (base stays the same size)
+    const horizWall = (ep.wall === 'top' || ep.wall === 'bottom');
+    const ww = horizWall ? 22 : 6;
+    const wh = horizWall ? 6 : 22;
+    const color = 'hsl(50, 80%, 60%)';
+    s += '<rect x="' + (ep.x - ww/2) + '" y="' + (ep.y - wh/2) + '" width="' + ww + '" height="' + wh + '" fill="' + color + '" filter="url(#entryGlow)" rx="1"/>';
+    // crosshatch
+    if (horizWall) {
+      s += '<line x1="' + ep.x + '" y1="' + (ep.y - wh/2) + '" x2="' + ep.x + '" y2="' + (ep.y + wh/2) + '" stroke="hsl(220, 20%, 8%)" stroke-width="1"/>';
+    } else {
+      s += '<line x1="' + (ep.x - ww/2) + '" y1="' + ep.y + '" x2="' + (ep.x + ww/2) + '" y2="' + ep.y + '" stroke="hsl(220, 20%, 8%)" stroke-width="1"/>';
+    }
+    // tighter pulse (was +/-3, now +/-2)
+    s += '<rect x="' + (ep.x - ww/2 - 2) + '" y="' + (ep.y - wh/2 - 2) + '" width="' + (ww + 4) + '" height="' + (wh + 4) + '" fill="none" stroke="' + color + '" stroke-width="1" opacity="0.6" rx="2">';
+    s += '<animate attributeName="opacity" values="0.6;0;0.6" dur="2.4s" repeatCount="indefinite"/>';
+    s += '</rect>';
+    // Label points INTO the room the window opens onto
+    let lx = ep.x, ly = ep.y, anchor = 'middle';
+    if      (ep.wall === 'right')  { lx = ep.x - ww/2 - 4;  ly = ep.y + 3;      anchor = 'end';    }
+    else if (ep.wall === 'left')   { lx = ep.x + ww/2 + 4;  ly = ep.y + 3;      anchor = 'start';  }
+    else if (ep.wall === 'top')    { lx = ep.x;             ly = ep.y + wh/2 + 12; anchor = 'middle'; }
+    else /* bottom */              { lx = ep.x;             ly = ep.y - wh/2 - 6;  anchor = 'middle'; }
+    s += '<text x="' + lx + '" y="' + ly + '" text-anchor="' + anchor + '" font-size="8" font-family="JetBrains Mono" fill="' + color + '">' + esc(ep.name) + '</text>';
+  }
+  s += '</g>';
+  return s;
+}
+
+function selectZone(id){
+  STATE.selectedZone = id;
+  const z = STATE.zones.find(x => x.id === id);
+  if (!z) return;
+  $('#zone-edit-title').textContent = z.name;
+  $('#zone-edit-sub').textContent = 'Zone id: ' + z.id;
+  const badge = $('#zone-edit-badge');
+  badge.textContent = z.armed ? 'armed' : 'disarmed';
+  badge.className = 'badge ' + (z.armed ? 'online' : 'warn');
+  $('#zone-edit-body').style.display = '';
+  $('#zf-name').value = z.name;
+  $('#zf-armed').checked = z.armed;
+  $('#zf-sens').value = z.sensitivity;
+  $('#zf-sens-out').value = z.sensitivity;
+  $('#zf-priority').value = z.priority;
+  $('#zf-type').value = z.type || 'interior';
+  $('#zf-x').value = z.x;
+  $('#zf-y').value = z.y;
+  $('#zf-w').value = z.w;
+  $('#zf-h').value = z.h;
+  renderZoneMap();
+}
+
+$('#zf-sens').addEventListener('input', e => { $('#zf-sens-out').value = e.target.value; });
+$('#btn-zone-save').addEventListener('click', () => {
+  const z = STATE.zones.find(x => x.id === STATE.selectedZone);
+  if (!z) return;
+  z.name = $('#zf-name').value.trim() || z.name;
+  z.armed = $('#zf-armed').checked;
+  z.sensitivity = Number($('#zf-sens').value);
+  z.priority = $('#zf-priority').value;
+  z.type = $('#zf-type').value;
+  z.x = Math.max(20, Math.min(1080, Number($('#zf-x').value) || z.x));
+  z.y = Math.max(20, Math.min(480, Number($('#zf-y').value) || z.y));
+  z.w = Math.max(40, Math.min(1060, Number($('#zf-w').value) || z.w));
+  z.h = Math.max(40, Math.min(460, Number($('#zf-h').value) || z.h));
+  renderZoneMap();
+  refreshEventZoneFilter();
+  toast('Zone “' + z.name + '” saved', 'ok');
+});
+$('#btn-zone-delete').addEventListener('click', () => {
+  if (!STATE.selectedZone) return;
+  const z = STATE.zones.find(x => x.id === STATE.selectedZone);
+  openModal('Delete zone?', 'Remove “' + (z?.name || STATE.selectedZone) + '”? Events from this zone will remain in history.', () => {
+    STATE.zones = STATE.zones.filter(x => x.id !== STATE.selectedZone);
+    STATE.selectedZone = null;
+    $('#zone-edit-title').textContent = 'Select a zone to alert on';
+    $('#zone-edit-sub').textContent = 'Click a rectangle on the map above to edit which zone triggers an alert, its sensitivity, and priority.';
+    $('#zone-edit-badge').textContent = '—';
+    $('#zone-edit-badge').className = 'badge muted';
+    $('#zone-edit-body').style.display = 'none';
+    renderZoneMap();
+    refreshEventZoneFilter();
+    toast('Zone removed', 'info');
+  });
+});
+$('#btn-zone-add').addEventListener('click', () => {
+  const nid = 'z' + (Date.now().toString(36));
+  const colors = [185, 142, 35, 280, 320, 200, 60];
+  const z = {
+    id: nid,
+    name: 'Zone ' + (STATE.zones.length + 1),
+    type: 'interior',
+    x: 100 + (STATE.zones.length * 20) % 200,
+    y: 100 + (STATE.zones.length * 20) % 200,
+    w: 160, h: 120,
+    armed: true, sensitivity: 5, priority: 'normal',
+    color: colors[STATE.zones.length % colors.length],
+  };
+  STATE.zones.push(z);
+  selectZone(nid);
+  refreshEventZoneFilter();
+  toast('New zone added — drag X/Y/W/H to position', 'ok');
+});
+$('#btn-zone-reset').addEventListener('click', () => {
+  openModal('Reset zone layout?', 'Restore the default house + perimeter zones and entry points. This does not delete event history.', () => {
+    STATE.zones = JSON.parse(JSON.stringify(STATE.defaultZones));
+    STATE.entryPoints = JSON.parse(JSON.stringify(STATE.defaultEntryPoints));
+    STATE.selectedZone = null;
+    $('#zone-edit-body').style.display = 'none';
+    $('#zone-edit-title').textContent = 'Select a zone to alert on';
+    $('#zone-edit-sub').textContent = 'Click a rectangle on the map above to edit which zone triggers an alert, its sensitivity, and priority.';
+    $('#zone-edit-badge').textContent = '—';
+    $('#zone-edit-badge').className = 'badge muted';
+    renderZoneMap();
+    refreshEventZoneFilter();
+    toast('Zones reset', 'ok');
+  });
+});
+
+// Per-zone live probability strips
+function renderZoneStrips(){
+  const host = $('#zone-strips');
+  // Order: perimeter first (threat detection), then interior (after-breach)
+  const order = { perimeter: 0, vehicle: 1, interior: 2 };
+  const sorted = STATE.zones.slice().sort((a, b) => (order[a.type] ?? 9) - (order[b.type] ?? 9));
+  host.innerHTML = sorted.map(z => {
+    // simulated per-zone level — outdoor zones spike less, interior reflects after-breach signal
+    const base = STATE.baseline + (z.type === 'perimeter' ? -0.03 : 0.02);
+    const lvl = Math.max(0, Math.min(1, base + (z.armed ? rand(-0.05, 0.25) : rand(-0.04, 0.04)) * (z.sensitivity / 5)));
+    const pct = Math.round(lvl * 100);
+    const color = lvl > 0.6 ? 'hsl(0, 65%, 60%)' : lvl > 0.4 ? 'hsl(35, 85%, 60%)' : 'hsl(' + z.color + ', 70%, 55%)';
+    const typeBadge = z.type === 'perimeter' ? '<span class="badge muted" style="margin-right:0.25rem;font-size:0.625rem">PERIMETER</span>'
+                   : z.type === 'vehicle' ? '<span class="badge muted" style="margin-right:0.25rem;font-size:0.625rem">VEHICLE</span>'
+                   : '<span class="badge muted" style="margin-right:0.25rem;font-size:0.625rem">INTERIOR</span>';
+    return '<div class="card" style="padding:0.875rem 1rem">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;gap:0.5rem">'
+      + '<div style="min-width:0"><div style="font-size:0.875rem;font-weight:600;display:flex;align-items:center;gap:0.4rem">' + typeBadge + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(z.name) + '</span></div>'
+      + '<div class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">sens ' + z.sensitivity + ' · ' + z.priority + '</div></div>'
+      + '<span class="badge ' + (z.armed ? 'online' : 'warn') + '">' + (z.armed ? 'armed' : 'paused') + '</span>'
+      + '</div>'
+      + '<svg viewBox="0 0 200 36" preserveAspectRatio="none" style="width:100%;height:36px">'
+        + '<rect x="0" y="14" width="200" height="8" rx="4" fill="hsl(220, 15%, 18%)"/>'
+        + '<rect x="0" y="14" width="' + (pct * 2) + '" height="8" rx="4" fill="' + color + '"/>'
+        + '<circle cx="' + (pct * 2) + '" cy="18" r="5" fill="' + color + '"/>'
+      + '</svg>'
+      + '<div class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground));text-align:right">' + pct + '% likelihood</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ───────────────────────────── Recent events ─────────────────────────────
+function renderRecentEvents(){
+  const host = $('#recent-events');
+  if (STATE.events.length === 0) {
+    host.innerHTML = '<div style="padding:1rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.8125rem">No events yet. Trigger a test alert to populate.</div>';
+    return;
+  }
+  host.innerHTML = STATE.events.slice(0, 5).map(ev => eventRow(ev)).join('');
+}
+function eventRow(ev){
+  const cls = ev.type === 'alert' ? 'danger' : ev.type === 'intrusion_detected' ? 'warn' : 'info';
+  return '<div class="event-row">'
+    + '<span class="ts">' + fmtTime(ev.ts) + '</span>'
+    + '<span class="kind"><span class="badge ' + cls + '">' + ev.type + '</span></span>'
+    + '<span class="zone">' + esc(ev.zoneName) + '</span>'
+    + '<span class="conf">' + esc(ev.note || '') + '</span>'
+    + '<span class="conf mono">' + (ev.confidence*100).toFixed(0) + '%</span>'
+    + '</div>';
+}
+
+// ───────────────────────────── All events (with filters) ─────────────────────────────
+function refreshEventZoneFilter(){
+  const sel = $('#ev-zone');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All zones</option>' + STATE.zones.map(z => '<option value="' + z.id + '">' + esc(z.name) + '</option>').join('');
+  sel.value = cur;
+}
+function renderAllEvents(){
+  const q = $('#ev-search').value.trim().toLowerCase();
+  const type = $('#ev-type').value;
+  const zone = $('#ev-zone').value;
+  const range = Number($('#ev-range').value);
+  const since = range > 0 ? Date.now() - range*3600*1000 : 0;
+  STATE.filtered = STATE.events.filter(e =>
+    (!type || e.type === type) &&
+    (!zone || e.zoneId === zone) &&
+    (range === 0 || e.ts >= since) &&
+    (!q || (e.zoneName.toLowerCase().includes(q) || (e.note||'').toLowerCase().includes(q)))
+  );
+  const host = $('#all-events');
+  if (STATE.filtered.length === 0) {
+    host.innerHTML = '<div style="padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));font-size:0.8125rem">No matching events.</div>';
+  } else {
+    host.innerHTML = STATE.filtered.map(eventRow).join('');
+  }
+  $('#ev-count').textContent = STATE.filtered.length + ' of ' + STATE.events.length + ' events';
+}
+['ev-search','ev-type','ev-zone','ev-range'].forEach(id => $('#'+id).addEventListener('input', renderAllEvents));
+$('#btn-clear-events').addEventListener('click', () => {
+  $('#ev-search').value=''; $('#ev-type').value=''; $('#ev-zone').value=''; $('#ev-range').value='24';
+  renderAllEvents();
+  toast('Filters cleared', 'info');
+});
+$('#btn-export').addEventListener('click', () => {
+  const data = JSON.stringify(STATE.filtered, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'intrusion-events-' + Date.now() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported ' + STATE.filtered.length + ' events', 'ok');
+});
+
+// ───────────────────────────── Calibration ─────────────────────────────
+function bindRange(id, outId, fmt, onChange){
+  const el = $('#'+id), out = $('#'+outId);
+  el.addEventListener('input', () => {
+    out.value = fmt ? fmt(el.value) : el.value;
+    if (onChange) onChange(Number(el.value));
+  });
+}
+bindRange('cal-sens', 'cal-sens-out', null, v => { STATE.sensitivity = v; renderPreview(); });
+bindRange('cal-thresh', 'cal-thresh-out', v => (v/100).toFixed(2), v => { STATE.threshold = v/100; renderPreview(); });
+bindRange('cal-dwell', 'cal-dwell-out', null, v => { STATE.dwell = v; });
+bindRange('cal-debounce', 'cal-debounce-out', null, v => { STATE.debounce = v; });
+$('#cal-thresh-out').value = (STATE.threshold).toFixed(2);
+
+$('#btn-cal-save').addEventListener('click', () => {
+  toast('Thresholds saved · sens ' + STATE.sensitivity + ' · t ' + STATE.threshold.toFixed(2), 'ok');
+});
+$('#btn-cal-reset').addEventListener('click', () => {
+  STATE.sensitivity = 6; STATE.threshold = 0.65; STATE.dwell = 800; STATE.debounce = 30;
+  $('#cal-sens').value = 6; $('#cal-sens-out').value = 6;
+  $('#cal-thresh').value = 65; $('#cal-thresh-out').value = '0.65';
+  $('#cal-dwell').value = 800; $('#cal-dwell-out').value = 800;
+  $('#cal-debounce').value = 30; $('#cal-debounce-out').value = 30;
+  renderPreview();
+  toast('Defaults restored', 'info');
+});
+
+// Baseline scan
+$('#btn-baseline-run').addEventListener('click', () => {
+  const progress = $('#baseline-progress');
+  const fill = $('#baseline-progress-fill');
+  const text = $('#baseline-progress-text');
+  const btn = $('#btn-baseline-run');
+  progress.style.display = '';
+  btn.disabled = true;
+  let n = 0;
+  const tick = setInterval(() => {
+    n += Math.round(rand(6, 14));
+    if (n >= 100) {
+      n = 100;
+      fill.style.width = '100%';
+      text.textContent = 'Baseline captured · 512 / 512 samples';
+      clearInterval(tick);
+      setTimeout(() => {
+        progress.style.display = 'none';
+        btn.disabled = false;
+        $('#baseline-when').textContent = 'just now';
+        $('#baseline-samples').textContent = '512 / 512';
+        $('#baseline-stab').textContent = (0.90 + Math.random() * 0.08).toFixed(2);
+        STATE.baseline = 0.18 + Math.random() * 0.08;
+        toast('Baseline scan complete', 'ok');
+      }, 600);
+      return;
+    }
+    fill.style.width = n + '%';
+    text.textContent = 'Scanning empty room… ' + n + '% · ' + Math.round(n * 5.12) + ' / 512 samples';
+  }, 240);
+});
+$('#btn-baseline-clear').addEventListener('click', () => {
+  openModal('Clear baseline?', 'Removing the baseline disables detection until a new scan completes. Continue?', () => {
+    $('#baseline-when').textContent = '—';
+    $('#baseline-samples').textContent = '0 / 512';
+    $('#baseline-stab').textContent = '—';
+    $('#baseline-badge').textContent = 'Missing';
+    $('#baseline-badge').className = 'badge warn';
+    toast('Baseline cleared', 'info');
+  });
+});
+
+// Threshold preview chart
+function renderPreview(){
+  const host = $('#chart-preview');
+  if (!host) return;
+  const W = host.clientWidth || 600, H = 180, P = 24;
+  // generate stable preview series based on threshold (seedless but deterministic per-render is fine; we just animate light noise around baseline + occasional spikes)
+  if (!renderPreview._series || renderPreview._series.length !== 60) {
+    const arr = [];
+    for (let i=0; i<60; i++){
+      let v = 0.22 + Math.sin(i / 8) * 0.04 + (Math.random() - 0.5) * 0.06;
+      if (Math.random() < 0.1) v += rand(0.25, 0.5);
+      arr.push(Math.max(0, Math.min(1, v)));
+    }
+    renderPreview._series = arr;
+  }
+  const ys = renderPreview._series;
+  const triggers = ys.map(v => v > STATE.threshold);
+  const triggerCount = triggers.filter(Boolean).length;
+  $('#preview-count').textContent = triggerCount + ' / 60 trigger';
+  const path = ys.map((v, i) => (i===0?'M':'L') + (P + i/(ys.length-1)*(W-2*P)).toFixed(1) + ',' + (H - P - v*(H-2*P)).toFixed(1)).join(' ');
+  const threshY = (H - P - STATE.threshold * (H - 2*P)).toFixed(1);
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">';
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = (H - P - t * (H - 2*P)).toFixed(1);
+    svg += '<line x1="' + P + '" y1="' + y + '" x2="' + (W - P) + '" y2="' + y + '" stroke="hsl(220, 15%, 18%)" stroke-width="1"/>';
+  });
+  svg += '<line x1="' + P + '" y1="' + threshY + '" x2="' + (W - P) + '" y2="' + threshY + '" stroke="hsl(0, 65%, 60%)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+  svg += '<text x="' + (W - P + 4) + '" y="' + (parseFloat(threshY) + 3) + '" font-size="9" fill="hsl(0, 65%, 60%)" font-family="JetBrains Mono">t=' + STATE.threshold.toFixed(2) + '</text>';
+  svg += '<path d="' + path + '" fill="none" stroke="hsl(185, 80%, 55%)" stroke-width="1.5"/>';
+  ys.forEach((v, i) => {
+    if (triggers[i]) {
+      const cx = (P + i/(ys.length-1)*(W-2*P)).toFixed(1);
+      const cy = (H - P - v*(H-2*P)).toFixed(1);
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="hsl(142, 70%, 55%)"/>';
+    }
+  });
+  svg += '</svg>';
+  host.innerHTML = svg;
+}
+
+// ───────────────────────────── Settings page ─────────────────────────────
+$('#set-device-id').textContent = STATE.deviceId;
+$('#foot-id').textContent = 'device: ' + STATE.deviceId;
+$('#btn-save-settings').addEventListener('click', () => {
+  STATE.webhook = $('#set-webhook').value.trim();
+  STATE.minPrio = $('#set-min-prio').value;
+  STATE.quiet.start = $('#set-quiet-start').value;
+  STATE.quiet.end = $('#set-quiet-end').value;
+  STATE.tone = $('#set-tone').value;
+  toast('Settings saved', 'ok');
+});
+$('#btn-test-webhook').addEventListener('click', () => {
+  const u = $('#set-webhook').value.trim();
+  if (!u) { toast('Enter a webhook URL first', 'err'); return; }
+  toast('Test event posted to ' + (u.length > 36 ? u.slice(0, 33) + '…' : u), 'ok');
+});
+$('#btn-clear-history').addEventListener('click', () => {
+  openModal('Clear event history?', 'This deletes all ' + STATE.events.length + ' events and resets the activity heatmap.', () => {
+    STATE.events = [];
+    STATE.heatmap = [];
+    STATE._priorWeekTotal = undefined;
+    buildHeatmap();
+    renderHeatmap();
+    renderRecentEvents();
+    renderDonut();
+    refreshOverviewKpis();
+    renderAllEvents();
+    toast('Event history cleared', 'ok');
+  });
+});
+$('#btn-factory-reset').addEventListener('click', () => {
+  openModal('Factory reset?', 'Restore all defaults: zones, thresholds, settings and event history. Cannot be undone.', () => {
+    STATE.zones = JSON.parse(JSON.stringify(STATE.defaultZones));
+    STATE.entryPoints = JSON.parse(JSON.stringify(STATE.defaultEntryPoints));
+    STATE.events = [];
+    STATE.signalBuf = [];
+    STATE.heatmap = [];
+    STATE._priorWeekTotal = undefined;
+    STATE.threshold = 0.65; STATE.sensitivity = 6; STATE.dwell = 800; STATE.debounce = 30;
+    STATE.armed = true; STATE.alert = false;
+    STATE.selectedZone = null;
+    $('#cal-sens').value = 6; $('#cal-sens-out').value = 6;
+    $('#cal-thresh').value = 65; $('#cal-thresh-out').value = '0.65';
+    $('#cal-dwell').value = 800; $('#cal-dwell-out').value = 800;
+    $('#cal-debounce').value = 30; $('#cal-debounce-out').value = 30;
+    $('#set-webhook').value = ''; $('#set-min-prio').value = 'normal';
+    $('#set-quiet-start').value = '23:00'; $('#set-quiet-end').value = '07:00'; $('#set-tone').value = 'soft';
+    $('#zone-edit-body').style.display = 'none';
+    $('#zone-edit-title').textContent = 'Select a zone to alert on';
+    $('#zone-edit-badge').textContent = '—';
+    $('#zone-edit-badge').className = 'badge muted';
+    setStatus();
+    renderZoneMap();
+    refreshEventZoneFilter();
+    buildHeatmap();
+    renderHeatmap();
+    renderDonut();
+    renderRecentEvents();
+    renderAllEvents();
+    refreshOverviewKpis();
+    renderPreview();
+    toast('Factory reset complete', 'ok');
+  });
+});
+
+// ───────────────────────────── Modal ─────────────────────────────
+function openModal(title, sub, onConfirm){
+  $('#m-title').textContent = title;
+  $('#m-sub').textContent = sub;
+  $('#modal-bg').classList.add('show');
+  const confirm = $('#m-confirm');
+  const cancel = $('#m-cancel');
+  function close(){ $('#modal-bg').classList.remove('show'); confirm.onclick = null; cancel.onclick = null; }
+  confirm.onclick = () => { close(); onConfirm && onConfirm(); };
+  cancel.onclick = close;
+}
+$('#modal-bg').addEventListener('click', e => { if (e.target.id === 'modal-bg') $('#modal-bg').classList.remove('show'); });
+
+// ───────────────────────────── Overview KPIs ─────────────────────────────
+function refreshOverviewKpis(){
+  const since = Date.now() - 24*3600*1000;
+  const day = STATE.events.filter(e => e.ts >= since);
+  const alerts = day.filter(e => e.type === 'alert' || e.type === 'intrusion_detected').length;
+  $('#kpi-events').textContent = day.length;
+  $('#kpi-events-sub').textContent = alerts + ' alert' + (alerts === 1 ? '' : 's');
+  $('#kpi-zones').textContent = STATE.zones.filter(z => z.armed).length;
+  $('#kpi-zones').nextElementSibling; // noop
+  const last = STATE.events[0];
+  if (last) {
+    $('#kpi-last').textContent = fmtRel(last.ts);
+    $('#kpi-last-sub').textContent = last.type + ' · ' + last.zoneName;
+  } else {
+    $('#kpi-last').textContent = 'never';
+    $('#kpi-last-sub').textContent = '—';
+  }
+}
+
+// ───────────────────────────── Seed demo data ─────────────────────────────
+function seedEvents(){
+  const types = ['intrusion_detected','zone_breach','alert'];
+  const notes = [
+    'CSI variance above threshold',
+    'Approach pattern · perimeter → entry',
+    'Persistent presence > dwell time',
+    'Quick traversal across zones',
+    'Window-side disturbance detected',
+    'Loitering pattern at entry point',
+    'Multi-subcarrier amplitude spike',
+    'Cross-wall presence correlated',
+  ];
+  const now = Date.now();
+  for (let i=0; i<14; i++){
+    const ageMin = Math.round(rand(2, 22*60));
+    const z = STATE.zones[Math.floor(Math.random()*STATE.zones.length)];
+    STATE.events.push({
+      ts: now - ageMin*60*1000,
+      type: types[Math.floor(Math.random()*types.length)],
+      zoneId: z.id,
+      zoneName: z.name,
+      confidence: 0.55 + Math.random() * 0.4,
+      note: notes[Math.floor(Math.random()*notes.length)],
+    });
+  }
+  STATE.events.sort((a, b) => b.ts - a.ts);
+}
+
+// ───────────────────────────── Init ─────────────────────────────
+seedEvents();
+buildHeatmap();
+setStatus();
+renderHeatmap();
+renderDonut();
+renderRecentEvents();
+refreshEventZoneFilter();
+refreshOverviewKpis();
+renderPreview();
+// Prime signal buffer
+for (let i=0; i<60; i++) pollSignal();
+
+// live loops
+setInterval(pollSignal, 250);
+setInterval(() => {
+  refreshOverviewKpis();
+  renderRecentEvents();
+  if ($('#page-zones').classList.contains('on')) renderZoneStrips();
+}, 3000);
+setInterval(renderPreview, 8000);
+
+window.addEventListener('resize', () => {
+  renderSignalChart();
+  renderHeatmap();
+  if ($('#page-calibration').classList.contains('on')) renderPreview();
+});
+</script>
+</body>
+</html>

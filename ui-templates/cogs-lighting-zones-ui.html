@@ -1,0 +1,2581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lighting Zones — Cognitum Cog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --warn:35 85% 60%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;cursor:pointer;
+  transition:all 0.2s;background:transparent;border:none;font-family:inherit;
+}
+.nav a:hover{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary));background:hsl(var(--secondary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:52rem}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;flex-wrap:wrap;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* KPI strip */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warn{background:hsl(var(--warn) / 0.14)}
+.kpi-ic.warn svg{stroke:hsl(var(--warn))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Grids */
+.grid{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid-2{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.grid-3{display:grid;gap:0.875rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.split{display:grid;gap:0.875rem;grid-template-columns:1fr 1fr}
+@media (max-width:880px){.split{grid-template-columns:1fr}}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.on{background:hsl(var(--accent) / 0.12);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.25)}
+.badge.off{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.dim{background:hsl(var(--warn) / 0.12);color:hsl(var(--warn));border-color:hsl(var(--warn) / 0.3)}
+.badge.primary{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.6)}
+.dot.warn{background:hsl(var(--warn));box-shadow:0 0 6px hsl(var(--warn) / 0.5)}
+.dot.off{background:hsl(var(--muted-foreground))}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.icon{padding:0.4rem;width:32px;height:32px;justify-content:center}
+.btn.icon svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* Inputs */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  background:transparent;padding:0;height:24px;width:100%;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  background:linear-gradient(to right,hsl(var(--primary)) 0%,hsl(var(--primary)) var(--val,50%),hsl(var(--secondary)) var(--val,50%),hsl(var(--secondary)) 100%);
+  height:6px;border-radius:3px;border:1px solid hsl(var(--border));
+}
+input[type=range]::-moz-range-track{
+  background:hsl(var(--secondary));height:6px;border-radius:3px;border:1px solid hsl(var(--border));
+}
+input[type=range]::-moz-range-progress{background:hsl(var(--primary));height:6px;border-radius:3px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:16px;height:16px;border-radius:50%;
+  background:hsl(var(--primary));border:2px solid hsl(var(--background));
+  margin-top:-6px;box-shadow:0 0 8px hsl(var(--primary) / 0.6);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;
+  background:hsl(var(--primary));border:2px solid hsl(var(--background));
+  box-shadow:0 0 8px hsl(var(--primary) / 0.6);cursor:pointer;
+}
+.input{
+  width:100%;height:2.4rem;
+  border:1px solid hsl(var(--input));background:hsl(var(--background));
+}
+label.lbl{
+  display:block;font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.3rem;
+}
+
+/* Switch */
+.switch{position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.slider{
+  position:absolute;cursor:pointer;inset:0;
+  background:hsl(var(--muted));border-radius:9999px;transition:0.25s;
+  border:1px solid hsl(var(--border));
+}
+.slider:before{
+  position:absolute;content:"";height:14px;width:14px;left:3px;top:3px;
+  background:hsl(var(--foreground));border-radius:50%;transition:0.25s;
+}
+.switch input:checked + .slider{background:hsl(var(--primary));border-color:hsl(var(--primary))}
+.switch input:checked + .slider:before{transform:translateX(20px);background:hsl(var(--primary-foreground))}
+
+/* Sub-nav tabs (page-tabs) */
+.subnav{
+  display:flex;gap:0.25rem;align-items:center;
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  margin-bottom:1.25rem;padding-bottom:0.4rem;flex-wrap:wrap;
+}
+.tab-btn{
+  padding:0.4rem 0.875rem;
+  font-size:0.8125rem;font-weight:500;
+  background:transparent;border:1px solid transparent;border-radius:0.4rem;
+  color:hsl(var(--muted-foreground));cursor:pointer;font-family:inherit;
+  transition:all 0.2s;
+}
+.tab-btn:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.tab-btn.on{color:hsl(var(--primary));background:hsl(var(--primary) / 0.08);border-color:hsl(var(--primary) / 0.2)}
+.panel{display:none}
+.panel.on{display:block;animation:fade 0.18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Zone tiles */
+.zone-tile{
+  position:relative;
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.125rem;overflow:hidden;
+  transition:border-color 0.2s,transform 0.15s;
+}
+.zone-tile:hover{border-color:hsl(var(--primary) / 0.35)}
+.zone-tile .lumen-glow{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 80% 20%,hsl(45 95% 60% / var(--g,0)) 0%,transparent 60%);
+  transition:opacity 0.4s;
+}
+.zone-tile .zh{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;position:relative;z-index:1}
+.zone-tile .ztitle{font-size:1rem;font-weight:600}
+.zone-tile .zsub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem;font-family:var(--font-mono)}
+.zone-tile .zbody{margin-top:0.875rem;position:relative;z-index:1}
+.zone-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;font-size:0.75rem}
+.zone-row .l{color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;font-size:0.625rem}
+.zone-row .v{font-family:var(--font-mono);color:hsl(var(--foreground))}
+.zone-actions{display:flex;gap:0.4rem;margin-top:0.75rem;position:relative;z-index:1}
+
+/* Lumen meter (vertical) */
+.lumen-meter{
+  width:36px;height:64px;background:hsl(var(--secondary));border-radius:6px;
+  border:1px solid hsl(var(--border));overflow:hidden;display:flex;align-items:flex-end;
+  position:relative;flex-shrink:0;
+}
+.lumen-fill{
+  width:100%;background:linear-gradient(to top,hsl(45 95% 55%),hsl(45 100% 70%));
+  transition:height 0.4s;box-shadow:0 0 12px hsl(45 95% 60% / 0.4);
+}
+.lumen-meter .lv{
+  position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  text-align:center;font-family:var(--font-mono);font-size:0.625rem;font-weight:700;
+  color:hsl(var(--foreground));text-shadow:0 0 4px hsl(var(--background));
+}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.5rem 0.6rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.55rem 0.6rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover{background:hsl(var(--secondary) / 0.4)}
+
+/* Chart canvas */
+.chart-host{width:100%;height:220px;position:relative}
+.chart-host canvas{width:100%;height:100%;display:block}
+.chart-legend{
+  display:flex;gap:0.875rem;flex-wrap:wrap;
+  font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  margin-top:0.5rem;font-family:var(--font-mono);
+}
+.legend-sw{
+  display:inline-block;width:10px;height:10px;border-radius:2px;
+  margin-right:0.35rem;vertical-align:middle;
+}
+
+/* Heatmap — smooth interpolated canvas with axis labels around it.
+ * The grid-of-cells look got replaced by a real continuous heatmap. */
+.heat-wrap{
+  position:relative;padding:8px 8px 22px 50px;
+}
+.heat-wrap canvas{
+  display:block;width:100%;height:180px;
+  border-radius:0.5rem;
+  border:1px solid hsl(var(--border) / 0.6);
+  box-shadow:inset 0 0 24px hsl(var(--background) / 0.6);
+}
+.heat-y{
+  position:absolute;left:0;top:8px;bottom:22px;width:46px;
+  display:flex;flex-direction:column;justify-content:space-around;
+  font-family:var(--font-mono);font-size:0.625rem;
+  color:hsl(var(--muted-foreground));text-align:right;padding-right:8px;
+}
+.heat-x{
+  position:absolute;left:50px;right:8px;bottom:0;height:18px;
+  display:flex;justify-content:space-between;
+  font-family:var(--font-mono);font-size:0.5625rem;
+  color:hsl(var(--muted-foreground));
+}
+.heat-tooltip{
+  position:absolute;pointer-events:none;
+  background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.5);
+  border-radius:0.35rem;padding:0.35rem 0.5rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--foreground));
+  box-shadow:0 4px 12px hsl(var(--background) / 0.6);
+  white-space:nowrap;transition:opacity 0.1s;opacity:0;z-index:5;
+}
+.heat-scale{
+  display:flex;align-items:center;gap:0.5rem;margin-top:0.6rem;
+  font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));
+}
+.heat-scale .ramp{
+  flex:1;max-width:240px;height:8px;border-radius:4px;
+  background:linear-gradient(to right,
+    hsl(220 30% 14%) 0%,
+    hsl(220 50% 25%) 18%,
+    hsl(200 70% 38%) 38%,
+    hsl(185 80% 52%) 58%,
+    hsl(142 75% 55%) 78%,
+    hsl(45 95% 60%) 100%);
+  border:1px solid hsl(var(--border));
+}
+
+/* Donut center label */
+.donut-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.donut-center{
+  position:absolute;text-align:center;pointer-events:none;
+}
+.donut-center .dv{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1}
+.donut-center .dl{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.06em;margin-top:0.25rem}
+
+/* Event feed */
+.feed{display:flex;flex-direction:column;gap:0.4rem;max-height:340px;overflow-y:auto}
+.feed-row{
+  display:grid;grid-template-columns:80px 100px 1fr auto;gap:0.6rem;
+  padding:0.45rem 0.6rem;border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.4rem;background:hsl(var(--background) / 0.5);
+  font-family:var(--font-mono);font-size:0.6875rem;align-items:center;
+}
+.feed-row .ts{color:hsl(var(--muted-foreground))}
+.feed-row .ev{font-weight:600}
+.feed-row .ev.light_on{color:hsl(45 95% 65%)}
+.feed-row .ev.light_off{color:hsl(var(--muted-foreground))}
+.feed-row .ev.dim_level{color:hsl(var(--primary))}
+.feed-row .ev.presence{color:hsl(var(--accent))}
+
+/* Profile curve editor — HUD-style frame, neon stroke, scan line */
+.curve-editor{position:relative;border-radius:0.6rem;overflow:hidden}
+.curve-editor canvas{
+  display:block;width:100%;
+  background:
+    radial-gradient(ellipse at top,hsl(185 80% 50% / 0.10) 0%,transparent 65%),
+    linear-gradient(180deg,hsl(220 25% 8%) 0%,hsl(220 30% 5%) 100%);
+  border:1px solid hsl(var(--primary) / 0.25);
+  border-radius:0.6rem;
+  box-shadow:inset 0 0 40px hsl(var(--primary) / 0.06),
+             0 0 24px hsl(var(--primary) / 0.08);
+}
+.curve-editor::before,
+.curve-editor::after,
+.curve-editor > .br-tl,
+.curve-editor > .br-tr,
+.curve-editor > .br-bl,
+.curve-editor > .br-br{
+  position:absolute;width:12px;height:12px;pointer-events:none;z-index:2;
+  border-color:hsl(var(--primary) / 0.7);
+}
+.curve-editor::before{content:"";top:8px;left:8px;border-top:1.5px solid;border-left:1.5px solid;border-top-left-radius:4px}
+.curve-editor::after{content:"";top:8px;right:8px;border-top:1.5px solid;border-right:1.5px solid;border-top-right-radius:4px}
+.curve-editor .br-bl{bottom:8px;left:8px;border-bottom:1.5px solid;border-left:1.5px solid;border-bottom-left-radius:4px}
+.curve-editor .br-br{bottom:8px;right:8px;border-bottom:1.5px solid;border-right:1.5px solid;border-bottom-right-radius:4px}
+/* HUD chips: sit BELOW the corner brackets so they never collide. Each chip
+ * has its own pill background so the canvas content behind it doesn't bleed
+ * into the text. */
+.curve-editor .hud-tag,
+.curve-editor .hud-readout{
+  position:absolute;
+  font-family:var(--font-mono);font-size:0.6875rem;line-height:1;
+  pointer-events:none;z-index:3;
+  padding:0.3rem 0.6rem;border-radius:0.35rem;
+  background:hsl(var(--background) / 0.78);
+  border:1px solid hsl(var(--primary) / 0.25);
+  backdrop-filter:blur(4px);
+  white-space:nowrap;
+  display:inline-flex;align-items:center;gap:0.4rem;
+}
+.curve-editor .hud-tag{
+  top:14px;left:30px;
+  color:hsl(var(--primary));
+  letter-spacing:0.12em;text-transform:uppercase;font-weight:600;
+}
+.curve-editor .hud-tag::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:hsl(var(--primary));
+  box-shadow:0 0 8px hsl(var(--primary));
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.curve-editor .hud-readout{
+  top:14px;right:30px;
+  color:hsl(var(--muted-foreground));
+  letter-spacing:0.04em;
+}
+.curve-editor .hud-readout .sep{
+  width:1px;height:10px;background:hsl(var(--border));margin:0 0.15rem;
+}
+.curve-editor .hud-readout b{color:hsl(var(--primary));font-weight:600;letter-spacing:0.02em}
+.profile-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-top:0.875rem}
+.profile-meta .pm{
+  background:hsl(var(--background) / 0.5);border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;padding:0.5rem 0.75rem;
+}
+.profile-meta .pl{font-size:0.625rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.profile-meta .pv{font-family:var(--font-mono);font-weight:600;font-size:0.875rem;margin-top:0.15rem}
+
+/* Toast */
+.toast-bay{position:fixed;bottom:1.25rem;right:1.25rem;z-index:300;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
+.toast{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-left:3px solid hsl(var(--primary));
+  border-radius:0.5rem;padding:0.625rem 0.875rem;
+  font-size:0.8125rem;color:hsl(var(--foreground));
+  box-shadow:var(--shadow-card);
+  animation:slidein 0.2s ease;pointer-events:auto;min-width:240px;
+}
+.toast.ok{border-left-color:hsl(var(--accent))}
+.toast.warn{border-left-color:hsl(var(--warn))}
+.toast.err{border-left-color:hsl(var(--destructive))}
+@keyframes slidein{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.75);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:1.5rem;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));border:1px solid hsl(var(--border));
+  border-radius:var(--radius);box-shadow:var(--shadow-card);
+  padding:1.5rem;max-width:520px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Hero strip for overview */
+.hero{
+  background:var(--gradient-hero);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1.25rem;
+  position:relative;overflow:hidden;
+  display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;background:var(--gradient-glow);
+  opacity:0.6;pointer-events:none;
+}
+.hero-info{position:relative;z-index:1}
+.hero-info .hl{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;color:hsl(var(--primary));font-weight:600}
+.hero-info .ht{font-size:1.625rem;font-weight:600;margin-top:0.25rem}
+.hero-info .hd{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-top:0.4rem;max-width:520px}
+.hero-radial{position:relative;z-index:1}
+
+/* Schedule — continuous-segment lane timeline (canvas), one row per day,
+ * profile colours from the template palette. Replaced the discrete tile grid. */
+.sched-wrap{
+  position:relative;padding:8px 8px 22px 56px;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.6);
+  border-radius:0.5rem;
+}
+.sched-wrap canvas{display:block;width:100%;height:224px;cursor:pointer}
+.sched-y{
+  position:absolute;left:0;top:8px;bottom:22px;width:52px;
+  display:flex;flex-direction:column;justify-content:space-around;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));text-align:right;padding-right:8px;
+}
+.sched-x{
+  position:absolute;left:56px;right:8px;bottom:0;height:18px;
+  display:flex;justify-content:space-between;
+  font-family:var(--font-mono);font-size:0.5625rem;
+  color:hsl(var(--muted-foreground));
+}
+.sched-now{
+  position:absolute;top:8px;bottom:22px;width:1px;
+  background:hsl(var(--primary));
+  box-shadow:0 0 6px hsl(var(--primary)),0 0 12px hsl(var(--primary) / 0.5);
+  pointer-events:none;
+}
+.sched-now::before{
+  content:"now";position:absolute;top:-12px;left:-14px;
+  font-family:var(--font-mono);font-size:0.5625rem;
+  color:hsl(var(--primary));
+}
+.sched-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.875rem;font-size:0.75rem}
+.sched-legend .ent{display:flex;align-items:center;gap:0.4rem;color:hsl(var(--muted-foreground))}
+.sched-legend .sw{
+  width:16px;height:10px;border-radius:3px;
+  box-shadow:0 0 6px currentColor;
+}
+
+/* Pill tabs (used for profile picker) */
+.pill-tabs{display:flex;gap:0.4rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;font-family:inherit;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+/* Filter row */
+.filter-row{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.875rem}
+.filter-row select,.filter-row input{height:2.2rem}
+
+/* Crisp toggle visuals — primary = filled cyan CTA; outline = "already in this
+ * state, but you can still click it". The disabled fade we tried first looked
+ * like the button was just dimmer, not in a different mode. */
+.btn.primary svg{stroke:hsl(var(--primary-foreground))}
+.btn.outline{background:transparent;color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.btn.outline:hover:not(:disabled){color:hsl(var(--foreground));border-color:hsl(var(--primary) / 0.5);background:hsl(var(--secondary) / 0.5)}
+.btn.outline svg{stroke:hsl(var(--muted-foreground))}
+.btn.success{
+  background:hsl(var(--accent) / 0.15);
+  color:hsl(142 70% 65%);
+  border-color:hsl(var(--accent) / 0.35);
+}
+.btn.success svg{stroke:hsl(142 70% 65%)}
+.btn.success:hover:not(:disabled){background:hsl(var(--accent) / 0.22)}
+.btn.flash{animation:btn-flash 0.4s ease}
+@keyframes btn-flash{
+  0%{transform:scale(0.96);box-shadow:0 0 0 0 hsl(var(--primary) / 0.55)}
+  60%{box-shadow:0 0 0 6px hsl(var(--primary) / 0)}
+  100%{transform:none}
+}
+.zone-status{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.35rem 0.65rem;border-radius:0.4rem;
+  background:hsl(var(--background) / 0.6);
+  border:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+}
+.zone-status::before{
+  content:"";width:8px;height:8px;border-radius:50%;background:hsl(var(--muted-foreground));
+}
+.zone-status.lit::before{background:hsl(142 70% 55%);box-shadow:0 0 6px hsl(142 70% 50% / 0.6)}
+.zone-status.dark::before{background:hsl(var(--muted-foreground))}
+
+/* Sensor diag rows */
+.diag-row{
+  display:grid;grid-template-columns:1fr auto;gap:0.5rem;
+  padding:0.5rem 0;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-size:0.8125rem;
+}
+.diag-row:last-child{border-bottom:none}
+.diag-row .dn{color:hsl(var(--muted-foreground))}
+.diag-row .dv{font-family:var(--font-mono);color:hsl(var(--foreground))}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.6 1 1.4 1 2.3v1h6v-1c0-.9.4-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>
+      </div>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>Lighting Zones<span class="brand-ver mono" id="ver">v1.2.0</span></span>
+    </div>
+    <nav class="nav" id="topnav">
+      <a data-page="overview" class="active">Overview</a>
+      <a data-page="zones">Zones</a>
+      <a data-page="profiles">Profiles</a>
+      <a data-page="schedule">Schedule</a>
+      <a data-page="activity">Activity</a>
+      <a data-page="sensors">Sensors</a>
+      <a data-page="settings">Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ────────────── OVERVIEW ────────────── -->
+  <div class="panel on" id="page-overview">
+    <div class="section">
+      <h1 class="page">Lighting Zones</h1>
+      <p class="lede">Presence-triggered zone lighting with configurable dimming profiles, timeout periods, and ambient light awareness. Streaming live from ESP32-S3 CSI presence sensors over RVF.</p>
+    </div>
+
+    <div class="section">
+      <div class="hero">
+        <div class="hero-info">
+          <div class="hl">Cog status</div>
+          <div class="ht" id="hero-status">All zones nominal</div>
+          <div class="hd">Six zones armed · CSI presence stable · ambient-light tracking engaged. The cog reacts in <span class="mono" id="hero-latency">42 ms</span> from motion to dim_level event.</div>
+        </div>
+        <div class="hero-radial">
+          <svg id="hero-radial" width="120" height="120" viewBox="0 0 120 120"></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Zones armed</div><div class="kpi-val" id="kpi-zones">6 / 6</div><div class="kpi-sub">all reporting</div></div>
+        </div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.6 1 1.4 1 2.3v1h6v-1c0-.9.4-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Lights on</div><div class="kpi-val" id="kpi-on">3</div><div class="kpi-sub">of 6 zones</div></div>
+        </div>
+        <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Avg dim level</div><div class="kpi-val" id="kpi-dim">68%</div><div class="kpi-sub">across lit zones</div></div>
+        </div>
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 -9 4 18 3 -9h4"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Motion / hour</div><div class="kpi-val" id="kpi-motion">47</div><div class="kpi-sub">rolling 60 min</div></div>
+        </div>
+        <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M2 12h4l3 -9 4 18 3 -9h4"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Ambient lux</div><div class="kpi-val" id="kpi-lux">312</div><div class="kpi-sub">sensor avg</div></div>
+        </div>
+        <div class="kpi"><div class="kpi-ic warn"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+          <div class="kpi-info"><div class="kpi-label">Power draw</div><div class="kpi-val" id="kpi-power">142 W</div><div class="kpi-sub">estimated</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Dim levels — last 60 min</div>
+            <div class="card-sub">Per-zone dim_level events, smoothed</div>
+          </div>
+          <div class="pill-tabs" id="dim-range">
+            <button class="pill-tab on" data-range="60">60m</button>
+            <button class="pill-tab" data-range="240">4h</button>
+            <button class="pill-tab" data-range="1440">24h</button>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="chart-dim"></canvas></div>
+        <div class="chart-legend" id="dim-legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Ambient light vs. lit zones</div>
+            <div class="card-sub">Lux reading drives auto-dim adjustments</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="chart-ambient"></canvas></div>
+        <div class="chart-legend">
+          <span><span class="legend-sw" style="background:hsl(45 95% 60%)"></span>Ambient lux</span>
+          <span><span class="legend-sw" style="background:hsl(185 80% 50%)"></span>Lit zones</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section split">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Energy share by zone</div>
+            <div class="card-sub">Estimated W·h over last hour</div>
+          </div>
+          <button class="btn sm outline" id="recalc-energy">Recalculate</button>
+        </div>
+        <div class="donut-wrap">
+          <svg id="donut-energy" width="260" height="220" viewBox="0 0 260 220"></svg>
+          <div class="donut-center" style="left:50%;top:50%;transform:translate(-50%,-50%)">
+            <div class="dv" id="donut-total">—</div>
+            <div class="dl">Wh / hr</div>
+          </div>
+        </div>
+        <div class="chart-legend" id="energy-legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Recent events</div>
+            <div class="card-sub">light_on · light_off · dim_level · presence</div>
+          </div>
+          <button class="btn sm outline" id="clear-feed">Clear</button>
+        </div>
+        <div class="feed" id="overview-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────── ZONES ────────────── -->
+  <div class="panel" id="page-zones">
+    <div class="section">
+      <h1 class="page">Zones</h1>
+      <p class="lede">Six configured zones. Toggle override, adjust dim, or change assigned profile per zone. Overrides expire automatically after the configured timeout.</p>
+    </div>
+
+    <div class="section">
+      <div class="filter-row">
+        <button class="btn primary" id="all-on">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <span id="all-on-label">Turn all on</span>
+        </button>
+        <button class="btn outline" id="all-off">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+          <span id="all-off-label">Turn all off</span>
+        </button>
+        <button class="btn outline" id="all-clear">Clear overrides</button>
+        <span class="zone-status mono" id="zone-status">— / —</span>
+        <span style="flex:1"></span>
+        <label class="lbl" style="margin:0;align-self:center">Sort</label>
+        <select id="zone-sort">
+          <option value="name">Name</option>
+          <option value="state">State</option>
+          <option value="dim">Dim level</option>
+          <option value="motion">Recent motion</option>
+        </select>
+      </div>
+      <div class="grid-3" id="zone-grid"></div>
+    </div>
+  </div>
+
+  <!-- ────────────── PROFILES ────────────── -->
+  <div class="panel" id="page-profiles">
+    <div class="section">
+      <h1 class="page">Dimming profiles</h1>
+      <p class="lede">A profile defines the dim curve over the occupancy lifecycle: fade-in on detection, hold at active level, fade-down on idle, and off after timeout. Drag the points on the curve to reshape, or use the inputs below.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Active profile</div>
+            <div class="card-sub" id="profile-sub">—</div>
+          </div>
+          <div class="pill-tabs" id="profile-tabs"></div>
+        </div>
+
+        <div class="curve-editor">
+          <canvas id="curve" height="300"></canvas>
+          <span class="br-bl"></span><span class="br-br"></span>
+          <div class="hud-tag"><span id="hud-name">profile</span></div>
+          <div class="hud-readout">
+            <span>cycle</span><b id="hud-cycle">—</b>
+            <span class="sep"></span>
+            <span>peak</span><b id="hud-peak">—%</b>
+          </div>
+        </div>
+
+        <div class="profile-meta">
+          <div class="pm"><div class="pl">Fade-in</div><div class="pv mono"><span id="m-fadein">600</span> ms</div></div>
+          <div class="pm"><div class="pl">Active dim</div><div class="pv mono"><span id="m-active">85</span> %</div></div>
+          <div class="pm"><div class="pl">Hold</div><div class="pv mono"><span id="m-hold">120</span> s</div></div>
+          <div class="pm"><div class="pl">Fade-down</div><div class="pv mono"><span id="m-fadedown">40</span> %</div></div>
+          <div class="pm"><div class="pl">Timeout</div><div class="pv mono"><span id="m-timeout">45</span> s</div></div>
+          <div class="pm"><div class="pl">Ambient cap</div><div class="pv mono"><span id="m-amb">400</span> lux</div></div>
+        </div>
+
+        <div class="section" style="margin-top:1.25rem">
+          <div class="grid">
+            <div>
+              <label class="lbl" for="i-fadein">Fade-in (ms)</label>
+              <input class="input" id="i-fadein" type="number" min="0" max="5000" step="50" value="600">
+            </div>
+            <div>
+              <label class="lbl" for="i-active">Active dim (%)</label>
+              <input class="input" id="i-active" type="number" min="1" max="100" value="85">
+            </div>
+            <div>
+              <label class="lbl" for="i-hold">Hold (s)</label>
+              <input class="input" id="i-hold" type="number" min="0" max="3600" value="120">
+            </div>
+            <div>
+              <label class="lbl" for="i-fadedown">Fade-down dim (%)</label>
+              <input class="input" id="i-fadedown" type="number" min="0" max="100" value="40">
+            </div>
+            <div>
+              <label class="lbl" for="i-timeout">Timeout (s)</label>
+              <input class="input" id="i-timeout" type="number" min="1" max="3600" value="45">
+            </div>
+            <div>
+              <label class="lbl" for="i-amb">Ambient cap (lux)</label>
+              <input class="input" id="i-amb" type="number" min="0" max="2000" value="400">
+            </div>
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap">
+            <button class="btn primary" id="save-profile">Save profile</button>
+            <button class="btn" id="duplicate-profile">Duplicate</button>
+            <button class="btn outline" id="test-profile">Test on zone…</button>
+            <span style="flex:1"></span>
+            <button class="btn danger" id="delete-profile">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────── SCHEDULE ────────────── -->
+  <div class="panel" id="page-schedule">
+    <div class="section">
+      <h1 class="page">Schedule</h1>
+      <p class="lede">Assign profiles to time bands. Click any cell to cycle the assigned profile (Bright → Warm → Night → Off). Cells repeat daily; profile takes effect at zone occupancy.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Weekly schedule</div>
+            <div class="card-sub">7 days × 24 hours · click a cell to change profile</div>
+          </div>
+          <div style="display:flex;gap:0.4rem">
+            <button class="btn sm outline" id="sched-reset">Reset</button>
+            <button class="btn sm primary" id="sched-save">Save</button>
+          </div>
+        </div>
+        <div class="sched-wrap">
+          <canvas id="sched-canvas"></canvas>
+          <div class="sched-y" id="sched-y"></div>
+          <div class="sched-x" id="sched-x"></div>
+          <div class="sched-now" id="sched-now" style="left:0"></div>
+        </div>
+        <div class="sched-legend">
+          <span class="ent" style="color:hsl(185 80% 60%)"><span class="sw" style="background:hsl(185 80% 55%)"></span><span style="color:hsl(var(--muted-foreground))">Bright</span></span>
+          <span class="ent" style="color:hsl(142 70% 60%)"><span class="sw" style="background:hsl(142 70% 50%)"></span><span style="color:hsl(var(--muted-foreground))">Warm</span></span>
+          <span class="ent" style="color:hsl(220 70% 60%)"><span class="sw" style="background:hsl(220 70% 50%)"></span><span style="color:hsl(var(--muted-foreground))">Night</span></span>
+          <span class="ent" style="color:hsl(var(--muted-foreground))"><span class="sw" style="background:hsl(220 15% 22%);box-shadow:none"></span><span style="color:hsl(var(--muted-foreground))">Off</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────── ACTIVITY ────────────── -->
+  <div class="panel" id="page-activity">
+    <div class="section">
+      <h1 class="page">Activity</h1>
+      <p class="lede">Event log and presence heatmap. The heatmap shows hourly motion counts across the last 7 days, aggregated from CSI presence frames.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Presence heatmap</div>
+            <div class="card-sub">7-day × 24-hour motion density</div>
+          </div>
+          <div class="pill-tabs" id="heat-zone">
+            <button class="pill-tab on" data-zone="all">All zones</button>
+          </div>
+        </div>
+        <div class="heat-wrap">
+          <canvas id="heat-canvas"></canvas>
+          <div class="heat-y" id="heat-y"></div>
+          <div class="heat-x" id="heat-x"></div>
+          <div class="heat-tooltip" id="heat-tip"></div>
+        </div>
+        <div class="heat-scale">
+          <span>quiet</span><div class="ramp"></div><span>busy</span>
+          <span style="margin-left:auto" id="heat-stats"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Event log</div>
+            <div class="card-sub" id="log-sub">—</div>
+          </div>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+            <select id="log-zone"><option value="">All zones</option></select>
+            <select id="log-type">
+              <option value="">All events</option>
+              <option value="light_on">light_on</option>
+              <option value="light_off">light_off</option>
+              <option value="dim_level">dim_level</option>
+              <option value="presence">presence</option>
+            </select>
+            <button class="btn sm outline" id="export-log">Export CSV</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Time</th><th>Zone</th><th>Event</th><th>Value</th><th>Source</th></tr></thead>
+            <tbody id="log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────── SENSORS ────────────── -->
+  <div class="panel" id="page-sensors">
+    <div class="section">
+      <h1 class="page">Sensors</h1>
+      <p class="lede">ESP32-S3 nodes broadcasting CSI presence frames. Six nodes, one per zone, plus a single ambient light sensor feeding the auto-dim calculation.</p>
+    </div>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Ambient lux — last 4 hours</div>
+              <div class="card-sub">SI1145 ambient + IR sensor</div>
+            </div>
+          </div>
+          <div class="chart-host"><canvas id="chart-lux"></canvas></div>
+          <div class="chart-legend">
+            <span><span class="legend-sw" style="background:hsl(45 95% 60%)"></span>Ambient lux</span>
+            <span><span class="legend-sw" style="background:hsl(var(--accent))"></span>Auto-dim ceiling</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">CSI signal quality</div>
+              <div class="card-sub">Per-sensor RSSI & detection confidence</div>
+            </div>
+          </div>
+          <div id="sensor-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Sensor diagnostics</div>
+            <div class="card-sub">cog runtime · firmware · CSI pipeline</div>
+          </div>
+          <button class="btn sm outline" id="run-diag">Run diagnostics</button>
+        </div>
+        <div id="diag-out"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────── SETTINGS ────────────── -->
+  <div class="panel" id="page-settings">
+    <div class="section">
+      <h1 class="page">Settings</h1>
+      <p class="lede">Cog-level configuration. Changes are written to the cog manifest and broadcast to the fleet on save.</p>
+    </div>
+
+    <div class="section grid-2">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">General</div><div class="card-sub">Cog identity and runtime</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.875rem">
+          <div><label class="lbl" for="s-name">Cog name</label><input class="input" id="s-name" value="Lighting Zones"></div>
+          <div><label class="lbl" for="s-hw">Hardware target</label>
+            <select class="input" id="s-hw"><option>ESP32-S3</option><option>ESP32-C6</option><option>ESP32-WROOM</option></select>
+          </div>
+          <div><label class="lbl" for="s-input">Presence input</label>
+            <select class="input" id="s-input"><option>CSI presence</option><option>PIR + CSI fusion</option><option>mmWave</option></select>
+          </div>
+          <div><label class="lbl" for="s-rate">Sample rate (Hz)</label><input class="input" id="s-rate" type="number" min="1" max="60" value="10"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Behaviour</div><div class="card-sub">Defaults applied to new zones</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:0.875rem">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:0.875rem;font-weight:500">Ambient-aware dimming</div>
+            <div style="font-size:0.75rem;color:hsl(var(--muted-foreground))">Skip light_on when lux &gt; cap</div></div>
+            <label class="switch"><input type="checkbox" id="t-ambient" checked><span class="slider"></span></label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:0.875rem;font-weight:500">Fade transitions</div>
+            <div style="font-size:0.75rem;color:hsl(var(--muted-foreground))">Smooth changes instead of step</div></div>
+            <label class="switch"><input type="checkbox" id="t-fade" checked><span class="slider"></span></label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:0.875rem;font-weight:500">Adaptive timeout</div>
+            <div style="font-size:0.75rem;color:hsl(var(--muted-foreground))">Extend timeout in busy zones</div></div>
+            <label class="switch"><input type="checkbox" id="t-adapt"><span class="slider"></span></label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:0.875rem;font-weight:500">Publish dim_level events</div>
+            <div style="font-size:0.75rem;color:hsl(var(--muted-foreground))">Every intermediate step</div></div>
+            <label class="switch"><input type="checkbox" id="t-publish" checked><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-h"><div><div class="card-title">Event topics</div><div class="card-sub">RVF event names emitted by this cog</div></div></div>
+        <table>
+          <thead><tr><th>Event</th><th>Direction</th><th>Payload</th></tr></thead>
+          <tbody>
+            <tr><td>light_on</td><td>emit</td><td>{ zone_id, profile, dim }</td></tr>
+            <tr><td>light_off</td><td>emit</td><td>{ zone_id, reason }</td></tr>
+            <tr><td>dim_level</td><td>emit</td><td>{ zone_id, level, lux }</td></tr>
+            <tr><td>zone_id</td><td>topic</td><td>string identifier</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section" style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button class="btn primary" id="save-settings">Save settings</button>
+      <button class="btn outline" id="reset-settings">Reset to defaults</button>
+      <span style="flex:1"></span>
+      <button class="btn danger" id="uninstall">Uninstall cog</button>
+    </div>
+  </div>
+
+  <footer class="appfoot">
+    <div><span class="mono">cog: lighting-zones</span> · <span class="mono">v1.2.0</span> · <span class="mono">14 KB</span> · <span class="mono">ESP32-S3</span></div>
+    <div style="margin-top:0.4rem">cognitum-one/cogs/src/cogs/lighting-zones</div>
+  </footer>
+</div>
+
+<div class="toast-bay" id="toasts"></div>
+
+<!-- Test on zone modal -->
+<div class="modal-bg" id="m-test">
+  <div class="modal">
+    <h3>Test profile on zone</h3>
+    <div class="modal-sub">Apply the current profile temporarily. Override clears after the profile's timeout.</div>
+    <div class="modal-row">
+      <label class="lbl" for="m-test-zone">Zone</label>
+      <select class="input" id="m-test-zone"></select>
+    </div>
+    <div class="modal-row">
+      <label class="lbl" for="m-test-duration">Duration (s)</label>
+      <input class="input" id="m-test-duration" type="number" value="30" min="5" max="600">
+    </div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="m-test">Cancel</button>
+      <button class="btn primary" id="m-test-go">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Uninstall confirm modal -->
+<div class="modal-bg" id="m-uninstall">
+  <div class="modal">
+    <h3>Uninstall lighting-zones?</h3>
+    <div class="modal-sub">All zones revert to manual switches. Profile and schedule data will be removed from the cog manifest.</div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="m-uninstall">Cancel</button>
+      <button class="btn danger" id="m-uninstall-go">Uninstall</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────── helpers
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt2 = n => String(n).padStart(2,'0');
+const now = () => new Date();
+const tsShort = d => `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}:${fmt2(d.getSeconds())}`;
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hsl = (tok, a=1) => `hsl(${css(tok)} / ${a})`;
+const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+
+function toast(msg, kind=''){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all 0.2s'; }, 2400);
+  setTimeout(()=> el.remove(), 2700);
+}
+
+// ─────────────────────── state
+const ZONE_COLORS = [
+  'hsl(185 80% 55%)', // primary cyan
+  'hsl(142 70% 55%)', // accent green
+  'hsl(45 95% 60%)',  // warm yellow
+  'hsl(265 75% 65%)', // purple
+  'hsl(15 85% 60%)',  // orange
+  'hsl(330 75% 65%)', // pink
+];
+
+const ZONES = [
+  { id:'living',  name:'Living room',  state:'on',  dim:78, lastMotion:Date.now()-12000, profile:'bright', timeout:120 },
+  { id:'kitchen', name:'Kitchen',      state:'on',  dim:92, lastMotion:Date.now()-4000,  profile:'bright', timeout:90  },
+  { id:'hall',    name:'Hallway',      state:'dim', dim:35, lastMotion:Date.now()-65000, profile:'warm',   timeout:45  },
+  { id:'office',  name:'Office',       state:'off', dim:0,  lastMotion:Date.now()-380000,profile:'bright', timeout:300 },
+  { id:'bedroom', name:'Bedroom',      state:'off', dim:0,  lastMotion:Date.now()-720000,profile:'night',  timeout:180 },
+  { id:'bath',    name:'Bathroom',     state:'on',  dim:65, lastMotion:Date.now()-8000,  profile:'warm',   timeout:60  },
+];
+
+const PROFILES = {
+  bright: { name:'Bright',  fadein:300, active:95, hold:180, fadedown:55, timeout:90,  ambcap:600 },
+  warm:   { name:'Warm',    fadein:600, active:70, hold:120, fadedown:35, timeout:45,  ambcap:400 },
+  night:  { name:'Night',   fadein:1200,active:25, hold:240, fadedown:8,  timeout:30,  ambcap:80  },
+  task:   { name:'Task',    fadein:200, active:100,hold:300, fadedown:70, timeout:120, ambcap:800 },
+};
+let activeProfile = 'warm';
+
+// 7×24 schedule (default: Night 0–6, Warm 6–8, Bright 8–18, Warm 18–22, Night 22–24)
+const SCHED_DEFAULT = () => {
+  const grid = [];
+  for (let d=0; d<7; d++){
+    const row = [];
+    for (let h=0; h<24; h++){
+      if (h<6) row.push('night');
+      else if (h<8) row.push('warm');
+      else if (h<18) row.push('bright');
+      else if (h<22) row.push('warm');
+      else row.push('night');
+    }
+    grid.push(row);
+  }
+  return grid;
+};
+let SCHED = SCHED_DEFAULT();
+
+const EVENTS = []; // {ts,zone,type,value,source}
+const MAX_EVENTS = 200;
+
+function pushEvent(ev){
+  EVENTS.unshift(ev);
+  if (EVENTS.length > MAX_EVENTS) EVENTS.length = MAX_EVENTS;
+}
+
+// seed history (last 30 minutes of synthetic events)
+(function seed(){
+  const t0 = Date.now() - 30*60*1000;
+  for (let i=0;i<120;i++){
+    const t = t0 + Math.floor(i/120 * 30*60*1000);
+    const z = ZONES[Math.floor(Math.random()*ZONES.length)];
+    const r = Math.random();
+    if (r<0.35) pushEvent({ts:t, zone:z.id, type:'presence', value:'detected', source:'csi'});
+    else if (r<0.55) pushEvent({ts:t, zone:z.id, type:'light_on', value:`${40+Math.floor(Math.random()*55)}%`, source:'cog'});
+    else if (r<0.75) pushEvent({ts:t, zone:z.id, type:'dim_level', value:`${20+Math.floor(Math.random()*70)}%`, source:'cog'});
+    else pushEvent({ts:t, zone:z.id, type:'light_off', value:'timeout', source:'cog'});
+  }
+  EVENTS.sort((a,b)=>b.ts-a.ts);
+})();
+
+// ─────────────────────── nav
+$$('#topnav a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const p = a.dataset.page;
+    $$('#topnav a').forEach(x => x.classList.toggle('active', x===a));
+    $$('.panel').forEach(pn => pn.classList.toggle('on', pn.id === 'page-' + p));
+    // re-render charts that need sizing when shown
+    if (p==='overview'){ drawDim(); drawAmbient(); drawDonut(); drawHeroRadial(); }
+    if (p==='sensors'){ drawLux(); renderSensorList(); renderDiag(); }
+    if (p==='activity'){ drawHeatmap(); renderLog(); }
+    if (p==='profiles'){ drawCurve(); }
+    if (p==='schedule'){ renderSchedule(); }
+    if (p==='zones'){ renderZones(); }
+  });
+});
+
+// ─────────────────────── modal helpers
+function openModal(id){ $('#'+id).classList.add('show'); }
+function closeModal(id){ $('#'+id).classList.remove('show'); }
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+$$('.modal-bg').forEach(bg => bg.addEventListener('click', e => { if (e.target===bg) bg.classList.remove('show'); }));
+
+// ─────────────────────── ZONES PANEL
+function renderZones(){
+  const sort = $('#zone-sort').value;
+  const sorted = [...ZONES].sort((a,b)=>{
+    if (sort==='name') return a.name.localeCompare(b.name);
+    if (sort==='state'){
+      const o = { on:0, dim:1, off:2 };
+      return o[a.state] - o[b.state];
+    }
+    if (sort==='dim') return b.dim - a.dim;
+    if (sort==='motion') return b.lastMotion - a.lastMotion;
+    return 0;
+  });
+
+  $('#zone-grid').innerHTML = sorted.map((z,i)=>{
+    const idx = ZONES.indexOf(z);
+    const sinceSec = Math.round((Date.now()-z.lastMotion)/1000);
+    const sinceStr = sinceSec < 60 ? `${sinceSec}s` : sinceSec < 3600 ? `${Math.round(sinceSec/60)}m` : `${Math.round(sinceSec/3600)}h`;
+    const badge = z.state==='on' ? '<span class="badge on"><span class="dot up"></span>on</span>'
+                : z.state==='dim'? '<span class="badge dim"><span class="dot warn"></span>dim</span>'
+                : '<span class="badge off"><span class="dot off"></span>off</span>';
+    return `
+    <div class="zone-tile" data-zid="${z.id}">
+      <div class="lumen-glow" style="--g:${(z.dim/100)*0.55}"></div>
+      <div class="zh">
+        <div>
+          <div class="ztitle">${z.name}</div>
+          <div class="zsub">zone_id: ${z.id}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          ${badge}
+          <div class="lumen-meter"><div class="lumen-fill" style="height:${z.dim}%"></div><div class="lv">${z.dim}%</div></div>
+        </div>
+      </div>
+      <div class="zbody">
+        <div class="zone-row"><span class="l">Profile</span>
+          <select data-prof="${idx}" style="height:1.6rem;padding:0 0.4rem;font-size:0.75rem">
+            ${Object.entries(PROFILES).map(([k,p])=>`<option value="${k}" ${k===z.profile?'selected':''}>${p.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="zone-row"><span class="l">Last motion</span><span class="v">${sinceStr} ago</span></div>
+        <div class="zone-row"><span class="l">Timeout</span><span class="v">${z.timeout}s</span></div>
+        <div class="zone-row"><span class="l">Dim</span>
+          <input type="range" min="0" max="100" value="${z.dim}" data-dim="${idx}" style="flex:1;margin-left:0.5rem;max-width:160px">
+        </div>
+      </div>
+      <div class="zone-actions">
+        <button class="btn sm ${z.state==='off'?'primary':'outline'}" data-toggle="${idx}">
+          ${z.state==='off'
+            ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg> Turn on'
+            : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg> Turn off'}
+        </button>
+        <button class="btn sm outline" data-trigger="${idx}">Trigger motion</button>
+        <button class="btn sm outline icon" data-clear="${idx}" title="Clear override">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // wire interactions
+  $$('#zone-grid input[data-dim]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const idx = +e.target.dataset.dim;
+      ZONES[idx].dim = +e.target.value;
+      ZONES[idx].state = ZONES[idx].dim===0?'off':ZONES[idx].dim<50?'dim':'on';
+      const tile = e.target.closest('.zone-tile');
+      tile.querySelector('.lumen-fill').style.height = ZONES[idx].dim + '%';
+      tile.querySelector('.lv').textContent = ZONES[idx].dim + '%';
+      tile.querySelector('.lumen-glow').style.setProperty('--g', (ZONES[idx].dim/100)*0.55);
+    });
+    inp.addEventListener('change', e => {
+      const idx = +e.target.dataset.dim;
+      pushEvent({ts:Date.now(), zone:ZONES[idx].id, type:'dim_level', value:`${ZONES[idx].dim}%`, source:'manual'});
+      renderZones(); updateOverview();
+    });
+  });
+  $$('#zone-grid select[data-prof]').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const idx = +e.target.dataset.prof;
+      ZONES[idx].profile = e.target.value;
+      toast(`${ZONES[idx].name} → ${PROFILES[e.target.value].name}`, 'ok');
+    });
+  });
+  $$('#zone-grid button[data-toggle]').forEach(b => {
+    b.addEventListener('click', e => {
+      flashBtn(e.currentTarget);
+      const idx = +b.dataset.toggle;
+      const z = ZONES[idx];
+      if (z.state==='off'){
+        const p = PROFILES[z.profile];
+        z.state = 'on'; z.dim = p.active; z.lastMotion = Date.now();
+        pushEvent({ts:Date.now(), zone:z.id, type:'light_on', value:`${z.dim}%`, source:'manual'});
+      } else {
+        z.state = 'off'; z.dim = 0;
+        pushEvent({ts:Date.now(), zone:z.id, type:'light_off', value:'manual', source:'manual'});
+      }
+      renderZones(); updateOverview();
+    });
+  });
+  $$('#zone-grid button[data-trigger]').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = +b.dataset.trigger;
+      triggerMotion(idx);
+      toast(`${ZONES[idx].name}: motion triggered`, 'ok');
+    });
+  });
+  $$('#zone-grid button[data-clear]').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = +b.dataset.clear;
+      ZONES[idx].dim = 0; ZONES[idx].state='off';
+      pushEvent({ts:Date.now(), zone:ZONES[idx].id, type:'light_off', value:'override cleared', source:'manual'});
+      renderZones(); updateOverview();
+    });
+  });
+
+  refreshBulkButtons();
+}
+$('#zone-sort').addEventListener('change', renderZones);
+
+// Sync the bulk action buttons to current fleet state.
+// Three visual modes per button:
+//   primary  → this is the action you should take right now (filled cyan)
+//   success  → you're already in this state (green-tinted, still clickable)
+//   outline  → the inverse / inactive option
+// The buttons are never disabled — disabled looked like "still filled, just
+// faded" which is the bug the user spotted. The little zone-status pill next
+// to them shows the live count so the system state is unambiguous.
+function setBtnMode(btn, mode){
+  if (!btn) return;
+  btn.classList.remove('primary', 'outline', 'success');
+  btn.classList.add(mode);
+}
+function refreshBulkButtons(){
+  const onCount = ZONES.filter(z => z.state !== 'off').length;
+  const allOn = onCount === ZONES.length;
+  const allOff = onCount === 0;
+  const bOn = $('#all-on'), bOff = $('#all-off'), bClear = $('#all-clear');
+  const status = $('#zone-status'), onLabel = $('#all-on-label'), offLabel = $('#all-off-label');
+  if (!bOn || !bOff || !bClear) return;
+
+  if (allOn){
+    setBtnMode(bOn, 'success');  onLabel.textContent  = 'All on';
+    setBtnMode(bOff, 'primary'); offLabel.textContent = 'Turn all off';
+  } else if (allOff){
+    setBtnMode(bOn, 'primary');  onLabel.textContent  = 'Turn all on';
+    setBtnMode(bOff, 'success'); offLabel.textContent = 'All off';
+  } else {
+    setBtnMode(bOn, 'primary');  onLabel.textContent  = 'Turn all on';
+    setBtnMode(bOff, 'outline'); offLabel.textContent = 'Turn all off';
+  }
+  bOn.disabled = false; bOff.disabled = false; bClear.disabled = allOff;
+
+  if (status){
+    status.textContent = `${onCount} / ${ZONES.length} on`;
+    status.classList.toggle('lit', onCount > 0);
+    status.classList.toggle('dark', onCount === 0);
+  }
+}
+
+// Brief flash so a click always registers visually, even if the rerender
+// puts the button into a different mode immediately after.
+function flashBtn(btn){
+  btn.classList.remove('flash');
+  void btn.offsetWidth; // restart animation
+  btn.classList.add('flash');
+}
+
+$('#all-on').addEventListener('click', e => {
+  flashBtn(e.currentTarget);
+  ZONES.forEach(z => {
+    const p = PROFILES[z.profile];
+    z.state = 'on'; z.dim = p.active; z.lastMotion = Date.now();
+    pushEvent({ts:Date.now(), zone:z.id, type:'light_on', value:`${z.dim}%`, source:'bulk'});
+  });
+  renderZones(); updateOverview(); toast('All zones on', 'ok');
+});
+$('#all-off').addEventListener('click', e => {
+  flashBtn(e.currentTarget);
+  ZONES.forEach(z => {
+    z.state = 'off'; z.dim = 0;
+    pushEvent({ts:Date.now(), zone:z.id, type:'light_off', value:'bulk', source:'bulk'});
+  });
+  renderZones(); updateOverview(); toast('All zones off');
+});
+$('#all-clear').addEventListener('click', e => {
+  flashBtn(e.currentTarget);
+  ZONES.forEach(z => { z.state = 'off'; z.dim = 0; });
+  renderZones(); updateOverview(); toast('Overrides cleared');
+});
+
+function triggerMotion(idx){
+  const z = ZONES[idx];
+  const p = PROFILES[z.profile];
+  z.lastMotion = Date.now();
+  pushEvent({ts:Date.now(), zone:z.id, type:'presence', value:'detected', source:'csi'});
+  if (z.state==='off'){
+    z.state='on'; z.dim=p.active;
+    pushEvent({ts:Date.now(), zone:z.id, type:'light_on', value:`${z.dim}%`, source:'cog'});
+  } else if (z.state==='dim'){
+    z.state='on'; z.dim=p.active;
+    pushEvent({ts:Date.now(), zone:z.id, type:'dim_level', value:`${z.dim}%`, source:'cog'});
+  }
+  renderZones(); updateOverview();
+}
+
+// ─────────────────────── PROFILES PANEL
+function renderProfileTabs(){
+  $('#profile-tabs').innerHTML = Object.entries(PROFILES).map(([k,p]) =>
+    `<button class="pill-tab ${k===activeProfile?'on':''}" data-p="${k}">${p.name}</button>`
+  ).join('');
+  $$('#profile-tabs .pill-tab').forEach(b => b.addEventListener('click', () => {
+    activeProfile = b.dataset.p;
+    renderProfileTabs(); loadProfileInputs(); drawCurve();
+  }));
+  $('#profile-sub').textContent = `${PROFILES[activeProfile].name} · used by ${ZONES.filter(z=>z.profile===activeProfile).length} zone(s)`;
+}
+
+function loadProfileInputs(){
+  const p = PROFILES[activeProfile];
+  $('#i-fadein').value = p.fadein;
+  $('#i-active').value = p.active;
+  $('#i-hold').value   = p.hold;
+  $('#i-fadedown').value = p.fadedown;
+  $('#i-timeout').value = p.timeout;
+  $('#i-amb').value = p.ambcap;
+  syncProfileMeta();
+}
+function syncProfileMeta(){
+  $('#m-fadein').textContent = $('#i-fadein').value;
+  $('#m-active').textContent = $('#i-active').value;
+  $('#m-hold').textContent = $('#i-hold').value;
+  $('#m-fadedown').textContent = $('#i-fadedown').value;
+  $('#m-timeout').textContent = $('#i-timeout').value;
+  $('#m-amb').textContent = $('#i-amb').value;
+}
+['i-fadein','i-active','i-hold','i-fadedown','i-timeout','i-amb'].forEach(id => {
+  $('#'+id).addEventListener('input', () => { syncProfileMeta(); drawCurve(); });
+});
+$('#save-profile').addEventListener('click', () => {
+  const p = PROFILES[activeProfile];
+  p.fadein = +$('#i-fadein').value;
+  p.active = +$('#i-active').value;
+  p.hold = +$('#i-hold').value;
+  p.fadedown = +$('#i-fadedown').value;
+  p.timeout = +$('#i-timeout').value;
+  p.ambcap = +$('#i-amb').value;
+  toast(`Profile "${p.name}" saved`, 'ok');
+});
+$('#duplicate-profile').addEventListener('click', () => {
+  const src = PROFILES[activeProfile];
+  let n = 1, key;
+  do { key = activeProfile+'_copy'+(n>1?n:''); n++; } while (PROFILES[key]);
+  PROFILES[key] = { ...src, name: src.name + ' copy' };
+  activeProfile = key;
+  renderProfileTabs(); loadProfileInputs(); drawCurve();
+  toast('Profile duplicated', 'ok');
+});
+$('#delete-profile').addEventListener('click', () => {
+  if (Object.keys(PROFILES).length<=1) { toast('Need at least one profile', 'warn'); return; }
+  const name = PROFILES[activeProfile].name;
+  delete PROFILES[activeProfile];
+  activeProfile = Object.keys(PROFILES)[0];
+  ZONES.forEach(z => { if (!PROFILES[z.profile]) z.profile = activeProfile; });
+  renderProfileTabs(); loadProfileInputs(); drawCurve();
+  toast(`Deleted "${name}"`, 'ok');
+});
+$('#test-profile').addEventListener('click', () => {
+  const sel = $('#m-test-zone');
+  sel.innerHTML = ZONES.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
+  openModal('m-test');
+});
+$('#m-test-go').addEventListener('click', () => {
+  const zid = $('#m-test-zone').value;
+  const idx = ZONES.findIndex(z=>z.id===zid);
+  if (idx<0) return;
+  const oldProf = ZONES[idx].profile;
+  ZONES[idx].profile = activeProfile;
+  triggerMotion(idx);
+  closeModal('m-test');
+  toast(`Testing "${PROFILES[activeProfile].name}" on ${ZONES[idx].name}`, 'ok');
+  setTimeout(()=>{ ZONES[idx].profile = oldProf; }, (+$('#m-test-duration').value)*1000);
+});
+
+// ─────────────────────── SCHEDULE PANEL
+// Canvas-based lane chart: 7 horizontal day lanes, each painted as a
+// continuous coloured strip whose segments come from the SCHED profile array.
+// Adjacent same-profile hours merge into one segment with a soft gradient
+// edge, which reads as a real timeline instead of a tile grid.
+const SCHED_PALETTE = {
+  bright: { c:[40,200,220], h:'185 80% 55%', name:'Bright' },  // template primary cyan
+  warm:   { c:[70,220,130], h:'142 70% 55%', name:'Warm'   },  // template accent green
+  night:  { c:[80,120,220], h:'220 70% 55%', name:'Night'  },  // deep blue
+  off:    { c:[40,46,58],   h:'220 15% 22%', name:'Off'    },  // muted slate
+};
+const DAYS_FULL = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function drawSchedule(){
+  const c = $('#sched-canvas'); if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = Math.floor(r.width * dpr);
+  c.height = Math.floor(r.height * dpr);
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const w = r.width, h = r.height;
+
+  ctx.clearRect(0,0,w,h);
+  // panel backdrop
+  ctx.fillStyle = `hsl(${css('--background')} / 0.45)`;
+  ctx.fillRect(0,0,w,h);
+
+  const laneH = h / 7;
+  const gap = 4;
+  const innerH = laneH - gap;
+
+  // Build segments per day (merge consecutive same-profile hours)
+  SCHED.forEach((row, d) => {
+    const y = d*laneH + gap/2;
+    // lane backdrop track
+    ctx.fillStyle = `hsl(${css('--secondary')} / 0.6)`;
+    roundRect(ctx, 0, y, w, innerH, 6); ctx.fill();
+    // subtle inner shadow line at top
+    ctx.fillStyle = `hsl(${css('--background')} / 0.4)`;
+    ctx.fillRect(0, y, w, 1);
+
+    // merge segments
+    const segs = [];
+    let start = 0;
+    for (let hr=1; hr<=24; hr++){
+      if (hr === 24 || row[hr] !== row[hr-1]){
+        segs.push({ start, end: hr, p: row[hr-1] });
+        start = hr;
+      }
+    }
+    segs.forEach(s => {
+      const x0 = (s.start/24) * w;
+      const x1 = (s.end/24)   * w;
+      const sw = x1 - x0;
+      const pal = SCHED_PALETTE[s.p];
+      if (s.p === 'off'){
+        // very faint stripe for off — keep the lane track visible
+        ctx.fillStyle = `hsl(${pal.h} / 0.35)`;
+        roundRect(ctx, x0+0.5, y+1, sw-1, innerH-2, 4); ctx.fill();
+      } else {
+        // vertical gradient for depth
+        const grad = ctx.createLinearGradient(0, y, 0, y+innerH);
+        grad.addColorStop(0, `hsl(${pal.h} / 0.95)`);
+        grad.addColorStop(1, `hsl(${pal.h} / 0.55)`);
+        ctx.fillStyle = grad;
+        roundRect(ctx, x0+0.5, y+1, sw-1, innerH-2, 5); ctx.fill();
+        // glow on top edge
+        ctx.fillStyle = `hsl(${pal.h} / 0.9)`;
+        ctx.shadowColor = `hsl(${pal.h})`;
+        ctx.shadowBlur = 10;
+        ctx.fillRect(x0+2, y+1, sw-4, 1.2);
+        ctx.shadowBlur = 0;
+      }
+    });
+  });
+
+  // Hour gridlines every 3 hours
+  ctx.strokeStyle = `hsl(${css('--foreground')} / 0.06)`;
+  ctx.lineWidth = 1;
+  for (let hr=3; hr<24; hr+=3){
+    const x = (hr/24) * w;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  // Stronger lines at 6/12/18
+  ctx.strokeStyle = `hsl(${css('--foreground')} / 0.12)`;
+  [6,12,18].forEach(hr => {
+    const x = (hr/24) * w;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+function renderSchedule(){
+  // y-axis day labels + x-axis hours
+  $('#sched-y').innerHTML = DAYS_FULL.map(d => `<div>${d}</div>`).join('');
+  $('#sched-x').innerHTML = [0,3,6,9,12,15,18,21,24]
+    .map(h => `<div>${h===24?'':fmt2(h)}</div>`).join('');
+
+  drawSchedule();
+  positionSchedNow();
+
+  // Click handler: figure out which day & hour, cycle profile.
+  const c = $('#sched-canvas');
+  c.onclick = e => {
+    const rect = c.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const hr = clamp(Math.floor(x / rect.width * 24), 0, 23);
+    const d  = clamp(Math.floor(y / rect.height * 7), 0, 6);
+    const order = ['bright','warm','night','off'];
+    const cur = SCHED[d][hr];
+    SCHED[d][hr] = order[(order.indexOf(cur)+1) % order.length];
+    drawSchedule();
+  };
+}
+
+function positionSchedNow(){
+  const wrap = $('#sched-canvas');
+  if (!wrap) return;
+  const now = new Date();
+  const frac = (now.getHours() + now.getMinutes()/60) / 24;
+  const rect = wrap.getBoundingClientRect();
+  const wrapRect = wrap.parentElement.getBoundingClientRect();
+  const leftOffset = rect.left - wrapRect.left;
+  $('#sched-now').style.left = (leftOffset + frac * rect.width) + 'px';
+}
+$('#sched-reset').addEventListener('click', () => { SCHED = SCHED_DEFAULT(); renderSchedule(); toast('Schedule reset'); });
+$('#sched-save').addEventListener('click', () => toast('Schedule saved', 'ok'));
+window.addEventListener('resize', () => {
+  if ($('#page-schedule').classList.contains('on')){ drawSchedule(); positionSchedNow(); }
+  if ($('#page-activity').classList.contains('on')) drawHeatmap();
+});
+
+// ─────────────────────── ACTIVITY PANEL
+function renderLog(){
+  const fz = $('#log-zone').value, ft = $('#log-type').value;
+  const rows = EVENTS.filter(e => (!fz || e.zone===fz) && (!ft || e.type===ft)).slice(0,80);
+  $('#log-sub').textContent = `${rows.length} of ${EVENTS.length} events`;
+  $('#log-tbody').innerHTML = rows.map(e => {
+    const d = new Date(e.ts);
+    return `<tr>
+      <td>${fmt2(d.getHours())}:${fmt2(d.getMinutes())}:${fmt2(d.getSeconds())}</td>
+      <td>${e.zone}</td>
+      <td><span class="badge ${e.type==='light_on'?'on':e.type==='light_off'?'off':e.type==='dim_level'?'primary':'on'}">${e.type}</span></td>
+      <td>${e.value}</td>
+      <td>${e.source}</td>
+    </tr>`;
+  }).join('');
+}
+function populateLogFilters(){
+  const sel = $('#log-zone');
+  sel.innerHTML = '<option value="">All zones</option>' + ZONES.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
+}
+$('#log-zone').addEventListener('change', renderLog);
+$('#log-type').addEventListener('change', renderLog);
+$('#export-log').addEventListener('click', () => {
+  const csv = ['time,zone,type,value,source'].concat(EVENTS.map(e =>
+    `${new Date(e.ts).toISOString()},${e.zone},${e.type},${e.value},${e.source}`
+  )).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'lighting-events.csv'; a.click();
+  toast('Exported CSV', 'ok');
+});
+
+// heatmap data (7 days × 24 hours, synthetic but stable)
+const HEAT = (() => {
+  const grid = [];
+  for (let d=0; d<7; d++){
+    const row = [];
+    for (let h=0; h<24; h++){
+      let base = 0;
+      if (h>=7 && h<=9) base = 0.7 + Math.random()*0.3;
+      else if (h>=11 && h<=13) base = 0.5 + Math.random()*0.4;
+      else if (h>=17 && h<=22) base = 0.6 + Math.random()*0.4;
+      else if (h>=0 && h<=5) base = Math.random()*0.1;
+      else base = Math.random()*0.4;
+      if (d>=5) base *= 1.1; // weekend
+      row.push(clamp(base + (Math.random()-0.5)*0.15, 0, 1));
+    }
+    grid.push(row);
+  }
+  return grid;
+})();
+// Bilinear-interpolated heatmap. Source grid is 7×24; we upsample to canvas
+// pixel resolution so the rendered image is a smooth gradient, not tiles.
+const HEAT_RAMP = [
+  [0.00, [16, 22, 38]],     // deep slate
+  [0.18, [22, 50, 80]],     // muted blue
+  [0.38, [25, 110, 160]],   // cyan-blue
+  [0.58, [40, 200, 220]],   // primary cyan
+  [0.78, [70, 220, 130]],   // accent green
+  [1.00, [255, 220, 100]],  // warm amber
+];
+function rampColor(t){
+  t = clamp(t, 0, 1);
+  for (let i=0;i<HEAT_RAMP.length-1;i++){
+    const [t0,c0] = HEAT_RAMP[i], [t1,c1] = HEAT_RAMP[i+1];
+    if (t <= t1){
+      const k = (t-t0)/(t1-t0);
+      return [
+        Math.round(c0[0]+(c1[0]-c0[0])*k),
+        Math.round(c0[1]+(c1[1]-c0[1])*k),
+        Math.round(c0[2]+(c1[2]-c0[2])*k),
+      ];
+    }
+  }
+  return HEAT_RAMP[HEAT_RAMP.length-1][1];
+}
+function drawHeatmap(){
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const c = $('#heat-canvas'); if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  const W = Math.floor(r.width * dpr);
+  const H = Math.floor(r.height * dpr);
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+
+  // Per-pixel bilinear interpolation. Sample positions are placed at the
+  // CENTER of each data cell (h+0.5, d+0.5) — outside those centers we clamp,
+  // which gives sharp edges at the chart boundary while keeping the interior
+  // smooth. Way crisper than drawImage's blur.
+  const img = ctx.createImageData(W, H);
+  const data = img.data;
+  for (let py=0; py<H; py++){
+    // map pixel y → data y in centered-cell coords
+    const dy = clamp((py + 0.5) / H * 7 - 0.5, 0, 6);
+    const d0 = Math.floor(dy), d1 = Math.min(6, d0+1);
+    const fy = dy - d0;
+    for (let px=0; px<W; px++){
+      const dx = clamp((px + 0.5) / W * 24 - 0.5, 0, 23);
+      const h0 = Math.floor(dx), h1 = Math.min(23, h0+1);
+      const fx = dx - h0;
+      // bilinear blend of the 4 surrounding cell values
+      const v00 = HEAT[d0][h0], v10 = HEAT[d0][h1];
+      const v01 = HEAT[d1][h0], v11 = HEAT[d1][h1];
+      const a = v00 + (v10 - v00) * fx;
+      const b = v01 + (v11 - v01) * fx;
+      const v = a + (b - a) * fy;
+      const [R,G,B] = rampColor(v);
+      const off = (py * W + px) * 4;
+      data[off  ] = R;
+      data[off+1] = G;
+      data[off+2] = B;
+      data[off+3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Crisp 6-hour gridlines over the heatmap (drawn at native pixels so they
+  // stay 1px sharp regardless of DPR).
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1;
+  for (let h=6; h<24; h+=6){
+    const x = Math.floor((h/24) * W) + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  ctx.restore();
+  // horizontal day dividers — thin, low-opacity
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (let d=1; d<7; d++){
+    const y = Math.floor((d/7) * H) + 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Axis labels (HTML overlay)
+  $('#heat-y').innerHTML = days.map(d => `<div>${d}</div>`).join('');
+  const xs = [0,3,6,9,12,15,18,21,24];
+  $('#heat-x').innerHTML = xs.map(h => `<div>${h===24?'':fmt2(h)}</div>`).join('');
+
+  // Quick stats
+  let max = 0, sum = 0;
+  HEAT.forEach(row => row.forEach(v => { if (v>max) max=v; sum+=v; }));
+  const avg = sum/(7*24);
+  $('#heat-stats').textContent = `peak ${(max*60).toFixed(0)} · avg ${(avg*60).toFixed(0)} ev/hr`;
+
+  // Tooltip behaviour
+  const tip = $('#heat-tip');
+  c.onmousemove = e => {
+    const rect = c.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const h = clamp(Math.floor(x / rect.width * 24), 0, 23);
+    const d = clamp(Math.floor(y / rect.height * 7), 0, 6);
+    const v = HEAT[d][h];
+    tip.style.opacity = '1';
+    tip.style.left = (x + 60) + 'px';
+    tip.style.top  = (y - 18) + 'px';
+    tip.textContent = `${days[d]} ${fmt2(h)}:00 — ${(v*60).toFixed(0)} events`;
+  };
+  c.onmouseleave = () => { tip.style.opacity = '0'; };
+}
+
+// ─────────────────────── OVERVIEW updates
+function updateOverview(){
+  const onCount = ZONES.filter(z=>z.state==='on').length;
+  const lit = ZONES.filter(z=>z.dim>0);
+  const avgDim = lit.length ? Math.round(lit.reduce((s,z)=>s+z.dim,0)/lit.length) : 0;
+  $('#kpi-on').textContent = `${onCount}`;
+  $('#kpi-dim').textContent = avgDim + '%';
+  $('#kpi-zones').textContent = `${ZONES.length} / ${ZONES.length}`;
+  const motion60 = EVENTS.filter(e => e.type==='presence' && e.ts > Date.now() - 60*60*1000).length;
+  $('#kpi-motion').textContent = motion60;
+  $('#kpi-power').textContent = Math.round(lit.reduce((s,z)=>s + 12 + z.dim*0.7, 0)) + ' W';
+  // hero status
+  if (onCount === 0) $('#hero-status').textContent = 'All zones off';
+  else if (avgDim < 40) $('#hero-status').textContent = 'Low-light mode';
+  else $('#hero-status').textContent = 'All zones nominal';
+  // feed
+  $('#overview-feed').innerHTML = EVENTS.slice(0,12).map(e => {
+    const d = new Date(e.ts);
+    return `<div class="feed-row">
+      <span class="ts">${tsShort(d)}</span>
+      <span>${e.zone}</span>
+      <span class="ev ${e.type}">${e.type}</span>
+      <span>${e.value}</span>
+    </div>`;
+  }).join('');
+  drawDonut(); drawHeroRadial();
+}
+$('#clear-feed').addEventListener('click', () => { EVENTS.length = 0; updateOverview(); renderLog(); toast('Event feed cleared'); });
+$('#recalc-energy').addEventListener('click', () => { drawDonut(); toast('Recalculated', 'ok'); });
+
+// ─────────────────────── CANVAS helpers
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(r.width * dpr));
+  canvas.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w: r.width, h: r.height };
+}
+function gridLines(ctx, w, h, pad, rows){
+  ctx.strokeStyle = `hsl(${css('--border')} / 0.35)`;
+  ctx.lineWidth = 1;
+  for (let i=0;i<=rows;i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i/rows);
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(w - pad.r, y);
+    ctx.stroke();
+  }
+}
+
+// ─────────────────────── DIM history chart
+const DIM_HISTORY = {};
+ZONES.forEach(z => DIM_HISTORY[z.id] = []);
+(function seedDim(){
+  // Build occupancy-shaped curves: long "off" stretches, a couple of "active"
+  // windows that fade in / hold / fade down. Less white noise than a random
+  // walk, so six lines on one chart stay readable.
+  const N = 120;
+  ZONES.forEach((z, i) => {
+    const target = z.dim;
+    // 2–3 active windows per zone, randomly placed
+    const windows = [];
+    const nWin = 2 + Math.floor(Math.random()*2);
+    for (let k=0;k<nWin;k++){
+      const start = Math.floor(Math.random()*(N-20));
+      const len = 10 + Math.floor(Math.random()*25);
+      const lvl = 55 + Math.floor(Math.random()*40);
+      windows.push({ start, end: Math.min(N-1, start+len), lvl });
+    }
+    let v = 0;
+    for (let k=0;k<N;k++){
+      const w = windows.find(w => k >= w.start && k <= w.end);
+      const target = w ? w.lvl : 0;
+      // ease toward target — gives smooth fade-in/out
+      v = v + (target - v) * 0.18 + (Math.random()-0.5) * 1.2;
+      v = clamp(v, 0, 100);
+      DIM_HISTORY[z.id].push(v);
+    }
+    // ensure the final sample matches current zone state for continuity
+    DIM_HISTORY[z.id][DIM_HISTORY[z.id].length-1] = target;
+  });
+})();
+// simple moving average — smooths short-window jitter without distorting
+// occupancy transitions much.
+function smoothSeries(arr, win){
+  if (win<=1) return arr.slice();
+  const out = new Array(arr.length);
+  for (let i=0;i<arr.length;i++){
+    let s=0,n=0;
+    const lo = Math.max(0, i-win), hi = Math.min(arr.length-1, i+win);
+    for (let k=lo;k<=hi;k++){ s+=arr[k]; n++; }
+    out[i] = s/n;
+  }
+  return out;
+}
+let DIM_RANGE = 60;
+$$('#dim-range .pill-tab').forEach(b => b.addEventListener('click', () => {
+  $$('#dim-range .pill-tab').forEach(x => x.classList.toggle('on', x===b));
+  DIM_RANGE = +b.dataset.range; drawDim();
+}));
+// which series are visible — toggled via legend chips
+const DIM_VIS = {};
+ZONES.forEach(z => DIM_VIS[z.id] = true);
+function drawDim(){
+  const c = $('#chart-dim'); if (!c) return;
+  const { ctx, w, h } = setupCanvas(c);
+  const pad = { l:40, r:14, t:14, b:26 };
+  ctx.clearRect(0,0,w,h);
+  gridLines(ctx, w, h, pad, 4);
+
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i/4);
+    ctx.fillText((100 - i*25) + '%', pad.l - 6, y);
+  }
+
+  const innerW = w - pad.l - pad.r, innerH = h - pad.t - pad.b;
+  const samples = Math.min(DIM_HISTORY[ZONES[0].id].length, Math.max(30, Math.round(DIM_RANGE * 1.5)));
+  const win = DIM_RANGE >= 1440 ? 5 : DIM_RANGE >= 240 ? 3 : 2;
+
+  // first pass: faint glow under each visible series
+  ZONES.forEach((z, i) => {
+    if (!DIM_VIS[z.id]) return;
+    const hist = DIM_HISTORY[z.id];
+    const data = smoothSeries(hist.slice(Math.max(0, hist.length - samples)), win);
+    ctx.beginPath();
+    data.forEach((v, k) => {
+      const x = pad.l + innerW * (k/(data.length-1));
+      const y = pad.t + innerH * (1 - v/100);
+      if (k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.lineTo(pad.l + innerW, pad.t + innerH);
+    ctx.lineTo(pad.l, pad.t + innerH);
+    ctx.closePath();
+    ctx.fillStyle = ZONE_COLORS[i].replace(')', ' / 0.08)');
+    ctx.fill();
+  });
+
+  // second pass: the smoothed lines themselves
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ZONES.forEach((z, i) => {
+    if (!DIM_VIS[z.id]) return;
+    const hist = DIM_HISTORY[z.id];
+    const data = smoothSeries(hist.slice(Math.max(0, hist.length - samples)), win);
+    ctx.strokeStyle = ZONE_COLORS[i];
+    ctx.globalAlpha = 0.92;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = ZONE_COLORS[i];
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    data.forEach((v, k) => {
+      const x = pad.l + innerW * (k/(data.length-1));
+      const y = pad.t + innerH * (1 - v/100);
+      if (k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  });
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+
+  // x axis labels
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const ticks = 6;
+  for (let i=0;i<=ticks;i++){
+    const x = pad.l + innerW * (i/ticks);
+    const min = DIM_RANGE * (1 - i/ticks);
+    let label;
+    if (i === ticks) label = 'now';
+    else if (DIM_RANGE >= 1440) label = `-${Math.round(min/60)}h`;
+    else if (DIM_RANGE >= 240) label = `-${Math.round(min/60)}h`;
+    else label = `-${Math.round(min)}m`;
+    ctx.fillText(label, x, h - pad.b + 6);
+  }
+
+  // legend (clickable to toggle series visibility)
+  $('#dim-legend').innerHTML = ZONES.map((z,i) => {
+    const on = DIM_VIS[z.id];
+    return `<span data-zlegend="${z.id}" style="cursor:pointer;user-select:none;opacity:${on?1:0.4}">
+      <span class="legend-sw" style="background:${ZONE_COLORS[i]}"></span>${z.name}
+    </span>`;
+  }).join('');
+  $$('#dim-legend [data-zlegend]').forEach(el => el.addEventListener('click', () => {
+    const id = el.dataset.zlegend;
+    DIM_VIS[id] = !DIM_VIS[id];
+    drawDim();
+  }));
+}
+
+// ─────────────────────── AMBIENT vs lit zones
+const AMBIENT_HISTORY = [];
+const LIT_HISTORY = [];
+(function seedAmb(){
+  const N = 80;
+  let lux = 300, lit = 3;
+  for (let i=0;i<N;i++){
+    const t = i/N;
+    lux = 100 + Math.sin(t*Math.PI*2)*150 + 200 + (Math.random()-0.5)*40;
+    if (t<0.25 || t>0.85) lux = clamp(lux*0.3, 5, 80);
+    lit = clamp(Math.round(2 + Math.sin((1-t)*Math.PI)*3 + (Math.random()-0.5)*0.6), 0, 6);
+    AMBIENT_HISTORY.push(clamp(lux, 0, 800));
+    LIT_HISTORY.push(lit);
+  }
+})();
+function drawAmbient(){
+  const c = $('#chart-ambient'); if (!c) return;
+  const { ctx, w, h } = setupCanvas(c);
+  const pad = { l:44, r:42, t:12, b:24 };
+  ctx.clearRect(0,0,w,h);
+  gridLines(ctx, w, h, pad, 4);
+  // y axes labels
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i/4);
+    ctx.fillText((800 - i*200), pad.l - 6, y);
+  }
+  ctx.textAlign = 'left';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i/4);
+    ctx.fillText((6 - Math.round(i*1.5)), w - pad.r + 6, y);
+  }
+  // ambient area
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  ctx.beginPath();
+  AMBIENT_HISTORY.forEach((v, i) => {
+    const x = pad.l + innerW * (i/(AMBIENT_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/800);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l + innerW, pad.t + innerH);
+  ctx.lineTo(pad.l, pad.t + innerH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + innerH);
+  grad.addColorStop(0, 'hsl(45 95% 60% / 0.45)');
+  grad.addColorStop(1, 'hsl(45 95% 60% / 0)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  AMBIENT_HISTORY.forEach((v, i) => {
+    const x = pad.l + innerW * (i/(AMBIENT_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/800);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = 'hsl(45 95% 60%)'; ctx.lineWidth = 1.8; ctx.stroke();
+  // lit line (right axis)
+  ctx.beginPath();
+  LIT_HISTORY.forEach((v, i) => {
+    const x = pad.l + innerW * (i/(LIT_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/6);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = hsl('--primary'); ctx.lineWidth = 1.8; ctx.stroke();
+  // dots on lit
+  ctx.fillStyle = hsl('--primary');
+  LIT_HISTORY.forEach((v, i) => {
+    if (i % 8 !== 0) return;
+    const x = pad.l + innerW * (i/(LIT_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/6);
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill();
+  });
+  // x labels
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ['-4h','-3h','-2h','-1h','now'].forEach((l,i)=>{
+    const x = pad.l + innerW * (i/4);
+    ctx.fillText(l, x, h - pad.b + 6);
+  });
+}
+
+// ─────────────────────── DONUT (energy share)
+function drawDonut(){
+  const svg = $('#donut-energy'); if (!svg) return;
+  const cx = 130, cy = 110, rOuter = 80, rInner = 50;
+  const lit = ZONES.filter(z=>z.dim>0);
+  const totals = lit.map(z => 12 + z.dim*0.7);
+  const sumTotal = totals.reduce((a,b)=>a+b, 0) || 1;
+  const total = ZONES.reduce((s,z)=>s + (z.dim>0 ? 12 + z.dim*0.7 : 0), 0);
+  $('#donut-total').textContent = total ? total.toFixed(0) : '0';
+  let acc = -Math.PI/2;
+  let parts = [];
+  if (lit.length === 0){
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${(rOuter+rInner)/2}" fill="none" stroke="${hsl('--muted',0.4)}" stroke-width="${rOuter-rInner}"/>`);
+  } else {
+    lit.forEach((z, i) => {
+      const v = totals[i] / sumTotal;
+      const a0 = acc, a1 = acc + v * Math.PI*2;
+      const large = (a1 - a0) > Math.PI ? 1 : 0;
+      const x0 = cx + Math.cos(a0)*rOuter, y0 = cy + Math.sin(a0)*rOuter;
+      const x1 = cx + Math.cos(a1)*rOuter, y1 = cy + Math.sin(a1)*rOuter;
+      const x2 = cx + Math.cos(a1)*rInner, y2 = cy + Math.sin(a1)*rInner;
+      const x3 = cx + Math.cos(a0)*rInner, y3 = cy + Math.sin(a0)*rInner;
+      const d = `M ${x0} ${y0} A ${rOuter} ${rOuter} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${rInner} ${rInner} 0 ${large} 0 ${x3} ${y3} Z`;
+      const idx = ZONES.indexOf(z);
+      parts.push(`<path d="${d}" fill="${ZONE_COLORS[idx]}" opacity="0.9"><title>${z.name}: ${totals[i].toFixed(0)} Wh</title></path>`);
+      acc = a1;
+    });
+  }
+  svg.innerHTML = parts.join('');
+  // legend (donut)
+  $('#energy-legend').innerHTML = ZONES.map((z, i) => {
+    const w = z.dim>0 ? 12 + z.dim*0.7 : 0;
+    return `<span><span class="legend-sw" style="background:${ZONE_COLORS[i]}"></span>${z.name} <span style="color:hsl(var(--muted-foreground))">${w.toFixed(0)} W</span></span>`;
+  }).join('');
+}
+
+// ─────────────────────── HERO radial gauge (active-zones donut + lux ring)
+function drawHeroRadial(){
+  const svg = $('#hero-radial'); if (!svg) return;
+  const onCount = ZONES.filter(z=>z.state==='on').length;
+  const fraction = onCount / ZONES.length;
+  const cx = 60, cy = 60;
+  // outer ring (lux normalized 0..800)
+  const lux = +$('#kpi-lux').textContent || 300;
+  const luxFrac = clamp(lux/800, 0, 1);
+  const arc = (r, frac, color, w) => {
+    const a = -Math.PI/2 + frac * Math.PI*2;
+    const x1 = cx + Math.cos(a)*r, y1 = cy + Math.sin(a)*r;
+    const large = frac > 0.5 ? 1 : 0;
+    return `<path d="M ${cx} ${cy - r} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`;
+  };
+  const trackArc = (r, color, w) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${w}"/>`;
+  svg.innerHTML = `
+    ${trackArc(50, hsl('--muted', 0.5), 6)}
+    ${arc(50, fraction, hsl('--primary'), 6)}
+    ${trackArc(36, hsl('--muted', 0.5), 4)}
+    ${arc(36, luxFrac, 'hsl(45 95% 60%)', 4)}
+    <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="${hsl('--foreground')}" font-family="Outfit" font-size="20" font-weight="600">${onCount}</text>
+    <text x="${cx}" y="${cy+14}" text-anchor="middle" fill="${hsl('--muted-foreground')}" font-family="JetBrains Mono" font-size="9">of ${ZONES.length} on</text>
+  `;
+}
+
+// ─────────────────────── SENSORS
+const LUX_HISTORY = (() => {
+  const N = 120; const out = [];
+  for (let i=0;i<N;i++){
+    const t = i/N;
+    let v = 100 + Math.sin(t*Math.PI*1.4 + 0.4)*180 + 220 + (Math.random()-0.5)*30;
+    if (t<0.18 || t>0.92) v = clamp(v*0.25, 5, 90);
+    out.push(clamp(v, 0, 800));
+  }
+  return out;
+})();
+function drawLux(){
+  const c = $('#chart-lux'); if (!c) return;
+  const { ctx, w, h } = setupCanvas(c);
+  const pad = { l:40, r:14, t:12, b:24 };
+  ctx.clearRect(0,0,w,h);
+  gridLines(ctx, w, h, pad, 4);
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i/4);
+    ctx.fillText((800 - i*200), pad.l - 6, y);
+  }
+  const innerW = w - pad.l - pad.r, innerH = h - pad.t - pad.b;
+  // ceiling line (auto-dim cap)
+  const cap = 400;
+  const yCap = pad.t + innerH * (1 - cap/800);
+  ctx.setLineDash([4,4]); ctx.strokeStyle = hsl('--accent'); ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(pad.l, yCap); ctx.lineTo(w-pad.r, yCap); ctx.stroke();
+  ctx.setLineDash([]);
+  // area
+  ctx.beginPath();
+  LUX_HISTORY.forEach((v, i) => {
+    const x = pad.l + innerW * (i/(LUX_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/800);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l + innerW, pad.t + innerH);
+  ctx.lineTo(pad.l, pad.t + innerH);
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + innerH);
+  grad.addColorStop(0, 'hsl(45 95% 60% / 0.4)');
+  grad.addColorStop(1, 'hsl(45 95% 60% / 0)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  LUX_HISTORY.forEach((v, i) => {
+    const x = pad.l + innerW * (i/(LUX_HISTORY.length-1));
+    const y = pad.t + innerH * (1 - v/800);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = 'hsl(45 95% 60%)'; ctx.lineWidth = 1.8; ctx.stroke();
+  // x labels
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ['-4h','-3h','-2h','-1h','now'].forEach((l,i)=>{
+    const x = pad.l + innerW * (i/4);
+    ctx.fillText(l, x, h - pad.b + 6);
+  });
+}
+function renderSensorList(){
+  const out = ZONES.map((z,i) => {
+    const rssi = -38 - Math.floor(Math.random()*22);
+    const conf = clamp(0.7 + (z.state!=='off'?0.2:0) + (Math.random()-0.5)*0.15, 0, 1);
+    const barW = Math.round(conf*100);
+    return `
+      <div class="diag-row" style="grid-template-columns:auto 1fr auto auto;gap:0.8rem">
+        <span class="dot ${conf>0.7?'up':conf>0.4?'warn':'off'}"></span>
+        <div>
+          <div style="font-size:0.875rem;font-weight:500">${z.name}</div>
+          <div class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">esp32-s3 · ${z.id}</div>
+        </div>
+        <div style="width:90px">
+          <div style="height:5px;background:hsl(var(--secondary));border-radius:3px;overflow:hidden">
+            <div style="width:${barW}%;height:100%;background:hsl(${conf>0.7?'142 70% 50%':conf>0.4?'35 85% 55%':'0 65% 55%'})"></div>
+          </div>
+          <div class="mono" style="font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:2px">${(conf*100).toFixed(0)}% conf</div>
+        </div>
+        <span class="mono" style="font-size:0.75rem">${rssi} dBm</span>
+      </div>`;
+  }).join('');
+  $('#sensor-list').innerHTML = out;
+}
+function renderDiag(){
+  const lines = [
+    ['Runtime',                'ok',   'cog-gateway · 9000'],
+    ['Firmware',               'ok',   'lighting-zones@1.2.0'],
+    ['CSI pipeline',           'ok',   '10 Hz · 312 frames/s'],
+    ['RVF index',              'ok',   '6 vectors · 0 stale'],
+    ['Ambient sensor',         'ok',   'SI1145 · 312 lux'],
+    ['Last save',              'ok',   tsShort(new Date(Date.now()-Math.random()*180000))],
+  ];
+  $('#diag-out').innerHTML = lines.map(([k,s,v]) => `
+    <div class="diag-row">
+      <span class="dn">${k}</span>
+      <span class="dv"><span class="dot ${s==='ok'?'up':s==='warn'?'warn':'off'}"></span> ${v}</span>
+    </div>`).join('');
+}
+$('#run-diag').addEventListener('click', () => {
+  $('#run-diag').disabled = true; $('#run-diag').textContent = 'Running…';
+  setTimeout(() => {
+    renderDiag();
+    $('#run-diag').disabled = false; $('#run-diag').textContent = 'Run diagnostics';
+    toast('Diagnostics complete', 'ok');
+  }, 700);
+});
+
+// ─────────────────────── PROFILE CURVE editor
+// Animated scan position, in 0..1 across the profile cycle.
+let curveScan = 0;
+let curveRAF = null;
+function drawCurve(){
+  const c = $('#curve'); if (!c) return;
+  c.style.width = '100%';
+  c.style.height = '300px';
+  const { ctx, w, h } = setupCanvas(c);
+  const p = PROFILES[activeProfile];
+  // pad.t leaves room for the HUD chips above the chart so labels never
+  // collide with "cycle / peak" in the corner.
+  const pad = { l:52, r:24, t:54, b:42 };
+  ctx.clearRect(0,0,w,h);
+
+  // x-domain: full cycle (fade-in + hold + fade-down + tail)
+  const totalMs = p.fadein + p.hold*1000 + p.timeout*1000 + 2000;
+  const innerW = w - pad.l - pad.r, innerH = h - pad.t - pad.b;
+  const xAt = ms => pad.l + innerW * (ms/totalMs);
+  const yAt = v  => pad.t + innerH * (1 - v/100);
+
+  const t0 = 0;
+  const t1 = p.fadein;
+  const t2 = t1 + p.hold*1000;
+  const t3 = t2 + p.timeout*1000;
+
+  // ── 1. phase background bands (each phase tinted with its colour role)
+  const bands = [
+    { x0:t0, x1:t1, color:`hsl(${css('--primary')} / 0.08)` },  // fade-in: cyan
+    { x0:t1, x1:t2, color:`hsl(${css('--accent')} / 0.08)`  },  // hold: green
+    { x0:t2, x1:t3, color:`hsl(35 85% 55% / 0.07)` },           // fade-down: amber
+    { x0:t3, x1:totalMs, color:`hsl(${css('--muted')} / 0.5)` },// off: muted
+  ];
+  bands.forEach(b => {
+    ctx.fillStyle = b.color;
+    ctx.fillRect(xAt(b.x0), pad.t, xAt(b.x1)-xAt(b.x0), innerH);
+  });
+
+  // ── 2. HUD grid (futuristic dotted minor + solid major)
+  ctx.strokeStyle = `hsl(${css('--primary')} / 0.10)`;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2,4]);
+  for (let i=1;i<10;i++){
+    const x = pad.l + innerW * (i/10);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t+innerH); ctx.stroke();
+  }
+  for (let i=1;i<8;i++){
+    const y = pad.t + innerH * (i/8);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+innerW, y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // major axes at 25/50/75
+  ctx.strokeStyle = `hsl(${css('--border')} / 0.6)`;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const y = pad.t + innerH * (1-f);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+innerW, y); ctx.stroke();
+  });
+
+  // y-axis ticks with HUD-style chevrons
+  ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  ctx.font = '500 10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let i=0;i<=4;i++){
+    const y = pad.t + innerH * (i/4);
+    ctx.fillText((100 - i*25) + '%', pad.l - 10, y);
+    ctx.fillStyle = `hsl(${css('--primary')} / 0.7)`;
+    ctx.fillRect(pad.l - 4, y - 0.5, 3, 1);
+    ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+  }
+
+  // ── 3. curve polyline
+  const pts = [
+    [t0, 0],
+    [t1, p.active],
+    [t2, p.active],
+    [t3, p.fadedown],
+    [t3, 0],
+    [totalMs, 0],
+  ];
+
+  // area fill — multi-stop gradient: cyan at peak, fading to dark at base
+  ctx.beginPath();
+  pts.forEach(([t,v],i)=>{ const x=xAt(t), y=yAt(v); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.lineTo(xAt(totalMs), yAt(0));
+  ctx.lineTo(xAt(0), yAt(0));
+  ctx.closePath();
+  const areaGrad = ctx.createLinearGradient(0, pad.t, 0, pad.t+innerH);
+  areaGrad.addColorStop(0,    `hsl(${css('--primary')} / 0.55)`);
+  areaGrad.addColorStop(0.5,  `hsl(${css('--primary')} / 0.20)`);
+  areaGrad.addColorStop(1,    `hsl(${css('--primary')} / 0)`);
+  ctx.fillStyle = areaGrad; ctx.fill();
+
+  // outer glow stroke (wide blur)
+  const linePath = () => {
+    ctx.beginPath();
+    pts.forEach(([t,v],i)=>{ const x=xAt(t), y=yAt(v); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  };
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.shadowColor = `hsl(${css('--primary')})`;
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = `hsl(${css('--primary')} / 0.6)`;
+  ctx.lineWidth = 4;
+  linePath(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // mid stroke
+  ctx.strokeStyle = `hsl(${css('--primary')} / 0.9)`;
+  ctx.lineWidth = 2;
+  linePath(); ctx.stroke();
+  // bright core
+  ctx.strokeStyle = `hsl(${css('--foreground')})`;
+  ctx.lineWidth = 0.9;
+  linePath(); ctx.stroke();
+
+  // ── 4. glowing node markers at key points (with concentric ring)
+  pts.slice(0,5).forEach(([t,v]) => {
+    const x = xAt(t), y = yAt(v);
+    ctx.shadowColor = `hsl(${css('--primary')})`;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = `hsl(${css('--primary')})`;
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = `hsl(${css('--primary')} / 0.5)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.stroke();
+  });
+
+  // ── 5. scan line (animated time cursor)
+  const scanX = xAt(curveScan * totalMs);
+  const scanGrad = ctx.createLinearGradient(scanX-20, 0, scanX+20, 0);
+  scanGrad.addColorStop(0, `hsl(${css('--primary')} / 0)`);
+  scanGrad.addColorStop(0.5, `hsl(${css('--primary')} / 0.18)`);
+  scanGrad.addColorStop(1, `hsl(${css('--primary')} / 0)`);
+  ctx.fillStyle = scanGrad;
+  ctx.fillRect(scanX-20, pad.t, 40, innerH);
+  ctx.strokeStyle = `hsl(${css('--primary')})`;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = `hsl(${css('--primary')})`;
+  ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.moveTo(scanX, pad.t); ctx.lineTo(scanX, pad.t+innerH); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // scan-line value readout
+  const ms = curveScan * totalMs;
+  let curV;
+  if (ms < t1)       curV = (ms/t1) * p.active;
+  else if (ms < t2)  curV = p.active;
+  else if (ms < t3)  curV = p.active + (ms-t2)/(t3-t2) * (p.fadedown - p.active);
+  else               curV = 0;
+  const curY = yAt(curV);
+  ctx.fillStyle = `hsl(${css('--primary')})`;
+  ctx.shadowColor = `hsl(${css('--primary')})`;
+  ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.arc(scanX, curY, 4, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  // readout chip
+  const chipW = 56, chipH = 18;
+  let chipX = scanX + 8;
+  if (chipX + chipW > pad.l + innerW) chipX = scanX - chipW - 8;
+  ctx.fillStyle = `hsl(${css('--background')} / 0.85)`;
+  ctx.strokeStyle = `hsl(${css('--primary')} / 0.7)`;
+  ctx.lineWidth = 1;
+  roundRect(ctx, chipX, curY-chipH/2, chipW, chipH, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = `hsl(${css('--primary')})`;
+  ctx.font = '600 10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(curV.toFixed(0) + '%', chipX + chipW/2, curY);
+
+  // ── 6. phase labels along bottom (with little phase color dot)
+  const phases = [
+    { x0:t0, x1:t1, label:'fade-in',    color:`hsl(${css('--primary')})` },
+    { x0:t1, x1:t2, label:'hold',       color:`hsl(${css('--accent')})`  },
+    { x0:t2, x1:t3, label:'fade-down',  color:'hsl(35 85% 55%)' },
+    { x0:t3, x1:totalMs, label:'off',   color:`hsl(${css('--muted-foreground')})` },
+  ];
+  ctx.font = '500 10px "JetBrains Mono", monospace';
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+  phases.forEach(ph => {
+    const cx = (xAt(ph.x0) + xAt(ph.x1)) / 2;
+    const yL = h - pad.b + 8;
+    if (xAt(ph.x1) - xAt(ph.x0) < 36) return;
+    // dot
+    ctx.fillStyle = ph.color;
+    ctx.shadowColor = ph.color; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(cx - 26, yL + 5, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    // label
+    ctx.fillStyle = `hsl(${css('--muted-foreground')})`;
+    ctx.fillText(ph.label, cx + 4, yL);
+  });
+
+  // ── 7. time-axis tick marks at phase boundaries with ms labels
+  ctx.fillStyle = `hsl(${css('--muted-foreground')} / 0.8)`;
+  ctx.font = '9px "JetBrains Mono", monospace';
+  ctx.textBaseline = 'top';
+  const fmtMs = ms => ms < 1000 ? `${Math.round(ms)}ms` : `${(ms/1000).toFixed(1)}s`;
+  [t0, t1, t2, t3].forEach(t => {
+    const x = xAt(t);
+    ctx.strokeStyle = `hsl(${css('--primary')} / 0.4)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, pad.t + innerH); ctx.lineTo(x, pad.t + innerH + 4); ctx.stroke();
+    ctx.fillText(fmtMs(t), x, pad.t + innerH + 22);
+    ctx.textAlign = 'center';
+  });
+
+  // ── 8. HUD readout text (in DOM, not canvas)
+  const hudName = $('#hud-name'), hudCycle = $('#hud-cycle'), hudPeak = $('#hud-peak');
+  if (hudName)  hudName.textContent  = 'profile · ' + (PROFILES[activeProfile].name || activeProfile);
+  if (hudCycle) hudCycle.textContent = fmtMs(totalMs);
+  if (hudPeak)  hudPeak.textContent  = p.active + '%';
+}
+
+function startCurveAnimation(){
+  if (curveRAF) return;
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = (now - last) / 1000; last = now;
+    if ($('#page-profiles').classList.contains('on')){
+      const p = PROFILES[activeProfile];
+      const totalSec = (p.fadein/1000) + p.hold + p.timeout + 2;
+      curveScan = (curveScan + dt/totalSec) % 1;
+      drawCurve();
+    }
+    curveRAF = requestAnimationFrame(tick);
+  };
+  curveRAF = requestAnimationFrame(tick);
+}
+
+// resize handlers
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    drawDim(); drawAmbient(); drawDonut(); drawHeroRadial();
+    drawLux(); drawCurve();
+  }, 120);
+});
+
+// ─────────────────────── SETTINGS
+$('#save-settings').addEventListener('click', () => toast('Settings saved', 'ok'));
+$('#reset-settings').addEventListener('click', () => {
+  $('#s-name').value = 'Lighting Zones';
+  $('#s-hw').value = 'ESP32-S3';
+  $('#s-input').value = 'CSI presence';
+  $('#s-rate').value = 10;
+  $('#t-ambient').checked = true;
+  $('#t-fade').checked = true;
+  $('#t-adapt').checked = false;
+  $('#t-publish').checked = true;
+  toast('Reset to defaults');
+});
+$('#uninstall').addEventListener('click', () => openModal('m-uninstall'));
+$('#m-uninstall-go').addEventListener('click', () => { closeModal('m-uninstall'); toast('Uninstall command queued', 'warn'); });
+
+// ─────────────────────── live update tick (presence simulation)
+function tick(){
+  // randomly trigger motion every few seconds
+  if (Math.random() < 0.35){
+    const idx = Math.floor(Math.random()*ZONES.length);
+    triggerMotion(idx);
+  }
+  // timeout zones whose lastMotion is older than profile timeout
+  ZONES.forEach(z => {
+    const p = PROFILES[z.profile];
+    const idleSec = (Date.now() - z.lastMotion)/1000;
+    if (z.state==='on' && idleSec > p.timeout){
+      z.state = 'dim'; z.dim = p.fadedown;
+      pushEvent({ts:Date.now(), zone:z.id, type:'dim_level', value:`${z.dim}%`, source:'cog'});
+    } else if (z.state==='dim' && idleSec > p.timeout + 30){
+      z.state = 'off'; z.dim = 0;
+      pushEvent({ts:Date.now(), zone:z.id, type:'light_off', value:'timeout', source:'cog'});
+    }
+  });
+  // push dim history sample for each zone
+  ZONES.forEach(z => {
+    DIM_HISTORY[z.id].push(z.dim);
+    if (DIM_HISTORY[z.id].length > 300) DIM_HISTORY[z.id].shift();
+  });
+  // ambient drift
+  const lastLux = AMBIENT_HISTORY[AMBIENT_HISTORY.length-1] || 300;
+  const newLux = clamp(lastLux + (Math.random()-0.5)*25, 0, 800);
+  AMBIENT_HISTORY.push(newLux); if (AMBIENT_HISTORY.length>120) AMBIENT_HISTORY.shift();
+  LIT_HISTORY.push(ZONES.filter(z=>z.dim>0).length);
+  if (LIT_HISTORY.length>120) LIT_HISTORY.shift();
+  $('#kpi-lux').textContent = Math.round(newLux);
+  // re-render
+  updateOverview();
+  refreshBulkButtons();
+  if ($('#page-overview').classList.contains('on')) drawDim();
+  if ($('#page-overview').classList.contains('on')) drawAmbient();
+  if ($('#page-zones').classList.contains('on')) renderZones();
+  if ($('#page-activity').classList.contains('on')) renderLog();
+  if ($('#page-sensors').classList.contains('on')) drawLux();
+}
+setInterval(tick, 3500);
+
+// ─────────────────────── boot
+renderZones();
+populateLogFilters();
+renderLog();
+renderProfileTabs();
+loadProfileInputs();
+updateOverview();
+drawDim();
+drawAmbient();
+drawDonut();
+drawHeroRadial();
+startCurveAnimation();
+</script>
+</body>
+</html>

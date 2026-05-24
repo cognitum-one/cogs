@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>COGS Swarm Mesh Manager</title>
+<script>
+// Pre-paint theme bootstrap — applies the stored theme preference to <html>
+// BEFORE any CSS loads so the user never sees a flash of the wrong theme.
+(function(){
+  try{
+    var pref = localStorage.getItem('cogs-smm-theme') || 'dark';
+    var resolved = pref;
+    if (pref === 'system'){
+      resolved = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    if (resolved === 'light') document.documentElement.setAttribute('data-theme','light');
+    document.documentElement.setAttribute('data-theme-pref', pref);
+  }catch(_){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+ * COGS Swarm Mesh Manager — design system
+ *
+ *   HSL color tokens, typography, base layout (appbar, wrap, footer),
+ *   and the shared primitives this UI is built from:
+ *     .card / .kpi / .btn / .badge / .input / .toggle / .node / .svc
+ *
+ *   Light + dark theme via [data-theme] on <html>. Default = dark.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --glow-primary:185 80% 50%;
+  --glow-accent:142 70% 50%;
+  --surface-elevated:220 20% 12%;
+  --surface-overlay:220 20% 8%;
+  --gradient-hero:linear-gradient(135deg,hsl(220 25% 6%) 0%,hsl(220 20% 10%) 50%,hsl(200 25% 8%) 100%);
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-glow:0 0 60px -10px hsl(185 80% 50% / 0.3);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a:hover,.nav a.active,.nav a[data-active="true"]{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active,.nav a[data-active="true"]{color:hsl(var(--primary))}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:0.75rem;gap:0.5rem;
+}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* Empty-state card — used on /seeds and /analytics chart cards when there is
+ * no data yet. Friendlier than a bare empty table or "—" placeholder. */
+.empty-card{
+  background:var(--gradient-card);
+  border:1px dashed hsl(var(--border));
+  border-radius:var(--radius);
+  padding:1.5rem;
+  text-align:center;
+  color:hsl(var(--muted-foreground));
+}
+.empty-card h3{
+  font-size:1rem;font-weight:600;
+  color:hsl(var(--primary));
+  margin-bottom:0.5rem;
+  letter-spacing:-0.01em;
+}
+.empty-card p{
+  font-size:0.875rem;line-height:1.6;
+  max-width:36rem;margin:0 auto 0.75rem;
+}
+.empty-card ul{
+  text-align:left;max-width:36rem;margin:0.75rem auto 0;
+  padding-left:1.25rem;
+  font-size:0.8125rem;line-height:1.8;
+}
+.empty-card ul li + li{margin-top:0.25rem}
+.empty-card a{color:hsl(var(--primary))}
+.empty-card.compact{padding:1rem 1.125rem}
+.empty-card.compact p{font-size:0.8125rem;margin:0}
+
+/* KPI grid */
+.kpi-grid{
+  display:grid;gap:0.75rem;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Generic grids */
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+
+/* Node card */
+.node{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+}
+.node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+.node-name{font-size:0.875rem;font-weight:600}
+.node-meta{
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--muted-foreground));line-height:1.7;
+}
+.node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;
+  border:1px solid transparent;
+}
+.badge.role-master{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.2)}
+.badge.role-worker{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.2)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.unknown{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.paired{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.badge.unpaired{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.danger{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%);border-color:hsl(0 65% 50% / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+
+/* Service / generic small cards */
+.svc-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.svc{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:0.875rem 1rem;
+  display:flex;flex-direction:column;gap:0.4rem;
+}
+.svc-h{display:flex;align-items:center;justify-content:space-between;gap:0.4rem}
+.svc-name{font-size:0.875rem;font-weight:600}
+.svc-port{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.svc-detail{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));line-height:1.5}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.4rem 0.5rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{
+  background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);
+  border-color:hsl(var(--destructive) / 0.4);
+}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+
+/* Inputs — global baseline + .input modifier
+ * Every <input>, <textarea>, <select> inherits the dark theme so a stray
+ * field without class="input" (the white-bg cluster bug) still looks right.
+ */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=checkbox],input[type=radio]{accent-color:hsl(var(--primary));background:transparent;border:none;padding:0}
+input:disabled,textarea:disabled,select:disabled{opacity:0.5;cursor:not-allowed}
+.input{
+  width:100%;height:2.4rem;
+  border:1px solid hsl(var(--input));background:hsl(var(--background));
+}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* Modal */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem;
+  max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{
+  display:block;font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.4rem;
+}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.modal-result{
+  margin-top:0.875rem;padding:0.625rem 0.75rem;
+  font-family:var(--font-mono);font-size:0.75rem;
+  border-radius:0.4rem;display:none;
+}
+.modal-result.ok{display:block;background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border:1px solid hsl(142 70% 50% / 0.25)}
+.modal-result.err{display:block;background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border:1px solid hsl(0 65% 50% / 0.25)}
+
+/* Pre/log block */
+pre.logbox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));
+  white-space:pre-wrap;word-break:break-word;
+}
+
+/* Copy buttons */
+.copy-row{position:relative}
+.copy-btn{
+  position:absolute;top:0.4rem;right:0.4rem;
+  padding:0.2rem 0.5rem;border:1px solid hsl(var(--border));
+  border-radius:0.3rem;background:hsl(var(--secondary));
+  color:hsl(var(--foreground));font-family:var(--font-display);
+  font-size:0.6875rem;font-weight:500;cursor:pointer;opacity:0.7;
+  transition:all 0.2s;
+}
+.copy-btn:hover{opacity:1;border-color:hsl(var(--primary) / 0.5)}
+.copy-btn.copied{background:hsl(var(--accent) / 0.15);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.4)}
+
+/* Pill tabs (for categories etc.) */
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+}
+</style>
+<style>
+/* ──────────────────────────────────────────────────────────────────
+ * Swarm Mesh Manager — feature styles
+ * Builds on the design system above. Only the cog-specific UI lives
+ * here: hive visualization, peer table, live
+ * event feed, throughput sparklines, store grid, logs stream.
+ * ────────────────────────────────────────────────────────────────── */
+
+:root{
+  /* Cog-specific accents, all relative to Cognitum tokens so they
+   * track theme changes. */
+  --hive-queen: hsl(var(--primary));
+  --hive-queen-d: hsl(var(--primary) / 0.15);
+  --hive-worker: hsl(263 85% 72%);
+  --hive-worker-d: hsl(263 85% 72% / 0.15);
+  --hive-scout: hsl(35 75% 65%);
+  --hive-scout-d: hsl(35 75% 65% / 0.15);
+  --hive-offline: hsl(var(--destructive));
+  --hive-offline-d: hsl(var(--destructive) / 0.15);
+
+  --tone-info: hsl(var(--primary));
+  --tone-info-d: hsl(var(--primary) / 0.15);
+  --tone-ok: hsl(var(--accent));
+  --tone-ok-d: hsl(var(--accent) / 0.15);
+  --tone-warn: hsl(35 85% 60%);
+  --tone-warn-d: hsl(35 85% 60% / 0.15);
+  --tone-err: hsl(var(--destructive));
+  --tone-err-d: hsl(var(--destructive) / 0.15);
+  --tone-cfg: hsl(263 85% 72%);
+  --tone-cfg-d: hsl(263 85% 72% / 0.15);
+}
+
+/* Cog header: title, meta badges, action buttons */
+.cog-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem}
+.cog-header .titles{flex:1;min-width:18rem}
+.cog-header h1.page{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem}
+.cog-header .star{color:hsl(45 90% 65%);font-size:1rem;line-height:1}
+.cog-header .lede{margin:0.25rem 0 0.5rem;font-size:0.875rem;color:hsl(var(--muted-foreground));max-width:42rem}
+.cog-meta-badges{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem}
+.cog-meta-badges .meta-badge{
+  display:inline-flex;align-items:center;gap:0.35rem;padding:0.2rem 0.55rem;border-radius:0.4rem;
+  background:hsl(var(--secondary));border:1px solid hsl(var(--border) / 0.5);
+  font-size:0.6875rem;font-weight:500;color:hsl(var(--muted-foreground));
+}
+.cog-meta-badges .meta-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.cog-meta-badges .meta-badge.cat-swarm{background:hsl(263 85% 72% / 0.12);color:hsl(263 85% 78%);border-color:hsl(263 85% 72% / 0.25)}
+.cog-meta-badges .meta-badge.diff-easy{background:hsl(var(--accent) / 0.12);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.25)}
+.cog-header .actions{display:flex;gap:0.5rem;flex-wrap:wrap}
+
+/* Sub-nav for top-level page panes (Mesh / Store / Logs / Settings) */
+.subnav{
+  display:flex;gap:0.25rem;align-items:center;flex-wrap:wrap;
+  margin-bottom:1.25rem;padding-bottom:0.5rem;
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+.subnav .tab-btn{
+  padding:0.4rem 0.875rem;border-radius:0.4rem;border:1px solid transparent;
+  background:transparent;color:hsl(var(--muted-foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.15s;
+  display:inline-flex;align-items:center;gap:0.4rem;
+}
+.subnav .tab-btn:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.subnav .tab-btn.on{
+  color:hsl(var(--primary));background:hsl(var(--primary) / 0.1);
+  border-color:hsl(var(--primary) / 0.25);font-weight:600;
+}
+.subnav .tab-btn .badge-count{
+  background:hsl(var(--primary) / 0.18);color:hsl(var(--primary));
+  font-size:0.625rem;padding:0.05rem 0.4rem;border-radius:9999px;font-weight:600;
+}
+
+.page-pane{display:none}
+.page-pane.on{display:block}
+
+/* Each pane (Peers / Configuration / Logs / About) has its own page header
+ * inside its .page-pane container, so no global header to hide. */
+
+/* ─────────────────────────────────────────────────────────────────
+ * Light theme — overrides Cognitum dark tokens via [data-theme="light"]
+ * Applied to <html>. Default (no attribute) stays dark.
+ * ───────────────────────────────────────────────────────────────── */
+html[data-theme="light"]{
+  --background: 210 22% 97%;
+  --foreground: 220 25% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 14%;
+  --primary: 185 75% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 18% 93%;
+  --secondary-foreground: 220 25% 22%;
+  --accent: 142 60% 34%;
+  --accent-foreground: 0 0% 100%;
+  --muted: 220 15% 96%;
+  --muted-foreground: 215 14% 40%;
+  --destructive: 0 70% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 15% 86%;
+  --input: 220 15% 92%;
+  --ring: 185 75% 42%;
+  --surface-elevated: 0 0% 100%;
+  --surface-overlay: 210 20% 95%;
+  --gradient-hero: linear-gradient(135deg, hsl(210 22% 98%) 0%, hsl(0 0% 100%) 50%, hsl(200 25% 96%) 100%);
+  --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+  --gradient-glow: radial-gradient(ellipse at center, hsl(185 75% 42% / 0.12) 0%, transparent 70%);
+  --shadow-glow: 0 0 40px -8px hsl(185 75% 42% / 0.18);
+  --shadow-card: 0 4px 14px -4px hsl(220 25% 50% / 0.12);
+  color-scheme: light;
+}
+html:not([data-theme="light"]){color-scheme: dark}
+
+/* The swarm visualization keeps a dark "data canvas" surface in both modes
+ * so the hive SVGs and connection lines stay legible regardless of chrome. */
+html[data-theme="light"] .viz-section{
+  background:linear-gradient(180deg,hsl(220 25% 10%) 0%,hsl(220 25% 6%) 100%);
+  border-color:hsl(220 15% 75%);
+  box-shadow:0 4px 14px -4px hsl(220 25% 50% / 0.18);
+}
+html[data-theme="light"] .viz-overlay,
+html[data-theme="light"] .viz-tool-btn,
+html[data-theme="light"] .viz-footer{
+  background:hsl(220 25% 8% / 0.85);
+  border-color:hsl(220 15% 25%);
+}
+html[data-theme="light"] .viz-status-text{color:hsl(210 20% 92%)}
+html[data-theme="light"] .viz-meta-text,
+html[data-theme="light"] .viz-footer-left{color:hsl(210 20% 75%)}
+html[data-theme="light"] .viz-tool-btn{color:hsl(210 20% 75%)}
+html[data-theme="light"] .viz-grid{opacity:0.08}
+html[data-theme="light"] .hive-label{
+  background:hsl(220 25% 8% / 0.85);
+  color:hsl(210 20% 80%);
+  border-color:hsl(220 15% 25%);
+}
+/* Live-stream event feed and sparklines also sit in the cog's "telemetry"
+ * column — keep their type readable in light mode. */
+html[data-theme="light"] .events-list .event-name{color:hsl(185 75% 32%)}
+html[data-theme="light"] .events-list .event-detail{color:hsl(215 14% 38%)}
+
+/* Theme toggle button in the appbar */
+.theme-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:0.4rem;
+  background:hsl(var(--secondary));
+  border:1px solid hsl(var(--border));
+  color:hsl(var(--muted-foreground));
+  cursor:pointer;transition:all 0.15s;margin-left:0.5rem;
+}
+.theme-toggle:hover{color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.5)}
+.theme-toggle svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.theme-toggle .sun{display:none}
+.theme-toggle .moon{display:block}
+html[data-theme="light"] .theme-toggle .sun{display:block}
+html[data-theme="light"] .theme-toggle .moon{display:none}
+
+/* KPI strip — extra accent variants */
+.kpi.green .kpi-ic{background:hsl(var(--accent) / 0.12)}
+.kpi.green .kpi-ic svg{stroke:hsl(var(--accent))}
+.kpi.amber .kpi-ic{background:hsl(35 85% 60% / 0.12)}
+.kpi.amber .kpi-ic svg{stroke:hsl(35 85% 60%)}
+.kpi.purple .kpi-ic{background:hsl(263 85% 72% / 0.12)}
+.kpi.purple .kpi-ic svg{stroke:hsl(263 85% 72%)}
+
+/* Swarm visualization */
+.viz-section{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  overflow:hidden;
+  position:relative;
+  margin-bottom:1.25rem;
+}
+.viz-overlay{
+  position:absolute;top:1rem;left:1rem;z-index:20;
+  display:inline-flex;align-items:center;gap:0.5rem;
+  background:hsl(var(--background) / 0.75);
+  backdrop-filter:blur(8px);
+  border:1px solid hsl(var(--border) / 0.5);
+  padding:0.4rem 0.75rem;border-radius:0.5rem;
+}
+.viz-status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:hsl(var(--accent));box-shadow:0 0 6px hsl(var(--accent) / 0.6);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.viz-status-text{font-size:0.75rem;font-weight:500;color:hsl(var(--foreground))}
+.viz-divider{width:1px;height:0.875rem;background:hsl(var(--border))}
+.viz-meta-text{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+
+.viz-tools{position:absolute;top:1rem;right:1rem;z-index:20;display:flex;gap:0.4rem}
+.viz-tool-btn{
+  width:32px;height:32px;
+  background:hsl(var(--background) / 0.75);
+  backdrop-filter:blur(8px);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;color:hsl(var(--muted-foreground));
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.viz-tool-btn:hover{color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.4)}
+
+.viz-canvas-wrap{height:440px;position:relative;overflow:hidden}
+#swarm-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.viz-grid{position:absolute;inset:0;opacity:0.05;background-image:radial-gradient(circle at 1px 1px,hsl(var(--foreground)) 1px,transparent 0);background-size:24px 24px;pointer-events:none}
+.viz-mesh{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+.hive-node{position:absolute;transform:translate(-50%,-50%);z-index:10;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.hive-pulse{position:absolute;border-radius:50%;background:hsl(var(--primary) / 0.12);animation:hive-pulse 3s infinite}
+@keyframes hive-pulse{0%{transform:scale(0.6);opacity:0.8}100%{transform:scale(1.6);opacity:0}}
+.hive-svg{position:relative;z-index:2;transition:transform 0.2s}
+.hive-node:hover .hive-svg{transform:scale(1.08)}
+.hive-label{
+  margin-top:0.4rem;
+  font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));
+  background:hsl(var(--background) / 0.75);
+  padding:0.1rem 0.4rem;border-radius:0.25rem;
+  border:1px solid hsl(var(--border) / 0.5);
+  white-space:nowrap;
+}
+.hive-node.queen .hive-label{color:hsl(var(--primary));font-size:0.6875rem;font-weight:600}
+.hive-node.warning .hive-label{color:hsl(35 85% 60%);border-color:hsl(35 85% 60% / 0.35)}
+.hive-node.offline .hive-label{color:hsl(var(--destructive));border-color:hsl(var(--destructive) / 0.35);opacity:0.7}
+.hive-node.offline .hive-svg{filter:grayscale(0.7) opacity(0.5)}
+
+.viz-footer{
+  background:hsl(var(--background) / 0.7);
+  border-top:1px solid hsl(var(--border) / 0.5);
+  padding:0.75rem 1.125rem;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.625rem;
+  backdrop-filter:blur(8px);position:relative;z-index:5;
+}
+.viz-footer-left{display:flex;align-items:center;gap:0.875rem;font-size:0.75rem;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+.viz-legend{display:flex;align-items:center;gap:0.4rem;font-family:var(--font-mono);font-size:0.6875rem}
+.viz-legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* Inner section tabs (Peers / Mesh Config / About inside the Mesh pane) */
+.section-tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:1px solid hsl(var(--border) / 0.5)}
+.section-tab{
+  padding:0.625rem 1rem;font-size:0.8125rem;font-weight:600;cursor:pointer;
+  border:none;background:transparent;color:hsl(var(--muted-foreground));
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all 0.15s;font-family:var(--font-display);
+  display:inline-flex;align-items:center;gap:0.4rem;
+}
+.section-tab:hover{color:hsl(var(--foreground))}
+.section-tab.on{color:hsl(var(--primary));border-bottom-color:hsl(var(--primary))}
+.section-tab .tab-count{
+  background:hsl(var(--primary) / 0.18);color:hsl(var(--primary));
+  font-size:0.625rem;padding:0.05rem 0.45rem;border-radius:9999px;font-weight:600;
+}
+.tab-pane{display:none}
+.tab-pane.on{display:block}
+
+/* Two-column content layout (main + sidebar) */
+.content-grid{display:grid;grid-template-columns:1fr 22rem;gap:1.25rem}
+@media (max-width:1024px){.content-grid{grid-template-columns:1fr}}
+
+/* Panel (table host) */
+.panel-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.panel-h{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.875rem 1.125rem;border-bottom:1px solid hsl(var(--border) / 0.5);
+  gap:0.625rem;flex-wrap:wrap;
+}
+.panel-title{
+  font-size:0.875rem;font-weight:600;color:hsl(var(--foreground));
+  display:inline-flex;align-items:center;gap:0.5rem;
+}
+.panel-title .ico{color:hsl(var(--primary))}
+.panel-actions{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+
+.search-wrap{position:relative;display:inline-block}
+.search-wrap::before{
+  content:'⌕';position:absolute;left:0.625rem;top:50%;transform:translateY(-50%);
+  color:hsl(var(--muted-foreground));pointer-events:none;font-size:0.875rem;
+}
+.search-input{
+  padding-left:1.75rem !important;width:13rem;font-size:0.75rem;
+}
+
+/* Peer table */
+.peer-table{width:100%;border-collapse:collapse;font-size:0.75rem}
+.peer-table th{
+  text-align:left;padding:0.625rem 1rem;
+  font-size:0.625rem;text-transform:uppercase;letter-spacing:0.06em;
+  color:hsl(var(--muted-foreground));font-weight:600;
+  background:hsl(var(--background) / 0.4);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+.peer-table td{
+  padding:0.75rem 1rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  color:hsl(var(--foreground));vertical-align:middle;
+}
+.peer-table tr:last-child td{border-bottom:none}
+.peer-table tr:hover td{background:hsl(var(--secondary) / 0.4)}
+
+.peer-name{display:flex;align-items:center;gap:0.625rem;font-weight:500}
+.peer-mini-hive{width:30px;height:36px;flex-shrink:0}
+.peer-name-text{display:flex;flex-direction:column;line-height:1.2}
+.peer-name-text b{color:hsl(var(--foreground));font-size:0.8125rem;font-weight:600}
+.peer-name-text span{color:hsl(var(--muted-foreground));font-family:var(--font-mono);font-size:0.625rem}
+
+.peer-status{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.15rem 0.5rem;border-radius:0.3rem;
+  font-size:0.625rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
+  border:1px solid transparent;
+}
+.peer-status.online{background:var(--tone-ok-d);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.25)}
+.peer-status.warning{background:var(--tone-warn-d);color:hsl(35 85% 70%);border-color:hsl(35 85% 60% / 0.25)}
+.peer-status.offline{background:var(--tone-err-d);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.25)}
+.peer-status.syncing{background:var(--tone-info-d);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+.peer-status .pdot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.peer-status.online .pdot{box-shadow:0 0 6px currentColor;animation:pulse 2s infinite}
+
+.health-bar{display:flex;align-items:center;gap:0.5rem}
+.health-bar-track{width:60px;height:5px;background:hsl(var(--background));border-radius:3px;overflow:hidden}
+.health-bar-fill{height:100%;border-radius:3px;background:hsl(var(--accent))}
+.health-bar-fill.warn{background:hsl(35 85% 60%)}
+.health-bar-fill.crit{background:hsl(var(--destructive))}
+.health-bar-text{font-family:var(--font-mono);font-size:0.625rem;color:hsl(var(--muted-foreground));min-width:32px}
+
+.sync-cell{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.sync-cell b{color:hsl(var(--foreground));font-weight:600}
+.sync-progress{margin-top:4px;width:80px;height:3px;background:hsl(var(--background));border-radius:2px;overflow:hidden}
+.sync-progress-fill{height:100%;background:hsl(var(--primary));transition:width 0.3s}
+
+.peer-actions{display:flex;gap:0.25rem;justify-content:flex-end}
+.icon-btn{
+  width:26px;height:26px;border-radius:0.3rem;
+  background:transparent;border:1px solid transparent;
+  color:hsl(var(--muted-foreground));cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:0.8125rem;transition:all 0.12s;
+}
+.icon-btn:hover{color:hsl(var(--primary));border-color:hsl(var(--border));background:hsl(var(--secondary))}
+.icon-btn.danger:hover{color:hsl(var(--destructive));border-color:hsl(var(--destructive) / 0.4)}
+
+/* Sidebar panels */
+.sidebar{display:flex;flex-direction:column;gap:1rem}
+
+.cfg-title{
+  font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground));
+  display:inline-flex;align-items:center;gap:0.5rem;
+  margin-bottom:0.875rem;padding-bottom:0.75rem;
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+.cfg-title .ico{color:hsl(var(--primary))}
+.cfg-group{margin-bottom:0.875rem}
+.cfg-group:last-child{margin-bottom:0}
+.cfg-label{
+  display:block;font-size:0.625rem;font-weight:600;
+  color:hsl(var(--muted-foreground));margin-bottom:0.35rem;
+  text-transform:uppercase;letter-spacing:0.05em;
+}
+.cfg-help{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.25rem;line-height:1.4}
+.cfg-toggle-row{
+  display:flex;justify-content:space-between;align-items:center;gap:0.5rem;
+  padding:0.5rem 0;border-top:1px solid hsl(var(--border) / 0.4);
+}
+.cfg-toggle-row:first-of-type{border-top:none}
+.cfg-toggle-label{font-size:0.75rem;color:hsl(var(--foreground))}
+.cfg-toggle-help{font-size:0.625rem;color:hsl(var(--muted-foreground));margin-top:0.1rem}
+.toggle{
+  position:relative;width:34px;height:18px;
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:10px;cursor:pointer;transition:all 0.18s;flex-shrink:0;
+}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:hsl(var(--muted-foreground));transition:all 0.18s;
+}
+.toggle.on{background:hsl(var(--primary) / 0.18);border-color:hsl(var(--primary))}
+.toggle.on::after{left:18px;background:hsl(var(--primary))}
+
+.password-row{display:flex;gap:0.4rem}
+.password-row .input{flex:1;font-family:var(--font-mono)}
+.password-toggle{
+  padding:0 0.625rem;background:hsl(var(--secondary));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  color:hsl(var(--muted-foreground));cursor:pointer;font-size:0.75rem;
+}
+.password-toggle:hover{color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.5)}
+
+/* Live event stream */
+.events-list{max-height:18rem;overflow-y:auto;font-family:var(--font-mono);font-size:0.6875rem}
+.events-list::-webkit-scrollbar{width:6px}
+.events-list::-webkit-scrollbar-thumb{background:hsl(var(--border));border-radius:3px}
+.event-item{
+  display:flex;gap:0.625rem;padding:0.5rem 1rem;
+  border-bottom:1px solid hsl(var(--border) / 0.3);align-items:flex-start;
+}
+.event-item:last-child{border-bottom:none}
+.event-item:hover{background:hsl(var(--secondary) / 0.4)}
+.event-time{color:hsl(var(--muted-foreground) / 0.7);font-size:0.625rem;flex-shrink:0;width:48px;padding-top:1px}
+.event-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.event-dot.discover{background:hsl(217 90% 65%);box-shadow:0 0 6px hsl(217 90% 65%)}
+.event-dot.online{background:hsl(var(--accent));box-shadow:0 0 6px hsl(var(--accent))}
+.event-dot.offline{background:hsl(var(--destructive));box-shadow:0 0 6px hsl(var(--destructive))}
+.event-dot.config{background:hsl(263 85% 72%);box-shadow:0 0 6px hsl(263 85% 72%)}
+.event-content{flex:1;min-width:0}
+.event-name{color:hsl(var(--primary));font-weight:500}
+.event-detail{color:hsl(var(--muted-foreground));font-size:0.625rem;margin-top:1px}
+
+/* Emitted-event tags */
+.event-tag{
+  background:hsl(var(--background) / 0.6);
+  border:1px solid hsl(var(--border) / 0.5);
+  padding:0.15rem 0.5rem;border-radius:0.25rem;
+  font-size:0.625rem;font-family:var(--font-mono);
+  color:hsl(var(--primary));
+  display:inline-flex;align-items:center;gap:0.3rem;
+}
+.event-tag .dot{width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.events-tag-list{display:flex;flex-wrap:wrap;gap:0.4rem}
+
+/* Detail grid (About tab) */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.625rem}
+.detail-card{
+  background:hsl(var(--background) / 0.5);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;padding:0.75rem;
+}
+.detail-card-label{
+  font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.4rem;
+  display:flex;align-items:center;gap:0.4rem;font-weight:600;
+}
+.detail-card-value{font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground))}
+.detail-card-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.15rem}
+
+.desc-text{font-size:0.8125rem;color:hsl(var(--muted-foreground));line-height:1.65}
+.repo-row{
+  display:flex;justify-content:space-between;align-items:center;gap:0.875rem;
+  padding:0.75rem 1rem;background:hsl(var(--background) / 0.5);
+  border:1px solid hsl(var(--border) / 0.5);border-radius:0.5rem;margin-top:0.75rem;
+}
+.repo-path{
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+  display:flex;align-items:center;gap:0.4rem;overflow:hidden;min-width:0;
+}
+.repo-path .ico{color:hsl(var(--primary));flex-shrink:0}
+.repo-path .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Throughput panel + sparklines */
+.thru-row{
+  display:flex;align-items:center;justify-content:space-between;gap:0.625rem;
+  padding:0.5rem 0;border-top:1px solid hsl(var(--border) / 0.4);
+}
+.thru-row:first-of-type{border-top:none;padding-top:0}
+.thru-meta{display:flex;flex-direction:column;gap:0.125rem;min-width:0}
+.thru-label{
+  font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));font-weight:600;
+}
+.thru-value{
+  font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground));
+  font-family:var(--font-mono);line-height:1.1;
+}
+.thru-value em{font-size:0.625rem;font-style:normal;color:hsl(var(--muted-foreground));font-weight:400;margin-left:2px}
+.sparkline{width:100px;height:32px;flex-shrink:0}
+.thru-footer{
+  display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.625rem;
+  padding-top:0.625rem;border-top:1px solid hsl(var(--border) / 0.4);
+}
+.thru-footer > div{display:flex;flex-direction:column;gap:0.125rem;min-width:0}
+.thru-foot-label{
+  font-size:0.5625rem;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));font-weight:600;
+}
+.thru-foot-val{font-size:0.75rem;color:hsl(var(--foreground));font-family:var(--font-mono);font-weight:500}
+
+/* Mesh logs */
+.log-row{display:flex;gap:0.75rem;padding:0.4rem 1rem;border-bottom:1px solid hsl(var(--border) / 0.3);align-items:flex-start}
+.log-row:hover{background:hsl(var(--secondary) / 0.4)}
+.log-row .lt{color:hsl(var(--muted-foreground) / 0.7);font-size:0.625rem;width:64px;flex-shrink:0;padding-top:1px}
+.log-row .ll{
+  font-size:0.5625rem;font-weight:700;letter-spacing:0.05em;
+  width:46px;flex-shrink:0;padding:0.05rem 0.3rem;
+  border-radius:0.2rem;text-align:center;text-transform:uppercase;
+}
+.log-row .ll.info{background:var(--tone-info-d);color:hsl(var(--primary))}
+.log-row .ll.warn{background:var(--tone-warn-d);color:hsl(35 85% 70%)}
+.log-row .ll.error{background:var(--tone-err-d);color:hsl(0 70% 70%)}
+.log-row .lp{color:hsl(263 85% 72%);width:96px;flex-shrink:0;font-size:0.625rem;padding-top:1px}
+.log-row .lm{color:hsl(var(--foreground));font-size:0.6875rem;flex:1;min-width:0;word-break:break-word}
+
+/* Inline filter selects */
+.inline-select{width:auto;height:2rem;padding:0.25rem 0.625rem;font-size:0.75rem}
+
+@media (max-width:640px){
+  .peer-table th:nth-child(3),.peer-table td:nth-child(3){display:none}
+  .peer-table th:nth-child(5),.peer-table td:nth-child(5){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Cognitum shared appbar -->
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><polygon points="12,3 21,7.5 21,16.5 12,21 3,16.5 3,7.5"/><circle cx="12" cy="12" r="2.2"/></svg></div>
+      <span class="brand-text"><b>Swarm Mesh Manager</b><span class="slash">·</span>COGS<span class="brand-ver mono" id="ver">v1.0.0</span></span>
+    </div>
+    <nav class="nav">
+      <a href="#peers"  data-pane="peers"  class="active" data-active="true">⬡ Peers</a>
+      <a href="#config" data-pane="config">⚙ Configuration</a>
+      <a href="#logs"   data-pane="logs">≡ Mesh logs</a>
+      <a href="#about"  data-pane="about">ⓘ About</a>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark theme" aria-label="Toggle theme">
+        <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="sun"  viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </nav>
+  </div>
+</div>
+<div class="wrap">
+
+  <!-- ════════════════════════════════════════════════════════════
+       COGS Swarm Mesh Manager
+       4 panes selected by the top nav:
+         Peers (default)  · Configuration · Mesh logs · About
+       ════════════════════════════════════════════════════════════ -->
+
+  <!-- ─────────────────────────  PEERS  ───────────────────────── -->
+  <div class="page-pane on" id="pane-peers" role="tabpanel">
+
+    <div class="section">
+      <div class="cog-header">
+        <div class="titles">
+          <h1 class="page">Peers</h1>
+          <p class="lede">Live status of every seed in the mesh — health, sync progress, address, last-seen. Auto-discovered via mDNS and UDP broadcast.</p>
+        </div>
+        <div class="actions">
+          <button class="btn outline">⟳ Rescan network</button>
+        </div>
+      </div>
+    </div>
+
+<!-- KPI strip -->
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Total hives</div>
+            <div class="kpi-val">14</div>
+            <div class="kpi-sub">in swarm</div>
+          </div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Online</div>
+            <div class="kpi-val">11</div>
+            <div class="kpi-sub">healthy peers</div>
+          </div>
+        </div>
+        <div class="kpi amber">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Degraded</div>
+            <div class="kpi-val">2</div>
+            <div class="kpi-sub">need attention</div>
+          </div>
+        </div>
+        <div class="kpi purple">
+          <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></div>
+          <div class="kpi-info">
+            <div class="kpi-label">Sync health</div>
+            <div class="kpi-val">98.4%</div>
+            <div class="kpi-sub">vectors in sync</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Swarm visualization -->
+    <section class="viz-section">
+      <div class="viz-overlay">
+        <div class="viz-status-dot"></div>
+        <span class="viz-status-text">Swarm active</span>
+        <div class="viz-divider"></div>
+        <span class="viz-meta-text">14 hives · 3,500 scouts</span>
+      </div>
+      <div class="viz-tools">
+        <div class="viz-tool-btn" title="Fullscreen">⛶</div>
+        <div class="viz-tool-btn" title="Filter">≡</div>
+      </div>
+
+      <div class="viz-canvas-wrap">
+        <canvas id="swarm-canvas"></canvas>
+        <div class="viz-grid"></div>
+
+        <!-- Mesh connections -->
+        <svg class="viz-mesh" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="hsl(185 80% 50%)" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="hsl(263 85% 72%)" stop-opacity="0.5"/>
+            </linearGradient>
+          </defs>
+          <!-- Queen connections -->
+          <line x1="50%" y1="50%" x2="25%" y2="25%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="50%" y1="50%" x2="75%" y2="22%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="50%" y1="50%" x2="20%" y2="75%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="50%" y1="50%" x2="80%" y2="72%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="50%" y1="50%" x2="30%" y2="50%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <line x1="50%" y1="50%" x2="70%" y2="50%" stroke="url(#lineGrad)" stroke-width="2"/>
+          <!-- Mesh -->
+          <line x1="25%" y1="25%" x2="10%" y2="45%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="25%" y1="25%" x2="15%" y2="15%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="75%" y1="22%" x2="60%" y2="15%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="20%" y1="75%" x2="40%" y2="85%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="80%" y1="72%" x2="90%" y2="40%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="80%" y1="72%" x2="85%" y2="85%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="20%" y1="75%" x2="30%" y2="50%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="75%" y1="22%" x2="70%" y2="50%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <line x1="40%" y1="85%" x2="65%" y2="90%" stroke="hsl(185 80% 50% / 0.3)" stroke-width="1.5"/>
+          <!-- Discovery dashed -->
+          <line x1="10%" y1="45%" x2="3%"  y2="60%" stroke="hsl(263 85% 72% / 0.4)" stroke-width="1.5" stroke-dasharray="3 4"/>
+          <line x1="90%" y1="40%" x2="97%" y2="50%" stroke="hsl(263 85% 72% / 0.4)" stroke-width="1.5" stroke-dasharray="3 4"/>
+          <line x1="15%" y1="15%" x2="3%"  y2="10%" stroke="hsl(263 85% 72% / 0.4)" stroke-width="1.5" stroke-dasharray="3 4"/>
+          <line x1="60%" y1="15%" x2="97%" y2="15%" stroke="hsl(263 85% 72% / 0.4)" stroke-width="1.5" stroke-dasharray="3 4"/>
+          <line x1="65%" y1="90%" x2="90%" y2="97%" stroke="hsl(263 85% 72% / 0.4)" stroke-width="1.5" stroke-dasharray="3 4"/>
+        </svg>
+
+        <!-- SVG defs: hive symbols -->
+        <svg width="0" height="0" style="position:absolute">
+          <defs>
+            <linearGradient id="bodyQ" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="hsl(220 25% 12%)"/>
+              <stop offset="100%" stop-color="hsl(220 25% 6%)"/>
+            </linearGradient>
+            <linearGradient id="bodyW" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="hsl(263 30% 14%)"/>
+              <stop offset="100%" stop-color="hsl(263 30% 8%)"/>
+            </linearGradient>
+            <linearGradient id="bodyS" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="hsl(35 30% 14%)"/>
+              <stop offset="100%" stop-color="hsl(35 30% 8%)"/>
+            </linearGradient>
+
+            <radialGradient id="qGlow" cx="50%" cy="60%">
+              <stop offset="0%"   stop-color="hsl(185 80% 50%)" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="wGlow" cx="50%" cy="60%">
+              <stop offset="0%"   stop-color="hsl(263 85% 72%)" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="hsl(263 85% 72%)" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="sGlow" cx="50%" cy="60%">
+              <stop offset="0%"   stop-color="hsl(35 85% 60%)" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="hsl(35 85% 60%)" stop-opacity="0"/>
+            </radialGradient>
+
+            <!-- Full brain emblem -->
+            <symbol id="full-brain" viewBox="0 0 44 44">
+              <ellipse cx="22" cy="22" rx="19" ry="17" fill="hsl(220 25% 6%)" opacity="0.55"/>
+              <ellipse cx="22" cy="22" rx="19" ry="17" fill="none" stroke="hsl(220 25% 6%)" stroke-width="0.8" opacity="0.8"/>
+              <path d="M 21 7 C 16 7, 11 9, 9 13 C 6 13, 4 16, 6 19 C 3 21, 3 26, 6 28 C 6 32, 10 35, 15 34 C 18 35, 20 35, 21 33 L 21 7 Z"
+                    fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1" stroke-linejoin="round"/>
+              <path d="M 23 7 C 28 7, 33 9, 35 13 C 38 13, 40 16, 38 19 C 41 21, 41 26, 38 28 C 38 32, 34 35, 29 34 C 26 35, 24 35, 23 33 L 23 7 Z"
+                    fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1" stroke-linejoin="round"/>
+              <path d="M 18 33 C 18 37, 20 38, 22 38 C 24 38, 26 37, 26 33 Z"
+                    fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1" stroke-linejoin="round"/>
+              <g stroke="hsl(220 25% 6%)" stroke-width="0.7" fill="none" stroke-linecap="round" opacity="0.85">
+                <path d="M 12 12 C 14 11, 16 13, 18 11"/>
+                <path d="M 9 17 C 12 16, 15 18, 18 16"/>
+                <path d="M 8 22 C 11 21, 14 23, 18 21"/>
+                <path d="M 9 27 C 12 26, 15 28, 18 26"/>
+                <path d="M 12 31 C 14 30, 16 32, 19 30"/>
+              </g>
+              <g stroke="hsl(220 25% 6%)" stroke-width="0.7" fill="none" stroke-linecap="round" opacity="0.85">
+                <path d="M 32 12 C 30 11, 28 13, 26 11"/>
+                <path d="M 35 17 C 32 16, 29 18, 26 16"/>
+                <path d="M 36 22 C 33 21, 30 23, 26 21"/>
+                <path d="M 35 27 C 32 26, 29 28, 26 26"/>
+                <path d="M 32 31 C 30 30, 28 32, 25 30"/>
+              </g>
+              <line x1="22" y1="7" x2="22" y2="33" stroke="hsl(220 25% 6%)" stroke-width="0.6" opacity="0.5"/>
+            </symbol>
+
+            <!-- Queen beehive (cyan/primary) -->
+            <symbol id="hive-queen" viewBox="0 0 110 132">
+              <ellipse cx="55" cy="74" rx="58" ry="52" fill="url(#qGlow)"/>
+              <ellipse cx="55" cy="124" rx="44" ry="3" fill="rgba(0,0,0,0.5)"/>
+              <path d="M 55 14 C 28 14, 16 38, 16 70 C 16 92, 18 110, 22 120 L 88 120 C 92 110, 94 92, 94 70 C 94 38, 82 14, 55 14 Z"
+                    fill="url(#bodyQ)" stroke="hsl(185 80% 50%)" stroke-width="1.8"/>
+              <g fill="none" stroke="hsl(185 80% 50%)" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
+                <path d="M 26 38 Q 55 33 84 38"/>
+                <path d="M 21 60 Q 55 55 89 60"/>
+                <path d="M 18 82 Q 55 77 92 82"/>
+                <path d="M 20 104 Q 55 99 90 104"/>
+              </g>
+              <use href="#full-brain" x="33" y="56" width="44" height="44"/>
+              <ellipse cx="55" cy="113" rx="6.5" ry="3.4" fill="hsl(220 25% 6%)" stroke="hsl(185 80% 50%)" stroke-width="1.2"/>
+              <ellipse cx="55" cy="112" rx="4" ry="0.5" fill="hsl(185 80% 70%)" opacity="0.5"/>
+              <rect x="40" y="118.5" width="30" height="2.4" rx="0.4" fill="hsl(220 15% 18%)" stroke="hsl(185 80% 50%)" stroke-width="0.6"/>
+            </symbol>
+
+            <!-- Worker beehive (purple) -->
+            <symbol id="hive-worker" viewBox="0 0 110 132">
+              <ellipse cx="55" cy="74" rx="56" ry="50" fill="url(#wGlow)"/>
+              <ellipse cx="55" cy="124" rx="42" ry="2.8" fill="rgba(0,0,0,0.5)"/>
+              <path d="M 55 14 C 28 14, 16 38, 16 70 C 16 92, 18 110, 22 120 L 88 120 C 92 110, 94 92, 94 70 C 94 38, 82 14, 55 14 Z"
+                    fill="url(#bodyW)" stroke="hsl(263 85% 72%)" stroke-width="1.8"/>
+              <g fill="none" stroke="hsl(263 85% 72%)" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
+                <path d="M 26 38 Q 55 33 84 38"/>
+                <path d="M 21 60 Q 55 55 89 60"/>
+                <path d="M 18 82 Q 55 77 92 82"/>
+                <path d="M 20 104 Q 55 99 90 104"/>
+              </g>
+              <use href="#full-brain" x="33" y="56" width="44" height="44"/>
+              <ellipse cx="55" cy="113" rx="6" ry="3.2" fill="hsl(220 25% 6%)" stroke="hsl(263 85% 72%)" stroke-width="1.2"/>
+              <rect x="40" y="118.5" width="30" height="2.4" rx="0.4" fill="hsl(220 15% 18%)" stroke="hsl(263 85% 72%)" stroke-width="0.6"/>
+            </symbol>
+
+            <!-- Scout beehive (amber) -->
+            <symbol id="hive-scout" viewBox="0 0 110 132">
+              <ellipse cx="55" cy="74" rx="54" ry="48" fill="url(#sGlow)"/>
+              <ellipse cx="55" cy="124" rx="40" ry="2.4" fill="rgba(0,0,0,0.5)"/>
+              <path d="M 55 14 C 28 14, 16 38, 16 70 C 16 92, 18 110, 22 120 L 88 120 C 92 110, 94 92, 94 70 C 94 38, 82 14, 55 14 Z"
+                    fill="url(#bodyS)" stroke="hsl(35 85% 60%)" stroke-width="1.8"/>
+              <g fill="none" stroke="hsl(35 85% 60%)" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
+                <path d="M 26 38 Q 55 33 84 38"/>
+                <path d="M 21 60 Q 55 55 89 60"/>
+                <path d="M 18 82 Q 55 77 92 82"/>
+                <path d="M 20 104 Q 55 99 90 104"/>
+              </g>
+              <use href="#full-brain" x="33" y="56" width="44" height="44"/>
+              <ellipse cx="55" cy="113" rx="5.5" ry="3" fill="hsl(220 25% 6%)" stroke="hsl(35 85% 60%)" stroke-width="1.2"/>
+              <rect x="42" y="118.5" width="26" height="2.2" rx="0.4" fill="hsl(220 15% 18%)" stroke="hsl(35 85% 60%)" stroke-width="0.6"/>
+            </symbol>
+          </defs>
+        </svg>
+
+        <!-- Queen (center) -->
+        <div class="hive-node queen" style="top:50%;left:50%">
+          <div class="hive-pulse" style="width:96px;height:96px;left:50%;top:62%;transform:translate(-50%,-50%)"></div>
+          <svg class="hive-svg" width="100" height="120"><use href="#hive-queen"/></svg>
+          <div class="hive-label">swarm_root</div>
+        </div>
+
+        <!-- Workers -->
+        <div class="hive-node" style="top:25%;left:25%">
+          <div class="hive-pulse" style="width:64px;height:64px;left:50%;top:62%;transform:translate(-50%,-50%);background:hsl(263 85% 72% / 0.16)"></div>
+          <svg class="hive-svg" width="70" height="84"><use href="#hive-worker"/></svg>
+          <div class="hive-label">swarm_alpha</div>
+        </div>
+        <div class="hive-node" style="top:22%;left:75%">
+          <div class="hive-pulse" style="width:64px;height:64px;left:50%;top:62%;transform:translate(-50%,-50%);background:hsl(263 85% 72% / 0.16)"></div>
+          <svg class="hive-svg" width="70" height="84"><use href="#hive-worker"/></svg>
+          <div class="hive-label">swarm_beta</div>
+        </div>
+        <div class="hive-node warning" style="top:75%;left:20%">
+          <div class="hive-pulse" style="width:64px;height:64px;left:50%;top:62%;transform:translate(-50%,-50%);background:hsl(35 85% 60% / 0.22)"></div>
+          <svg class="hive-svg" width="70" height="84"><use href="#hive-worker"/></svg>
+          <div class="hive-label">swarm_gamma ⚠</div>
+        </div>
+        <div class="hive-node" style="top:72%;left:80%">
+          <div class="hive-pulse" style="width:64px;height:64px;left:50%;top:62%;transform:translate(-50%,-50%);background:hsl(263 85% 72% / 0.16)"></div>
+          <svg class="hive-svg" width="70" height="84"><use href="#hive-worker"/></svg>
+          <div class="hive-label">swarm_delta</div>
+        </div>
+
+        <!-- Scouts -->
+        <div class="hive-node" style="top:45%;left:10%"><svg class="hive-svg" width="50" height="60"><use href="#hive-scout"/></svg><div class="hive-label">swarm_eps</div></div>
+        <div class="hive-node" style="top:85%;left:40%"><svg class="hive-svg" width="50" height="60"><use href="#hive-scout"/></svg><div class="hive-label">swarm_zeta</div></div>
+        <div class="hive-node" style="top:15%;left:60%"><svg class="hive-svg" width="50" height="60"><use href="#hive-scout"/></svg><div class="hive-label">swarm_eta</div></div>
+        <div class="hive-node" style="top:40%;left:90%"><svg class="hive-svg" width="50" height="60"><use href="#hive-scout"/></svg><div class="hive-label">swarm_theta</div></div>
+        <div class="hive-node" style="top:50%;left:30%"><svg class="hive-svg" width="42" height="50"><use href="#hive-scout"/></svg><div class="hive-label">swarm_iota</div></div>
+        <div class="hive-node" style="top:50%;left:70%"><svg class="hive-svg" width="42" height="50"><use href="#hive-scout"/></svg><div class="hive-label">swarm_kappa</div></div>
+        <div class="hive-node" style="top:15%;left:15%"><svg class="hive-svg" width="36" height="43"><use href="#hive-scout"/></svg></div>
+        <div class="hive-node offline" style="top:85%;left:85%"><svg class="hive-svg" width="36" height="43"><use href="#hive-scout"/></svg><div class="hive-label">swarm_mu</div></div>
+      </div>
+
+      <div class="viz-footer">
+        <div class="viz-footer-left">
+          <span style="display:flex;align-items:center;gap:0.4rem;color:hsl(var(--primary))">⊙ Auto-discovery scanning…</span>
+          <span class="viz-legend"><span class="viz-legend-dot" style="background:hsl(185 80% 50%)"></span>Queen</span>
+          <span class="viz-legend"><span class="viz-legend-dot" style="background:hsl(263 85% 72%)"></span>Worker</span>
+          <span class="viz-legend"><span class="viz-legend-dot" style="background:hsl(35 85% 60%)"></span>Scout</span>
+          <span class="viz-legend"><span class="viz-legend-dot" style="background:hsl(var(--destructive))"></span>Offline</span>
+        </div>
+        <button class="btn sm outline">⟳ Rescan network</button>
+      </div>
+    </section>
+
+    
+      <div class="content-grid">
+        <div>
+          <div class="panel-card">
+            <div class="panel-h">
+              <div class="panel-title"><span class="ico">⬡</span> Peer dashboard</div>
+              <div class="panel-actions">
+                <div class="search-wrap">
+                  <input class="input search-input" placeholder="Search peers…">
+                </div>
+                <select class="input inline-select">
+                  <option>All status</option>
+                  <option>Online</option>
+                  <option>Degraded</option>
+                  <option>Offline</option>
+                </select>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="peer-table">
+                <thead>
+                  <tr>
+                    <th>Hive</th>
+                    <th>Status</th>
+                    <th>Address</th>
+                    <th>Health</th>
+                    <th>Sync</th>
+                    <th>Last seen</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="peer-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="card" style="padding:0">
+            <div class="panel-h">
+              <div class="panel-title"><span class="ico">⚡</span> Live stream</div>
+              <button class="icon-btn" title="Pause">⏸</button>
+            </div>
+            <div class="events-list" id="live-events">
+              <div class="event-item">
+                <span class="event-time">14:32:08</span>
+                <span class="event-dot online"></span>
+                <div class="event-content">
+                  <span class="event-name">peer_online</span>
+                  <div class="event-detail">swarm_beta · 192.168.1.42</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <span class="event-time">14:31:56</span>
+                <span class="event-dot discover"></span>
+                <div class="event-content">
+                  <span class="event-name">peer_discovered</span>
+                  <div class="event-detail">swarm_omega · mDNS reply</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <span class="event-time">14:31:42</span>
+                <span class="event-dot config"></span>
+                <div class="event-content">
+                  <span class="event-name">mesh_configured</span>
+                  <div class="event-detail">password rotated</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <span class="event-time">14:30:11</span>
+                <span class="event-dot offline"></span>
+                <div class="event-content">
+                  <span class="event-name">peer_offline</span>
+                  <div class="event-detail">swarm_mu · timeout 30s</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <span class="event-time">14:29:47</span>
+                <span class="event-dot online"></span>
+                <div class="event-content">
+                  <span class="event-name">peer_online</span>
+                  <div class="event-detail">swarm_alpha · re-sync ok</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cfg-title"><span class="ico">⚡</span> Emitted events</div>
+            <div class="events-tag-list">
+              <span class="event-tag" style="color:hsl(217 90% 65%)"><span class="dot"></span>peer_discovered</span>
+              <span class="event-tag" style="color:hsl(var(--accent))"><span class="dot"></span>peer_online</span>
+              <span class="event-tag" style="color:hsl(var(--destructive))"><span class="dot"></span>peer_offline</span>
+              <span class="event-tag" style="color:hsl(263 85% 72%)"><span class="dot"></span>mesh_configured</span>
+            </div>
+          </div>
+
+          <!-- Mesh throughput with sparklines -->
+          <div class="card">
+            <div class="cfg-title"><span class="ico">∿</span> Mesh throughput</div>
+
+            <div class="thru-row">
+              <div class="thru-meta">
+                <span class="thru-label">Sync ops/sec</span>
+                <span class="thru-value" id="thru-ops">1,247</span>
+              </div>
+              <canvas class="sparkline" id="spark-ops" data-color="hsl(185 80% 50%)"></canvas>
+            </div>
+
+            <div class="thru-row">
+              <div class="thru-meta">
+                <span class="thru-label">Bandwidth</span>
+                <span class="thru-value" id="thru-bw">42.3 <em>KB/s</em></span>
+              </div>
+              <canvas class="sparkline" id="spark-bw" data-color="hsl(263 85% 72%)"></canvas>
+            </div>
+
+            <div class="thru-row">
+              <div class="thru-meta">
+                <span class="thru-label">Avg latency</span>
+                <span class="thru-value" id="thru-lat">8 <em>ms</em></span>
+              </div>
+              <canvas class="sparkline" id="spark-lat" data-color="hsl(35 85% 60%)"></canvas>
+            </div>
+
+            <div class="thru-footer">
+              <div><span class="thru-foot-label">Routed today</span><span class="thru-foot-val" id="thru-total">8.24M</span></div>
+              <div><span class="thru-foot-label">Peak ops/s</span><span class="thru-foot-val">2,891</span></div>
+              <div><span class="thru-foot-label">Uptime</span><span class="thru-foot-val">14d 06h</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+  </div><!-- /pane-peers -->
+
+  <!-- ─────────────────────────  CONFIGURATION  ───────────────────────── -->
+  <div class="page-pane" id="pane-config" role="tabpanel">
+    <div class="section">
+      <div class="cog-header">
+        <div class="titles">
+          <h1 class="page">Configuration</h1>
+          <p class="lede">Mesh network credentials, discovery method, and security policy. Changes are applied to every paired seed.</p>
+        </div>
+      </div>
+    </div>
+
+    
+      <div class="content-grid">
+        <div>
+          <div class="card">
+            <div class="cfg-title"><span class="ico">⚙</span> Mesh configuration</div>
+
+            <div class="cfg-group">
+              <label class="cfg-label">Mesh network name (SSID)</label>
+              <input class="input mono" value="cognitum-mesh-7a2f">
+              <div class="cfg-help">Logical identifier for this swarm. All peers must use the same SSID to join.</div>
+            </div>
+
+            <div class="cfg-group">
+              <label class="cfg-label">Mesh password</label>
+              <div class="password-row">
+                <input id="mesh-pass" class="input mono" type="password" value="••••••••••••••••">
+                <button class="password-toggle" id="pw-show">show</button>
+                <button class="password-toggle" title="Regenerate">⟳</button>
+              </div>
+              <div class="cfg-help">Pre-shared key used by all seeds to authenticate mesh joins. Rotate periodically.</div>
+            </div>
+
+            <div class="cfg-group">
+              <label class="cfg-label">Discovery method</label>
+              <select class="input">
+                <option>mDNS + UDP broadcast (recommended)</option>
+                <option>mDNS only</option>
+                <option>UDP broadcast only</option>
+                <option>Static peer list</option>
+              </select>
+            </div>
+
+            <div class="cfg-group">
+              <label class="cfg-label">Discovery interval</label>
+              <select class="input">
+                <option>5 seconds</option>
+                <option selected>15 seconds</option>
+                <option>30 seconds</option>
+                <option>1 minute</option>
+                <option>5 minutes</option>
+              </select>
+            </div>
+
+            <div class="cfg-group">
+              <label class="cfg-label">Health check timeout</label>
+              <select class="input">
+                <option>10 seconds</option>
+                <option selected>30 seconds</option>
+                <option>60 seconds</option>
+              </select>
+            </div>
+
+            <div class="cfg-toggle-row">
+              <div>
+                <div class="cfg-toggle-label">Auto-discovery</div>
+                <div class="cfg-toggle-help">Continuously scan the network for new peers</div>
+              </div>
+              <div class="toggle on" data-toggle></div>
+            </div>
+            <div class="cfg-toggle-row">
+              <div>
+                <div class="cfg-toggle-label">Auto-join discovered peers</div>
+                <div class="cfg-toggle-help">Add peers automatically when password matches</div>
+              </div>
+              <div class="toggle on" data-toggle></div>
+            </div>
+            <div class="cfg-toggle-row">
+              <div>
+                <div class="cfg-toggle-label">Encrypt mesh traffic</div>
+                <div class="cfg-toggle-help">AES-256 over the mesh tunnel</div>
+              </div>
+              <div class="toggle on" data-toggle></div>
+            </div>
+            <div class="cfg-toggle-row">
+              <div>
+                <div class="cfg-toggle-label">Allow guest peers</div>
+                <div class="cfg-toggle-help">Read-only peers without full sync rights</div>
+              </div>
+              <div class="toggle" data-toggle></div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;padding-top:0.875rem;border-top:1px solid hsl(var(--border) / 0.5)">
+              <button class="btn sm outline">Reset</button>
+              <button class="btn sm primary">Apply changes</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="card">
+            <div class="cfg-title"><span class="ico">⛨</span> Security status</div>
+            <div class="cfg-toggle-row" style="border-top:none">
+              <div class="cfg-toggle-label">Encryption</div>
+              <span class="badge online"><span class="dot up"></span>AES-256</span>
+            </div>
+            <div class="cfg-toggle-row">
+              <div class="cfg-toggle-label">Last password rotation</div>
+              <span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">12 days ago</span>
+            </div>
+            <div class="cfg-toggle-row">
+              <div class="cfg-toggle-label">TLS handshakes</div>
+              <span class="mono" style="font-size:0.6875rem;color:hsl(var(--accent))">14 / 14 ok</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cfg-title"><span class="ico">⌗</span> Static peers</div>
+            <div class="cfg-help" style="margin-bottom:0.625rem">Pinned peers that bypass discovery</div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))">
+              <div style="display:flex;justify-content:space-between;padding:0.4rem 0.625rem;background:hsl(var(--background) / 0.5);border:1px solid hsl(var(--border) / 0.5);border-radius:0.4rem"><span>queen.local:7777</span><span style="color:hsl(var(--muted-foreground));cursor:pointer">×</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.4rem 0.625rem;background:hsl(var(--background) / 0.5);border:1px solid hsl(var(--border) / 0.5);border-radius:0.4rem"><span>10.0.0.42:7777</span><span style="color:hsl(var(--muted-foreground));cursor:pointer">×</span></div>
+            </div>
+            <button class="btn sm outline" style="margin-top:0.625rem;width:100%;justify-content:center">+ Add peer</button>
+          </div>
+        </aside>
+      </div>
+
+  </div><!-- /pane-config -->
+
+  <!-- ─────────────────────────  MESH LOGS  ───────────────────────── -->
+  <div class="page-pane" id="pane-logs" role="tabpanel">
+    <div class="section">
+      <div class="cog-header">
+        <div class="titles">
+          <h1 class="page">Mesh logs</h1>
+          <p class="lede">Live event stream from this cog across all paired peers — discovery, handshakes, sync deltas, errors.</p>
+        </div>
+        <div class="actions">
+          <div class="search-wrap"><input class="input search-input" placeholder="Filter logs…" style="width:13rem"></div>
+          <select class="input inline-select"><option>All levels</option><option>Info</option><option>Warning</option><option>Error</option></select>
+          <button class="btn sm outline">⏸ Pause</button>
+          <button class="btn sm outline">↓ Export</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></div><div class="kpi-info"><div class="kpi-label">Total events</div><div class="kpi-val" id="log-total">12,487</div><div class="kpi-sub">since boot</div></div></div>
+        <div class="kpi green"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div><div class="kpi-info"><div class="kpi-label">Info</div><div class="kpi-val">12,201</div><div class="kpi-sub">routine</div></div></div>
+        <div class="kpi amber"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="kpi-info"><div class="kpi-label">Warnings</div><div class="kpi-val">238</div><div class="kpi-sub">last 24h</div></div></div>
+        <div class="kpi" style="--primary:0 65% 50%"><div class="kpi-ic" style="background:hsl(0 65% 50% / 0.12)"><svg viewBox="0 0 24 24" style="stroke:hsl(0 65% 50%)"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="kpi-info"><div class="kpi-label">Errors</div><div class="kpi-val" style="color:hsl(0 70% 70%)">48</div><div class="kpi-sub">last 24h</div></div></div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-h">
+        <div class="panel-title"><span class="ico">⚡</span> Live stream</div>
+        <div class="panel-actions"><span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">tail -f</span></div>
+      </div>
+      <div id="logs-stream" style="font-family:var(--font-mono);font-size:0.6875rem;max-height:32rem;overflow-y:auto"></div>
+    </div>
+  </div><!-- /pane-logs -->
+
+  <!-- ─────────────────────────  ABOUT  ───────────────────────── -->
+  <div class="page-pane" id="pane-about" role="tabpanel">
+    <div class="section">
+      <div class="cog-header">
+        <div class="titles">
+          <h1 class="page">About</h1>
+          <p class="lede">Swarm Mesh Manager — peer-to-peer seed networking for the COGS platform.</p>
+        </div>
+      </div>
+    </div>
+
+    
+      <div class="content-grid">
+        <div>
+          <div class="card">
+            <div class="cfg-title"><span class="ico">≡</span> Description</div>
+            <p class="desc-text">
+              Complete mesh management for seamless peer-to-peer seed networks. Auto-discover peers
+              on the local network via mDNS and UDP broadcast, securely configure mesh credentials,
+              actively monitor per-peer health and latency, and view real-time vector-store sync
+              status across the swarm. The integrated dashboard surfaces every seed in your hive
+              constellation with live telemetry.
+            </p>
+          </div>
+
+          <div class="card" style="margin-top:1rem">
+            <div class="cfg-title"><span class="ico">⌬</span> Source repository</div>
+            <div class="repo-row">
+              <div class="repo-path">
+                <span class="ico">⌗</span>
+                <span class="truncate">cognitum-one/cogs/src/cogs/swarm-mesh-manager</span>
+              </div>
+              <button class="btn sm outline">⧉ Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="card">
+            <div class="cfg-title"><span class="ico">⚡</span> Emitted events</div>
+            <div class="events-tag-list">
+              <span class="event-tag" style="color:hsl(217 90% 65%)"><span class="dot"></span>peer_discovered</span>
+              <span class="event-tag" style="color:hsl(var(--accent))"><span class="dot"></span>peer_online</span>
+              <span class="event-tag" style="color:hsl(var(--destructive))"><span class="dot"></span>peer_offline</span>
+              <span class="event-tag" style="color:hsl(263 85% 72%)"><span class="dot"></span>mesh_configured</span>
+            </div>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-card">
+              <div class="detail-card-label">⌬ Hardware</div>
+              <div class="detail-card-value">None</div>
+              <div class="detail-card-sub">WiFi only</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-label">⊕ Input</div>
+              <div class="detail-card-value">Network</div>
+              <div class="detail-card-sub">mDNS · UDP</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-label">▤ Size</div>
+              <div class="detail-card-value">12 KB</div>
+              <div class="detail-card-sub">Compiled</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-card-label">⚐ Difficulty</div>
+              <div class="detail-card-value" style="color:hsl(var(--accent))">Easy</div>
+              <div class="detail-card-sub">Auto-config</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+  </div><!-- /pane-about -->
+
+  <!-- Footer -->
+  <footer class="appfoot">
+    <div><span class="mono">cog:</span> <span class="mono" style="color:hsl(var(--foreground))">swarm-mesh-manager</span> &middot; <span class="mono" id="foot-ver">v1.0.0</span> &middot; <span class="mono">category:</span> <span class="mono" style="color:hsl(263 85% 78%)">Swarm</span></div>
+    <div style="margin-top:0.4rem"><a href="#peers" data-pane="peers">Peers</a> &middot; <a href="#config" data-pane="config">Configuration</a> &middot; <a href="#logs" data-pane="logs">Logs</a> &middot; <a href="#about" data-pane="about">About</a> &middot; <a href="https://github.com/cognitum-one/cogs" target="_blank">Source</a></div>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+// ─────────── Peer table data ───────────
+const peers = [
+  {name:'swarm_root', role:'Primary', addr:'10.0.0.1', port:7777, status:'online', health:99, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'now'},
+  {name:'swarm_alpha', role:'Worker', addr:'10.0.0.42', port:7777, status:'online', health:96, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'2s ago'},
+  {name:'swarm_beta', role:'Worker', addr:'10.0.0.43', port:7777, status:'online', health:94, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'4s ago'},
+  {name:'swarm_gamma', role:'Worker', addr:'10.0.0.44', port:7777, status:'warning', health:62, sync:88, syncedItems:'42,425 / 48,210', lastSeen:'18s ago'},
+  {name:'swarm_delta', role:'Worker', addr:'10.0.0.45', port:7777, status:'online', health:91, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'1s ago'},
+  {name:'swarm_eps', role:'Scout', addr:'10.0.0.51', port:7777, status:'syncing', health:88, sync:42, syncedItems:'20,248 / 48,210', lastSeen:'now'},
+  {name:'swarm_zeta', role:'Scout', addr:'10.0.0.52', port:7777, status:'online', health:90, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'3s ago'},
+  {name:'swarm_eta', role:'Scout', addr:'10.0.0.53', port:7777, status:'online', health:87, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'5s ago'},
+  {name:'swarm_theta', role:'Scout', addr:'10.0.0.54', port:7777, status:'online', health:84, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'8s ago'},
+  {name:'swarm_iota', role:'Scout', addr:'10.0.0.55', port:7777, status:'warning', health:71, sync:96, syncedItems:'46,281 / 48,210', lastSeen:'22s ago'},
+  {name:'swarm_kappa', role:'Scout', addr:'10.0.0.56', port:7777, status:'online', health:92, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'2s ago'},
+  {name:'swarm_lam', role:'Scout', addr:'10.0.0.57', port:7777, status:'online', health:89, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'6s ago'},
+  {name:'swarm_nu', role:'Scout', addr:'10.0.0.58', port:7777, status:'online', health:85, sync:100, syncedItems:'48,210 / 48,210', lastSeen:'9s ago'},
+  {name:'swarm_mu', role:'Scout', addr:'10.0.0.59', port:7777, status:'offline', health:0, sync:74, syncedItems:'35,675 / 48,210', lastSeen:'2m ago'},
+];
+
+const miniHiveSvg = (color, dark) => `
+<svg class="peer-mini-hive" viewBox="0 0 110 132" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="55" cy="124" rx="42" ry="2.4" fill="rgba(0,0,0,0.5)"/>
+  <path d="M 55 14 C 28 14, 16 38, 16 70 C 16 92, 18 110, 22 120 L 88 120 C 92 110, 94 92, 94 70 C 94 38, 82 14, 55 14 Z"
+        fill="${dark}" stroke="${color}" stroke-width="2.2"/>
+  <g fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" opacity="0.9">
+    <path d="M 26 38 Q 55 33 84 38"/>
+    <path d="M 21 60 Q 55 55 89 60"/>
+    <path d="M 18 82 Q 55 77 92 82"/>
+    <path d="M 20 104 Q 55 99 90 104"/>
+  </g>
+  <g transform="translate(33, 56)">
+    <ellipse cx="22" cy="22" rx="19" ry="17" fill="hsl(220 25% 6%)" opacity="0.85"/>
+    <path d="M 21 7 C 16 7, 11 9, 9 13 C 6 13, 4 16, 6 19 C 3 21, 3 26, 6 28 C 6 32, 10 35, 15 34 C 18 35, 20 35, 21 33 L 21 7 Z" fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1"/>
+    <path d="M 23 7 C 28 7, 33 9, 35 13 C 38 13, 40 16, 38 19 C 41 21, 41 26, 38 28 C 38 32, 34 35, 29 34 C 26 35, 24 35, 23 33 L 23 7 Z" fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1"/>
+    <path d="M 18 33 C 18 37, 20 38, 22 38 C 24 38, 26 37, 26 33 Z" fill="#fff" stroke="hsl(220 25% 6%)" stroke-width="1"/>
+    <line x1="22" y1="7" x2="22" y2="33" stroke="hsl(220 25% 6%)" stroke-width="0.6" opacity="0.5"/>
+  </g>
+  <ellipse cx="55" cy="113" rx="6.5" ry="3.4" fill="hsl(220 25% 6%)" stroke="${color}" stroke-width="1.4"/>
+</svg>`;
+
+const roleColor = (role) => role==='Primary' ? 'hsl(185 80% 50%)' : role==='Worker' ? 'hsl(263 85% 72%)' : 'hsl(35 85% 60%)';
+const roleDark  = (role) => role==='Primary' ? 'hsl(220 25% 8%)' : role==='Worker' ? 'hsl(263 30% 8%)' : 'hsl(35 30% 8%)';
+
+const tbody = document.getElementById('peer-tbody');
+peers.forEach(p => {
+  const tr = document.createElement('tr');
+  const healthClass = p.health >= 80 ? '' : p.health >= 50 ? 'warn' : 'crit';
+  const syncBar = p.sync >= 100 ? `<b>in sync</b>` : `<b>${p.sync}%</b>`;
+  tr.innerHTML = `
+    <td>
+      <div class="peer-name">
+        ${miniHiveSvg(roleColor(p.role), roleDark(p.role))}
+        <div class="peer-name-text"><b>${p.name}</b><span>${p.role}</span></div>
+      </div>
+    </td>
+    <td><span class="peer-status ${p.status}"><span class="pdot"></span>${p.status}</span></td>
+    <td><span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">${p.addr}<span style="color:hsl(var(--muted-foreground) / 0.7)">:${p.port}</span></span></td>
+    <td>
+      <div class="health-bar">
+        <div class="health-bar-track"><div class="health-bar-fill ${healthClass}" style="width:${p.health}%"></div></div>
+        <span class="health-bar-text">${p.health}%</span>
+      </div>
+    </td>
+    <td>
+      <div class="sync-cell">
+        ${syncBar} <span style="color:hsl(var(--muted-foreground) / 0.7)">${p.syncedItems}</span>
+        <div class="sync-progress"><div class="sync-progress-fill" style="width:${p.sync}%"></div></div>
+      </div>
+    </td>
+    <td><span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">${p.lastSeen}</span></td>
+    <td>
+      <div class="peer-actions">
+        <button class="icon-btn" title="Configure">⚙</button>
+        <button class="icon-btn" title="Inspect">⌕</button>
+        <button class="icon-btn danger" title="Remove">×</button>
+      </div>
+    </td>`;
+  tbody.appendChild(tr);
+});
+
+// ─────────── Theme (dark / light / system) ───────────
+// `applyTheme` is also invoked from an inline script in <head> so the correct
+// theme is on <html> before first paint (no flash). This block handles the UI
+// wiring (toggle button + Settings select + system-pref listener).
+(function(){
+  const STORE_KEY = 'cogs-smm-theme';
+  const html = document.documentElement;
+  const sysMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+  function resolve(pref){
+    if (pref === 'system') return sysMQ && sysMQ.matches ? 'light' : 'dark';
+    return pref === 'light' ? 'light' : 'dark';
+  }
+  function applyTheme(pref){
+    const resolved = resolve(pref);
+    if (resolved === 'light') html.setAttribute('data-theme', 'light');
+    else html.removeAttribute('data-theme');
+    html.setAttribute('data-theme-pref', pref);
+    try { localStorage.setItem(STORE_KEY, pref); } catch(_) {}
+    // Keep both controls in sync
+    const sel = document.getElementById('theme-select');
+    if (sel) sel.value = pref;
+  }
+  // Expose for the head-inline bootstrap
+  window.__applyTheme = applyTheme;
+
+  // Initial — read from <html> (set by head-inline) or fall back to stored / dark
+  let pref = html.getAttribute('data-theme-pref');
+  if (!pref){
+    try { pref = localStorage.getItem(STORE_KEY) || 'dark'; } catch(_) { pref = 'dark'; }
+    applyTheme(pref);
+  } else {
+    // Sync the select even if head-inline already applied
+    const sel = document.getElementById('theme-select');
+    if (sel) sel.value = pref;
+  }
+
+  // Toggle button cycles: dark → light → system → dark
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle){
+    toggle.addEventListener('click', () => {
+      const cur = html.getAttribute('data-theme-pref') || 'dark';
+      const next = cur === 'dark' ? 'light' : cur === 'light' ? 'system' : 'dark';
+      applyTheme(next);
+    });
+  }
+
+  // Settings select
+  const sel = document.getElementById('theme-select');
+  if (sel){
+    sel.addEventListener('change', () => applyTheme(sel.value));
+  }
+
+  // Live-update when system pref changes (only relevant in "system" mode)
+  if (sysMQ){
+    const onSysChange = () => {
+      if ((html.getAttribute('data-theme-pref') || 'dark') === 'system') applyTheme('system');
+    };
+    if (sysMQ.addEventListener) sysMQ.addEventListener('change', onSysChange);
+    else if (sysMQ.addListener)  sysMQ.addListener(onSysChange);  // older Safari
+  }
+})();
+
+// ─────────── Top nav (Peers / Configuration / Logs / About) ───────────
+(function(){
+  const VALID = ['peers','config','logs','about'];
+  function showPane(name){
+    if (!VALID.includes(name)) name = 'peers';
+    // Toggle the visible page-pane
+    document.querySelectorAll('.page-pane').forEach(p => {
+      p.classList.toggle('on', p.id === 'pane-' + name);
+    });
+    // Toggle active styling on the top nav links
+    document.querySelectorAll('.nav a[data-pane]').forEach(a => {
+      const on = a.getAttribute('data-pane') === name;
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('data-active', 'true'); else a.removeAttribute('data-active');
+    });
+    // Body class so the project-header can hide outside the Mesh pane
+    document.body.className = document.body.className
+      .split(' ').filter(c => !c.startsWith('pane-')).concat('pane-' + name).join(' ').trim();
+    // Update hash for deep-linking, without scrolling
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('.nav a[data-pane]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      showPane(a.getAttribute('data-pane'));
+    });
+  });
+  // Deep links: ui.html#store, ui.html#logs, etc.
+  const initial = (window.location.hash || '').replace(/^#/, '');
+  if (initial) showPane(initial); else document.body.classList.add('pane-peers');
+})();
+
+// ─────────── Toggles ───────────
+document.querySelectorAll('[data-toggle]').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+// ─────────── Password show/hide ───────────
+const pwInput = document.getElementById('mesh-pass');
+const pwBtn = document.getElementById('pw-show');
+if (pwBtn) {
+  pwBtn.addEventListener('click', () => {
+    if (pwInput.type === 'password') {
+      pwInput.type = 'text';
+      pwInput.value = 'cogn1tum-h1ve-mesh-2026';
+      pwBtn.textContent = 'hide';
+    } else {
+      pwInput.type = 'password';
+      pwInput.value = '••••••••••••••••';
+      pwBtn.textContent = 'show';
+    }
+  });
+}
+
+// ─────────── Live event feed ───────────
+(function(){
+  const list = document.getElementById('live-events');
+  if (!list) return;
+  const types = [
+    {dot:'online',   name:'peer_online',     detail:['swarm_alpha · re-sync ok','swarm_beta · join ok','swarm_eta · handshake ok']},
+    {dot:'discover', name:'peer_discovered', detail:['mDNS reply','UDP beacon','manual add']},
+    {dot:'offline',  name:'peer_offline',    detail:['timeout 30s','tcp reset','heartbeat lost']},
+    {dot:'config',   name:'mesh_configured', detail:['interval updated','encryption rotated','peer pinned']},
+  ];
+  setInterval(() => {
+    if (list.children.length > 30) list.lastChild.remove();
+    const t = types[Math.floor(Math.random()*types.length)];
+    const d = t.detail[Math.floor(Math.random()*t.detail.length)];
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const item = document.createElement('div');
+    item.className = 'event-item';
+    item.style.opacity = '0';
+    item.innerHTML = `
+      <span class="event-time">${hh}:${mm}:${ss}</span>
+      <span class="event-dot ${t.dot}"></span>
+      <div class="event-content">
+        <span class="event-name">${t.name}</span>
+        <div class="event-detail">${d}</div>
+      </div>`;
+    list.insertBefore(item, list.firstChild);
+    requestAnimationFrame(() => { item.style.transition='opacity .3s'; item.style.opacity='1'; });
+  }, 4500);
+})();
+
+// ─────────── Bee swarm canvas ───────────
+(function(){
+  const c = document.getElementById('swarm-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let w, h;
+  function rs(){ w = c.width = c.clientWidth; h = c.height = c.clientHeight; }
+  window.addEventListener('resize', rs); rs();
+  const n = 2200;
+  const bees = [];
+  const HQ='hsl(185 80% 50%)', HW='hsl(263 85% 72%)', HS='hsl(35 85% 60%)';
+  const hives = [
+    {x:.5, y:.5,  c:HQ, sz:1.4},
+    {x:.25,y:.25, c:HW, sz:1.0},
+    {x:.75,y:.22, c:HW, sz:1.0},
+    {x:.20,y:.75, c:HS, sz:1.0},
+    {x:.80,y:.72, c:HW, sz:1.0},
+    {x:.10,y:.45, c:HS, sz:0.8},
+    {x:.40,y:.85, c:HS, sz:0.8},
+    {x:.60,y:.15, c:HS, sz:0.8},
+    {x:.90,y:.40, c:HS, sz:0.8},
+    {x:.30,y:.50, c:HS, sz:0.7},
+    {x:.70,y:.50, c:HS, sz:0.7},
+    {x:.15,y:.15, c:HS, sz:0.6},
+    {x:.65,y:.90, c:HS, sz:0.6},
+  ];
+  for (let i=0;i<n;i++){
+    const t = Math.floor(Math.random()*hives.length);
+    bees.push({
+      x: hives[t].x*w + (Math.random()-.5)*30,
+      y: hives[t].y*h + (Math.random()-.5)*30,
+      vx:(Math.random()-.5)*1.6, vy:(Math.random()-.5)*1.6,
+      t, w:Math.random()*Math.PI*2, s:0.5+Math.random()*0.8
+    });
+  }
+  function anim(){
+    ctx.clearRect(0,0,w,h);
+    for (let i=0;i<n;i++){
+      const b = bees[i];
+      if (Math.random() < 0.0002) b.t = Math.floor(Math.random()*hives.length);
+      const hv = hives[b.t];
+      const tx = hv.x*w, ty = hv.y*h;
+      const dx = tx-b.x, dy = ty-b.y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      const radius = 35 * hv.sz;
+      if (d > radius){ b.vx += (dx/d)*0.4; b.vy += (dy/d)*0.4; }
+      else { b.vx += (Math.random()-.5)*0.7; b.vy += (Math.random()-.5)*0.7; }
+      b.w += 0.1; b.vx += Math.cos(b.w)*0.18; b.vy += Math.sin(b.w)*0.18;
+      b.vx *= 0.97; b.vy *= 0.97;
+      const v = Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+      if (v > b.s){ b.vx=(b.vx/v)*b.s; b.vy=(b.vy/v)*b.s; }
+      b.x += b.vx; b.y += b.vy;
+      ctx.fillStyle = hv.c;
+      ctx.globalAlpha = d < 60 ? 0.95 : Math.max(0.08, 1 - (d-60)/120);
+      ctx.fillRect(b.x, b.y, 1.4, 1.4);
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(anim);
+  }
+  anim();
+})();
+
+// ─────────── Logs stream ───────────
+(function(){
+  const stream = document.getElementById('logs-stream');
+  if (!stream) return;
+  const peers = ['swarm_root','swarm_alpha','swarm_beta','swarm_gamma','swarm_delta','swarm_eps','swarm_zeta','swarm_eta'];
+  const samples = [
+    {l:'info',  m:'peer_online: handshake completed, vector_count=48210'},
+    {l:'info',  m:'mesh: gossip round complete, 14 peers reached in 124ms'},
+    {l:'info',  m:'sync: delta applied (482 vectors, 2.1 KB)'},
+    {l:'info',  m:'discovery: mDNS reply received from new candidate'},
+    {l:'warn',  m:'sync: peer fell behind by 3 epochs, requesting catchup'},
+    {l:'info',  m:'health: heartbeat probe ok across 14/14 peers'},
+    {l:'warn',  m:'mesh: latency spike to 89ms (threshold 50ms)'},
+    {l:'error', m:'peer_offline: tcp connection reset by peer (timeout 30s)'},
+    {l:'info',  m:'mesh_configured: discovery interval rotated to 15s'},
+    {l:'info',  m:'auth: mesh PSK handshake ok with swarm_eta'},
+    {l:'warn',  m:'discovery: duplicate mDNS reply suppressed for swarm_alpha'},
+    {l:'info',  m:'peer_discovered: candidate at 10.0.0.91:7777'},
+  ];
+  function ts() {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${String(d.getMilliseconds()).padStart(3,'0').slice(0,3)}`;
+  }
+  function pushOne() {
+    if (stream.children.length > 200) stream.removeChild(stream.lastChild);
+    const s = samples[Math.floor(Math.random()*samples.length)];
+    const p = peers[Math.floor(Math.random()*peers.length)];
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML = `<span class="lt">${ts()}</span><span class="ll ${s.l}">${s.l}</span><span class="lp">${p}</span><span class="lm">${s.m}</span>`;
+    stream.insertBefore(row, stream.firstChild);
+  }
+  for (let i=0;i<25;i++) pushOne();
+  setInterval(pushOne, 1100);
+})();
+
+// ─────────── Sparklines (live) ───────────
+(function(){
+  const sparks = document.querySelectorAll('.sparkline');
+  if (!sparks.length) return;
+  const series = new Map();
+  sparks.forEach(c => {
+    const seed = [];
+    for (let i=0;i<40;i++) seed.push(0.4 + Math.random()*0.5);
+    series.set(c, seed);
+  });
+  function draw(c, data) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== w*dpr || c.height !== h*dpr) {
+      c.width = w*dpr; c.height = h*dpr;
+    }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    const color = c.dataset.color || 'hsl(185 80% 50%)';
+    const max = Math.max(...data, 1);
+    const min = Math.min(...data, 0);
+    const range = max - min || 1;
+    const step = w / (data.length - 1);
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    data.forEach((v,i) => {
+      const x = i*step;
+      const y = h - ((v - min)/range) * (h - 4) - 2;
+      ctx.lineTo(x, y);
+    });
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    // Build a translucent gradient from the line color
+    grad.addColorStop(0, color.replace(')', ' / 0.35)').replace('hsl(', 'hsla(').replace(' / 0.35)', ' / 0.35)'));
+    grad.addColorStop(1, color.replace(')', ' / 0)').replace('hsl(', 'hsla(').replace(' / 0)', ' / 0)'));
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.beginPath();
+    data.forEach((v,i) => {
+      const x = i*step;
+      const y = h - ((v - min)/range) * (h - 4) - 2;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    const lx = (data.length-1)*step;
+    const ly = h - ((data[data.length-1] - min)/range) * (h - 4) - 2;
+    ctx.beginPath(); ctx.arc(lx, ly, 2, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+  }
+  function tick() {
+    series.forEach((data, c) => {
+      data.shift();
+      const next = Math.max(0.05, Math.min(1, data[data.length-1] + (Math.random()-0.5)*0.25));
+      data.push(next);
+      draw(c, data);
+    });
+    const ops = document.getElementById('thru-ops');
+    const bw = document.getElementById('thru-bw');
+    const lat = document.getElementById('thru-lat');
+    if (ops) ops.textContent = (1100 + Math.floor(Math.random()*400)).toLocaleString();
+    if (bw)  bw.innerHTML = (35 + Math.random()*15).toFixed(1) + ' <em>KB/s</em>';
+    if (lat) lat.innerHTML = (6 + Math.floor(Math.random()*6)) + ' <em>ms</em>';
+  }
+  series.forEach((data, c) => draw(c, data));
+  setInterval(tick, 1500);
+  window.addEventListener('resize', () => series.forEach((data, c) => draw(c, data)));
+})();
+</script>
+</body>
+</html>

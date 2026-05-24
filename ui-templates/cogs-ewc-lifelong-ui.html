@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EWC Lifelong — Elastic Weight Consolidation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem;
+}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;cursor:pointer;
+}
+.nav a:hover,.nav a.active{
+  color:hsl(var(--foreground));background:hsl(var(--secondary));
+  text-decoration:none;
+}
+.nav a.active{color:hsl(var(--primary))}
+
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+.empty-card{
+  background:var(--gradient-card);
+  border:1px dashed hsl(var(--border));
+  border-radius:var(--radius);
+  padding:1.5rem;text-align:center;color:hsl(var(--muted-foreground));
+}
+.empty-card h3{font-size:1rem;font-weight:600;color:hsl(var(--primary));margin-bottom:0.5rem;letter-spacing:-0.01em}
+.empty-card p{font-size:0.875rem;line-height:1.6;max-width:36rem;margin:0 auto 0.75rem}
+
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.375rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+.grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid-2{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+
+.node{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);padding:1rem 1.125rem;
+}
+.node-h{display:flex;align-items:center;gap:0.5rem;justify-content:space-between;margin-bottom:0.625rem}
+.node-name{font-size:0.875rem;font-weight:600}
+.node-meta{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.7}
+.node-meta .l{color:hsl(var(--muted-foreground) / 0.7);margin-right:0.4rem}
+
+.badge{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  padding:0.125rem 0.5rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;border:1px solid transparent;
+}
+.badge.role-master{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.2)}
+.badge.role-worker{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.2)}
+.badge.online{background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 60%);border-color:hsl(142 70% 50% / 0.25)}
+.badge.offline{background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 65%);border-color:hsl(0 65% 50% / 0.25)}
+.badge.training{background:hsl(35 85% 55% / 0.12);color:hsl(35 85% 70%);border-color:hsl(35 85% 55% / 0.25)}
+.badge.idle{background:hsl(var(--muted));color:hsl(var(--muted-foreground));border-color:hsl(var(--border))}
+.badge.consolidated{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.25)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+.dot.warn{background:hsl(35 85% 55%);box-shadow:0 0 6px hsl(35 85% 55% / 0.5)}
+
+table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+thead th{
+  text-align:left;padding:0.4rem 0.5rem;
+  font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+}
+tbody td{
+  padding:0.5rem;border-bottom:1px solid hsl(var(--border) / 0.3);
+  font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground));
+}
+tbody tr:hover td{background:hsl(var(--secondary) / 0.3)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{
+  background:hsl(var(--primary));color:hsl(var(--primary-foreground));
+  border-color:hsl(var(--primary));font-weight:600;
+  box-shadow:0 4px 8px -2px hsl(var(--primary) / 0.3);
+}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.outline{background:transparent}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+.btn.accent{background:hsl(var(--accent) / 0.15);color:hsl(142 70% 65%);border-color:hsl(var(--accent) / 0.4)}
+.btn.accent:hover:not(:disabled){background:hsl(var(--accent) / 0.25)}
+
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3);
+}
+input::placeholder,textarea::placeholder{color:hsl(var(--muted-foreground))}
+input[type=range]{padding:0;background:transparent;border:none;width:100%;accent-color:hsl(var(--primary))}
+.input{width:100%;height:2.4rem;border:1px solid hsl(var(--input));background:hsl(var(--background))}
+textarea.input{height:6rem;font-family:var(--font-mono);font-size:0.75rem;resize:vertical}
+
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:hsl(var(--background) / 0.7);backdrop-filter:blur(4px);
+  align-items:flex-start;justify-content:center;padding:3rem 1rem 1rem;
+  overflow-y:auto;
+}
+.modal-bg.show{display:flex}
+.modal{
+  background:hsl(var(--card));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.5rem;max-width:560px;width:100%;
+}
+.modal h3{font-size:1.125rem;font-weight:600;margin-bottom:0.4rem}
+.modal-sub{font-size:0.8125rem;color:hsl(var(--muted-foreground));margin-bottom:1rem}
+.modal-row{margin-bottom:0.875rem}
+.modal-row label{
+  display:block;font-size:0.6875rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.4rem;
+}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.25rem}
+.modal-result{
+  margin-top:0.875rem;padding:0.625rem 0.75rem;
+  font-family:var(--font-mono);font-size:0.75rem;
+  border-radius:0.4rem;display:none;
+}
+.modal-result.ok{display:block;background:hsl(142 70% 50% / 0.1);color:hsl(142 70% 65%);border:1px solid hsl(142 70% 50% / 0.25)}
+.modal-result.err{display:block;background:hsl(0 65% 50% / 0.1);color:hsl(0 70% 70%);border:1px solid hsl(0 65% 50% / 0.25)}
+
+pre.logbox{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.5rem;padding:0.75rem 0.875rem;margin:0.5rem 0;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  overflow:auto;line-height:1.55;max-height:30rem;color:hsl(var(--foreground));
+  white-space:pre-wrap;word-break:break-word;
+}
+
+.pill-tabs{display:flex;gap:0.25rem;flex-wrap:wrap}
+.pill-tab{
+  padding:0.4rem 0.75rem;border-radius:0.375rem;
+  font-size:0.75rem;font-weight:500;color:hsl(var(--muted-foreground));
+  background:hsl(var(--muted));border:1px solid transparent;
+  cursor:pointer;transition:all 0.2s;
+}
+.pill-tab:hover{color:hsl(var(--foreground));background:hsl(var(--secondary))}
+.pill-tab.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+
+.page{display:none}
+.page.show{display:block}
+
+.progress{
+  height:6px;background:hsl(var(--secondary));border-radius:3px;overflow:hidden;margin-top:0.4rem;
+}
+.progress .bar{height:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));transition:width 0.4s}
+
+/* Modern SVG charts (replaces old .bars) */
+.chart{
+  position:relative;
+  height:96px;
+  border-radius:0.5rem;
+  background:
+    radial-gradient(ellipse at top, hsl(var(--primary) / 0.06) 0%, transparent 70%),
+    linear-gradient(180deg, hsl(var(--background) / 0.4) 0%, hsl(var(--background) / 0.1) 100%);
+  border:1px solid hsl(var(--border) / 0.4);
+  overflow:hidden;
+  margin-top:0.25rem;
+}
+.chart svg{display:block;width:100%;height:100%}
+.chart-grid line{stroke:hsl(var(--border) / 0.35);stroke-width:1;stroke-dasharray:2 4}
+.chart-area{transition:d 0.4s ease}
+.chart-line{
+  fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  transition:d 0.4s ease;
+  filter:drop-shadow(0 0 6px hsl(var(--primary) / 0.45));
+}
+.chart-line.accent{filter:drop-shadow(0 0 6px hsl(var(--accent) / 0.45))}
+.chart-dot{
+  transition:cx 0.4s ease, cy 0.4s ease;
+}
+.chart-dot-pulse{
+  transform-origin:center;
+  transform-box:fill-box;
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1);opacity:0.7}
+  50%{transform:scale(2.2);opacity:0}
+}
+.chart-readout{
+  position:absolute;top:0.5rem;left:0.625rem;right:0.625rem;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:0.6875rem;font-family:var(--font-mono);
+  color:hsl(var(--muted-foreground));
+  pointer-events:none;
+}
+.chart-readout b{
+  color:hsl(var(--foreground));font-weight:600;font-size:0.8125rem;
+}
+.chart-readout .trend{
+  display:inline-flex;align-items:center;gap:0.2rem;
+  padding:0.05rem 0.35rem;border-radius:0.25rem;
+  font-size:0.625rem;font-weight:600;
+}
+.chart-readout .trend.up{background:hsl(142 70% 50% / 0.12);color:hsl(142 70% 65%)}
+.chart-readout .trend.down{background:hsl(0 65% 50% / 0.12);color:hsl(0 70% 70%)}
+.chart-readout .trend.flat{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}
+
+.event-list{display:flex;flex-direction:column;gap:0.5rem}
+.event-row{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.5rem 0.75rem;border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.4rem;background:hsl(var(--background) / 0.4);
+  font-size:0.8125rem;
+}
+.ev-type{font-family:var(--font-mono);font-size:0.6875rem;padding:0.1rem 0.4rem;border-radius:0.25rem;flex-shrink:0;display:inline-block}
+.ev-type.weight_consolidated{background:hsl(var(--primary) / 0.15);color:hsl(var(--primary))}
+.ev-type.task_learned{background:hsl(var(--accent) / 0.15);color:hsl(142 70% 65%)}
+.ev-type.fisher_updated{background:hsl(35 85% 55% / 0.15);color:hsl(35 85% 70%)}
+
+/* Guide cards — event payload + budget breakdown */
+.payload{
+  background:hsl(var(--background));border:1px solid hsl(var(--border));
+  border-radius:0.4rem;padding:0.5rem 0.625rem;margin-top:0.4rem;
+  font-family:var(--font-mono);font-size:0.6875rem;line-height:1.55;
+  color:hsl(var(--muted-foreground));white-space:pre-wrap;word-break:break-word;
+}
+.payload .k{color:hsl(var(--primary))}
+.payload .s{color:hsl(142 70% 65%)}
+.payload .n{color:hsl(35 85% 70%)}
+.budget-row{display:flex;align-items:center;gap:0.625rem;margin-top:0.5rem}
+.budget-row .label{
+  flex:0 0 132px;font-size:0.75rem;color:hsl(var(--muted-foreground));
+}
+.budget-row .bar{
+  flex:1;height:6px;border-radius:3px;background:hsl(var(--secondary));overflow:hidden;
+}
+.budget-row .bar .fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)));
+  transition:width 0.4s ease;
+}
+.budget-row .val{
+  flex:0 0 64px;text-align:right;
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--foreground));
+}
+.budget-total{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:0.875rem;padding-top:0.625rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.8125rem;
+}
+.budget-total b{font-family:var(--font-mono);color:hsl(var(--primary));font-size:0.9375rem}
+
+/* Guide page reformat — hero, stepper, stacked budget */
+.guide-hero{
+  background:
+    radial-gradient(ellipse at top right, hsl(var(--primary) / 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse at bottom left, hsl(var(--accent) / 0.08) 0%, transparent 60%),
+    var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.75rem;
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+  gap:2rem;
+  align-items:center;
+}
+@media (max-width: 860px){ .guide-hero{grid-template-columns:1fr;gap:1.25rem} }
+.guide-hero h2{
+  font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;
+  color:hsl(var(--foreground));margin-bottom:0.5rem;
+}
+.guide-hero .tag{
+  display:inline-block;font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.08em;
+  color:hsl(var(--primary));font-weight:600;margin-bottom:0.4rem;
+}
+.guide-hero p{font-size:0.875rem;line-height:1.65;color:hsl(var(--muted-foreground));margin-bottom:0.625rem}
+.formula-card{
+  background:hsl(var(--background) / 0.6);
+  border:1px solid hsl(var(--primary) / 0.25);
+  border-radius:0.625rem;
+  padding:1.25rem 1rem;
+  text-align:center;
+  box-shadow:inset 0 0 40px -10px hsl(var(--primary) / 0.15);
+}
+.formula{
+  font-family:var(--font-mono);font-size:1.0625rem;line-height:1.5;
+  color:hsl(var(--foreground));letter-spacing:0.02em;
+  display:inline-flex;align-items:center;gap:0.4rem;flex-wrap:wrap;justify-content:center;
+}
+.formula .tk{color:hsl(var(--foreground))}
+.formula .pen{color:hsl(var(--primary));font-weight:500}
+.formula .fis{color:hsl(35 85% 70%)}
+.formula .anc{color:hsl(142 70% 65%)}
+.formula .op{color:hsl(var(--muted-foreground))}
+.formula-cap{
+  margin-top:0.625rem;font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));letter-spacing:0.05em;text-transform:uppercase;
+}
+
+.glossary{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:0.5rem;margin-top:1rem;
+}
+.gloss{
+  background:hsl(var(--background) / 0.5);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.5rem;padding:0.625rem 0.75rem;
+}
+.gloss .sym{
+  font-family:var(--font-mono);font-size:1rem;font-weight:600;
+  color:hsl(var(--primary));margin-bottom:0.15rem;
+}
+.gloss .name{font-size:0.75rem;color:hsl(var(--muted-foreground));line-height:1.4}
+
+/* Section header for guide sub-sections */
+.guide-h{
+  display:flex;align-items:baseline;gap:0.625rem;margin-bottom:0.875rem;
+}
+.guide-h .num{
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:600;
+  color:hsl(var(--primary));letter-spacing:0.1em;
+}
+.guide-h h3{font-size:1.0625rem;font-weight:600;color:hsl(var(--foreground));letter-spacing:-0.01em}
+.guide-h .sub{font-size:0.75rem;color:hsl(var(--muted-foreground));margin-left:auto}
+
+/* Horizontal lifecycle stepper */
+.stepper{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:0;
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1.25rem 1rem;
+  position:relative;
+}
+@media (max-width: 860px){ .stepper{grid-template-columns:1fr;gap:0.75rem} }
+.step{
+  position:relative;padding:0 0.75rem;
+  display:flex;flex-direction:column;align-items:flex-start;
+}
+.step:not(:last-child)::after{
+  content:'';position:absolute;top:14px;right:-12px;width:24px;height:2px;
+  background:linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--accent) / 0.5));
+}
+@media (max-width: 860px){ .step:not(:last-child)::after{display:none} }
+.step .dot{
+  width:28px;height:28px;border-radius:50%;
+  background:hsl(var(--primary) / 0.15);
+  border:1.5px solid hsl(var(--primary));
+  color:hsl(var(--primary));
+  font-family:var(--font-mono);font-weight:600;font-size:0.75rem;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:0.625rem;
+  box-shadow:0 0 12px -2px hsl(var(--primary) / 0.4);
+}
+.step h4{
+  font-size:0.8125rem;font-weight:600;color:hsl(var(--foreground));
+  margin-bottom:0.3rem;letter-spacing:-0.01em;
+}
+.step p{font-size:0.75rem;line-height:1.55;color:hsl(var(--muted-foreground))}
+
+/* Event reference — cleaner row layout */
+.evref{display:flex;flex-direction:column;gap:0.625rem}
+.evref-row{
+  display:grid;
+  grid-template-columns:minmax(180px,220px) 1fr;
+  gap:1rem;
+  padding:0.875rem 1rem;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.5rem;
+  align-items:flex-start;
+}
+@media (max-width: 720px){ .evref-row{grid-template-columns:1fr} }
+.evref-row .meta .tag{display:inline-block;margin-bottom:0.4rem}
+.evref-row .meta .desc{font-size:0.8125rem;color:hsl(var(--muted-foreground));line-height:1.55}
+.evref-row .meta .topic{
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));
+  margin-top:0.4rem;
+}
+.evref-row .meta .topic b{color:hsl(var(--foreground));font-weight:500}
+.evref-row pre{
+  margin:0;padding:0.625rem 0.75rem;
+  background:hsl(var(--background));border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.4rem;
+  font-family:var(--font-mono);font-size:0.6875rem;line-height:1.6;
+  color:hsl(var(--muted-foreground));
+  overflow-x:auto;
+}
+.evref-row pre .k{color:hsl(var(--primary))}
+.evref-row pre .s{color:hsl(142 70% 65%)}
+.evref-row pre .n{color:hsl(35 85% 70%)}
+
+/* Stacked-bar budget */
+.budget-stack{
+  display:flex;height:36px;border-radius:0.5rem;overflow:hidden;
+  border:1px solid hsl(var(--border));
+  box-shadow:inset 0 0 12px -4px hsl(220 25% 2% / 0.6);
+  margin-bottom:0.875rem;
+}
+.budget-stack .seg{
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:0.6875rem;font-weight:600;
+  color:hsl(220 25% 6%);transition:flex 0.4s ease;
+}
+.budget-stack .seg.s1{background:hsl(185 80% 55%)}
+.budget-stack .seg.s2{background:hsl(165 75% 50%)}
+.budget-stack .seg.s3{background:hsl(142 70% 55%)}
+.budget-stack .seg.s4{background:hsl(35 85% 60%)}
+.budget-stack .seg.s5{background:hsl(0 65% 55%);color:hsl(210 20% 92%)}
+.budget-legend{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.5rem;
+}
+.legend-item{
+  display:flex;align-items:center;gap:0.5rem;
+  padding:0.5rem 0.625rem;
+  background:hsl(var(--background) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.4rem;
+}
+.legend-item .sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.legend-item .lab{flex:1;font-size:0.75rem;color:hsl(var(--foreground))}
+.legend-item .val{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground))}
+.event-row .ev-time{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));flex-shrink:0;min-width:80px}
+.event-row .ev-msg{flex:1;color:hsl(var(--foreground))}
+
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;
+  background:hsl(var(--card));border:1px solid hsl(var(--primary) / 0.4);
+  border-radius:0.5rem;padding:0.75rem 1rem;
+  font-size:0.8125rem;color:hsl(var(--foreground));
+  box-shadow:0 8px 24px -4px hsl(220 25% 2% / 0.6);
+  display:flex;align-items:center;gap:0.5rem;
+  transform:translateY(120%);transition:transform 0.3s;
+}
+.toast.show{transform:translateY(0)}
+.toast.ok{border-color:hsl(142 70% 50% / 0.5)}
+.toast.err{border-color:hsl(var(--destructive) / 0.5)}
+
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:0.4rem 1rem;font-size:0.8125rem}
+.kv dt{color:hsl(var(--muted-foreground));font-size:0.75rem}
+.kv dd{font-family:var(--font-mono);font-size:0.75rem;color:hsl(var(--foreground))}
+
+.row{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      <span class="brand-text"><b>Cogs</b><span class="slash">/</span>EWC Lifelong<span class="brand-ver mono">v0.7.0</span><span class="badge consolidated" style="margin-left:0.5rem">ESP32-S3 · CSI</span></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a data-page="dashboard" class="active">Dashboard</a>
+      <a data-page="tasks">Tasks</a>
+      <a data-page="fisher">Fisher Matrix</a>
+      <a data-page="weights">Weights</a>
+      <a data-page="events">Events</a>
+      <a data-page="settings">Settings</a>
+      <a data-page="guide">Guide</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ DASHBOARD ============ -->
+<div class="page show" id="page-dashboard">
+  <h1 class="page">Lifelong learning overview</h1>
+  <p class="lede">Elastic Weight Consolidation prevents catastrophic forgetting when the on-device model learns new CSI tasks. The Fisher information matrix protects important weights from past tasks while leaving capacity for the next one.</p>
+
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="kpi-info"><div class="kpi-label">Tasks learned</div><div class="kpi-val" id="kpi-tasks">—</div><div class="kpi-sub" id="kpi-tasks-sub">consolidated + active</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="kpi-info"><div class="kpi-label">Fisher updates</div><div class="kpi-val" id="kpi-fisher">—</div><div class="kpi-sub" id="kpi-fisher-sub">last: —</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="kpi-info"><div class="kpi-label">Consolidations</div><div class="kpi-val" id="kpi-cons">—</div><div class="kpi-sub">weight_consolidated</div></div></div>
+      <div class="kpi"><div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 -9 4 18 3 -9h4"/></svg></div><div class="kpi-info"><div class="kpi-label">CSI samples</div><div class="kpi-val" id="kpi-csi">—</div><div class="kpi-sub">since boot</div></div></div>
+      <div class="kpi"><div class="kpi-ic accent"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="kpi-info"><div class="kpi-label">Heap free</div><div class="kpi-val" id="kpi-heap">—</div><div class="kpi-sub" id="kpi-heap-sub">of 24 KB</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Active task <span class="mono" id="active-task-id" style="font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-left:0.4rem"></span></div>
+          <div class="card-sub" id="active-task-sub">on-device gradient step</div>
+        </div>
+        <div class="row">
+          <button class="btn sm accent" id="btn-start">Start training</button>
+          <button class="btn sm danger" id="btn-stop" disabled>Stop</button>
+          <button class="btn sm primary" id="btn-consolidate">Consolidate &amp; advance</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:0.3rem">
+            <span class="kpi-label">Training progress</span>
+            <span class="mono" style="font-size:0.75rem;color:hsl(var(--muted-foreground))" id="train-pct">0%</span>
+          </div>
+          <div class="progress"><div class="bar" id="train-bar" style="width:0%"></div></div>
+          <dl class="kv" style="margin-top:0.875rem">
+            <dt>Loss (CE)</dt><dd id="m-loss">—</dd>
+            <dt>EWC penalty</dt><dd id="m-ewc">—</dd>
+            <dt>λ</dt><dd id="m-lambda">400</dd>
+            <dt>Step</dt><dd id="m-step">0 / 0</dd>
+            <dt>Status</dt><dd><span class="badge idle" id="m-status">idle</span></dd>
+          </dl>
+        </div>
+        <div>
+          <div class="kpi-label" style="margin-bottom:0.3rem">CSI samples / sec</div>
+          <div class="chart" id="csi-chart">
+            <div class="chart-readout">
+              <span>throughput</span>
+              <span><b id="csi-now">—</b>&nbsp;Hz <span class="trend flat" id="csi-trend">·</span></span>
+            </div>
+            <svg viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="csi-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"  stop-color="hsl(185 80% 50%)" stop-opacity="0.45"/>
+                  <stop offset="60%" stop-color="hsl(185 80% 50%)" stop-opacity="0.10"/>
+                  <stop offset="100%" stop-color="hsl(185 80% 50%)" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="csi-stroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"  stop-color="hsl(185 80% 60%)"/>
+                  <stop offset="100%" stop-color="hsl(142 70% 55%)"/>
+                </linearGradient>
+              </defs>
+              <g class="chart-grid">
+                <line x1="0" y1="24" x2="300" y2="24"/>
+                <line x1="0" y1="48" x2="300" y2="48"/>
+                <line x1="0" y1="72" x2="300" y2="72"/>
+              </g>
+              <path id="csi-area" class="chart-area" fill="url(#csi-fill)" d=""/>
+              <path id="csi-path" class="chart-line" stroke="url(#csi-stroke)" d=""/>
+              <circle id="csi-pulse" class="chart-dot chart-dot-pulse" r="3" cx="296" cy="48" fill="hsl(185 80% 60%)"/>
+              <circle id="csi-head" class="chart-dot" r="3" cx="296" cy="48" fill="hsl(185 80% 60%)" stroke="hsl(220 25% 6%)" stroke-width="1.5"/>
+            </svg>
+          </div>
+
+          <div class="kpi-label" style="margin-top:0.75rem;margin-bottom:0.3rem">Loss curve (last 20 steps)</div>
+          <div class="chart" id="loss-chart">
+            <div class="chart-readout">
+              <span>L(θ)</span>
+              <span><b id="loss-now">—</b> <span class="trend flat" id="loss-trend">·</span></span>
+            </div>
+            <svg viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="loss-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"  stop-color="hsl(142 70% 50%)" stop-opacity="0.45"/>
+                  <stop offset="60%" stop-color="hsl(142 70% 50%)" stop-opacity="0.10"/>
+                  <stop offset="100%" stop-color="hsl(142 70% 50%)" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="loss-stroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"  stop-color="hsl(35 85% 60%)"/>
+                  <stop offset="100%" stop-color="hsl(142 70% 60%)"/>
+                </linearGradient>
+              </defs>
+              <g class="chart-grid">
+                <line x1="0" y1="24" x2="300" y2="24"/>
+                <line x1="0" y1="48" x2="300" y2="48"/>
+                <line x1="0" y1="72" x2="300" y2="72"/>
+              </g>
+              <path id="loss-area" class="chart-area" fill="url(#loss-fill)" d=""/>
+              <path id="loss-path" class="chart-line accent" stroke="url(#loss-stroke)" d=""/>
+              <circle id="loss-pulse" class="chart-dot chart-dot-pulse" r="3" cx="296" cy="48" fill="hsl(142 70% 60%)"/>
+              <circle id="loss-head" class="chart-dot" r="3" cx="296" cy="48" fill="hsl(142 70% 60%)" stroke="hsl(220 25% 6%)" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Recent events</h2>
+    <div class="event-list" id="dash-events"></div>
+  </div>
+</div>
+
+<!-- ============ TASKS ============ -->
+<div class="page" id="page-tasks">
+  <h1 class="page">Tasks</h1>
+  <p class="lede">Each task is a distinct CSI classification target the model has learned. Consolidated tasks contribute to the EWC penalty; the active task is currently being trained.</p>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Task ledger</div>
+          <div class="card-sub" id="task-ledger-sub">—</div>
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-export-tasks">Export JSON</button>
+          <button class="btn sm primary" id="btn-new-task">New task</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="task-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Samples</th><th>Accuracy</th><th>Fisher norm</th><th>Status</th><th></th></tr></thead>
+          <tbody id="task-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FISHER MATRIX ============ -->
+<div class="page" id="page-fisher">
+  <h1 class="page">Fisher information matrix</h1>
+  <p class="lede">The diagonal Fisher matrix estimates parameter importance for each consolidated task. Larger values pin weights closer to their previous optimum, raising the EWC penalty when they drift.</p>
+
+  <div class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Diagonal Fisher · summary</div>
+            <div class="card-sub" id="fisher-sub">computed over <span id="fisher-samples">512</span> samples</div>
+          </div>
+          <button class="btn sm primary" id="btn-fisher">Recompute Fisher</button>
+        </div>
+        <dl class="kv">
+          <dt>Parameters tracked</dt><dd id="f-n">—</dd>
+          <dt>Mean F̄</dt><dd id="f-mean">—</dd>
+          <dt>Max F</dt><dd id="f-max">—</dd>
+          <dt>Sparsity (F &lt; 1e-4)</dt><dd id="f-sparse">—</dd>
+          <dt>Last update</dt><dd id="f-last">—</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">Per-layer importance</div>
+          <div class="card-sub">log-scaled diagonal magnitude</div>
+        </div>
+        <div id="fisher-layers"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title">Top-k weights by Fisher</div>
+        <div class="row">
+          <select id="fisher-k" style="font-size:0.75rem">
+            <option>10</option><option selected>20</option><option>50</option>
+          </select>
+          <button class="btn sm outline" id="btn-fisher-refresh">Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Layer</th><th>Index</th><th>Weight θ</th><th>θ*</th><th>F</th></tr></thead>
+          <tbody id="fisher-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WEIGHTS ============ -->
+<div class="page" id="page-weights">
+  <h1 class="page">Consolidated weights</h1>
+  <p class="lede">θ* snapshots are taken at every consolidation event. The EWC penalty <span class="mono">Σ Fᵢ (θᵢ − θ*ᵢ)²</span> is computed against these anchors during subsequent training.</p>
+
+  <div class="section">
+    <div class="grid">
+      <div class="node">
+        <div class="node-h"><span class="node-name">Footprint</span><span class="badge role-master">on-device</span></div>
+        <div class="node-meta">
+          <div><span class="l">model</span><span id="w-size">—</span></div>
+          <div><span class="l">fisher</span><span id="w-fisher-size">—</span></div>
+          <div><span class="l">anchors</span><span id="w-anchors">—</span></div>
+          <div><span class="l">budget</span>24 KB</div>
+        </div>
+      </div>
+      <div class="node">
+        <div class="node-h"><span class="node-name">Last consolidation</span><span class="badge consolidated" id="w-last-badge">—</span></div>
+        <div class="node-meta">
+          <div><span class="l">task</span><span id="w-last-task">—</span></div>
+          <div><span class="l">at</span><span id="w-last-at">—</span></div>
+          <div><span class="l">Δθ‖₂</span><span id="w-delta">—</span></div>
+        </div>
+      </div>
+      <div class="node">
+        <div class="node-h"><span class="node-name">Forgetting score</span><span class="badge online">healthy</span></div>
+        <div class="node-meta">
+          <div><span class="l">avg drop</span><span id="w-forget">—</span></div>
+          <div><span class="l">worst task</span><span id="w-worst">—</span></div>
+          <div><span class="l">stability</span><span id="w-stab">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Anchor snapshots (θ*)</div>
+          <div class="card-sub">stored in flash, recomputed when a task graduates</div>
+        </div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-download-weights">Download θ*</button>
+          <button class="btn sm danger" id="btn-purge-anchor">Purge oldest</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Snapshot</th><th>Task</th><th>Stored</th><th>Bytes</th><th>‖θ*‖₂</th></tr></thead>
+          <tbody id="anchor-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EVENTS ============ -->
+<div class="page" id="page-events">
+  <h1 class="page">Event stream</h1>
+  <p class="lede">All <span class="mono">weight_consolidated</span>, <span class="mono">task_learned</span>, and <span class="mono">fisher_updated</span> events emitted by the on-device runtime.</p>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title">Filters</div>
+        <div class="row">
+          <button class="btn sm outline" id="btn-clear-events">Clear log</button>
+          <button class="btn sm primary" id="btn-emit-test">Emit test event</button>
+        </div>
+      </div>
+      <div class="pill-tabs" id="event-filter">
+        <button class="pill-tab on" data-filter="all">All</button>
+        <button class="pill-tab" data-filter="weight_consolidated">weight_consolidated</button>
+        <button class="pill-tab" data-filter="task_learned">task_learned</button>
+        <button class="pill-tab" data-filter="fisher_updated">fisher_updated</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title">Live stream</div>
+        <div class="card-sub mono" id="event-count">—</div>
+      </div>
+      <div class="event-list" id="event-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="page" id="page-settings">
+  <h1 class="page">Settings</h1>
+  <p class="lede">Hyperparameters and runtime configuration for the EWC lifelong learning loop.</p>
+
+  <div class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><div class="card-title">EWC hyperparameters</div></div>
+        <div class="modal-row">
+          <label>λ (penalty strength) — <span class="mono" id="lbl-lambda">400</span></label>
+          <input type="range" id="set-lambda" min="0" max="2000" step="10" value="400">
+        </div>
+        <div class="modal-row">
+          <label>Learning rate — <span class="mono" id="lbl-lr">0.0010</span></label>
+          <input type="range" id="set-lr" min="0" max="100" step="1" value="10">
+        </div>
+        <div class="modal-row">
+          <label>Fisher batch size</label>
+          <input class="input" id="set-fisher-batch" value="512" type="number" min="32" max="4096">
+        </div>
+        <div class="modal-row">
+          <label>Consolidation threshold (accuracy)</label>
+          <input class="input" id="set-thresh" value="0.92" type="number" step="0.01" min="0.5" max="1.0">
+        </div>
+        <div class="row" style="justify-content:flex-end;margin-top:0.5rem">
+          <button class="btn outline" id="btn-reset-cfg">Reset defaults</button>
+          <button class="btn primary" id="btn-save-cfg">Save</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-title">Hardware</div></div>
+        <dl class="kv">
+          <dt>Target</dt><dd>ESP32-S3</dd>
+          <dt>Input</dt><dd>CSI raw (channel state info)</dd>
+          <dt>Subcarriers</dt>
+          <dd><select id="set-subc" style="width:100%"><option>52 (HT20)</option><option selected>114 (HT40)</option><option>256 (HE40)</option></select></dd>
+          <dt>Sample rate</dt><dd><input class="input" id="set-rate" value="100" type="number" min="10" max="1000"> Hz</dd>
+          <dt>Model footprint</dt><dd>24 KB (quantized int8)</dd>
+          <dt>PSRAM</dt><dd><span class="badge online">enabled</span></dd>
+        </dl>
+        <div class="row" style="justify-content:flex-end;margin-top:0.75rem">
+          <button class="btn outline" id="btn-probe-hw">Probe device</button>
+          <button class="btn accent" id="btn-flash">Flash firmware</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title">Danger zone</div>
+        <div class="card-sub">these actions wipe consolidated knowledge</div>
+      </div>
+      <div class="row">
+        <button class="btn danger" id="btn-reset-fisher">Reset Fisher matrix</button>
+        <button class="btn danger" id="btn-reset-anchors">Drop all anchors (θ*)</button>
+        <button class="btn danger" id="btn-factory">Factory reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GUIDE ============ -->
+<div class="page" id="page-guide">
+  <h1 class="page">Guide</h1>
+  <p class="lede">A short field guide to running Elastic Weight Consolidation on a 24&nbsp;KB ESP32-S3 model fed by raw WiFi CSI.</p>
+
+  <!-- HERO -->
+  <div class="section">
+    <div class="guide-hero">
+      <div>
+        <span class="tag">Elastic Weight Consolidation</span>
+        <h2>Learn new tasks without forgetting the old ones.</h2>
+        <p>When a small on-device model is fine-tuned on a new task, gradient descent quickly overwrites the weights that mattered for past tasks — a problem known as <i>catastrophic forgetting</i>.</p>
+        <p>EWC measures, per parameter, how much it mattered for past tasks (the diagonal Fisher information <span class="mono" style="color:hsl(var(--foreground))">F</span>) and adds a quadratic penalty that pulls important weights back toward their consolidated values <span class="mono" style="color:hsl(var(--foreground))">θ*</span>. The model keeps spare capacity for the new task while preserving what it has already learned.</p>
+        <div class="glossary">
+          <div class="gloss"><div class="sym">θ</div><div class="name">current weights being trained on task B</div></div>
+          <div class="gloss"><div class="sym">θ*</div><div class="name">anchor — weights at consolidation of task A</div></div>
+          <div class="gloss"><div class="sym">F</div><div class="name">diagonal Fisher — per-weight importance</div></div>
+          <div class="gloss"><div class="sym">λ</div><div class="name">penalty strength (rigidity vs plasticity)</div></div>
+        </div>
+      </div>
+      <div class="formula-card">
+        <div class="formula">
+          <span class="tk">L(θ)</span><span class="op">=</span><span class="tk">L<sub>B</sub>(θ)</span>
+          <span class="op">+</span>
+          <span class="pen">λ ⁄ 2</span>
+          <span class="op">·</span>
+          <span class="tk">Σ<sub>i</sub></span>
+          <span class="fis">F<sub>i</sub></span>
+          <span class="op">(</span><span class="tk">θ<sub>i</sub></span><span class="op">−</span><span class="anc">θ*<sub>i</sub></span><span class="op">)²</span>
+        </div>
+        <div class="formula-cap">objective minimised on task B</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIFECYCLE STEPPER -->
+  <div class="section">
+    <div class="guide-h">
+      <span class="num">01 ·</span>
+      <h3>Lifecycle</h3>
+      <span class="sub">what happens for each new task</span>
+    </div>
+    <div class="stepper">
+      <div class="step">
+        <div class="dot">1</div>
+        <h4>Train</h4>
+        <p>Fine-tune on the new task until rolling accuracy ≥ threshold (default 92%).</p>
+      </div>
+      <div class="step">
+        <div class="dot">2</div>
+        <h4>Estimate F</h4>
+        <p>Compute diagonal Fisher over a held-out CSI batch (default 512 samples).</p>
+      </div>
+      <div class="step">
+        <div class="dot">3</div>
+        <h4>Snapshot θ*</h4>
+        <p>Persist current weights as a new anchor. Emit <span class="mono">weight_consolidated</span>.</p>
+      </div>
+      <div class="step">
+        <div class="dot">4</div>
+        <h4>Begin next</h4>
+        <p>Activate the next task. The EWC penalty kicks in immediately.</p>
+      </div>
+      <div class="step">
+        <div class="dot">5</div>
+        <h4>Recycle</h4>
+        <p>When the 24 KB budget is hit, the oldest anchor is purged and F is merged.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENT REFERENCE -->
+  <div class="section">
+    <div class="guide-h">
+      <span class="num">02 ·</span>
+      <h3>Runtime events</h3>
+      <span class="sub">published on <span class="mono">ewc/+</span></span>
+    </div>
+    <div class="evref">
+      <div class="evref-row">
+        <div class="meta">
+          <span class="ev-type task_learned tag">task_learned</span>
+          <div class="desc">Fired when a task's rolling accuracy crosses the consolidation threshold.</div>
+          <div class="topic">topic: <b>ewc/task_learned</b></div>
+        </div>
+        <pre><span class="k">task_id</span>: <span class="s">"T05"</span>
+<span class="k">name</span>: <span class="s">"breathing-rate"</span>
+<span class="k">accuracy</span>: <span class="n">0.93</span>
+<span class="k">samples</span>: <span class="n">1893</span></pre>
+      </div>
+
+      <div class="evref-row">
+        <div class="meta">
+          <span class="ev-type fisher_updated tag">fisher_updated</span>
+          <div class="desc">Fired after the diagonal Fisher matrix is recomputed over a held-out CSI batch.</div>
+          <div class="topic">topic: <b>ewc/fisher_updated</b></div>
+        </div>
+        <pre><span class="k">batch_size</span>: <span class="n">512</span>
+<span class="k">mean_f</span>: <span class="n">0.0084</span>
+<span class="k">max_f</span>: <span class="n">0.612</span>
+<span class="k">duration_ms</span>: <span class="n">214</span></pre>
+      </div>
+
+      <div class="evref-row">
+        <div class="meta">
+          <span class="ev-type weight_consolidated tag">weight_consolidated</span>
+          <div class="desc">Fired when θ* is snapshotted to flash and added to the anchor set.</div>
+          <div class="topic">topic: <b>ewc/weight_consolidated</b></div>
+        </div>
+        <pre><span class="k">anchor_id</span>: <span class="s">"A05"</span>
+<span class="k">task_id</span>: <span class="s">"T05"</span>
+<span class="k">bytes</span>: <span class="n">3712</span>
+<span class="k">norm_l2</span>: <span class="n">12.8</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUDGET -->
+  <div class="section">
+    <div class="guide-h">
+      <span class="num">03 ·</span>
+      <h3>Footprint budget</h3>
+      <span class="sub">24 KB ceiling on ESP32-S3 internal SRAM</span>
+    </div>
+    <div class="card">
+      <div class="budget-stack" title="allocation of the 24 KB budget">
+        <div class="seg s1" style="flex:14.6">14.6&nbsp;KB</div>
+        <div class="seg s2" style="flex:3.7">3.7</div>
+        <div class="seg s3" style="flex:3.7">3.7</div>
+        <div class="seg s4" style="flex:2.0">2.0</div>
+        <div class="seg s5" style="flex:0.4"></div>
+      </div>
+      <div class="budget-legend">
+        <div class="legend-item"><span class="sw" style="background:hsl(185 80% 55%)"></span><span class="lab">Model (int8)</span><span class="val">14.6 KB</span></div>
+        <div class="legend-item"><span class="sw" style="background:hsl(165 75% 50%)"></span><span class="lab">Diagonal Fisher</span><span class="val">3.7 KB</span></div>
+        <div class="legend-item"><span class="sw" style="background:hsl(142 70% 55%)"></span><span class="lab">θ* anchor (×1)</span><span class="val">3.7 KB</span></div>
+        <div class="legend-item"><span class="sw" style="background:hsl(35 85% 60%)"></span><span class="lab">Activation buffers</span><span class="val">2.0 KB</span></div>
+        <div class="legend-item"><span class="sw" style="background:hsl(0 65% 55%)"></span><span class="lab">Event ring buffer</span><span class="val">0.4 KB</span></div>
+      </div>
+      <p style="font-size:0.75rem;color:hsl(var(--muted-foreground));margin-top:0.875rem;line-height:1.6">
+        Anchor capacity is <span class="mono" style="color:hsl(var(--foreground))">⌊(24 − model − fisher − buffers) / 3.7⌋</span>.
+        On this footprint that leaves room for ~1 anchor at a time, so older anchors are recycled (their F is merged into the kept anchor) when a new task consolidates.
+      </p>
+    </div>
+  </div>
+</div>
+
+<footer class="appfoot">
+  <div><span class="mono">project: ewc-lifelong</span> &middot; <span class="mono">v0.7.0</span> &middot; <span class="mono">ESP32-S3 · CSI raw</span></div>
+  <div style="margin-top:0.4rem">source: <span class="mono">cognitum-one/cogs/src/cogs/ewc-lifelong</span></div>
+</footer>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-bg" id="modal-new-task">
+  <div class="modal">
+    <h3>New task</h3>
+    <div class="modal-sub">Start a fresh classification target. The current task (if any) must be consolidated first or it will be discarded.</div>
+    <div class="modal-row">
+      <label>Task name</label>
+      <input class="input" id="nt-name" placeholder="e.g. gesture-swipe-left">
+    </div>
+    <div class="modal-row">
+      <label>Classes</label>
+      <input class="input" id="nt-classes" type="number" value="3" min="2" max="16">
+    </div>
+    <div class="modal-row">
+      <label>Notes</label>
+      <textarea class="input" id="nt-notes" placeholder="optional"></textarea>
+    </div>
+    <div class="modal-result" id="nt-result"></div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="modal-new-task">Cancel</button>
+      <button class="btn primary" id="nt-submit">Create task</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal">
+    <h3 id="cf-title">Confirm</h3>
+    <div class="modal-sub" id="cf-sub">Are you sure?</div>
+    <div class="modal-result" id="cf-result"></div>
+    <div class="modal-actions">
+      <button class="btn outline" data-close="modal-confirm">Cancel</button>
+      <button class="btn danger" id="cf-submit">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n, d=2) => Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+const now = () => new Date();
+const hhmmss = d => d.toTimeString().slice(0,8);
+const rel = d => {
+  const s = Math.round((Date.now() - d.getTime())/1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.round(s/60) + 'm ago';
+  if (s < 86400) return Math.round(s/3600) + 'h ago';
+  return Math.round(s/86400) + 'd ago';
+};
+
+let toastT;
+function toast(msg, kind='ok'){
+  const t = $('#toast'); $('#toast-msg').textContent = msg;
+  t.className = 'toast show ' + kind;
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>{ t.className = 'toast ' + kind; }, 2400);
+}
+
+// ---------- state ----------
+const STATE = {
+  tasks: [
+    { id:'T01', name:'presence-detect',    samples: 4820, acc: 0.97, fisher: 12.4, status:'consolidated', anchor: 3712 },
+    { id:'T02', name:'occupancy-count',    samples: 6314, acc: 0.94, fisher:  9.8, status:'consolidated', anchor: 3712 },
+    { id:'T03', name:'gesture-swipe',      samples: 2410, acc: 0.91, fisher:  7.2, status:'consolidated', anchor: 3712 },
+    { id:'T04', name:'fall-detection',     samples: 1893, acc: 0.88, fisher:  6.1, status:'consolidated', anchor: 3712 },
+    { id:'T05', name:'breathing-rate',     samples:  712, acc: 0.74, fisher:  0.0, status:'training',     anchor: 0 },
+  ],
+  activeTaskId: 'T05',
+  training: false,
+  step: 0,
+  totalSteps: 1200,
+  loss: 1.34,
+  ewcPenalty: 0.41,
+  lambda: 400,
+  lr: 0.001,
+  csiSamplesTotal: 184_512,
+  heapFree: 18_400,
+  fisher: {
+    n: 3712, mean: 0.0084, max: 0.612,
+    sparse: 0.18, last: new Date(Date.now() - 1000*60*42),
+    layers: [
+      { name:'conv1', mag: 0.81 },
+      { name:'conv2', mag: 0.62 },
+      { name:'fc1',   mag: 0.94 },
+      { name:'fc2',   mag: 0.71 },
+      { name:'head',  mag: 0.55 },
+    ],
+    samples: 512,
+  },
+  anchors: [
+    { id:'A01', task:'T01', stored: new Date(Date.now()-1000*60*60*48), bytes: 3712, norm: 14.2 },
+    { id:'A02', task:'T02', stored: new Date(Date.now()-1000*60*60*22), bytes: 3712, norm: 13.7 },
+    { id:'A03', task:'T03', stored: new Date(Date.now()-1000*60*60*9),  bytes: 3712, norm: 13.1 },
+    { id:'A04', task:'T04', stored: new Date(Date.now()-1000*60*60*3),  bytes: 3712, norm: 12.8 },
+  ],
+  events: [],
+  csiBars: Array.from({length:24}, () => 30 + Math.random()*60),
+  lossBars: Array.from({length:20}, (_,i) => 90 - i*3 + Math.random()*10),
+  config: { lambda: 400, lr: 0.001, fisherBatch: 512, threshold: 0.92, sampleRate: 100 },
+};
+
+// seed events
+function seedEvents(){
+  const seeds = [
+    { type:'task_learned',        msg:'Task T04 (fall-detection) crossed threshold (acc=0.88)', t: -3*3600 },
+    { type:'fisher_updated',      msg:'Fisher recomputed over 512 samples (mean F̄=0.0084)',    t: -3*3600+30 },
+    { type:'weight_consolidated', msg:'Snapshot A04 stored (3712 B, ‖θ*‖₂=12.8)',               t: -3*3600+60 },
+    { type:'task_learned',        msg:'Task T03 (gesture-swipe) crossed threshold (acc=0.91)',  t: -9*3600 },
+    { type:'fisher_updated',      msg:'Fisher recomputed over 512 samples (mean F̄=0.0091)',    t: -9*3600+30 },
+    { type:'weight_consolidated', msg:'Snapshot A03 stored (3712 B, ‖θ*‖₂=13.1)',               t: -9*3600+60 },
+    { type:'task_learned',        msg:'Task T02 (occupancy-count) crossed threshold (acc=0.94)',t: -22*3600 },
+    { type:'weight_consolidated', msg:'Snapshot A02 stored (3712 B, ‖θ*‖₂=13.7)',               t: -22*3600+60 },
+    { type:'task_learned',        msg:'Task T01 (presence-detect) crossed threshold (acc=0.97)',t: -48*3600 },
+    { type:'weight_consolidated', msg:'Snapshot A01 stored (3712 B, ‖θ*‖₂=14.2)',               t: -48*3600+60 },
+  ];
+  STATE.events = seeds.map(s => ({ type: s.type, msg: s.msg, at: new Date(Date.now() + s.t*1000) }));
+}
+seedEvents();
+
+function emit(type, msg){
+  STATE.events.unshift({ type, msg, at: new Date() });
+  if (STATE.events.length > 200) STATE.events.length = 200;
+  renderEvents(); renderDashEvents();
+}
+
+// ---------- navigation ----------
+$$('#nav a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const p = a.dataset.page;
+  $$('#nav a').forEach(x => x.classList.toggle('active', x === a));
+  $$('.page').forEach(x => x.classList.toggle('show', x.id === 'page-' + p));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (p === 'fisher') renderFisher();
+  if (p === 'weights') renderAnchors();
+  if (p === 'events') renderEvents();
+  if (p === 'tasks') renderTasks();
+}));
+
+// ---------- modal helpers ----------
+function openModal(id){ $('#'+id).classList.add('show'); }
+function closeModal(id){ $('#'+id).classList.remove('show'); const r = $('#'+id+' .modal-result'); if (r) r.className = 'modal-result'; }
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+$$('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
+
+// ---------- renderers ----------
+function renderKpis(){
+  const learned = STATE.tasks.filter(t => t.status === 'consolidated').length;
+  const total   = STATE.tasks.length;
+  $('#kpi-tasks').textContent = total;
+  $('#kpi-tasks-sub').textContent = learned + ' consolidated · ' + (total - learned) + ' active';
+  const fisherCount = STATE.events.filter(e => e.type === 'fisher_updated').length;
+  $('#kpi-fisher').textContent = fisherCount;
+  $('#kpi-fisher-sub').textContent = 'last: ' + rel(STATE.fisher.last);
+  const consCount = STATE.events.filter(e => e.type === 'weight_consolidated').length;
+  $('#kpi-cons').textContent = consCount;
+  $('#kpi-csi').textContent = STATE.csiSamplesTotal.toLocaleString();
+  $('#kpi-heap').textContent = (STATE.heapFree/1024).toFixed(1) + ' KB';
+  $('#kpi-heap-sub').textContent = 'free of 24 KB';
+}
+
+function renderActive(){
+  const t = STATE.tasks.find(x => x.id === STATE.activeTaskId);
+  $('#active-task-id').textContent = t ? (t.id + ' · ' + t.name) : 'none';
+  $('#active-task-sub').textContent = STATE.training ? 'on-device gradient step running' : 'on-device gradient step (paused)';
+  $('#m-loss').textContent = STATE.loss.toFixed(4);
+  $('#m-ewc').textContent  = STATE.ewcPenalty.toFixed(4);
+  $('#m-lambda').textContent = STATE.lambda;
+  $('#m-step').textContent = STATE.step + ' / ' + STATE.totalSteps;
+  const pct = Math.min(100, Math.round((STATE.step / STATE.totalSteps) * 100));
+  $('#train-bar').style.width = pct + '%';
+  $('#train-pct').textContent = pct + '%';
+  const stat = $('#m-status');
+  stat.className = 'badge ' + (STATE.training ? 'training' : 'idle');
+  stat.textContent = STATE.training ? 'training' : 'idle';
+  $('#btn-start').disabled = STATE.training;
+  $('#btn-stop').disabled = !STATE.training;
+  // modern SVG charts
+  renderChart({
+    values: STATE.csiBars,
+    pathId: 'csi-path', areaId: 'csi-area',
+    headId: 'csi-head', pulseId: 'csi-pulse',
+    nowId: 'csi-now', trendId: 'csi-trend',
+    fmt: v => Math.round(v),
+    invert: false,
+  });
+  renderChart({
+    values: STATE.lossBars,
+    pathId: 'loss-path', areaId: 'loss-area',
+    headId: 'loss-head', pulseId: 'loss-pulse',
+    nowId: 'loss-now', trendId: 'loss-trend',
+    fmt: () => STATE.loss.toFixed(3),
+    invert: true, // loss going down is "good"
+  });
+}
+
+// Build smooth area + line path from a series of values (0..100 scale)
+function renderChart(opts){
+  const W = 300, H = 96, pad = 6;
+  const vs = opts.values;
+  if (!vs || !vs.length) return;
+  const n = vs.length;
+  const stepX = (W) / (n - 1);
+  const pts = vs.map((v, i) => {
+    const y = H - pad - (Math.max(0, Math.min(100, v)) / 100) * (H - pad*2);
+    return { x: i * stepX, y };
+  });
+  // Catmull-Rom -> Bezier smoothing
+  const d = [];
+  d.push(`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`);
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`);
+  }
+  const linePath = d.join(' ');
+  const areaPath = linePath + ` L ${W} ${H} L 0 ${H} Z`;
+  const path = document.getElementById(opts.pathId);
+  const area = document.getElementById(opts.areaId);
+  const head = document.getElementById(opts.headId);
+  const pulse = document.getElementById(opts.pulseId);
+  if (path) path.setAttribute('d', linePath);
+  if (area) area.setAttribute('d', areaPath);
+  const last = pts[pts.length - 1];
+  if (head)  { head.setAttribute('cx', last.x);  head.setAttribute('cy', last.y); }
+  if (pulse) { pulse.setAttribute('cx', last.x); pulse.setAttribute('cy', last.y); }
+  // readout + trend
+  const nowEl = document.getElementById(opts.nowId);
+  const trendEl = document.getElementById(opts.trendId);
+  if (nowEl) nowEl.textContent = opts.fmt(vs[vs.length - 1]);
+  if (trendEl){
+    const prev = vs[vs.length - 4] ?? vs[0];
+    const curr = vs[vs.length - 1];
+    const delta = curr - prev;
+    const rising = delta > 1.5, falling = delta < -1.5;
+    const good = opts.invert ? falling : rising;
+    const bad  = opts.invert ? rising : falling;
+    trendEl.className = 'trend ' + (good ? 'up' : bad ? 'down' : 'flat');
+    trendEl.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+  }
+}
+
+function renderDashEvents(){
+  const list = STATE.events.slice(0, 5);
+  $('#dash-events').innerHTML = list.length ? list.map(eventRow).join('')
+    : `<div class="empty-card compact"><p>No events yet.</p></div>`;
+}
+
+function eventRow(ev){
+  return `<div class="event-row">
+    <span class="ev-type ${esc(ev.type)}">${esc(ev.type)}</span>
+    <span class="ev-time">${hhmmss(ev.at)}</span>
+    <span class="ev-msg">${esc(ev.msg)}</span>
+  </div>`;
+}
+
+function renderTasks(){
+  $('#task-ledger-sub').textContent = STATE.tasks.length + ' total · ' +
+    STATE.tasks.filter(t=>t.status==='consolidated').length + ' consolidated';
+  $('#task-tbody').innerHTML = STATE.tasks.map(t => {
+    const bClass = t.status === 'consolidated' ? 'consolidated'
+                : t.status === 'training' ? 'training' : 'idle';
+    const canActivate = t.status !== 'training' && t.id !== STATE.activeTaskId;
+    return `<tr>
+      <td>${esc(t.id)}</td>
+      <td style="font-family:var(--font-display);font-size:0.8125rem">${esc(t.name)}</td>
+      <td>${t.samples.toLocaleString()}</td>
+      <td>${(t.acc*100).toFixed(1)}%</td>
+      <td>${t.fisher.toFixed(2)}</td>
+      <td><span class="badge ${bClass}">${esc(t.status)}</span></td>
+      <td style="text-align:right">
+        ${canActivate ? `<button class="btn sm outline" data-act-task="${esc(t.id)}">Activate</button>` : ''}
+        <button class="btn sm danger" data-del-task="${esc(t.id)}">Drop</button>
+      </td>
+    </tr>`;
+  }).join('');
+  $$('[data-act-task]').forEach(b => b.addEventListener('click', () => activateTask(b.dataset.actTask)));
+  $$('[data-del-task]').forEach(b => b.addEventListener('click', () => dropTask(b.dataset.delTask)));
+}
+
+function renderFisher(){
+  $('#f-n').textContent = STATE.fisher.n.toLocaleString();
+  $('#f-mean').textContent = STATE.fisher.mean.toExponential(2);
+  $('#f-max').textContent = STATE.fisher.max.toFixed(3);
+  $('#f-sparse').textContent = (STATE.fisher.sparse*100).toFixed(1) + '%';
+  $('#f-last').textContent = rel(STATE.fisher.last);
+  $('#fisher-samples').textContent = STATE.fisher.samples;
+  $('#fisher-layers').innerHTML = STATE.fisher.layers.map(l => `
+    <div style="margin-bottom:0.5rem">
+      <div class="row" style="justify-content:space-between;margin-bottom:0.2rem">
+        <span style="font-size:0.8125rem;font-family:var(--font-mono)">${esc(l.name)}</span>
+        <span class="mono" style="font-size:0.6875rem;color:hsl(var(--muted-foreground))">${(l.mag).toFixed(2)}</span>
+      </div>
+      <div class="progress"><div class="bar" style="width:${Math.round(l.mag*100)}%"></div></div>
+    </div>
+  `).join('');
+  // top-k mock
+  const k = parseInt($('#fisher-k').value || '20', 10);
+  const layers = ['conv1','conv2','fc1','fc2','head'];
+  const rows = [];
+  for (let i = 0; i < k; i++){
+    const layer = layers[i % layers.length];
+    const idx = 17 + i * 23;
+    const theta = (Math.random()*2 - 1).toFixed(4);
+    const thetaStar = (parseFloat(theta) + (Math.random()*0.2 - 0.1)).toFixed(4);
+    const f = (STATE.fisher.max * (1 - i/(k*1.5))).toFixed(4);
+    rows.push(`<tr><td>${esc(layer)}</td><td>${idx}</td><td>${theta}</td><td>${thetaStar}</td><td>${f}</td></tr>`);
+  }
+  $('#fisher-tbody').innerHTML = rows.join('');
+}
+
+function renderAnchors(){
+  const tot = STATE.anchors.reduce((s,a)=>s+a.bytes, 0);
+  $('#w-size').textContent = '14.6 KB';
+  $('#w-fisher-size').textContent = (STATE.fisher.n/1024*1).toFixed(1) + ' KB';
+  $('#w-anchors').textContent = STATE.anchors.length + ' (' + (tot/1024).toFixed(1) + ' KB)';
+  const last = STATE.anchors[STATE.anchors.length - 1];
+  if (last){
+    $('#w-last-task').textContent = last.task;
+    $('#w-last-at').textContent = rel(last.stored);
+    $('#w-last-badge').textContent = last.id;
+    $('#w-delta').textContent = (Math.random()*0.4 + 0.1).toFixed(3);
+  }
+  $('#w-forget').textContent = '1.4%';
+  $('#w-worst').textContent = STATE.anchors[0]?.task || '—';
+  $('#w-stab').textContent = '98.6%';
+  $('#anchor-tbody').innerHTML = STATE.anchors.map(a => `
+    <tr>
+      <td>${esc(a.id)}</td>
+      <td>${esc(a.task)}</td>
+      <td>${rel(a.stored)}</td>
+      <td>${a.bytes.toLocaleString()}</td>
+      <td>${a.norm.toFixed(2)}</td>
+    </tr>
+  `).join('');
+}
+
+let eventFilter = 'all';
+function renderEvents(){
+  const filtered = STATE.events.filter(e => eventFilter === 'all' || e.type === eventFilter);
+  $('#event-count').textContent = filtered.length + ' of ' + STATE.events.length + ' events';
+  $('#event-list').innerHTML = filtered.length ? filtered.map(eventRow).join('')
+    : `<div class="empty-card compact"><p>No events match this filter.</p></div>`;
+}
+
+// ---------- actions ----------
+$('#btn-start').addEventListener('click', () => {
+  if (STATE.training) return;
+  STATE.training = true;
+  toast('Training started on ' + STATE.activeTaskId, 'ok');
+  renderActive();
+});
+
+$('#btn-stop').addEventListener('click', () => {
+  if (!STATE.training) return;
+  STATE.training = false;
+  toast('Training paused', 'ok');
+  renderActive();
+});
+
+$('#btn-consolidate').addEventListener('click', () => {
+  const t = STATE.tasks.find(x => x.id === STATE.activeTaskId);
+  if (!t){ toast('No active task', 'err'); return; }
+  if (t.status === 'consolidated'){ toast('Task already consolidated', 'err'); return; }
+  // emulate consolidation pipeline
+  STATE.training = false;
+  t.status = 'consolidated';
+  t.fisher = +(4 + Math.random()*8).toFixed(2);
+  t.acc = Math.max(t.acc, 0.92);
+  const aid = 'A' + String(STATE.anchors.length + 1).padStart(2,'0');
+  STATE.anchors.push({ id: aid, task: t.id, stored: new Date(), bytes: 3712, norm: +(12 + Math.random()*2.5).toFixed(2) });
+  STATE.fisher.last = new Date();
+  STATE.fisher.mean = +(0.005 + Math.random()*0.01).toFixed(4);
+  emit('fisher_updated', `Fisher recomputed over ${STATE.fisher.samples} samples (mean F̄=${STATE.fisher.mean.toFixed(4)})`);
+  emit('task_learned', `Task ${t.id} (${t.name}) crossed threshold (acc=${t.acc.toFixed(2)})`);
+  emit('weight_consolidated', `Snapshot ${aid} stored (3712 B, ‖θ*‖₂=${STATE.anchors[STATE.anchors.length-1].norm})`);
+  STATE.step = 0; STATE.loss = 1.4; STATE.ewcPenalty = 0.0;
+  toast('Consolidated ' + t.id + ' → ' + aid, 'ok');
+  renderAll();
+});
+
+$('#btn-new-task').addEventListener('click', () => {
+  $('#nt-name').value = ''; $('#nt-classes').value = 3; $('#nt-notes').value = '';
+  openModal('modal-new-task');
+});
+
+$('#nt-submit').addEventListener('click', () => {
+  const name = $('#nt-name').value.trim();
+  const cls = parseInt($('#nt-classes').value, 10);
+  const res = $('#nt-result');
+  if (!name){ res.className = 'modal-result err'; res.textContent = 'Task name is required.'; return; }
+  if (!cls || cls < 2){ res.className = 'modal-result err'; res.textContent = 'Need at least 2 classes.'; return; }
+  // check active
+  const active = STATE.tasks.find(x => x.id === STATE.activeTaskId);
+  if (active && active.status !== 'consolidated'){
+    res.className = 'modal-result err';
+    res.textContent = 'Active task ' + active.id + ' is not consolidated yet. Consolidate or drop it first.';
+    return;
+  }
+  const id = 'T' + String(STATE.tasks.length + 1).padStart(2,'0');
+  STATE.tasks.push({ id, name, samples: 0, acc: 0, fisher: 0, status:'training', anchor: 0 });
+  STATE.activeTaskId = id;
+  STATE.step = 0; STATE.loss = 2.0; STATE.ewcPenalty = 0.0; STATE.training = false;
+  res.className = 'modal-result ok';
+  res.textContent = 'Created ' + id + ' (' + name + '), set as active task.';
+  toast('New task ' + id + ' created', 'ok');
+  setTimeout(() => { closeModal('modal-new-task'); renderAll(); }, 800);
+});
+
+function activateTask(id){
+  const t = STATE.tasks.find(x => x.id === id);
+  if (!t) return;
+  STATE.activeTaskId = id;
+  STATE.training = false;
+  STATE.step = 0; STATE.loss = 1.0 + Math.random()*0.8;
+  toast('Active task: ' + id, 'ok');
+  renderAll();
+}
+
+function dropTask(id){
+  confirmAction(
+    'Drop task ' + id + '?',
+    'This removes the task from the ledger. Consolidated anchors stay in flash unless purged separately.',
+    () => {
+      STATE.tasks = STATE.tasks.filter(t => t.id !== id);
+      if (STATE.activeTaskId === id) STATE.activeTaskId = STATE.tasks[STATE.tasks.length-1]?.id || null;
+      toast('Dropped ' + id, 'ok');
+      renderAll();
+    }
+  );
+}
+
+// ---------- fisher actions ----------
+$('#btn-fisher').addEventListener('click', () => {
+  STATE.fisher.last = new Date();
+  STATE.fisher.mean = +(0.004 + Math.random()*0.012).toFixed(4);
+  STATE.fisher.max  = +(0.4 + Math.random()*0.4).toFixed(3);
+  STATE.fisher.sparse = +(0.1 + Math.random()*0.2).toFixed(2);
+  STATE.fisher.layers.forEach(l => l.mag = Math.max(0.2, Math.min(1, l.mag + (Math.random()*0.2 - 0.1))));
+  emit('fisher_updated', `Fisher recomputed over ${STATE.fisher.samples} samples (mean F̄=${STATE.fisher.mean.toFixed(4)})`);
+  toast('Fisher matrix recomputed', 'ok');
+  renderFisher(); renderKpis();
+});
+
+$('#btn-fisher-refresh').addEventListener('click', () => { renderFisher(); toast('Top-k refreshed', 'ok'); });
+$('#fisher-k').addEventListener('change', renderFisher);
+
+// ---------- weight actions ----------
+$('#btn-download-weights').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({
+    project:'ewc-lifelong', version:'0.7.0',
+    anchors: STATE.anchors.map(a => ({ ...a, stored: a.stored.toISOString() })),
+    fisher: { n: STATE.fisher.n, mean: STATE.fisher.mean, max: STATE.fisher.max },
+  }, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ewc-anchors.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Anchors exported', 'ok');
+});
+
+$('#btn-purge-anchor').addEventListener('click', () => {
+  if (!STATE.anchors.length){ toast('No anchors to purge', 'err'); return; }
+  confirmAction(
+    'Purge oldest anchor?',
+    'This removes ' + STATE.anchors[0].id + ' (task ' + STATE.anchors[0].task + '). Its task will no longer contribute to the EWC penalty and may begin to forget.',
+    () => {
+      const dropped = STATE.anchors.shift();
+      toast('Purged ' + dropped.id, 'ok');
+      renderAll();
+    }
+  );
+});
+
+// ---------- events page ----------
+$$('#event-filter .pill-tab').forEach(b => b.addEventListener('click', () => {
+  $$('#event-filter .pill-tab').forEach(x => x.classList.toggle('on', x === b));
+  eventFilter = b.dataset.filter;
+  renderEvents();
+}));
+
+$('#btn-clear-events').addEventListener('click', () => {
+  confirmAction('Clear event log?', 'This wipes the in-memory event stream. Flash-stored snapshots are unaffected.', () => {
+    STATE.events = [];
+    toast('Event log cleared', 'ok');
+    renderAll();
+  });
+});
+
+$('#btn-emit-test').addEventListener('click', () => {
+  const types = ['weight_consolidated','task_learned','fisher_updated'];
+  const t = types[Math.floor(Math.random()*types.length)];
+  emit(t, '[test] synthetic ' + t + ' event');
+  toast('Emitted ' + t, 'ok');
+});
+
+// ---------- task export ----------
+$('#btn-export-tasks').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(STATE.tasks, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ewc-tasks.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Tasks exported', 'ok');
+});
+
+// ---------- settings ----------
+$('#set-lambda').addEventListener('input', e => {
+  $('#lbl-lambda').textContent = e.target.value;
+});
+$('#set-lr').addEventListener('input', e => {
+  const lr = (e.target.value / 10000);
+  $('#lbl-lr').textContent = lr.toFixed(4);
+});
+$('#btn-save-cfg').addEventListener('click', () => {
+  STATE.config.lambda = parseInt($('#set-lambda').value, 10);
+  STATE.config.lr     = parseInt($('#set-lr').value, 10) / 10000;
+  STATE.config.fisherBatch = parseInt($('#set-fisher-batch').value, 10);
+  STATE.config.threshold   = parseFloat($('#set-thresh').value);
+  STATE.config.sampleRate  = parseInt($('#set-rate').value, 10);
+  STATE.lambda = STATE.config.lambda;
+  STATE.fisher.samples = STATE.config.fisherBatch;
+  toast('Settings saved (λ=' + STATE.lambda + ', lr=' + STATE.config.lr.toFixed(4) + ')', 'ok');
+  renderActive(); renderFisher();
+});
+$('#btn-reset-cfg').addEventListener('click', () => {
+  $('#set-lambda').value = 400; $('#lbl-lambda').textContent = '400';
+  $('#set-lr').value = 10;      $('#lbl-lr').textContent = '0.0010';
+  $('#set-fisher-batch').value = 512;
+  $('#set-thresh').value = 0.92;
+  $('#set-rate').value = 100;
+  toast('Defaults restored', 'ok');
+});
+$('#btn-probe-hw').addEventListener('click', () => {
+  toast('Probing ESP32-S3 over USB-JTAG …', 'ok');
+  setTimeout(() => toast('ESP32-S3 detected · CSI HT40 · 8 MB PSRAM', 'ok'), 700);
+});
+$('#btn-flash').addEventListener('click', () => {
+  confirmAction('Flash firmware to ESP32-S3?',
+    'This writes the current model (14.6 KB) + Fisher (' + (STATE.fisher.n/1024).toFixed(1) + ' KB) + anchors (' + STATE.anchors.length + ') to flash. Device will reboot.',
+    () => {
+      toast('Flashing … please wait', 'ok');
+      setTimeout(() => toast('Flash complete · device rebooted', 'ok'), 1200);
+    });
+});
+
+$('#btn-reset-fisher').addEventListener('click', () => {
+  confirmAction('Reset Fisher matrix?', 'All importance estimates are wiped. The EWC penalty falls to zero until Fisher is recomputed.', () => {
+    STATE.fisher.mean = 0; STATE.fisher.max = 0; STATE.fisher.sparse = 1.0;
+    STATE.fisher.layers.forEach(l => l.mag = 0.05);
+    emit('fisher_updated', 'Fisher matrix RESET to zero');
+    toast('Fisher matrix cleared', 'ok');
+    renderAll();
+  });
+});
+$('#btn-reset-anchors').addEventListener('click', () => {
+  confirmAction('Drop all anchors (θ*)?', 'All consolidated snapshots are deleted. The model retains current weights but past tasks will start forgetting on next training.', () => {
+    STATE.anchors = [];
+    toast('All anchors dropped', 'ok');
+    renderAll();
+  });
+});
+$('#btn-factory').addEventListener('click', () => {
+  confirmAction('Factory reset?', 'This wipes tasks, anchors, Fisher, and event log. Cannot be undone.', () => {
+    STATE.tasks = [{ id:'T01', name:'task-1', samples:0, acc:0, fisher:0, status:'training', anchor:0 }];
+    STATE.activeTaskId = 'T01'; STATE.anchors = []; STATE.events = []; STATE.training = false;
+    STATE.step = 0; STATE.loss = 2.3; STATE.ewcPenalty = 0;
+    STATE.fisher.mean = 0; STATE.fisher.max = 0; STATE.fisher.sparse = 1.0;
+    STATE.fisher.layers.forEach(l => l.mag = 0.05);
+    toast('Factory reset complete', 'ok');
+    renderAll();
+  });
+});
+
+// ---------- confirm modal ----------
+let confirmCb = null;
+function confirmAction(title, sub, cb){
+  $('#cf-title').textContent = title;
+  $('#cf-sub').textContent = sub;
+  $('#cf-result').className = 'modal-result';
+  confirmCb = cb;
+  openModal('modal-confirm');
+}
+$('#cf-submit').addEventListener('click', () => {
+  if (confirmCb){ const fn = confirmCb; confirmCb = null; closeModal('modal-confirm'); fn(); }
+});
+
+// ---------- training loop (simulated) ----------
+function tick(){
+  // CSI bars roll
+  STATE.csiBars.shift();
+  STATE.csiBars.push(30 + Math.random()*70);
+  STATE.csiSamplesTotal += Math.round(STATE.config.sampleRate);
+  if (STATE.training){
+    STATE.step = Math.min(STATE.totalSteps, STATE.step + Math.round(8 + Math.random()*6));
+    // exponential decay loss
+    STATE.loss = Math.max(0.05, STATE.loss * 0.985 + Math.random()*0.02 - 0.01);
+    STATE.ewcPenalty = (STATE.anchors.length ? 0.2 + Math.random()*0.4 : 0);
+    STATE.lossBars.shift();
+    STATE.lossBars.push(Math.max(4, STATE.loss * 60));
+    if (STATE.step >= STATE.totalSteps){
+      STATE.training = false;
+      toast('Training run complete · run consolidation', 'ok');
+    }
+  }
+  // heap jitter
+  STATE.heapFree = 17000 + Math.round(Math.random()*2400);
+  renderActive(); renderKpis();
+}
+
+function renderAll(){
+  renderKpis();
+  renderActive();
+  renderDashEvents();
+  renderTasks();
+  renderFisher();
+  renderAnchors();
+  renderEvents();
+}
+renderAll();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

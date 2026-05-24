@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Anomaly Attractor — Cognitum V0 Appliance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+ * Cognitum V0 chrome — inlined verbatim from /assets/v0-chrome.css so this
+ * cog page is a single drop-in artifact yet visually identical to the rest
+ * of the appliance.
+ * ───────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --background:220 25% 6%;
+  --foreground:210 20% 92%;
+  --card:220 20% 10%;
+  --card-foreground:210 20% 92%;
+  --popover:220 20% 10%;
+  --popover-foreground:210 20% 92%;
+  --primary:185 80% 50%;
+  --primary-foreground:220 25% 6%;
+  --secondary:220 20% 14%;
+  --secondary-foreground:210 20% 80%;
+  --accent:142 70% 50%;
+  --accent-foreground:220 25% 6%;
+  --muted:220 15% 15%;
+  --muted-foreground:215 15% 55%;
+  --destructive:0 65% 50%;
+  --destructive-foreground:210 20% 92%;
+  --border:220 15% 18%;
+  --input:220 15% 18%;
+  --ring:185 80% 50%;
+  --radius:0.75rem;
+  --warning:35 85% 60%;
+  --gradient-card:linear-gradient(180deg,hsl(220 20% 12%) 0%,hsl(220 20% 8%) 100%);
+  --gradient-glow:radial-gradient(ellipse at center,hsl(185 80% 50% / 0.15) 0%,transparent 70%);
+  --shadow-card:0 8px 32px -8px hsl(220 25% 2% / 0.8);
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{
+  font-family:var(--font-display);
+  background:hsl(var(--background));color:hsl(var(--foreground));
+  min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:hsl(var(--secondary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb{background:hsl(var(--primary) / 0.3);border-radius:4px}
+*::-webkit-scrollbar-thumb:hover{background:hsl(var(--primary) / 0.5)}
+
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;letter-spacing:-0.02em}
+code,.mono{font-family:var(--font-mono)}
+a{color:hsl(var(--primary));text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* App bar */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:hsl(var(--background) / 0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid hsl(var(--border) / 0.5);
+  padding:0.875rem 1.25rem;
+}
+.appbar-row{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:0.625rem;font-size:0.9375rem}
+.brand-mark{
+  width:32px;height:32px;border-radius:0.5rem;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.brand-text{font-weight:500;color:hsl(var(--muted-foreground))}
+.brand-text b{color:hsl(var(--foreground));font-weight:600}
+.brand-text .slash{color:hsl(var(--primary));margin:0 0.3rem;font-weight:600}
+.brand-ver{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7);margin-left:0.5rem}
+.nav{display:flex;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.nav a{
+  display:inline-block;padding:0.4rem 0.75rem;border-radius:0.4rem;
+  font-size:0.8125rem;color:hsl(var(--muted-foreground));
+  font-weight:500;text-decoration:none;transition:all 0.2s;
+}
+.nav a:hover,.nav a.active{color:hsl(var(--foreground));background:hsl(var(--secondary));text-decoration:none}
+.nav a.active{color:hsl(var(--primary))}
+.brand a{color:inherit;text-decoration:none}
+.brand a:hover{text-decoration:none}
+html{scroll-behavior:smooth;scroll-padding-top:5rem}
+
+/* Layout */
+.wrap{max-width:1400px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.section{margin-bottom:1.5rem}
+.section h2{
+  font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:hsl(var(--muted-foreground));margin-bottom:0.75rem;font-weight:600;
+}
+h1.page{font-size:1.5rem;font-weight:600;margin-bottom:0.4rem}
+.lede{font-size:0.875rem;color:hsl(var(--muted-foreground));margin-bottom:1.25rem;max-width:48rem}
+
+/* Cards */
+.card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1.25rem;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.card-title{font-size:0.9375rem;font-weight:600;color:hsl(var(--foreground))}
+.card-sub{font-size:0.75rem;color:hsl(var(--muted-foreground))}
+
+/* KPI grid */
+.kpi-grid{display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  padding:1rem 1.125rem;
+  display:flex;align-items:center;gap:0.875rem;
+}
+.kpi-ic{
+  width:38px;height:38px;border-radius:0.5rem;flex-shrink:0;
+  background:hsl(var(--primary) / 0.12);
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi-ic svg{width:18px;height:18px;stroke:hsl(var(--primary));fill:none;stroke-width:2}
+.kpi-ic.accent{background:hsl(var(--accent) / 0.12)}
+.kpi-ic.accent svg{stroke:hsl(var(--accent))}
+.kpi-ic.warning{background:hsl(var(--warning) / 0.12)}
+.kpi-ic.warning svg{stroke:hsl(var(--warning))}
+.kpi-ic.danger{background:hsl(var(--destructive) / 0.12)}
+.kpi-ic.danger svg{stroke:hsl(var(--destructive))}
+.kpi-info{flex:1;min-width:0}
+.kpi-label{font-size:0.6875rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em}
+.kpi-val{font-size:1.5rem;font-weight:600;color:hsl(var(--foreground));line-height:1.2;margin-top:0.125rem;font-family:var(--font-mono)}
+.kpi-sub{font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.125rem}
+
+/* Badges */
+.badge{
+  display:inline-flex;align-items:center;gap:0.3rem;
+  padding:0.2rem 0.6rem;border-radius:9999px;
+  font-size:0.6875rem;font-weight:600;letter-spacing:0.04em;
+  border:1px solid transparent;text-transform:uppercase;
+}
+.badge.chaotic{background:hsl(var(--destructive) / 0.1);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.3)}
+.badge.quasi{background:hsl(var(--warning) / 0.1);color:hsl(var(--warning));border-color:hsl(var(--warning) / 0.3)}
+.badge.periodic{background:hsl(var(--primary) / 0.1);color:hsl(var(--primary));border-color:hsl(var(--primary) / 0.3)}
+.badge.stable{background:hsl(var(--accent) / 0.1);color:hsl(var(--accent));border-color:hsl(var(--accent) / 0.3)}
+
+.dot{width:8px;height:8px;border-radius:50%;background:hsl(var(--muted));flex-shrink:0;display:inline-block}
+.dot.up{background:hsl(142 70% 50%);box-shadow:0 0 6px hsl(142 70% 50% / 0.5)}
+.dot.down{background:hsl(0 65% 50%)}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.5rem 0.875rem;
+  border-radius:0.4rem;
+  border:1px solid hsl(var(--border));
+  background:hsl(var(--secondary));color:hsl(var(--foreground));
+  font-family:var(--font-display);font-size:0.8125rem;font-weight:500;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){background:hsl(var(--secondary) / 0.7);border-color:hsl(var(--primary) / 0.5)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn.sm{padding:0.3rem 0.6rem;font-size:0.75rem}
+.btn.primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary));font-weight:600}
+.btn.primary:hover:not(:disabled){background:hsl(var(--primary) / 0.9)}
+.btn.danger{background:hsl(var(--destructive) / 0.12);color:hsl(0 70% 70%);border-color:hsl(var(--destructive) / 0.4)}
+.btn.danger:hover:not(:disabled){background:hsl(var(--destructive) / 0.2)}
+
+/* Inputs */
+input,textarea,select{
+  background:hsl(var(--input));color:hsl(var(--foreground));
+  border:1px solid hsl(var(--border));border-radius:0.4rem;
+  padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.8125rem;
+  outline:none;transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring) / 0.3)}
+input[type=range]{padding:0;background:transparent;border:none;accent-color:hsl(var(--primary))}
+
+/* Footer */
+footer.appfoot{
+  margin-top:2.5rem;padding-top:1.25rem;
+  border-top:1px solid hsl(var(--border) / 0.5);
+  font-size:0.75rem;color:hsl(var(--muted-foreground));
+  text-align:center;line-height:1.8;
+}
+footer.appfoot .mono{font-size:0.6875rem}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Cog-specific styles
+ * ───────────────────────────────────────────────────────────────────────── */
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:0.4rem}
+.lede-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.lede-row .lede{margin-bottom:0}
+
+.cog-header{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.cog-id{
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--muted-foreground));
+  padding:0.2rem 0.5rem;border-radius:0.3rem;
+  background:hsl(var(--secondary) / 0.6);border:1px solid hsl(var(--border) / 0.5);
+}
+.cog-id b{color:hsl(var(--primary));font-weight:600}
+
+/* Layout grids */
+.grid-7-5{display:grid;gap:0.875rem;grid-template-columns:7fr 5fr}
+@media (max-width:980px){.grid-7-5{grid-template-columns:1fr}}
+
+/* Chart hosts */
+.chart-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:1rem 1.125rem;
+  display:flex;flex-direction:column;
+}
+.chart-host{position:relative;width:100%;flex:1;min-height:180px}
+.chart-host canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+.attractor-card{
+  background:var(--gradient-card);
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  padding:0.5rem;
+  position:relative;
+  height:440px;overflow:hidden;
+}
+.attractor-host{position:absolute;inset:0}
+.attractor-host canvas{width:100%;height:100%;display:block}
+.attractor-meta{
+  position:absolute;left:0.875rem;right:0.875rem;bottom:0.625rem;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));pointer-events:none;
+}
+.attractor-meta .lo{line-height:1.4}
+.attractor-meta .lo span{display:block}
+.attractor-overlay{
+  position:absolute;top:0.875rem;left:0.875rem;right:0.875rem;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  pointer-events:none;
+}
+.attractor-overlay .ttl{
+  font-size:0.875rem;font-weight:600;color:hsl(var(--foreground));
+}
+.attractor-overlay .sub{
+  font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground));margin-top:0.2rem;
+}
+
+/* Config panel */
+.cfg-row{margin-bottom:1.125rem}
+.cfg-row:last-child{margin-bottom:0}
+.cfg-label{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:0.5rem;
+}
+.cfg-label .l{
+  font-size:0.625rem;text-transform:uppercase;letter-spacing:0.1em;
+  font-weight:600;color:hsl(var(--muted-foreground));
+}
+.cfg-label .h{font-family:var(--font-mono);font-size:0.6875rem;color:hsl(var(--muted-foreground) / 0.7)}
+.slider-row{display:flex;align-items:center;gap:0.75rem}
+.slider-row input{flex:1;height:0.4rem}
+.slider-row .val{font-family:var(--font-mono);font-size:0.875rem;color:hsl(var(--primary));width:3.4rem;text-align:right}
+.slider-row .val span{color:hsl(var(--muted-foreground));font-size:0.6875rem;margin-left:0.2rem}
+
+.regime-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
+.regime-btn{
+  background:hsl(var(--secondary) / 0.5);
+  border:1px solid hsl(var(--border));
+  border-radius:0.4rem;
+  padding:0.45rem 0.5rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  text-transform:uppercase;letter-spacing:0.05em;
+  color:hsl(var(--muted-foreground));
+  cursor:pointer;transition:all 0.15s;
+}
+.regime-btn:hover{color:hsl(var(--foreground));border-color:hsl(var(--muted-foreground))}
+.regime-btn.on{
+  border-color:hsl(var(--primary));color:hsl(var(--primary));
+  background:hsl(var(--primary) / 0.08);
+}
+
+.stream-btn{
+  width:100%;padding:0.55rem;border-radius:0.4rem;border:1px solid;
+  font-family:var(--font-mono);font-size:0.75rem;
+  text-transform:uppercase;letter-spacing:0.15em;
+  background:transparent;cursor:pointer;transition:all 0.15s;
+}
+.stream-btn.run{border-color:hsl(var(--destructive) / 0.4);color:hsl(0 70% 70%)}
+.stream-btn.run:hover{background:hsl(var(--destructive) / 0.1)}
+.stream-btn.stop{border-color:hsl(var(--accent) / 0.4);color:hsl(var(--accent))}
+.stream-btn.stop:hover{background:hsl(var(--accent) / 0.1)}
+
+/* Vector readout */
+.vec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem}
+.vec-cell{
+  background:hsl(var(--background));
+  border:1px solid hsl(var(--border) / 0.5);
+  border-radius:0.4rem;
+  padding:0.4rem 0.55rem;
+}
+.vec-cell .l{
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.vec-cell .v{
+  font-family:var(--font-mono);font-size:0.8125rem;
+  color:hsl(var(--foreground));
+  margin-top:0.1rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* Event feed */
+.events{display:flex;flex-direction:column;gap:0.3rem;max-height:300px;overflow-y:auto}
+.events .empty{
+  padding:1.5rem 0;text-align:center;
+  font-family:var(--font-mono);font-size:0.75rem;
+  color:hsl(var(--muted-foreground));
+}
+.event{
+  display:grid;grid-template-columns:auto auto 1fr;gap:0.6rem;align-items:baseline;
+  padding:0.4rem 0.55rem;
+  background:hsl(var(--secondary) / 0.4);
+  border:1px solid hsl(var(--border) / 0.4);
+  border-radius:0.35rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+}
+.event .ts{color:hsl(var(--muted-foreground))}
+.event .ty{font-weight:600;letter-spacing:0.02em}
+.event .ty.anomaly_detected{color:hsl(0 70% 70%)}
+.event .ty.lyapunov_exponent{color:hsl(var(--primary))}
+.event .ty.attractor_state{color:hsl(var(--accent))}
+.event .msg{color:hsl(var(--foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.cog-foot{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;
+  font-family:var(--font-mono);font-size:0.6875rem;
+  color:hsl(var(--muted-foreground));
+}
+.cog-foot b{color:hsl(var(--foreground));font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-row">
+    <div class="brand">
+      <a href="#top" aria-label="Back to top">
+        <div class="brand-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
+      </a>
+      <span class="brand-text"><b>Cognitum</b><span class="slash">/</span>cog<span class="brand-ver mono">anomaly-attractor · v1.2.0</span></span>
+    </div>
+    <nav class="nav" id="page-nav">
+      <a href="#overview" data-section="overview" class="active">Overview</a>
+      <a href="#attractor" data-section="attractor">Attractor</a>
+      <a href="#signal" data-section="signal">Signal</a>
+      <a href="#lyapunov" data-section="lyapunov">Lyapunov</a>
+      <a href="#vector" data-section="vector">Vector</a>
+      <a href="#events" data-section="events-section">Events</a>
+      <a href="#config" data-section="config">Config</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap" id="top">
+
+  <!-- Title -->
+  <div class="section" id="overview">
+    <div class="title-row">
+      <div>
+        <div class="cog-header">
+          <h1 class="page">Anomaly Attractor</h1>
+          <span class="cog-id">cog · <b>anomaly-attractor</b> · v1.2.0</span>
+        </div>
+      </div>
+      <span class="badge periodic" id="cls-badge">awaiting…</span>
+    </div>
+    <div class="lede-row">
+      <p class="lede">Strange attractor analysis via delay embedding, Lyapunov exponent estimation, and chaos detection. Runs on Cognitum Seed at the edge over CSI raw input. Mock signal generator below — swap the data source for a live Seed WebSocket to drive from real hardware.</p>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Lyapunov λ</div>
+          <div class="kpi-val" id="kpi-lyap">—</div>
+          <div class="kpi-sub" id="kpi-lyap-sub">analyzing window…</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic accent"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3l-9 9"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Correlation D₂</div>
+          <div class="kpi-val" id="kpi-d2">—</div>
+          <div class="kpi-sub">attractor complexity proxy</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Embedding pts</div>
+          <div class="kpi-val" id="kpi-pts">—</div>
+          <div class="kpi-sub" id="kpi-pts-sub">dim=3 · τ=2</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-ic warning"><svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/><path d="M12 9v6"/><circle cx="12" cy="18" r="0.5"/></svg></div>
+        <div class="kpi-info">
+          <div class="kpi-label">Anomalies</div>
+          <div class="kpi-val" id="kpi-anom">0</div>
+          <div class="kpi-sub" id="kpi-anom-sub">within nominal envelope</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attractor + config -->
+  <div class="section" id="attractor-row">
+    <div class="grid-7-5">
+      <div class="attractor-card" id="attractor">
+        <div class="attractor-overlay">
+          <div>
+            <div class="ttl">Reconstructed Attractor</div>
+            <div class="sub">delay embedding · (x(t), x(t-τ), x(t-2τ))</div>
+          </div>
+          <div class="sub">auto-rotate</div>
+        </div>
+        <div class="attractor-host"><canvas id="cv-attractor"></canvas></div>
+        <div class="attractor-meta">
+          <div class="lo">
+            <span>x &nbsp;<b id="att-x">—</b></span>
+            <span>y &nbsp;<b id="att-y">—</b></span>
+            <span>z &nbsp;<b id="att-z">—</b></span>
+          </div>
+          <div id="att-pts">— points</div>
+        </div>
+      </div>
+
+      <div class="card" id="config">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Cog Configuration</div>
+            <div class="card-sub">runtime parameters · cog.toml</div>
+          </div>
+          <span class="badge periodic" id="conn-badge"><span class="dot up"></span>connected</span>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-label">
+            <span class="l">Sampling interval</span>
+            <span class="h">cog.toml · interval</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="ci" min="1" max="60" value="5">
+            <div class="val"><span id="ci-val">5</span><span>s</span></div>
+          </div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-label">
+            <span class="l">Source regime</span>
+            <span class="h">mock · scenario</span>
+          </div>
+          <div class="regime-grid" id="regimes">
+            <button class="regime-btn on" data-r="chaotic">Chaotic</button>
+            <button class="regime-btn" data-r="quasi-periodic">Quasi-periodic</button>
+            <button class="regime-btn" data-r="periodic">Periodic</button>
+            <button class="regime-btn" data-r="stable">Stable</button>
+          </div>
+        </div>
+
+        <div class="cfg-row">
+          <div class="cfg-label">
+            <span class="l">Stream</span>
+            <span class="h">cog runtime</span>
+          </div>
+          <button class="stream-btn run" id="run-btn">■ Stop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSI signal + Lyapunov history -->
+  <div class="section" id="charts-row">
+    <div class="grid-7-5">
+      <div class="chart-card" id="signal" style="height:240px">
+        <div class="card-h">
+          <div>
+            <div class="card-title">CSI Signal</div>
+            <div class="card-sub" id="sig-sub">streaming · ~50 Hz</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="cv-signal"></canvas></div>
+      </div>
+
+      <div class="chart-card" id="lyapunov" style="height:240px">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Lyapunov Exponent</div>
+            <div class="card-sub" id="lyap-sub">per-interval estimates</div>
+          </div>
+        </div>
+        <div class="chart-host"><canvas id="cv-lyap"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vector + events -->
+  <div class="section" id="vec-events-row">
+    <div class="grid-7-5">
+      <div class="card" id="vector">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Feature Vector</div>
+            <div class="card-sub">8-dim · stored via /api/v1/store/ingest</div>
+          </div>
+        </div>
+        <div class="vec-grid" id="vec-grid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <div class="card" id="events-section">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Event Stream</div>
+            <div class="card-sub">anomaly_detected · lyapunov_exponent · attractor_state</div>
+          </div>
+          <button class="btn sm" id="clear-events" type="button">Clear</button>
+        </div>
+        <div class="events" id="events">
+          <div class="empty">Waiting for cog events…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cog-foot">
+    <div>cog · <b>anomaly-attractor</b> · device <b>ESP32-S3</b> · input <b>CSI raw</b></div>
+    <div>mock data · swap <b>SignalSource</b> for live Seed WebSocket</div>
+  </div>
+
+  <footer class="appfoot">
+    <div>
+      <a href="#overview">overview</a> &middot;
+      <a href="#attractor">attractor</a> &middot;
+      <a href="#signal">signal</a> &middot;
+      <a href="#lyapunov">lyapunov</a> &middot;
+      <a href="#vector">vector</a> &middot;
+      <a href="#events">events</a> &middot;
+      <a href="#config">config</a>
+    </div>
+    <div style="margin-top:0.4rem">
+      <span class="mono">cog: anomaly-attractor v1.2.0</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Anomaly Attractor — vanilla JS port of the React UI.
+ * Mirrors the analysis core from
+ *   cognitum-one/cogs/src/cogs/anomaly-attractor/src/main.rs
+ * so the in-browser numbers match what the cog emits. Mock signal source
+ * lives at the bottom — replace with a Seed WebSocket subscriber to wire
+ * to live hardware.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Mock signal source (Lorenz / sine / quasi-periodic / damped) ────── */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const SignalSource = (function(){
+  let regime = 'chaotic';
+  let state = [1, 1, 1];
+  let phase = 0;
+  let rng = mulberry32(0xc06017);
+  function lorenz(s, r, b, dt){
+    const [x, y, z] = state;
+    const dx = s * (y - x);
+    const dy = x * (r - z) - y;
+    const dz = x * y - b * z;
+    state = [x + dx*dt, y + dy*dt, z + dz*dt];
+  }
+  return {
+    setRegime(r){ regime = r; state = [1, 1, 1]; phase = 0; },
+    get regime(){ return regime; },
+    next(dt = 0.01){
+      phase += dt;
+      switch (regime){
+        case 'chaotic': {
+          for (let i = 0; i < 5; i++) lorenz(10, 28, 8/3, dt);
+          return state[0] / 20 + (rng() - 0.5) * 0.02;
+        }
+        case 'periodic':
+          return Math.sin(phase * 6) + (rng() - 0.5) * 0.03;
+        case 'quasi-periodic':
+          return Math.sin(phase*6)*0.6 + Math.sin(phase*6*1.618)*0.4 + (rng()-0.5)*0.04;
+        case 'stable':
+          if (phase > 6) phase = 0;
+          return Math.exp(-phase * 0.6) + (rng() - 0.5) * 0.01;
+      }
+      return 0;
+    }
+  };
+})();
+
+/* ── Analysis core (port of attractor.ts) ────────────────────────────── */
+function delayEmbed(signal, dim, tau){
+  const required = (dim - 1) * tau;
+  if (signal.length <= required) return [];
+  const n = signal.length - required;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++){
+    const v = new Array(dim);
+    for (let d = 0; d < dim; d++) v[d] = signal[i + d * tau];
+    out[i] = v;
+  }
+  return out;
+}
+function euclid(a, b){
+  let s = 0;
+  for (let i = 0; i < a.length; i++){ const d = a[i] - b[i]; s += d*d; }
+  return Math.sqrt(s);
+}
+function estimateLyapunov(embedded, steps){
+  if (embedded.length < steps + 2) return 0;
+  const n = embedded.length;
+  const minSep = 2;
+  let total = 0, count = 0;
+  for (let i = 0; i < n - steps; i++){
+    let best = Infinity, bestJ = 0;
+    for (let j = 0; j < n - steps; j++){
+      if (Math.abs(i - j) < minSep) continue;
+      const d = euclid(embedded[i], embedded[j]);
+      if (d < best && d > 1e-10){ best = d; bestJ = j; }
+    }
+    if (best === Infinity) continue;
+    const future = euclid(embedded[i + steps], embedded[bestJ + steps]);
+    if (future > 1e-10 && best > 1e-10){
+      total += Math.log(future / best);
+      count++;
+    }
+  }
+  return count === 0 ? 0 : total / (count * steps);
+}
+function correlationDimension(embedded){
+  const n = embedded.length;
+  if (n < 10) return 0;
+  const limit = Math.min(n, 100);
+  const dists = [];
+  for (let i = 0; i < limit; i++)
+    for (let j = i + 1; j < limit; j++) dists.push(euclid(embedded[i], embedded[j]));
+  if (dists.length === 0) return 0;
+  dists.sort((a, b) => a - b);
+  const r1 = dists[Math.floor(dists.length / 4)];
+  const r2 = dists[Math.floor(dists.length / 2)];
+  if (r1 < 1e-10 || r2 < 1e-10 || Math.abs(Math.log(r2 / r1)) < 1e-10) return 0;
+  const c1 = dists.filter(d => d < r1).length / dists.length;
+  const c2 = dists.filter(d => d < r2).length / dists.length;
+  if (c1 < 1e-10 || c2 < 1e-10) return 0;
+  return Math.log(c2 / c1) / Math.log(r2 / r1);
+}
+function classify(lyap){
+  if (lyap > 0.1) return 'chaotic';
+  if (lyap > -0.05) return 'quasi-periodic';
+  if (lyap < -0.1) return 'stable-fixed-point';
+  return 'periodic';
+}
+function analyze(signal){
+  if (signal.length < 10) return null;
+  const dim = 3, tau = 2;
+  const embedded = delayEmbed(signal, dim, tau);
+  if (embedded.length === 0) return null;
+  const lyap = estimateLyapunov(embedded, 3);
+  const corr = correlationDimension(embedded);
+  const classification = classify(lyap);
+  const anomalies = [];
+  if (lyap > 0.5) anomalies.push('HIGH_CHAOS: Lyapunov exponent strongly positive');
+  if (corr > 2.5) anomalies.push('HIGH_COMPLEXITY: correlation dimension=' + corr.toFixed(2));
+  const mean = signal.reduce((a, b) => a + b, 0) / signal.length;
+  const variance = signal.reduce((a, b) => a + (b - mean)*(b - mean), 0) / signal.length;
+  return {
+    lyapunov_exponent: lyap,
+    correlation_dimension: corr,
+    classification,
+    embedding_points: embedded.length,
+    embedding_dim: dim,
+    delay_tau: tau,
+    anomalies,
+    vector: [
+      lyap, corr, mean, Math.sqrt(variance),
+      embedded.length / 100, classification === 'chaotic' ? 1 : 0,
+      dim / 10, tau / 10
+    ],
+    timestamp: Math.floor(Date.now() / 1000),
+  };
+}
+
+/* ── State + DOM ────────────────────────────────────────────────────── */
+const STATE = {
+  samples: [],         // {t, value} — windowed CSI samples
+  events: [],          // CogEvent[]
+  result: null,        // last AttractorResult
+  lyapHistory: [],     // {ts, value}
+  intervalSec: 5,
+  running: false,
+  rotation: 0,         // attractor camera angle
+};
+const SAMPLE_HZ = 50;
+const WINDOW_SEC = 8;
+const MAX_SAMPLES = SAMPLE_HZ * WINDOW_SEC;
+const MAX_EVENTS = 50;
+const MAX_LYAP_HIST = 60;
+
+const $ = id => document.getElementById(id);
+
+const CLASS_COLOR = {
+  'chaotic':           { stroke: 'hsl(0 70% 65%)',   fill: 'hsla(0,70%,65%,0.15)',   badge: 'chaotic' },
+  'quasi-periodic':    { stroke: 'hsl(35 85% 60%)',  fill: 'hsla(35,85%,60%,0.15)',  badge: 'quasi' },
+  'periodic':          { stroke: 'hsl(185 80% 55%)', fill: 'hsla(185,80%,55%,0.15)', badge: 'periodic' },
+  'stable-fixed-point':{ stroke: 'hsl(142 70% 55%)', fill: 'hsla(142,70%,55%,0.15)', badge: 'stable' },
+};
+
+const VEC_LABELS = ['λ', 'D₂', 'μ', 'σ', 'pts/100', 'chaos', 'dim/10', 'τ/10'];
+function fmtVec(v){
+  if (!Number.isFinite(v)) return '—';
+  if (Math.abs(v) < 0.001 && v !== 0) return v.toExponential(2);
+  if (Math.abs(v) >= 1000) return v.toExponential(2);
+  return v.toFixed(3);
+}
+
+function renderVec(){
+  const grid = $('vec-grid');
+  const v = STATE.result ? STATE.result.vector : null;
+  grid.innerHTML = VEC_LABELS.map((label, i) =>
+    `<div class="vec-cell"><div class="l">${label}</div><div class="v">${v ? fmtVec(v[i]) : '—'}</div></div>`
+  ).join('');
+}
+
+function renderKpis(){
+  const r = STATE.result;
+  if (!r){
+    $('kpi-lyap').textContent = '—';
+    $('kpi-d2').textContent = '—';
+    $('kpi-pts').textContent = '—';
+    $('kpi-anom').textContent = '0';
+    return;
+  }
+  $('kpi-lyap').textContent = r.lyapunov_exponent.toFixed(4);
+  $('kpi-lyap-sub').textContent = r.lyapunov_exponent > 0.1
+    ? 'positive — chaos' : r.lyapunov_exponent < -0.05
+    ? 'negative — stable' : 'near zero';
+  $('kpi-d2').textContent = r.correlation_dimension.toFixed(2);
+  $('kpi-pts').textContent = r.embedding_points;
+  $('kpi-pts-sub').textContent = `dim=${r.embedding_dim} · τ=${r.delay_tau}`;
+  $('kpi-anom').textContent = r.anomalies.length;
+  $('kpi-anom-sub').textContent = r.anomalies.length
+    ? 'see event feed' : 'within nominal envelope';
+
+  const cls = r.classification;
+  const badge = $('cls-badge');
+  badge.className = 'badge ' + CLASS_COLOR[cls].badge;
+  badge.textContent = cls;
+
+  $('att-pts').textContent = `${r.embedding_points} points`;
+}
+
+function renderEvents(){
+  const c = $('events');
+  if (STATE.events.length === 0){
+    c.innerHTML = '<div class="empty">Waiting for cog events…</div>';
+    return;
+  }
+  c.innerHTML = STATE.events.map(e => {
+    let msg = '';
+    if (e.type === 'anomaly_detected') msg = `${e.payload.code} · λ=${e.payload.lyap.toFixed(3)}`;
+    else if (e.type === 'lyapunov_exponent') msg = `λ=${e.payload.value.toFixed(4)} · ${e.payload.classification}`;
+    else if (e.type === 'attractor_state') msg = `points=${e.payload.embedding_points} · D₂=${e.payload.correlation_dimension.toFixed(2)}`;
+    const ts = new Date(e.ts).toLocaleTimeString();
+    return `<div class="event"><span class="ts">${ts}</span><span class="ty ${e.type}">${e.type}</span><span class="msg">${msg}</span></div>`;
+  }).join('');
+}
+
+function pushEvent(ev){
+  STATE.events = [ev, ...STATE.events].slice(0, MAX_EVENTS);
+  renderEvents();
+}
+
+/* ── Canvas helpers ────────────────────────────────────────────────── */
+function setupCanvas(canvas){
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  function resize(){
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = Math.max(1, Math.floor(w * dpr));
+    canvas.height = Math.max(1, Math.floor(h * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  new ResizeObserver(resize).observe(canvas);
+  return { ctx, dpr };
+}
+
+/* ── Signal chart ──────────────────────────────────────────────────── */
+const sigCanvas = $('cv-signal');
+const sigCtx = setupCanvas(sigCanvas).ctx;
+function drawSignal(){
+  const w = sigCanvas.clientWidth, h = sigCanvas.clientHeight;
+  sigCtx.clearRect(0, 0, w, h);
+  // grid
+  sigCtx.strokeStyle = 'hsl(220 15% 18%)';
+  sigCtx.lineWidth = 1;
+  sigCtx.beginPath();
+  for (let i = 1; i < 4; i++){
+    const y = (h / 4) * i;
+    sigCtx.moveTo(0, y); sigCtx.lineTo(w, y);
+  }
+  sigCtx.stroke();
+
+  const ss = STATE.samples;
+  if (ss.length < 2) return;
+  let lo = Infinity, hi = -Infinity;
+  for (const s of ss){ if (s.value < lo) lo = s.value; if (s.value > hi) hi = s.value; }
+  if (hi - lo < 1e-6){ lo -= 0.5; hi += 0.5; }
+  const pad = (hi - lo) * 0.1; lo -= pad; hi += pad;
+  const t0 = ss[0].t, tN = ss[ss.length - 1].t;
+  const dt = Math.max(tN - t0, 1e-6);
+
+  const cls = STATE.result ? STATE.result.classification : 'periodic';
+  const color = CLASS_COLOR[cls].stroke;
+  const fill  = CLASS_COLOR[cls].fill;
+
+  // glow underlay
+  sigCtx.lineWidth = 4;
+  sigCtx.strokeStyle = fill;
+  sigCtx.beginPath();
+  ss.forEach((s, i) => {
+    const x = ((s.t - t0) / dt) * w;
+    const y = h - ((s.value - lo) / (hi - lo)) * h;
+    if (i === 0) sigCtx.moveTo(x, y); else sigCtx.lineTo(x, y);
+  });
+  sigCtx.stroke();
+
+  // primary trace
+  sigCtx.lineWidth = 1.4;
+  sigCtx.strokeStyle = color;
+  sigCtx.beginPath();
+  ss.forEach((s, i) => {
+    const x = ((s.t - t0) / dt) * w;
+    const y = h - ((s.value - lo) / (hi - lo)) * h;
+    if (i === 0) sigCtx.moveTo(x, y); else sigCtx.lineTo(x, y);
+  });
+  sigCtx.stroke();
+
+  $('sig-sub').textContent = `${ss.length} samples · ~${SAMPLE_HZ} Hz`;
+}
+
+/* ── Lyapunov history chart ────────────────────────────────────────── */
+const lyapCanvas = $('cv-lyap');
+const lyapCtx = setupCanvas(lyapCanvas).ctx;
+function drawLyap(){
+  const w = lyapCanvas.clientWidth, h = lyapCanvas.clientHeight;
+  lyapCtx.clearRect(0, 0, w, h);
+
+  const data = STATE.lyapHistory;
+  // y range — fixed semantic bounds so 0 / 0.1 thresholds are readable
+  let lo = -0.3, hi = 0.6;
+  if (data.length){
+    for (const p of data){ if (p.value < lo) lo = p.value; if (p.value > hi) hi = p.value; }
+    const span = hi - lo; lo -= span * 0.1; hi += span * 0.1;
+  }
+  const yOf = v => h - ((v - lo) / (hi - lo)) * h;
+
+  // grid + reference lines
+  lyapCtx.strokeStyle = 'hsl(220 15% 18%)';
+  lyapCtx.lineWidth = 1;
+  lyapCtx.beginPath();
+  for (let i = 1; i < 4; i++){
+    const y = (h / 4) * i;
+    lyapCtx.moveTo(0, y); lyapCtx.lineTo(w, y);
+  }
+  lyapCtx.stroke();
+
+  // λ=0 line
+  lyapCtx.strokeStyle = 'hsl(215 15% 40%)';
+  lyapCtx.setLineDash([3, 3]);
+  lyapCtx.beginPath();
+  lyapCtx.moveTo(0, yOf(0)); lyapCtx.lineTo(w, yOf(0));
+  lyapCtx.stroke();
+  // λ=0.1 chaos threshold
+  lyapCtx.strokeStyle = 'hsl(0 70% 60% / 0.5)';
+  lyapCtx.setLineDash([2, 4]);
+  lyapCtx.beginPath();
+  lyapCtx.moveTo(0, yOf(0.1)); lyapCtx.lineTo(w, yOf(0.1));
+  lyapCtx.stroke();
+  lyapCtx.setLineDash([]);
+
+  if (data.length < 2){
+    lyapCtx.fillStyle = 'hsl(215 15% 55%)';
+    lyapCtx.font = '11px JetBrains Mono, monospace';
+    lyapCtx.textAlign = 'center';
+    lyapCtx.fillText('awaiting first interval…', w/2, h/2);
+    return;
+  }
+
+  // area + line
+  const xOf = i => (i / (data.length - 1)) * w;
+  lyapCtx.beginPath();
+  lyapCtx.moveTo(xOf(0), h);
+  data.forEach((p, i) => lyapCtx.lineTo(xOf(i), yOf(p.value)));
+  lyapCtx.lineTo(xOf(data.length - 1), h);
+  lyapCtx.closePath();
+  const grad = lyapCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'hsla(185, 80%, 55%, 0.4)');
+  grad.addColorStop(1, 'hsla(185, 80%, 55%, 0)');
+  lyapCtx.fillStyle = grad;
+  lyapCtx.fill();
+
+  lyapCtx.strokeStyle = 'hsl(185 80% 55%)';
+  lyapCtx.lineWidth = 1.6;
+  lyapCtx.beginPath();
+  data.forEach((p, i) => {
+    const x = xOf(i), y = yOf(p.value);
+    if (i === 0) lyapCtx.moveTo(x, y); else lyapCtx.lineTo(x, y);
+  });
+  lyapCtx.stroke();
+
+  // y-axis ticks
+  lyapCtx.fillStyle = 'hsl(215 15% 55%)';
+  lyapCtx.font = '10px JetBrains Mono, monospace';
+  lyapCtx.textAlign = 'left';
+  lyapCtx.textBaseline = 'middle';
+  lyapCtx.fillText('0', 4, yOf(0));
+  lyapCtx.fillText('0.1', 4, yOf(0.1));
+
+  $('lyap-sub').textContent = `${data.length} estimate${data.length === 1 ? '' : 's'} · last λ=${data[data.length-1].value.toFixed(4)}`;
+}
+
+/* ── Attractor (rotating 3D projection on Canvas 2D) ───────────────── */
+const attCanvas = $('cv-attractor');
+const attCtx = setupCanvas(attCanvas).ctx;
+function drawAttractor(){
+  const w = attCanvas.clientWidth, h = attCanvas.clientHeight;
+  attCtx.clearRect(0, 0, w, h);
+  // dark inner background to set the scene apart from the card
+  attCtx.fillStyle = 'hsl(220 25% 5%)';
+  attCtx.fillRect(0, 0, w, h);
+
+  const tau = STATE.result ? STATE.result.delay_tau : 2;
+  const values = STATE.samples.map(s => s.value);
+  const embedded = delayEmbed(values, 3, tau);
+
+  // bounds for normalization
+  let lo = Infinity, hi = -Infinity;
+  for (const v of values){ if (v < lo) lo = v; if (v > hi) hi = v; }
+  const span = Math.max(hi - lo, 1e-6);
+  const norm = x => ((x - lo) / span) * 2 - 1;
+
+  // camera
+  STATE.rotation += 0.004;
+  const ay = STATE.rotation;
+  const ax = 0.5;
+  const cosY = Math.cos(ay), sinY = Math.sin(ay);
+  const cosX = Math.cos(ax), sinX = Math.sin(ax);
+  const cx = w / 2, cy = h / 2;
+  const scale = Math.min(w, h) * 0.32;
+
+  function project(p){
+    let x = norm(p[0]), y = norm(p[1]), z = norm(p[2]);
+    // rotate Y
+    let x1 = cosY * x + sinY * z;
+    let z1 = -sinY * x + cosY * z;
+    // rotate X
+    let y2 = cosX * y - sinX * z1;
+    let z2 = sinX * y + cosX * z1;
+    // weak perspective
+    const d = 4 / (4 + z2);
+    return { x: cx + x1 * scale * d, y: cy - y2 * scale * d, depth: z2 };
+  }
+
+  // draw faint axes
+  attCtx.strokeStyle = 'hsl(220 20% 18%)';
+  attCtx.lineWidth = 1;
+  const axes = [
+    [[-1,0,0],[1,0,0]],
+    [[0,-1,0],[0,1,0]],
+    [[0,0,-1],[0,0,1]],
+  ];
+  axes.forEach(([a, b]) => {
+    const pa = project(a), pb = project(b);
+    attCtx.beginPath();
+    attCtx.moveTo(pa.x, pa.y); attCtx.lineTo(pb.x, pb.y);
+    attCtx.stroke();
+  });
+
+  if (embedded.length < 2){
+    attCtx.fillStyle = 'hsl(215 15% 55%)';
+    attCtx.font = '11px JetBrains Mono, monospace';
+    attCtx.textAlign = 'center';
+    attCtx.fillText('awaiting samples…', cx, cy);
+    return;
+  }
+
+  const cls = STATE.result ? STATE.result.classification : 'periodic';
+  const color = CLASS_COLOR[cls].stroke;
+
+  // project all once
+  const pts = embedded.map(project);
+
+  // line trace (alpha by recency — most recent brightest)
+  attCtx.lineWidth = 1.2;
+  for (let i = 1; i < pts.length; i++){
+    const a = pts[i-1], b = pts[i];
+    const t = i / pts.length; // 0 oldest .. 1 newest
+    attCtx.strokeStyle = color.replace('hsl(', 'hsla(').replace(')', `, ${(0.15 + t * 0.55).toFixed(3)})`);
+    attCtx.beginPath();
+    attCtx.moveTo(a.x, a.y); attCtx.lineTo(b.x, b.y);
+    attCtx.stroke();
+  }
+
+  // dot the head (latest sample)
+  const head = pts[pts.length - 1];
+  attCtx.fillStyle = color;
+  attCtx.beginPath();
+  attCtx.arc(head.x, head.y, 3, 0, Math.PI * 2);
+  attCtx.fill();
+  // glow
+  attCtx.beginPath();
+  attCtx.arc(head.x, head.y, 7, 0, Math.PI * 2);
+  attCtx.fillStyle = color.replace('hsl(', 'hsla(').replace(')', ', 0.25)');
+  attCtx.fill();
+
+  // current x/y/z readout
+  const last = embedded[embedded.length - 1];
+  $('att-x').textContent = last[0].toFixed(3);
+  $('att-y').textContent = last[1].toFixed(3);
+  $('att-z').textContent = last[2].toFixed(3);
+}
+
+/* ── Engine: sampling loop + analysis loop + rAF render ──────────────── */
+let sampleTimer = null;
+let analyzeTimer = null;
+let t0 = 0;
+
+function tickSample(){
+  const t = (performance.now() - t0) / 1000;
+  const value = SignalSource.next(0.01);
+  STATE.samples.push({ t, value });
+  // window
+  const cutoff = t - WINDOW_SEC;
+  while (STATE.samples.length && STATE.samples[0].t < cutoff) STATE.samples.shift();
+  if (STATE.samples.length > MAX_SAMPLES) STATE.samples.splice(0, STATE.samples.length - MAX_SAMPLES);
+}
+
+function runAnalysis(){
+  if (STATE.samples.length < 32) return;
+  const r = analyze(STATE.samples.map(s => s.value));
+  if (!r) return;
+  STATE.result = r;
+  STATE.lyapHistory.push({ ts: Date.now(), value: r.lyapunov_exponent });
+  if (STATE.lyapHistory.length > MAX_LYAP_HIST) STATE.lyapHistory.shift();
+
+  pushEvent({ type: 'attractor_state', payload: r, ts: Date.now() });
+  pushEvent({ type: 'lyapunov_exponent',
+    payload: { value: r.lyapunov_exponent, classification: r.classification }, ts: Date.now() });
+  for (const a of r.anomalies){
+    pushEvent({ type: 'anomaly_detected', payload: { code: a, lyap: r.lyapunov_exponent }, ts: Date.now() });
+  }
+
+  renderKpis();
+  renderVec();
+}
+
+function startStream(){
+  if (sampleTimer) return;
+  t0 = performance.now();
+  STATE.running = true;
+  sampleTimer  = setInterval(tickSample, 1000 / SAMPLE_HZ);
+  analyzeTimer = setInterval(runAnalysis, STATE.intervalSec * 1000);
+  setTimeout(runAnalysis, 800);
+  $('run-btn').textContent = '■ Stop';
+  $('run-btn').className = 'stream-btn run';
+  $('conn-badge').innerHTML = '<span class="dot up"></span>connected';
+  $('conn-badge').className = 'badge periodic';
+}
+function stopStream(){
+  if (sampleTimer) clearInterval(sampleTimer);
+  if (analyzeTimer) clearInterval(analyzeTimer);
+  sampleTimer = analyzeTimer = null;
+  STATE.running = false;
+  $('run-btn').textContent = '▶ Start';
+  $('run-btn').className = 'stream-btn stop';
+  $('conn-badge').innerHTML = '<span class="dot down"></span>paused';
+  $('conn-badge').className = 'badge';
+}
+
+/* ── Wire up UI controls ────────────────────────────────────────────── */
+$('run-btn').addEventListener('click', () => STATE.running ? stopStream() : startStream());
+
+$('ci').addEventListener('input', e => {
+  const v = Math.max(1, Math.min(60, Number(e.target.value)));
+  STATE.intervalSec = v;
+  $('ci-val').textContent = v;
+  if (analyzeTimer){
+    clearInterval(analyzeTimer);
+    analyzeTimer = setInterval(runAnalysis, v * 1000);
+  }
+});
+
+document.querySelectorAll('#regimes .regime-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#regimes .regime-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    SignalSource.setRegime(btn.dataset.r);
+    // drop stale window so the new regime is reflected immediately
+    STATE.samples = [];
+    if (analyzeTimer){
+      clearInterval(analyzeTimer);
+      analyzeTimer = setInterval(runAnalysis, STATE.intervalSec * 1000);
+    }
+    setTimeout(runAnalysis, 1000);
+  });
+});
+
+$('clear-events').addEventListener('click', () => {
+  STATE.events = [];
+  renderEvents();
+});
+
+/* ── Scroll-spy: highlight the nav anchor for the section in view ──── */
+const navLinks = Array.from(document.querySelectorAll('#page-nav a[data-section]'));
+const sectionToLink = new Map();
+const observed = [];
+navLinks.forEach(a => {
+  const el = document.getElementById(a.dataset.section);
+  if (el){
+    sectionToLink.set(el, a);
+    observed.push(el);
+  }
+});
+const visible = new Set();
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) visible.add(e.target);
+    else visible.delete(e.target);
+  });
+  // pick the topmost visible section in document order
+  const active = observed.find(el => visible.has(el));
+  if (active){
+    navLinks.forEach(a => a.classList.remove('active'));
+    sectionToLink.get(active).classList.add('active');
+  }
+}, { rootMargin: '-72px 0px -55% 0px', threshold: 0 });
+observed.forEach(el => spy.observe(el));
+
+/* ── rAF render loop ────────────────────────────────────────────────── */
+function frame(){
+  drawSignal();
+  drawLyap();
+  drawAttractor();
+  requestAnimationFrame(frame);
+}
+
+renderVec();
+renderKpis();
+renderEvents();
+startStream();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
