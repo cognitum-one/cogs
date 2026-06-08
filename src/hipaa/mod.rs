@@ -27,7 +27,7 @@ use std::fmt;
 use thiserror::Error;
 
 // Re-exports
-pub use access::{AccessControl, MinimumNecessaryAccess, Role};
+pub use access::{AccessControl, AccessDecision, MinimumNecessaryAccess, PhiField, Role};
 pub use onboarding::{BaaWorkflow, CustomerOnboarding};
 pub use session::{HipaaSessionManager, SessionConfig};
 pub use storage::{EncryptionConfig, HipaaCompliantStorage, KeySource, StorageConfig};

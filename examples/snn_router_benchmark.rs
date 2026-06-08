@@ -21,7 +21,7 @@ fn main() {
 
 fn benchmark_inference_speed() {
     println!("1. Inference Speed Comparison");
-    println!("-" .repeat(50));
+    println!("{}", "-".repeat(50));
 
     let num_tiles = 16;
     let input_dim = 256;
@@ -71,7 +71,7 @@ fn benchmark_inference_speed() {
 
 fn benchmark_training() {
     println!("2. Training Performance");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
 
     let num_tiles = 8;
     let input_dim = 256;
@@ -133,7 +133,7 @@ fn benchmark_training() {
 
 fn benchmark_memory_usage() {
     println!("3. Memory Usage Estimation");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
 
     let num_tiles = 16;
     let input_dim = 256;
@@ -166,7 +166,7 @@ fn benchmark_memory_usage() {
 
 fn benchmark_sparsity() {
     println!("4. Activation Sparsity Analysis");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
 
     let mut layer = SpikingLayer::new(256, 64, 0.8);
     let input = vec![0.7; 256];
@@ -193,7 +193,7 @@ fn benchmark_sparsity() {
 
 fn benchmark_simd() {
     println!("5. SIMD Acceleration Benchmark");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
 
     let sizes = vec![64, 256, 1024];
 

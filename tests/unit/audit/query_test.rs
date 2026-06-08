@@ -3,7 +3,7 @@
 use cognitum::audit::{
     AuditEvent, AuditEventType, AuditOutcome,
     UserId, ResourceId, User,
-    store::InMemoryAuditStore,
+    store::{AuditStore, InMemoryAuditStore},
     query::{AuditFilter, AuditQuery},
     AuditError,
 };

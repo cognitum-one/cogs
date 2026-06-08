@@ -3,7 +3,7 @@
 use cognitum::audit::{
     AuditLogger, AuditEvent, AuditEventType, AuditOutcome,
     UserId, ResourceId, SessionId, RequestContext, User,
-    store::InMemoryAuditStore,
+    store::{AuditStore, InMemoryAuditStore},
     query::{AuditFilter, AuditQuery},
 };
 
@@ -216,7 +216,7 @@ async fn test_compliance_reporting_workflow() {
     }
 
     // Compliance officer queries the logs
-    let query = AuditQuery::new(logger.store.as_ref());
+    let query = AuditQuery::new(logger.store());
 
     let compliance_officer = User {
         id: UserId::new("compliance_001"),

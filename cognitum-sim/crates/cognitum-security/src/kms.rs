@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mock"))]
 use mockall::automock;
 
 /// Purpose of a cryptographic key
@@ -33,7 +33,7 @@ pub enum KeyPurpose {
 ///
 /// This trait abstracts HSM operations to support multiple HSM backends
 /// (AWS CloudHSM, Azure Key Vault, YubiHSM, etc.)
-#[cfg_attr(test, automock)]
+#[cfg_attr(any(test, feature = "mock"), automock)]
 #[async_trait]
 pub trait HsmProvider: Send + Sync {
     /// Generate a new key in the HSM

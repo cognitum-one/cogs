@@ -424,6 +424,7 @@ dependencies = [
  "cognitum-memory",
  "cognitum-processor",
  "cognitum-raceway",
+ "cognitum-security",
  "cognitum-sim",
  "criterion",
  "ed25519-dalek",
@@ -433,6 +434,7 @@ dependencies = [
  "http",
  "hyper",
  "mockall 0.13.1",
+ "newport_core",
  "parking_lot",
  "pretty_assertions",
  "proptest",
@@ -531,6 +533,32 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "cognitum-security"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "argon2",
+ "async-trait",
+ "chrono",
+ "ed25519-dalek",
+ "futures",
+ "mockall 0.12.1",
+ "parking_lot",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]
@@ -1616,6 +1644,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.111",
+]
+
+[[package]]
+name = "newport_core"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.17",
 ]
 
 [[package]]

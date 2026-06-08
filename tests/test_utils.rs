@@ -218,8 +218,8 @@ pub mod assertions {
     }
 
     pub fn assert_packet_valid(packet: &RaceWayPacket) {
-        assert!(packet.source.value() < 256, "Invalid source tile");
-        assert!(packet.dest.value() < 256, "Invalid dest tile");
+        assert!((packet.source.value() as u16) < 256, "Invalid source tile");
+        assert!((packet.dest.value() as u16) < 256, "Invalid dest tile");
         assert!(!packet.data.is_empty(), "Packet has no data");
     }
 

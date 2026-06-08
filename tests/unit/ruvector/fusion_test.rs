@@ -1,6 +1,7 @@
 //! Unit tests for vector-graph fusion module
 
 use cognitum::ruvector::fusion::*;
+use cognitum::ruvector::partitioning::PartitionId;
 use cognitum::ruvector::types::*;
 
 #[test]
@@ -151,7 +152,7 @@ fn test_brittleness_monitor_history() {
     }
 
     // History should be maintained
-    assert_eq!(monitor.min_cut_history.len(), 10);
+    assert_eq!(monitor.min_cut_history().len(), 10);
 }
 
 #[test]

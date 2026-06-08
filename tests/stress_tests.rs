@@ -100,8 +100,8 @@ fn stress_test_packet_flood() {
     while let Some(packet) = queue.pop_front() {
         // Verify packet integrity
         assert!(!packet.data.is_empty());
-        assert!(packet.source.value() < 256);
-        assert!(packet.dest.value() < 256);
+        assert!((packet.source.value() as u16) < 256);
+        assert!((packet.dest.value() as u16) < 256);
         processed += 1;
     }
 

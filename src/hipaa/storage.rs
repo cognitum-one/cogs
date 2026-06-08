@@ -277,6 +277,14 @@ impl HipaaCompliantStorage {
         }
     }
 
+    /// Fetch the raw encrypted record for a given id, if present.
+    ///
+    /// Returns a clone of the stored ciphertext envelope, allowing callers
+    /// (e.g. integrity checks) to inspect what is persisted at rest.
+    pub fn get_encrypted(&self, id: &RecordId) -> Option<EncryptedData> {
+        self.storage.read().unwrap().get(id).cloned()
+    }
+
     /// Rotate encryption key
     pub async fn rotate_key(&self) -> Result<String> {
         let old_key_id = self.current_key_id.read().unwrap().clone();

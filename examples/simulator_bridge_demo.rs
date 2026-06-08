@@ -22,72 +22,86 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     simulator = simulator.with_ruvector_routing();
 
     // 3. Get the bridge
-    let bridge = simulator
-        .get_routing_bridge()
-        .expect("Routing bridge should be available");
+    {
+        let bridge = simulator
+            .get_routing_bridge()
+            .expect("Routing bridge should be available");
 
-    println!("   ✓ Bridge initialized with 256 tiles\n");
+        println!("   ✓ Bridge initialized with 256 tiles\n");
 
-    // 4. Capture current tile states
-    println!("3. Capturing tile states from simulator...");
-    let states = bridge.capture_tile_states().await?;
-    println!("   ✓ Captured {} tile states", states.len());
+        // 4. Capture current tile states
+        println!("3. Capturing tile states from simulator...");
+        let states = bridge.capture_tile_states().await?;
+        println!("   ✓ Captured {} tile states", states.len());
 
-    // Show sample state
-    if let Some((tile_id, state)) = states.first() {
-        println!("   Sample tile {}: {} messages, {} cycles",
-            tile_id.0, state.message_count, state.cycle_count);
-    }
-    println!();
-
-    // 5. Route some tasks
-    println!("4. Routing tasks to optimal tiles...");
-    let mut routing_results = Vec::new();
-
-    for i in 0..10 {
-        let task = TaskEmbedding::random();
-        let tile = bridge.route_task(&task).await?;
-        routing_results.push(tile);
-
-        if i < 3 {
-            println!("   Task {} -> Tile {}", i, tile.0);
+        // Show sample state
+        if let Some((tile_id, state)) = states.first() {
+            println!("   Sample tile {}: {} messages, {} cycles",
+                tile_id.0, state.message_count, state.cycle_count);
         }
-    }
-    println!("   ... (7 more tasks routed)\n");
+        println!();
 
-    // 6. Get partition information
-    println!("5. Checking partition assignments...");
-    let mut partition_counts = std::collections::HashMap::new();
+        // 5. Route some tasks
+        println!("4. Routing tasks to optimal tiles...");
+        let mut routing_results = Vec::new();
 
-    for i in 0..256 {
-        let tile = cognitum::ruvector::TileId(i);
-        let partition = bridge.get_partition(tile);
-        *partition_counts.entry(partition.0).or_insert(0) += 1;
-    }
+        for i in 0..10 {
+            let task = TaskEmbedding::random();
+            let tile = bridge.route_task(&task).await?;
+            routing_results.push(tile);
 
-    println!("   Partition distribution:");
-    for (partition_id, count) in partition_counts.iter() {
-        println!("     Partition {}: {} tiles", partition_id, count);
+            if i < 3 {
+                println!("   Task {} -> Tile {}", i, tile.0);
+            }
+        }
+        println!("   ... (7 more tasks routed)\n");
+
+        // 6. Get partition information
+        println!("5. Checking partition assignments...");
+        let mut partition_counts = std::collections::HashMap::new();
+
+        for i in 0..256 {
+            let tile = cognitum::ruvector::TileId(i);
+            let partition = bridge.get_partition(tile);
+            *partition_counts.entry(partition.0).or_insert(0) += 1;
+        }
+
+        println!("   Partition distribution:");
+        for (partition_id, count) in partition_counts.iter() {
+            println!("     Partition {}: {} tiles", partition_id, count);
+        }
+        println!();
     }
-    println!();
 
     // 7. Update communication graph
     println!("6. Updating communication graph based on traffic...");
-    let bridge_mut = simulator
-        .get_routing_bridge_mut()
-        .expect("Routing bridge should be available");
+    {
+        let bridge_mut = simulator
+            .get_routing_bridge_mut()
+            .expect("Routing bridge should be available");
 
-    bridge_mut.update_communication_graph().await?;
+        bridge_mut.update_communication_graph().await?;
+    }
     println!("   ✓ Graph updated with current traffic patterns\n");
 
     // 8. Collect performance metrics
     println!("7. Collecting performance metrics...");
-    let metrics = bridge.collect_metrics();
-    print_metrics(&metrics);
+    {
+        let bridge = simulator
+            .get_routing_bridge()
+            .expect("Routing bridge should be available");
+        let metrics = bridge.collect_metrics();
+        print_metrics(&metrics);
+    }
 
     // 9. Rebalance partitions
     println!("\n8. Rebalancing partitions for optimal performance...");
-    let rebalance_result = bridge_mut.rebalance().await?;
+    let rebalance_result = {
+        let bridge_mut = simulator
+            .get_routing_bridge_mut()
+            .expect("Routing bridge should be available");
+        bridge_mut.rebalance().await?
+    };
 
     println!("   Rebalancing completed:");
     println!("     Tiles moved: {}", rebalance_result.tiles_moved);
@@ -97,8 +111,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 10. Final metrics
     println!("\n9. Final performance metrics:");
-    let final_metrics = bridge.collect_metrics();
-    print_metrics(&final_metrics);
+    {
+        let bridge = simulator
+            .get_routing_bridge()
+            .expect("Routing bridge should be available");
+        let final_metrics = bridge.collect_metrics();
+        print_metrics(&final_metrics);
+    }
 
     println!("\n=== Demo Complete ===");
     Ok(())

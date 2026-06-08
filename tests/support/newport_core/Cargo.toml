@@ -1,0 +1,14 @@
+[package]
+name = "newport_core"
+version = "0.1.0"
+edition = "2021"
+description = "Legacy Newport ASIC core API surface used by the cognitum test suite (memory model, tile ids, RaceWay packets). Self-contained; provides real implementations the stress/cross-validation tests exercise."
+license = "MIT"
+publish = false
+
+[lib]
+name = "newport_core"
+path = "src/lib.rs"
+
+[dependencies]
+thiserror = "2.0"

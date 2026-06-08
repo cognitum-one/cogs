@@ -16,9 +16,10 @@ pub mod random;
 
 pub use crypto::{AesGcmCipher, Argon2Config, Argon2Hasher, Ed25519Signer};
 pub use error::{CryptoError, HsmError, KmsError};
-pub use kms::{
-    CircuitBreakerConfig, HsmProvider, KeyManagementService, KeyPurpose, MockHsmProvider,
-};
+pub use kms::{CircuitBreakerConfig, HsmProvider, KeyManagementService, KeyPurpose};
+
+#[cfg(any(test, feature = "mock"))]
+pub use kms::MockHsmProvider;
 pub use random::SecureRandom;
 
 /// Re-export commonly used types

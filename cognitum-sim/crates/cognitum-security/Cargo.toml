@@ -38,6 +38,13 @@ futures = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }
 
+# Optional mocking support, exposed to downstream test crates via the `mock` feature.
+mockall = { version = "0.12", optional = true }
+
+[features]
+# Generate + export mockall mocks (e.g. MockHsmProvider) for use by downstream crates.
+mock = ["dep:mockall"]
+
 [dev-dependencies]
 mockall = "0.12"
 tokio-test = "0.4"
