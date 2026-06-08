@@ -8,8 +8,9 @@
 //! - Integration tests with mock executors
 
 use super::*;
+use agentvm_types::capability::CapabilityGrant;
 use agentvm_types::{
-    Budget, BudgetVector, CapabilityGrant, CapabilityScope, CapabilityType, CapsuleId, Quota,
+    Budget, BudgetVector, CapabilityScope, CapabilityType, CapsuleId, Quota,
     Rights,
 };
 use alloc::string::ToString;

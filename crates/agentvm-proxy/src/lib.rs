@@ -27,8 +27,9 @@ use std::sync::{Arc, Mutex, RwLock};
 #[cfg(not(feature = "std"))]
 use spin::{Mutex, RwLock};
 
+use agentvm_types::capability::CapabilityGrant;
 use agentvm_types::{
-    Budget, BudgetVector, Capability, CapabilityGrant, CapabilityId, CapabilityProof,
+    Budget, BudgetVector, Capability, CapabilityId, CapabilityProof,
     CapabilityScope, CapabilityType, CapsuleId, Quota, Rights,
 };
 
@@ -327,13 +328,15 @@ impl CapabilityProxy {
     pub fn grant(&self, capsule_id: CapsuleId, grant: CapabilityGrant) -> Result<CapabilityId> {
         let cap_id = self.generate_capability_id();
 
-        // Create the capability
-        let cap = self.create_capability(cap_id, grant);
-
+        let cap;
         // Insert into capsule context
         {
             let mut contexts = self.contexts.write().unwrap();
             let ctx = contexts.get_mut(&capsule_id).ok_or(ProxyError::CapsuleNotFound(capsule_id))?;
+            // Base the lease on the capsule's logical clock so that expiry is
+            // checked against the same monotonic time source used in
+            // `validate_and_prepare` (`ctx.current_time`), not wall-clock time.
+            cap = self.create_capability(cap_id, grant, ctx.current_time);
             ctx.grant(cap.clone());
         }
 
@@ -522,15 +525,15 @@ impl CapabilityProxy {
     }
 
     /// Create a capability from a grant
-    fn create_capability(&self, id: CapabilityId, grant: CapabilityGrant) -> Capability {
+    fn create_capability(&self, id: CapabilityId, grant: CapabilityGrant, now: u64) -> Capability {
         // Create proof (in real implementation, would sign with Ed25519)
         let proof = CapabilityProof::new(
             self.signing_key,
             [0x42u8; 64], // Placeholder signature
-            self.get_current_time(),
+            now,
         );
 
-        let expires_at = self.get_current_time() + grant.lease_secs * 1_000_000_000;
+        let expires_at = now + grant.lease_secs * 1_000_000_000;
 
         Capability {
             id,
@@ -545,7 +548,12 @@ impl CapabilityProxy {
         }
     }
 
-    /// Get current time (placeholder)
+    /// Get current wall-clock time (nanoseconds since the Unix epoch).
+    ///
+    /// Retained as a fallback time source. Lease expiry is computed against
+    /// each capsule's logical clock (`CapsuleContext::current_time`) in
+    /// `grant`, so this helper is not on the expiry path.
+    #[allow(dead_code)]
     fn get_current_time(&self) -> u64 {
         #[cfg(feature = "std")]
         {
