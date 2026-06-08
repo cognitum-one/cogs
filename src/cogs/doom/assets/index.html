@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>DOOM</title>
+<style>
+  :root { --pad: 8px; }
+  * { box-sizing: border-box; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #000; color: #c0392b; overflow: hidden;
+    font-family: -apple-system, system-ui, sans-serif;
+    touch-action: none; overscroll-behavior: none;
+  }
+  #app { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+  #screen-wrap {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    background: #000; min-height: 0; position: relative; overflow: auto;
+  }
+  #screen {
+    max-width: 100%; max-height: 100%; width: auto; height: auto;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    background: #111;
+  }
+  #status {
+    position: absolute; top: 4px; left: 6px; font-size: 11px; color: #555;
+    pointer-events: none; font-family: monospace;
+  }
+  /* Display-scaling modes set on #screen by the dropdown (purely client-side;
+     the engine always renders 320x200, this just controls on-screen size/filter). */
+  #screen.fit, #screen.fitsmooth { max-width:100%; max-height:100%; width:auto; height:auto; }
+  #screen.fitsmooth { image-rendering:auto; }
+  #screen.x2     { width:640px; height:400px; max-width:none; max-height:none; }
+  #screen.x3     { width:960px; height:600px; max-width:none; max-height:none; }
+  #screen.actual { width:320px; height:200px; max-width:none; max-height:none; }
+  #scalebar { flex:0 0 auto; text-align:center; padding:6px 8px; background:#000;
+              font-family:monospace; font-size:12px; color:#888; }
+  #scalebar select { background:#1a1a1a; color:#cda; border:1px solid #4a1010;
+                     border-radius:6px; padding:3px 6px; font-family:monospace; }
+  /* Banner advertising the direct/smooth LAN port (shown unless already on it). */
+  #fastlink { display:none; text-align:center; padding:6px 8px; background:#2a1a00;
+              color:#fb3; font-family:monospace; font-size:12px; }
+  #fastlink a { color:#ffcc66; font-weight:700; text-decoration:underline; }
+  #controls { flex: 0 0 auto; padding: var(--pad); }
+  /* Desktop-only keyboard legend; hidden on touch devices. */
+  #kbhint {
+    font-family: monospace; font-size: 11px; line-height: 1.5;
+    color: #6a8; text-align: center; padding: 4px 8px 8px;
+  }
+  #kbhint b { color: #cda; }
+  @media (pointer: coarse) { #kbhint { display: none; } }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .group { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    background: #2a2a2a; color: #e74c3c; border: 1px solid #4a1010;
+    border-radius: 10px; font-weight: 700; font-size: 16px;
+    min-width: 52px; min-height: 52px; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; cursor: pointer; user-select: none;
+  }
+  .btn:active, .btn.held { background: #c0392b; color: #fff; }
+  .btn.big { min-width: 70px; min-height: 64px; font-size: 18px; }
+  .btn.small { min-width: 40px; min-height: 40px; font-size: 13px; padding: 6px; }
+  /* D-pad */
+  #dpad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 4px; }
+  #dpad .spacer { visibility: hidden; }
+  #d-up { grid-column: 2; grid-row: 1; }
+  #d-left { grid-column: 1; grid-row: 2; }
+  #d-right { grid-column: 3; grid-row: 2; }
+  #d-down { grid-column: 2; grid-row: 3; }
+  #weapons { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  #sysrow .btn { font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="fastlink"></div>
+  <div id="screen-wrap">
+    <img id="screen" alt="DOOM" width="640" height="400">
+    <div id="status">connecting…</div>
+  </div>
+
+  <div id="scalebar">
+    Scale:
+    <select id="scaleSelect" aria-label="Display scale">
+      <option value="fit">Fit window — crisp</option>
+      <option value="fitsmooth">Fit window — smooth</option>
+      <option value="x2">2× pixel-perfect (640×400)</option>
+      <option value="x3">3× pixel-perfect (960×600)</option>
+      <option value="actual">Actual (320×200)</option>
+    </select>
+  </div>
+
+  <div id="controls">
+    <div id="kbhint">
+      <b>W/S</b> move · <b>←/→</b> turn · <b>A/D</b> strafe · <b>Space</b> fire · <b>E</b> use · <b>Shift</b> run · <b>1–7</b> weapons · <b>Tab</b> map · <b>Enter/Esc</b> menu
+    </div>
+    <div class="row" id="weapons">
+      <div class="btn small" data-key="1">1</div>
+      <div class="btn small" data-key="2">2</div>
+      <div class="btn small" data-key="3">3</div>
+      <div class="btn small" data-key="4">4</div>
+      <div class="btn small" data-key="5">5</div>
+      <div class="btn small" data-key="6">6</div>
+      <div class="btn small" data-key="7">7</div>
+    </div>
+
+    <div class="row" id="sysrow">
+      <div class="btn small" data-key="escape">ESC</div>
+      <div class="btn small" data-key="enter">ENTER</div>
+      <div class="btn small" data-key="map">MAP</div>
+      <div class="btn small" id="run-toggle">RUN</div>
+      <div class="btn small" data-key="space">SPC</div>
+    </div>
+
+    <div class="row">
+      <div id="dpad">
+        <div class="spacer"></div>
+        <div class="btn" id="d-up" data-key="up">▲</div>
+        <div class="spacer"></div>
+        <div class="btn" id="d-left" data-key="left">◀</div>
+        <div class="spacer"></div>
+        <div class="btn" id="d-right" data-key="right">▶</div>
+        <div class="spacer"></div>
+        <div class="btn" id="d-down" data-key="down">▼</div>
+        <div class="spacer"></div>
+      </div>
+      <div class="group">
+        <div class="btn big" data-key="use">USE</div>
+        <div class="btn big" data-key="fire">FIRE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var img = document.getElementById("screen");
+  var statusEl = document.getElementById("status");
+  var lastId = 0;
+  var lastUrl = null;
+  var runHeld = false;
+  // Resolve API calls against the cog root whether or not the page URL ends
+  // in a trailing slash (…/cogs/doom vs …/cogs/doom/) — otherwise relative
+  // fetches resolve to …/cogs/frame and 404.
+  var API = location.pathname.replace(/\/+$/, "") + "/";
+
+  // ---- input ----------------------------------------------------------------
+  // Input is high priority. The agent rate-limits LAN clients, so if a tap is
+  // throttled (429) we retry a few times rather than dropping the keypress.
+  function send(events, attempt) {
+    if (!events.length) return;
+    attempt = attempt || 0;
+    fetch(API + "input", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ events: events })
+    }).then(function (r) {
+      if (r.status === 429 && attempt < 5) {
+        setTimeout(function () { send(events, attempt + 1); }, 120);
+      }
+    }).catch(function () {
+      if (attempt < 5) setTimeout(function () { send(events, attempt + 1); }, 120);
+    });
+  }
+  function down(key) { send([{ action: "down", key: key }]); }
+  function up(key)   { send([{ action: "up",   key: key }]); }
+
+  // Track held keys to avoid duplicate down on multi-touch jitter.
+  var held = {};
+  function press(key, el) {
+    if (held[key]) return;
+    held[key] = true;
+    if (el) el.classList.add("held");
+    down(key);
+  }
+  function release(key, el) {
+    if (!held[key]) return;
+    held[key] = false;
+    if (el) el.classList.remove("held");
+    up(key);
+  }
+
+  function bindBtn(el) {
+    var key = el.getAttribute("data-key");
+    if (!key) return;
+    var start = function (e) { e.preventDefault(); press(key, el); };
+    var end   = function (e) { e.preventDefault(); release(key, el); };
+    el.addEventListener("touchstart", start, { passive: false });
+    el.addEventListener("touchend", end, { passive: false });
+    el.addEventListener("touchcancel", end, { passive: false });
+    el.addEventListener("mousedown", start);
+    el.addEventListener("mouseup", end);
+    el.addEventListener("mouseleave", function (e) { if (held[key]) end(e); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".btn[data-key]"), bindBtn);
+
+  // RUN as a toggle (sends shift down/up on toggle).
+  var runBtn = document.getElementById("run-toggle");
+  function setRun(on) {
+    runHeld = on;
+    runBtn.classList.toggle("held", on);
+    if (on) down("run"); else up("run");
+  }
+  runBtn.addEventListener("touchstart", function (e) { e.preventDefault(); setRun(!runHeld); }, { passive: false });
+  runBtn.addEventListener("mousedown", function (e) { e.preventDefault(); setRun(!runHeld); });
+
+  // Desktop keyboard.
+  // Desktop keyboard. Lookup by lowercased e.key (so W/w, Shift, ArrowUp all
+  // match). Fire is Space and Use is E — NOT classic Ctrl-fire: browsers
+  // reserve Ctrl+W / Ctrl+A / Ctrl+S / Ctrl+D, so Ctrl-fire + WASD would close
+  // the tab. We also ignore keys pressed with Ctrl/Cmd/Alt so real browser
+  // shortcuts (refresh, etc.) keep working.
+  var keyMap = {
+    "w": "up", "s": "down",                         // move forward / back
+    "arrowup": "up", "arrowdown": "down",
+    "arrowleft": "left", "arrowright": "right",      // turn
+    "a": "strafeleft", "d": "straferight",           // strafe
+    ",": "strafeleft", ".": "straferight",
+    " ": "fire",                                     // Space = fire
+    "e": "use", "f": "use",                          // open doors / use
+    "shift": "run",
+    "enter": "enter", "escape": "escape", "tab": "map",
+    "1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7",
+    "y":"y", "n":"n"
+  };
+  function inFormField(e) {
+    var t = e.target;
+    return t && (t.tagName === "SELECT" || t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+  }
+  window.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;  // leave browser shortcuts alone
+    if (inFormField(e)) return;                       // don't hijack the scale dropdown
+    if (e.repeat) { e.preventDefault(); return; }    // auto-repeat: already held
+    var k = keyMap[e.key.toLowerCase()];
+    if (k) { e.preventDefault(); press(k); }
+  });
+  window.addEventListener("keyup", function (e) {
+    if (inFormField(e)) return;
+    var k = keyMap[e.key.toLowerCase()];
+    if (k) { e.preventDefault(); release(k); }
+  });
+
+  // ---- display scaling (client-side only) -----------------------------------
+  var scaleSel = document.getElementById("scaleSelect");
+  function applyScale(mode) {
+    img.className = mode;
+    try { localStorage.setItem("doomScale", mode); } catch (e) {}
+  }
+  var savedScale = null;
+  try { savedScale = localStorage.getItem("doomScale"); } catch (e) {}
+  scaleSel.value = savedScale || "fit";
+  applyScale(scaleSel.value);
+  scaleSel.addEventListener("change", function () { applyScale(scaleSel.value); scaleSel.blur(); });
+
+  // ---- optional direct-LAN banner -------------------------------------------
+  // When the cog runs in opt-in direct-LAN mode (DOOM_OPEN=1 + DOOM_BIND=0.0.0.0),
+  // the game is reachable over plain HTTP on the LAN, bypassing the agent proxy's
+  // rate limit (~1fps). We ONLY advertise that when this page is already being
+  // served over plain http to a LAN host (i.e. NOT through the agent's https
+  // proxy on :8443) — otherwise the link would be dead and the banner just noise.
+  var FAST_PORT = "8066";
+  var proxied = (location.protocol === "https:") || location.port === "8443";
+  if (!proxied && location.port !== FAST_PORT && location.hostname) {
+    var fastUrl = "http://" + location.hostname + ":" + FAST_PORT + "/";
+    var fl = document.getElementById("fastlink");
+    fl.innerHTML = "⚡ Laggy here? Open the <a href=\"" + fastUrl + "\">direct, full-speed version (" +
+                   location.hostname + ":" + FAST_PORT + ")</a> on your LAN.";
+    fl.style.display = "block";
+  }
+
+  // Prevent scroll/zoom gestures.
+  document.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+  document.addEventListener("dblclick", function (e) { e.preventDefault(); });
+
+  // ---- frame loop -----------------------------------------------------------
+  // Adaptive pacing: the agent throttles LAN clients (~2 req/s unpaired, ~20
+  // paired). Polling flat-out drowns that budget and starves input, so we
+  // back off hard on 429 and only speed up while frames keep flowing. This
+  // self-tunes to whatever rate tier the phone is in and keeps input working.
+  var frameDelay = 140;   // ms between frame requests
+  var failStreak = 0;
+  function pump() {
+    fetch(API + "frame?since=" + lastId, { credentials: "include" })
+      .then(function (r) {
+        if (r.status === 429) {                 // throttled: ease off, yield to input
+          frameDelay = Math.min(2500, Math.round(frameDelay * 1.7) + 40);
+          if (++failStreak > 3) { statusEl.style.display = "block"; statusEl.textContent = "easing load…"; }
+          return null;
+        }
+        if (r.status === 204) { return null; }  // no new frame yet
+        if (!r.ok) throw new Error("frame " + r.status);
+        failStreak = 0;
+        frameDelay = Math.max(80, Math.round(frameDelay * 0.9));
+        var id = r.headers.get("X-Frame-Id");
+        if (id) lastId = parseInt(id, 10) || lastId;
+        return r.arrayBuffer();
+      })
+      .then(function (buf) {
+        if (buf) {
+          // Force image/jpeg: the agent proxy relabels frames as
+          // application/octet-stream, which some browsers won't render.
+          var blob = new Blob([buf], { type: "image/jpeg" });
+          var url = URL.createObjectURL(blob);
+          img.onload = function () {
+            if (lastUrl) URL.revokeObjectURL(lastUrl);
+            lastUrl = url;
+          };
+          img.src = url;
+          statusEl.style.display = "none";
+        }
+      })
+      .catch(function (e) {
+        frameDelay = Math.min(2500, Math.round(frameDelay * 1.7) + 40);
+        if (++failStreak > 3) { statusEl.style.display = "block"; statusEl.textContent = "reconnecting…"; }
+      })
+      .finally(function () {
+        setTimeout(pump, frameDelay);
+      });
+  }
+  pump();
+})();
+</script>
+</body>
+</html>

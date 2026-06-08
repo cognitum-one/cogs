@@ -1,0 +1,33 @@
+[package]
+name = "cog-doom"
+version = "0.1.0"
+edition = "2021"
+description = "Cognitum cog: play DOOM on-device, served to any browser"
+# GPLv2 — this cog statically links the vendored doomgeneric C engine (GPLv2),
+# so the cog binary is a GPLv2 derivative. The rest of cognitum-one/cogs is MIT;
+# this single cog directory is the exception. See LICENSE and NOTICE.
+license = "GPL-2.0-or-later"
+
+[[bin]]
+name = "cog-doom"
+path = "src/main.rs"
+
+[dependencies]
+# Tiny sync HTTP server (no tokio/axum) — keeps the cog small + single-thread-friendly.
+tiny_http = "0.12"
+# Pure-Rust JPEG encoder — no C deps, cross-compiles cleanly to armv7.
+jpeg-encoder = "0.6"
+serde_json = "1"
+# Constant-time bearer token compare.
+subtle = "2.6"
+
+[build-dependencies]
+# Compiles the vendored doomgeneric C engine into the crate.
+cc = "1"
+
+[profile.release]
+opt-level = "s"      # optimize for size — cog binary stays small
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

@@ -34,6 +34,18 @@ optional ruvnet/ruview mode (when applicable).
 | 015 | [Predictive maintenance (vibration FFT)](ADR-015-predictive-maintenance.md)            | industrial | -           |
 | 016 | [Parking occupancy](ADR-016-parking-occupancy.md)                                      | retail     | required    |
 
+## Platform / API-provider cogs
+
+These cogs depart from the sensor → DSP → result shape: they expose an HTTP API
+through the seed agent proxy (cognitum-one/seed ADR-095) and may ship sidecar
+assets. RuView does not apply.
+
+| #   | Title                                                                | Category | Notes |
+| --- | ------------------------------------------------------------------- | -------- | ----- |
+| 017 | [Cognitive pipeline (FastGRNN + SmolLM2)](ADR-017-cognitive-pipeline.md) | ai       | First HTTP-API cog; GGUF model assets |
+| 018 | [Tailscale mesh VPN](ADR-018-tailscale-cog.md)                      | network  | Userspace WireGuard; bundled binary assets |
+| 019 | [DOOM](ADR-019-doom.md)                                             | games    | First C-FFI cog (vendored doomgeneric, GPLv2); FreeDoom IWAD asset |
+
 ## ADR template
 
 ```

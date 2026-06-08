@@ -1,0 +1,58 @@
+[cog]
+id = "doom"
+name = "DOOM"
+version = "0.1.0"
+category = "games"
+description = "Play DOOM on your Seed from any browser. Renders on-device (software, no GPU); control via touch or keyboard."
+binary = "cog-doom-arm"
+hardware_requirement = "pi-zero-2w"
+
+[config.jpeg_quality]
+type = "integer"
+label = "JPEG quality"
+description = "Frame JPEG quality (1-100). Lower = smaller frames + higher framerate on the Pi Zero; higher = sharper but slower. 55 is a good balance at 320x200."
+default = 55
+min = 1
+max = 100
+cli_arg = "--jpeg-quality"
+
+# ADR-095 §1: declared HTTP API surface. The agent proxies
+# /api/v1/cogs/doom/<endpoint> -> http://127.0.0.1:<bind_port>/<endpoint> and
+# injects the per-cog bearer token. `/` and `/health` are open; the game
+# endpoints are paired (token-required). DOOM_OPEN=1 (off by default) is the
+# opt-in direct-LAN escape hatch documented in ADR-019.
+[api]
+bind_port = 8066
+bind_loopback_only = true
+endpoints = [
+    { path = "/",       methods = ["GET"],  auth = "open" },
+    { path = "/health", methods = ["GET"],  auth = "open" },
+    { path = "/frame",  methods = ["GET"],  auth = "paired" },
+    { path = "/input",  methods = ["POST"], auth = "paired" },
+    { path = "/stream", methods = ["GET"],  auth = "paired" },
+]
+
+# ADR-095 §4 + ADR-019: game data IWAD. The cog ships NO DOOM game data; it
+# uses the freely-redistributable FreeDoom IWAD. The agent fetches this asset at
+# install time, sha256-verifies it, and places it next to the binary as
+# `freedoom1.wad` (the cog resolves <exe_dir>/freedoom1.wad, or $DOOM_WAD).
+#
+# FreeDoom version: v0.13.0 (latest stable as of 2026-06-07).
+# Source: https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip
+#   -> extract freedoom1.wad (the single-IWAD "Phase 1" game data).
+# Maintainers may re-host this WAD to the cognitum registry (gs://cognitum-apps)
+# on publish; if so, add the `gcs_path` field as the other cogs do. The sha256
+# below is the real FreeDoom 0.13.0 freedoom1.wad and is what the install
+# handler must verify (enforced by CI's asset-sha256 gate).
+[[assets]]
+id = "freedoom1-wad"
+filename = "freedoom1.wad"
+size_bytes = 28_795_076
+sha256 = "7323bcc168c5a45ff10749b339960e98314740a734c30d4b9f3337001f9e703d"
+source_url = "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip"
+license = "BSD-3-Clause (FreeDoom)"
+
+[console]
+allowed_commands = ["--help", "--version"]
+max_runtime_secs = 30
+output_limit_bytes = 65536
