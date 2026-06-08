@@ -15,5 +15,6 @@ serde = ["dep:serde"]
 
 [dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+sha2 = { version = "0.10", default-features = false }
 
 [dev-dependencies]

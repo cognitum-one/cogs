@@ -16,6 +16,6 @@ serde = ["agentvm-types/serde"]
 [dependencies]
 agentvm-types = { path = "../agentvm-types", default-features = false }
 hashbrown = { version = "0.14", default-features = false, features = ["ahash"] }
-spin = { version = "0.9", default-features = false, features = ["mutex", "rwlock"] }
+spin = { version = "0.9", default-features = false, features = ["mutex", "rwlock", "spin_mutex"] }
 
 [dev-dependencies]
