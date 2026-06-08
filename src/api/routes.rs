@@ -57,13 +57,24 @@ pub fn create_api_routes(state: Arc<ApiState>) -> Router {
         .route("/v1/ruvector/search", post(ruvector_handlers::vector_search))
         .route("/v1/ruvector/insert", post(ruvector_handlers::insert_vectors))
 
-        // Apply authentication middleware to all routes except /auth/login and /auth/refresh
+        // Apply authentication middleware to all routes except /auth/login and /auth/refresh.
+        // Routes added before this layer are wrapped by the middleware; the fallback added
+        // afterwards is NOT, so unknown routes reach the 404 fallback without first being
+        // rejected by auth (which would otherwise surface as a 401/500).
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
         ))
 
+        // Unknown routes return 404 (not handled by the auth middleware above)
+        .fallback(not_found)
+
         .with_state(state)
+}
+
+/// Fallback handler for unmatched routes — returns HTTP 404 Not Found.
+async fn not_found() -> super::handlers::ErrorResponse {
+    super::handlers::ErrorResponse::new("Route not found", "NOT_FOUND")
 }
 
 #[cfg(test)]
