@@ -108,11 +108,28 @@ impl TaskRouter for TinyDancerRouter {
         let mut final_loss = 0.0;
 
         let mut weights = self.model_weights.write();
+        let num_tiles = weights.len();
+
+        // Only traces whose `actual_tile` references an existing output row can
+        // contribute a valid cross-entropy target. Traces referencing a tile id
+        // >= num_tiles (e.g. data generated for a larger fleet, or randomized
+        // fixtures) would index `probs`/`weights` out of bounds and panic, so
+        // they are skipped rather than crashing training.
+        let valid_traces: Vec<&ExecutionTrace> = traces
+            .iter()
+            .filter(|t| (t.actual_tile.0 as usize) < num_tiles)
+            .collect();
+
+        if valid_traces.is_empty() {
+            return Err(RouterError::Training(format!(
+                "No training data with tile ids in range 0..{num_tiles}"
+            )));
+        }
 
         for _epoch in 0..epochs {
             let mut epoch_loss = 0.0;
 
-            for trace in traces {
+            for trace in &valid_traces {
                 // Forward pass
                 let probs = {
                     let logits: Vec<f32> = weights
@@ -151,7 +168,7 @@ impl TaskRouter for TinyDancerRouter {
                 }
             }
 
-            final_loss = epoch_loss / traces.len() as f32;
+            final_loss = epoch_loss / valid_traces.len() as f32;
         }
 
         // Release the write lock before computing accuracy: predict_tile()
@@ -159,15 +176,15 @@ impl TaskRouter for TinyDancerRouter {
         // against this write guard (parking_lot is not reentrant).
         drop(weights);
 
-        // Compute accuracy
+        // Compute accuracy over the traces that actually trained the model.
         let mut correct = 0;
-        for trace in traces {
+        for trace in &valid_traces {
             let pred = self.predict_tile(&trace.task_embedding);
             if pred == trace.actual_tile {
                 correct += 1;
             }
         }
-        let accuracy = correct as f32 / traces.len() as f32;
+        let accuracy = correct as f32 / valid_traces.len() as f32;
 
         Ok(TrainingMetrics {
             epochs,
