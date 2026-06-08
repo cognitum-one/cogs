@@ -227,6 +227,8 @@ impl MessageEnvelope {
         // Parse payload length
         let payload_len = u32::from_le_bytes(buf[34..38].try_into().unwrap());
 
+        // Bytes 38..42 are reserved (part of the 42-byte fixed header).
+
         // Validate buffer has enough data
         let total_len = HEADER_SIZE + payload_len as usize + 4; // +4 for checksum
         if buf.len() < total_len {
@@ -236,12 +238,11 @@ impl MessageEnvelope {
             });
         }
 
-        // Parse payload
-        let payload_end = HEADER_SIZE - 4 + payload_len as usize; // -4 because HEADER_SIZE includes the 4 bytes before payload_len
-        let payload = buf[38..38 + payload_len as usize].to_vec();
+        // Parse payload (begins immediately after the fixed header)
+        let payload = buf[HEADER_SIZE..HEADER_SIZE + payload_len as usize].to_vec();
 
-        // Parse checksum
-        let checksum_offset = 38 + payload_len as usize;
+        // Parse checksum (follows the payload)
+        let checksum_offset = HEADER_SIZE + payload_len as usize;
         let checksum = u32::from_le_bytes(
             buf[checksum_offset..checksum_offset + 4].try_into().unwrap(),
         );
@@ -289,6 +290,8 @@ impl MessageEnvelope {
         buf.extend_from_slice(&(self.message_type as u16).to_le_bytes());
         // Payload length (4 bytes)
         buf.extend_from_slice(&self.payload_len.to_le_bytes());
+        // Reserved (4 bytes) - rounds the fixed header out to HEADER_SIZE
+        buf.extend_from_slice(&[0u8; 4]);
         // Payload
         buf.extend_from_slice(&self.payload);
         // Checksum (4 bytes)

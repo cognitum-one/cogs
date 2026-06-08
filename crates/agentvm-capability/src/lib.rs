@@ -15,7 +15,7 @@ pub mod wire;
 use agentvm_types::{Capability, CapabilityId, CapabilityType, Quota};
 
 pub use derive::{DeriveError, DeriveRequest};
-pub use validate::{Operation, ValidationResult};
+pub use validate::{Operation, ValidationError, ValidationResult};
 pub use wire::{MessageEnvelope, MessageType, ParseError};
 
 /// Validate a capability for use with a specific operation
