@@ -106,8 +106,10 @@ impl EmbeddingGenerator for DefaultEmbeddingGenerator {
     fn from_tile_state(&self, state: &TileState) -> Embedding {
         let mut data = vec![0.0; self.dimension];
 
-        // Normalize program counter to [0, 1]
-        data[0] = (state.program_counter as f64 / u32::MAX as f64) as f32;
+        // Normalize program counter to [0, 1].
+        // The tile PC is a 16-bit address space, so normalize against u16::MAX
+        // (a mid-range PC of 0x8000 maps to ~0.5). Clamp guards larger values.
+        data[0] = ((state.program_counter as f64 / u16::MAX as f64) as f32).min(1.0);
 
         // Normalize stack pointer to [0, 1]
         data[1] = (state.stack_pointer as f32) / 4096.0;
