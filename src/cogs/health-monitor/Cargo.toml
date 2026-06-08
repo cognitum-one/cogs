@@ -8,10 +8,18 @@ description = "Combined vital signs dashboard — vitals, presence, apnea in one
 name = "cog-health-monitor"
 path = "src/main.rs"
 
+# `esp32-udp` is ON by default: it is the canonical CSI ingest path (ADR-090).
+# The `Source::Auto` arm probes UDP :5006 via `fetch_from_esp32_udp`, which is
+# `#[cfg(feature = "esp32-udp")]`-gated — without this default the registry
+# build (Dockerfile.cog-batch passes no --features) silently degrades auto-mode
+# to seed-stream/synthetic and rejects explicit `--source esp32-udp=`. See
+# ADR-090 §"Build configuration" and cognitum-one/cogs PR for the regression.
 [features]
-default = []
-# Enable direct ESP32 serial-port reader (--source esp32-uart=PATH).
-# Pulls in `serialport` (libudev on Linux, IOKit on macOS, setupapi on Windows).
+default = ["esp32-udp"]
+# Enable direct ESP32 serial-port reader (--source esp32-uart=PATH). Opt-in:
+# pulls in `serialport` (libudev on Linux, IOKit on macOS, setupapi on Windows)
+# which adds ARM cross-compile weight. Enable for the autonomous on-seed case
+# where the ESP32 is on the seed's USB and no UART→UDP bridge is running.
 esp32-uart = ["dep:serialport"]
 # Enable direct ESP32 UDP listener (--source esp32-udp=BIND_HOST:PORT).
 # No extra deps — uses std::net::UdpSocket.

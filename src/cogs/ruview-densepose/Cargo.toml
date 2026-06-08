@@ -8,13 +8,21 @@ description = "RuView integration — ESP32 CSI to 17-keypoint skeleton proxy vi
 name = "cog-ruview-densepose"
 path = "src/main.rs"
 
+# `esp32-udp` is ON by default: it is the canonical CSI ingest path (ADR-090).
+# The `Source::Auto` arm probes UDP :5006 via `fetch_from_esp32_udp`, which is
+# `#[cfg(feature = "esp32-udp")]`-gated — without this default the registry
+# build (Dockerfile.cog-batch passes no --features) silently degrades auto-mode
+# to seed-stream/synthetic and rejects explicit `--source esp32-udp=`. See
+# ADR-090 §"Build configuration" and cognitum-one/cogs PR for the regression.
 [features]
-default = []
-# Direct ESP32 serial-port reader (--source esp32-uart=PATH).
+default = ["esp32-udp"]
+# Direct ESP32 serial-port reader (--source esp32-uart=PATH). Opt-in: pulls in
+# `serialport` (libudev/IOKit/setupapi) which adds ARM cross-compile weight.
+# Enable for the autonomous on-seed case where the ESP32 is on the seed's USB
+# and no host/seed UART→UDP bridge is running.
 esp32-uart = ["dep:serialport"]
 # Explicit UDP listener with configurable bind addr (--source esp32-udp=HOST:PORT).
-# No extra deps — uses std::net::UdpSocket. Independent of the legacy
-# auto-fallback UDP behavior on hardcoded port 5005 (still on by default).
+# No extra deps — uses std::net::UdpSocket.
 esp32-udp = []
 
 [dependencies]
