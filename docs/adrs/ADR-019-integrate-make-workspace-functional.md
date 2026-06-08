@@ -57,6 +57,32 @@ respect the sequential-then-parallel shape of the work:
 4. **Workspace gate (sequential).** Final `cargo build --workspace` +
    `cargo test --workspace` + `cargo clippy`; report green vs. residual.
 
+### Stage B — Appliance integration, validation & optimization
+
+"Fully functional" means functional **with the V0 appliance**, not just
+build-green. After Stage A, a second workflow (`integrate-cogs-appliance.js`)
+drives the end-to-end on the live cluster:
+
+5. **Cross-compile for the appliance target.** Build the cogs for
+   `aarch64`/armhf (the Pi 5 cluster) via `scripts/build-all-arm.sh` (Docker) →
+   `dist/`. Only cogs that passed Stage A's verify are candidates.
+
+6. **Deploy + install via the cog supervisor.** Publish the built cogs to the
+   appliance cog registry and install them through the V0 cog supervisor
+   (cognitum-cog-gateway `cog_ops` — the ADR-220 lifecycle: install → configure
+   → run → status → logs → remove).
+
+7. **E2E validation on the live cluster (concurrent fan-out).** For each
+   deployed cog: install → run → assert it reaches `running` and emits the
+   expected output/metrics → capture SOTA metrics → remove. Mirrors the earlier
+   per-cog lifecycle proofs. A cog is "functional with the appliance" only when
+   it passes this live round-trip — not merely when it compiles.
+
+8. **Optimization.** Route each cog to the right accelerator (H8 embedding /
+   H10 LLM / CPU), confirm WiFi-coexistence (12 dBm cap, ADR-240) holds under
+   cog load, and record per-cog throughput/p99. Park cogs needing absent
+   hardware/models as documented residual.
+
 ### Guardrails
 
 - **No fake green.** A cog is "functional" only when it compiles AND its tests
