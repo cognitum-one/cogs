@@ -154,6 +154,11 @@ impl TaskRouter for TinyDancerRouter {
             final_loss = epoch_loss / traces.len() as f32;
         }
 
+        // Release the write lock before computing accuracy: predict_tile()
+        // acquires a read lock on the same RwLock, which would deadlock
+        // against this write guard (parking_lot is not reentrant).
+        drop(weights);
+
         // Compute accuracy
         let mut correct = 0;
         for trace in traces {
