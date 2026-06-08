@@ -26,6 +26,14 @@ crate-type = ["cdylib"]
 [features]
 default = []
 
+[profile.dev]
+# This crate is `#![no_std]` with a custom `#[panic_handler]`. The default
+# dev-profile `panic = "unwind"` is incompatible with no_std on the native
+# host target ("unwinding panics are not supported without std"), so abort
+# in dev too. This keeps `cargo check`/`cargo build` working on the host
+# without changing the shipped wasm32 behavior (release already aborts).
+panic = "abort"
+
 [profile.release]
 opt-level = "z"
 lto = true

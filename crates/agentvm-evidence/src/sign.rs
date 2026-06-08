@@ -108,7 +108,7 @@ impl Signer for Ed25519Signer {
 }
 
 /// Create a signature for evidence data
-pub fn sign_evidence<S: Signer>(signer: &S, data: &[u8]) -> EvidenceSignature {
+pub fn sign_evidence<S: Signer + ?Sized>(signer: &S, data: &[u8]) -> EvidenceSignature {
     EvidenceSignature {
         keyid: signer.key_id(),
         sig: signer.sign(data),
@@ -116,7 +116,7 @@ pub fn sign_evidence<S: Signer>(signer: &S, data: &[u8]) -> EvidenceSignature {
 }
 
 /// Verify an evidence signature
-pub fn verify_evidence_signature<S: Signer>(
+pub fn verify_evidence_signature<S: Signer + ?Sized>(
     signer: &S,
     data: &[u8],
     signature: &EvidenceSignature,

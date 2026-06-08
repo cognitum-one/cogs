@@ -278,20 +278,3 @@ pub fn network_event_record(
         allowed,
     }
 }
-
-impl EvidenceBuilder {
-    fn current_time_ns() -> u64 {
-        #[cfg(feature = "std")]
-        {
-            use std::time::{SystemTime, UNIX_EPOCH};
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_nanos() as u64
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            0
-        }
-    }
-}
