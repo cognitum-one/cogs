@@ -54,6 +54,29 @@ impl TinyDancerRouter {
         }
     }
 
+    /// Construct a router with deterministically-seeded weight initialization.
+    ///
+    /// Behaves exactly like [`TinyDancerRouter::new`] except the random weight
+    /// matrix is drawn from a seeded RNG, so the (otherwise untrained) routing
+    /// decisions are reproducible. This makes it possible to write deterministic
+    /// tests and benchmarks against the router without depending on the global
+    /// thread RNG.
+    pub fn new_seeded(num_tiles: usize, input_dim: usize, seed: u64) -> Self {
+        use rand::rngs::StdRng;
+        use rand::{Rng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let weights = (0..num_tiles)
+            .map(|_| (0..input_dim).map(|_| rng.gen::<f32>() * 0.01).collect())
+            .collect();
+
+        Self {
+            num_tiles,
+            model_weights: Arc::new(RwLock::new(weights)),
+            input_dim,
+        }
+    }
+
     fn predict_probabilities(&self, task_embedding: &TaskEmbedding) -> Vec<f32> {
         let weights = self.model_weights.read();
 

@@ -276,8 +276,14 @@ fn test_tile_graph_min_cut_star() {
 
     let min_cut = graph.min_cut_approximation();
 
-    // Min-cut should be around 1.5 (sum of edges from center)
-    assert!((min_cut - 1.5).abs() < 0.1);
+    // The minimum cut of a star is the cheapest way to separate the graph into
+    // two non-empty parts, which is isolating any single LEAF (one 0.5 edge),
+    // NOT isolating the center (3 edges = 1.5, the *maximum* single-vertex cut).
+    // The previous assertion of 1.5 was incorrect: it confused the center cut
+    // with the min cut. This matches the in-source spec test
+    // `fusion::tests::test_min_cut_approximation`, which asserts 0.5 for the
+    // identical star topology.
+    assert!((min_cut - 0.5).abs() < 0.1);
 }
 
 #[test]
