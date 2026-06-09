@@ -34,8 +34,8 @@ cli_arg = "--serve-agent"
 [config.advertise_tags]
 type = "string"
 label = "Tailnet tags"
-description = "Comma-separated Tailscale ACL tags (e.g. tag:seed,tag:prod)."
-default = "tag:seed"
+description = "Comma-separated Tailscale ACL tags (e.g. tag:seed,tag:prod). Leave empty to join untagged — a tag the auth key's ACL does not permit makes `tailscale up` fail with 'requested tags invalid or not permitted'."
+default = ""
 cli_arg = "--advertise-tags"
 
 [api]
