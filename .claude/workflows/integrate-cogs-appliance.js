@@ -1,114 +1,96 @@
 export const meta = {
   name: 'integrate-cogs-appliance',
-  description: 'ADR-019 Stage B — make build-green cogs fully functional WITH the V0 appliance: cross-compile, deploy via the cog supervisor, e2e-validate on the live cluster, optimize accelerator routing',
+  description: 'ADR-019 Stage B (ALL cogs) — every cog functional WITH the V0 appliance: cross-compile all to ARM, e2e-validate EVERY built cog live on the cluster via the cog supervisor, optimize accelerator routing',
   phases: [
-    { title: 'CrossCompile', detail: 'aarch64/armhf build via scripts/build-all-arm.sh → dist/' },
-    { title: 'Validate', detail: 'per-cog install→run→assert→remove round-trip on the live cluster' },
+    { title: 'CrossCompile', detail: 'build-all-arm.sh → dist/arm/ ; enumerate every cog that built' },
+    { title: 'Validate', detail: 'EVERY built cog: install→configure→run→assert→remove on the live cluster' },
     { title: 'Optimize', detail: 'accelerator routing (H8/H10/CPU) + WiFi-coexistence + throughput' },
-    { title: 'Gate', detail: 'final functional tally + residual list' },
+    { title: 'Gate', detail: 'full functional tally across all cogs + residual list' },
   ],
 }
 
 const REPO = '/home/ruvultra/cognitum-projects/cogs'
-const BRANCH = 'integrate-cogs-make-functional'
-const LEADER = 'cognitum-v0' // root@ over Tailscale SSH; gateway :9000, pairing_token in /var/lib/cognitum-fleet/appliance.json
+const BRANCH = 'main'
+const LEADER = 'cognitum-v0' // root@ over Tailscale; cog supervisor = cognitum-cog-gateway :9000
 
 const XBUILD = {
-  type: 'object',
-  required: ['built', 'cogs'],
+  type: 'object', required: ['built', 'total_cogs'],
   properties: {
-    built: { type: 'boolean' },
-    target: { type: 'string' },
-    cogs: { type: 'array', items: { type: 'string' } },
+    total_cogs: { type: 'integer' }, built_count: { type: 'integer' }, target: { type: 'string' },
+    built: { type: 'array', items: { type: 'string' } }, // EVERY cog that produced a runnable ARM binary
     failed: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, reason: { type: 'string' } } } },
-  },
-}
-const VALID = {
-  type: 'object',
-  required: ['name', 'functional'],
-  properties: {
-    name: { type: 'string' },
-    functional: { type: 'boolean' },
-    lifecycle: { type: 'string' }, // install/run/assert/remove outcome
-    detail: { type: 'string' },
-  },
-}
-const GATE = {
-  type: 'object',
-  required: ['functional_count'],
-  properties: {
-    functional_count: { type: 'integer' },
-    residual: { type: 'array', items: { type: 'string' } },
-    optimization: { type: 'string' },
     summary: { type: 'string' },
   },
 }
-
-// args: optional explicit cog list (the build-green verified set). If omitted,
-// the cross-compile agent builds all and reports what succeeded.
-const candidateList = Array.isArray(args) ? args : null
-
-// ── Stage 1 — cross-compile for the appliance target ─────────────────────────
-phase('CrossCompile')
-const xbuild = await agent(
-  `Rust workspace ${REPO}, branch ${BRANCH}. The x86 workspace is build-green (ADR-019 Stage A).
-Now cross-compile the cogs for the V0 appliance (Raspberry Pi 5 — aarch64-unknown-linux-gnu, and
-armhf where dist/arm expects it) using scripts/build-all-arm.sh (Docker-based; read it first).
-${candidateList ? `Restrict to these Stage-A-verified cogs: ${candidateList.join(', ')}.` : 'Build all cogs that compiled in Stage A.'}
-Honest reporting: return built (did the cross-compile succeed overall), the target triple, the list
-of cogs that produced a runnable binary in dist/, and failed[] (cog + reason) for any that didn't
-cross-compile (e.g. a dep that's x86-only). Do NOT fake artifacts.`,
-  { label: 'cross-compile', phase: 'CrossCompile', schema: XBUILD },
-)
-
-const deployable = (xbuild?.cogs || []).filter(Boolean)
-log(`cross-compiled ${deployable.length} cogs for ${xbuild?.target || 'aarch64'}`)
-if (!deployable.length) {
-  return { xbuild, validated: [], gate: { functional_count: 0, summary: 'no cross-compiled cogs to deploy' } }
+const VALID = {
+  type: 'object', required: ['name', 'functional'],
+  properties: { name: { type: 'string' }, functional: { type: 'boolean' }, lifecycle: { type: 'string' }, detail: { type: 'string' } },
 }
 
-// ── Stage 2 — deploy + e2e validate each cog on the live cluster ─────────────
+// ── Stage 1 — cross-compile ALL cogs to ARM ──
+phase('CrossCompile')
+const xbuild = await agent(
+  `Rust workspace ${REPO} on branch ${BRANCH}. The cogs under src/cogs/ are individual crates (own Cargo.toml +
+cog.toml manifest with a \`binary\` name and config→CLI mapping), cross-compiled to ARM for the appliance/seed via
+scripts/build-all-arm.sh (Docker; read it first for the target triple — armv7/armhf and/or aarch64 — and output dir).
+Cross-compile EVERY cog. Honest reporting — return: total_cogs (count under src/cogs/), built_count, target,
+\`built\`: the FULL list of every cog that produced a runnable ARM binary (not a sample — all of them), and failed[]
+(cog + reason) for any that did not cross-compile. Do NOT fake artifacts. If build-all-arm.sh builds them in bulk,
+parse its output/dist dir to enumerate exactly which cogs have a binary.`,
+  { label: 'cross-compile-all', phase: 'CrossCompile', schema: XBUILD },
+)
+
+const built = (xbuild?.built || []).filter(Boolean)
+log(`cross-compiled ${xbuild?.built_count}/${xbuild?.total_cogs} cogs for ${xbuild?.target}; live-validating ALL ${built.length}`)
+if (!built.length) {
+  return { xbuild, validated: [], gate: { summary: `cross-compile: ${xbuild?.built_count || 0}/${xbuild?.total_cogs || '?'} built; nothing to validate live`, residual: xbuild?.failed || [] } }
+}
+
+// ── Stage 2 — deploy + e2e validate EVERY built cog on the LIVE cluster ──
 phase('Validate')
 const validated = await pipeline(
-  deployable,
+  built,
   (cog) =>
     agent(
-      `Make cog \`${cog}\` fully functional WITH the V0 appliance, end to end on the LIVE cluster.
-Access: \`ssh root@${LEADER}\` over Tailscale (and cluster-1/2/3); the cog supervisor is the
-cognitum-cog-gateway on ${LEADER}:9000 (pairing_token in /var/lib/cognitum-fleet/appliance.json;
-the ADR-220 cog lifecycle endpoints under /api/v1/v0/...). The built binary is in ${REPO}/dist.
-Run the round-trip: publish/install \`${cog}\` via the supervisor → configure if it needs args →
-run it → assert it reaches \`running\` and emits its expected output/metrics (check logs + status) →
-capture any SOTA metric → then remove it (leave the appliance clean). Be honest: functional=true
-ONLY if the live install→run→assert round-trip genuinely worked. If it needs an absent
-model/hardware/sensor, set functional=false and say why (residual). Return {name:"${cog}", functional,
-lifecycle, detail}.`,
+      `Validate cog \`${cog}\` end-to-end WITH the V0 appliance on the LIVE cluster.
+Access: \`ssh root@${LEADER}\` over Tailscale (+ cluster-1/2/3). Cog supervisor = cognitum-cog-gateway on ${LEADER}:9000
+(bearer token in /var/lib/cognitum-fleet/appliance.json; ADR-220 lifecycle endpoints under /api/v1/v0/...). The ARM
+binary is in ${REPO}/dist (named per the cog's cog.toml \`binary\`). Read ${REPO}/src/cogs/${cog}/cog.toml for its
+config schema.
+Round-trip: publish/install \`${cog}\` via the supervisor → configure required args from cog.toml → run → assert it
+reaches \`running\` and emits expected output/metrics (status + logs) → capture a SOTA metric → REMOVE it (leave the
+appliance clean). functional=true ONLY if the live install→run→assert genuinely worked. If it needs an absent
+sensor/model/hardware input it can't get on the appliance, functional=false with the reason (residual). Keep it
+efficient — one clean lifecycle. Return {name:"${cog}", functional, lifecycle, detail}.`,
       { label: `validate:${cog}`, phase: 'Validate', schema: VALID },
     ),
 )
 
-// ── Stage 3 — optimization pass (single agent, reasons over the validated set) ─
+// ── Stage 3 — optimization pass over all functional cogs ──
 phase('Optimize')
 const functional = validated.filter((v) => v && v.functional).map((v) => v.name)
 const optimize = await agent(
-  `On the V0 cluster (ssh root@${LEADER} + cluster-1/2/3), optimize the cogs that validated functional:
-${functional.join(', ') || '(none)'}.
-For each compute-heavy cog, route it to the right accelerator — H8 (cluster-1/2, MiniLM embedding,
-~70/s NPU-bound) vs H10 (v0/cluster-3, LLM) vs CPU — and confirm placement. Confirm the ADR-240
-WiFi-coexistence cap (12 dBm) still holds under cog load (no node returns to 31 dBm; CSI capture
-unaffected). Record per-cog accelerator assignment + any throughput/p99 number you can capture.
-Return a one-paragraph optimization summary.`,
-  { label: 'optimize', phase: 'Optimize', schema: { type: 'object', properties: { summary: { type: 'string' } }, required: ['summary'] } },
+  `On the V0 cluster (ssh root@${LEADER} + cluster-1/2/3), across the ${functional.length} cogs that validated functional:
+group them by compute profile and route each to the right accelerator — H8 (cluster-1/2 MiniLM embedding, ~70/s
+NPU-bound) / H10 (v0/cluster-3 LLM) / CPU — and state the placement policy. Confirm the ADR-240 WiFi-coexistence cap
+(12 dBm) still holds under cog load (no node back to 31 dBm; CSI capture unaffected). Record representative
+throughput/p99 numbers. Return a concise optimization summary (placement policy + WiFi-safe confirmation + numbers).`,
+  { label: 'optimize', phase: 'Optimize', schema: { type: 'object', required: ['summary'], properties: { summary: { type: 'string' } } } },
 )
 
-// ── Stage 4 — final functional gate ──────────────────────────────────────────
+// ── Stage 4 — full gate ──
 phase('Gate')
 const residual = validated.filter((v) => v && !v.functional).map((v) => `${v.name}: ${v.detail || 'residual'}`)
+const xfail = (xbuild?.failed || []).map((f) => `${f.name}: ${f.reason}`)
 const gate = {
+  total_cogs: xbuild?.total_cogs,
+  cross_compiled: xbuild?.built_count,
+  live_validated: built.length,
   functional_count: functional.length,
   residual,
+  cross_compile_failed: xfail,
   optimization: optimize?.summary,
-  summary: `${functional.length}/${deployable.length} cross-compiled cogs validated functional with the appliance; ${residual.length} residual.`,
+  summary: `${xbuild?.built_count}/${xbuild?.total_cogs} cogs cross-compiled to ${xbuild?.target}; ${functional.length}/${built.length} live-validated functional with the appliance; ${residual.length} live-residual; ${xfail.length} failed cross-compile.`,
 }
 log(gate.summary)
 return { xbuild, validated, gate }
