@@ -43,7 +43,7 @@ mod simulation_flow_tests {
         pub async fn start_simulation(
             &self,
             program: &[u8],
-            max_cycles: u64,
+            _max_cycles: u64,
         ) -> Result<String, SimulationError> {
             if program.is_empty() {
                 return Err(SimulationError::InvalidProgram);

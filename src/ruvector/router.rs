@@ -54,6 +54,29 @@ impl TinyDancerRouter {
         }
     }
 
+    /// Construct a router with deterministically-seeded weight initialization.
+    ///
+    /// Behaves exactly like [`TinyDancerRouter::new`] except the random weight
+    /// matrix is drawn from a seeded RNG, so the (otherwise untrained) routing
+    /// decisions are reproducible. This makes it possible to write deterministic
+    /// tests and benchmarks against the router without depending on the global
+    /// thread RNG.
+    pub fn new_seeded(num_tiles: usize, input_dim: usize, seed: u64) -> Self {
+        use rand::rngs::StdRng;
+        use rand::{Rng, SeedableRng};
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let weights = (0..num_tiles)
+            .map(|_| (0..input_dim).map(|_| rng.gen::<f32>() * 0.01).collect())
+            .collect();
+
+        Self {
+            num_tiles,
+            model_weights: Arc::new(RwLock::new(weights)),
+            input_dim,
+        }
+    }
+
     fn predict_probabilities(&self, task_embedding: &TaskEmbedding) -> Vec<f32> {
         let weights = self.model_weights.read();
 
@@ -108,11 +131,28 @@ impl TaskRouter for TinyDancerRouter {
         let mut final_loss = 0.0;
 
         let mut weights = self.model_weights.write();
+        let num_tiles = weights.len();
+
+        // Only traces whose `actual_tile` references an existing output row can
+        // contribute a valid cross-entropy target. Traces referencing a tile id
+        // >= num_tiles (e.g. data generated for a larger fleet, or randomized
+        // fixtures) would index `probs`/`weights` out of bounds and panic, so
+        // they are skipped rather than crashing training.
+        let valid_traces: Vec<&ExecutionTrace> = traces
+            .iter()
+            .filter(|t| (t.actual_tile.0 as usize) < num_tiles)
+            .collect();
+
+        if valid_traces.is_empty() {
+            return Err(RouterError::Training(format!(
+                "No training data with tile ids in range 0..{num_tiles}"
+            )));
+        }
 
         for _epoch in 0..epochs {
             let mut epoch_loss = 0.0;
 
-            for trace in traces {
+            for trace in &valid_traces {
                 // Forward pass
                 let probs = {
                     let logits: Vec<f32> = weights
@@ -151,18 +191,23 @@ impl TaskRouter for TinyDancerRouter {
                 }
             }
 
-            final_loss = epoch_loss / traces.len() as f32;
+            final_loss = epoch_loss / valid_traces.len() as f32;
         }
 
-        // Compute accuracy
+        // Release the write lock before computing accuracy: predict_tile()
+        // acquires a read lock on the same RwLock, which would deadlock
+        // against this write guard (parking_lot is not reentrant).
+        drop(weights);
+
+        // Compute accuracy over the traces that actually trained the model.
         let mut correct = 0;
-        for trace in traces {
+        for trace in &valid_traces {
             let pred = self.predict_tile(&trace.task_embedding);
             if pred == trace.actual_tile {
                 correct += 1;
             }
         }
-        let accuracy = correct as f32 / traces.len() as f32;
+        let accuracy = correct as f32 / valid_traces.len() as f32;
 
         Ok(TrainingMetrics {
             epochs,

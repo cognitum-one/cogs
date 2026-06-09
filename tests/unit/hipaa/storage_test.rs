@@ -136,10 +136,7 @@ async fn data_integrity_verification() {
     let record_id = storage.store(record).await.unwrap();
 
     // Get encrypted data
-    let encrypted = {
-        let storage_map = storage.storage.read().unwrap();
-        storage_map.get(&record_id).unwrap().clone()
-    };
+    let encrypted = storage.get_encrypted(&record_id).unwrap();
 
     // Verify integrity
     assert!(storage.verify_integrity(&encrypted).is_ok());

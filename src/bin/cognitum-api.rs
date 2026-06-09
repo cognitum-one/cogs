@@ -11,7 +11,7 @@
 //! NOTE: This is a minimal binary for Docker deployment.
 //! For full functionality, configure database-backed stores.
 
-use cognitum::api::{ApiServer, ServerConfig};
+use cognitum::api::ServerConfig;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 

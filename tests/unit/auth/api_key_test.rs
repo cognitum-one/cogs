@@ -9,8 +9,8 @@
 
 #[cfg(test)]
 mod api_key_tests {
-    use std::sync::Arc;
-    use std::time::Duration as StdDuration;
+    
+    
 
     // Mock imports - in actual implementation, these would come from the auth module
     // For testing purposes, we define minimal mocks here
@@ -93,7 +93,7 @@ mod api_key_tests {
 /// Performance tests for API key operations
 #[cfg(test)]
 mod api_key_performance_tests {
-    use std::time::Instant;
+    
 
     #[tokio::test]
     async fn key_validation_timing_consistency() {

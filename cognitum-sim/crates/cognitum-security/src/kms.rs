@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mock"))]
 use mockall::automock;
 
 /// Purpose of a cryptographic key
@@ -33,7 +33,7 @@ pub enum KeyPurpose {
 ///
 /// This trait abstracts HSM operations to support multiple HSM backends
 /// (AWS CloudHSM, Azure Key Vault, YubiHSM, etc.)
-#[cfg_attr(test, automock)]
+#[cfg_attr(any(test, feature = "mock"), automock)]
 #[async_trait]
 pub trait HsmProvider: Send + Sync {
     /// Generate a new key in the HSM
@@ -243,6 +243,32 @@ impl KeyManagementService {
             let hsm = Arc::clone(&hsm);
 
             Box::pin(async move { hsm.sign(&key_id, &data).await })
+        })
+        .await
+    }
+
+    /// Verify a signature using an HSM-stored key
+    ///
+    /// Verification is performed inside the HSM so the public/verifying key
+    /// material never enters application memory.
+    pub async fn verify(
+        &self,
+        key_id: &str,
+        data: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, KmsError> {
+        let key_id = key_id.to_string();
+        let data = data.to_vec();
+        let signature = signature.to_vec();
+        let hsm = Arc::clone(&self.hsm);
+
+        self.execute_with_circuit_breaker(|| {
+            let key_id = key_id.clone();
+            let data = data.clone();
+            let signature = signature.clone();
+            let hsm = Arc::clone(&hsm);
+
+            Box::pin(async move { hsm.verify(&key_id, &data, &signature).await })
         })
         .await
     }

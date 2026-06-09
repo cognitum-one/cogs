@@ -145,7 +145,7 @@ fn benchmark_end_to_end(c: &mut Criterion) {
     group.bench_function("capture_and_search", |b| {
         let state = TileState::random();
         b.iter(|| {
-            let embeddings = ruvector.capture_state(black_box(&[state]));
+            let embeddings = ruvector.capture_state(black_box(&[state.clone()]));
             black_box(ruvector.search_similar(&embeddings[0], 10))
         });
     });

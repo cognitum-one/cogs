@@ -11,7 +11,7 @@
 //! cargo run --example redis_rate_limit_example
 //! ```
 
-use cognitum::storage::{RedisStore, RedisConfig, RateLimitResult};
+use cognitum::storage::{RedisStore, RedisConfig};
 use std::time::Duration;
 
 #[tokio::main]

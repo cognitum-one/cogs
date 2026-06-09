@@ -8,8 +8,15 @@ mod validation_tests {
     use super::*;
     use std::time::{Duration, SystemTime};
 
+    pub trait LicenseStore {
+        fn get_license(&self, key: &str) -> Result<Option<License>, LicenseError>;
+        fn revoke_license(&self, key: &str) -> Result<(), LicenseError>;
+    }
+
     mock! {
-        pub LicenseStore {
+        pub LicenseStore {}
+
+        impl LicenseStore for LicenseStore {
             fn get_license(&self, key: &str) -> Result<Option<License>, LicenseError>;
             fn revoke_license(&self, key: &str) -> Result<(), LicenseError>;
         }

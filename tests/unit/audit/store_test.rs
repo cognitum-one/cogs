@@ -1,7 +1,7 @@
 // Unit tests for audit store
 
 use cognitum::audit::{
-    AuditEvent, AuditEventType, AuditOutcome,
+    AuditEvent, AuditEventType,
     store::{InMemoryAuditStore, AuditStore, AuditId},
     query::AuditFilter,
 };

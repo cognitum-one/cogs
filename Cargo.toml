@@ -79,6 +79,13 @@ futures = "0.3"
 # Test utilities
 pretty_assertions = "1.4"
 
+# Security crate exercised by unit/acceptance security tests
+# (provides crypto primitives + KMS used by tests/{unit,acceptance}/security/*)
+cognitum-security = { path = "cognitum-sim/crates/cognitum-security", features = ["mock"] }
+
+# Legacy Newport core API surface used by the stress / cross-validation tests
+newport_core = { path = "tests/support/newport_core" }
+
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
 
@@ -94,7 +101,6 @@ path = "src/bin/cognitum-api.rs"
 [[test]]
 name = "acceptance_tests"
 path = "tests/acceptance/mod.rs"
-harness = false
 
 [[test]]
 name = "integration_tests"
@@ -103,7 +109,6 @@ path = "tests/integration/mod.rs"
 [[test]]
 name = "unit_tests"
 path = "tests/unit/mod.rs"
-harness = false
 
 [[bench]]
 name = "ruvector_bench"

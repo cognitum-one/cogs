@@ -114,17 +114,19 @@ pub fn derive_capability(
         return Err(DeriveError::ParentInvalid);
     }
 
+    // Rights can only be reduced, never added.
+    // Amplification is the most fundamental violation (requesting rights the
+    // parent does not hold at all), so it is checked before the DELEGATE right.
+    if !request.rights.is_subset_of(parent.rights) {
+        let amplified = request.rights.0 & !parent.rights.0;
+        return Err(DeriveError::AmplificationDenied { right: amplified });
+    }
+
     // Check parent has DELEGATE right
     if !parent.rights.has(Rights::DELEGATE) {
         return Err(DeriveError::NoDelegateRight);
     }
 
-    // Rights can only be reduced, never added
-    // Check that requested rights are a subset of parent rights
-    if !request.rights.is_subset_of(parent.rights) {
-        let amplified = request.rights.0 & !parent.rights.0;
-        return Err(DeriveError::AmplificationDenied { right: amplified });
-    }
     let new_rights = parent.rights.intersect(request.rights);
 
     // Scope can only be narrowed
@@ -202,13 +204,13 @@ pub fn can_derive(
         return Err(DeriveError::ParentInvalid);
     }
 
-    if !parent.rights.has(Rights::DELEGATE) {
-        return Err(DeriveError::NoDelegateRight);
-    }
-
     if !request.rights.is_subset_of(parent.rights) {
         let amplified = request.rights.0 & !parent.rights.0;
         return Err(DeriveError::AmplificationDenied { right: amplified });
+    }
+
+    if !parent.rights.has(Rights::DELEGATE) {
+        return Err(DeriveError::NoDelegateRight);
     }
 
     if parent.scope.intersect(&request.scope).is_none() {

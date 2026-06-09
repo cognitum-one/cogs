@@ -3,9 +3,8 @@
 use cognitum::audit::{
     AuditLogger, AuditEvent, AuditEventType, AuditOutcome,
     UserId, ResourceId, SessionId, RequestContext,
-    store::{MockAuditStore, AuditId, StoreError},
+    store::{MockAuditStore, AuditId},
 };
-use mockall::predicate::*;
 
 #[tokio::test]
 async fn test_logger_appends_event_without_chaining() {

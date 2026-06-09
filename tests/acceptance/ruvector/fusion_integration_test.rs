@@ -154,16 +154,16 @@ fn test_hybrid_routing_with_graph_awareness() {
 
     // Check that direct neighbors have stronger connections
     // than remote tiles (if both exist)
-    let mut has_strong = false;
-    let mut has_weak = false;
+    let mut _has_strong = false;
+    let mut _has_weak = false;
 
     for (&(u, v), &weight) in &graph.edges {
         let rel = RelationType::from_positions(u, v);
         if matches!(rel, RelationType::DirectNeighbor) {
-            has_strong = weight > 0.5;
+            _has_strong = weight > 0.5;
         }
         if matches!(rel, RelationType::Remote) {
-            has_weak = weight < 0.5;
+            _has_weak = weight < 0.5;
         }
     }
 
@@ -190,7 +190,7 @@ fn test_brittleness_monitoring_over_time() {
         health_signals.push(signal);
 
         // Update graph to match min-cut
-        for (&(u, v), weight) in graph.edges.iter_mut() {
+        for (&(_u, _v), weight) in graph.edges.iter_mut() {
             *weight = current_min_cut;
         }
     }

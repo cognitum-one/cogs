@@ -18,7 +18,7 @@ pub mod page_index;
 
 // Re-export main types
 pub use embedding::{EmbeddingGenerator, DefaultEmbeddingGenerator};
-pub use index::{VectorIndex, HnswVectorIndex};
+pub use index::{VectorIndex, HnswVectorIndex, HnswConfig};
 pub use router::{TaskRouter, TinyDancerRouter};
 pub use snn_router::{SnnRouter, LifNeuron, StdpRule, SpikingLayer, simd_integrate_batch};
 pub use bridge::{RaceWayBridge, DefaultRaceWayBridge};

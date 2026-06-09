@@ -1,14 +1,14 @@
 //! Capability token management
 
-use alloc::collections::BTreeMap;
 use agentvm_types::{Capability, CapabilityId, CapsuleId};
+use hashbrown::HashMap;
 
 /// Capability table for managing tokens
 pub struct CapabilityTable {
     /// Map of capability ID to capability
-    capabilities: BTreeMap<CapabilityId, CapabilityEntry>,
+    capabilities: HashMap<CapabilityId, CapabilityEntry>,
     /// Index by capsule ID
-    by_capsule: BTreeMap<CapsuleId, alloc::vec::Vec<CapabilityId>>,
+    by_capsule: HashMap<CapsuleId, alloc::vec::Vec<CapabilityId>>,
 }
 
 /// Entry in the capability table
@@ -21,8 +21,8 @@ impl CapabilityTable {
     /// Create a new empty table
     pub fn new() -> Self {
         Self {
-            capabilities: BTreeMap::new(),
-            by_capsule: BTreeMap::new(),
+            capabilities: HashMap::new(),
+            by_capsule: HashMap::new(),
         }
     }
 

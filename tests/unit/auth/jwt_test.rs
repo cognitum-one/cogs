@@ -9,7 +9,7 @@
 
 #[cfg(test)]
 mod jwt_token_tests {
-    use std::sync::Arc;
+    
 
     #[tokio::test]
     async fn access_tokens_expire_in_15_minutes() {

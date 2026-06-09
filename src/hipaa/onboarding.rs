@@ -212,7 +212,7 @@ mod tests {
     async fn test_enterprise_with_baa_allowed() {
         let onboarding = CustomerOnboarding::new();
         let customer_id = CustomerId::new("cust_123");
-        let mut customer = create_test_customer("cust_123", Tier::Enterprise, false);
+        let customer = create_test_customer("cust_123", Tier::Enterprise, false);
 
         // Register customer
         onboarding.register_customer(customer.clone()).unwrap();

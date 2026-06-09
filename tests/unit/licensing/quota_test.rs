@@ -7,8 +7,16 @@ use mockall::predicate::*;
 mod quota_tests {
     use super::*;
 
+    pub trait QuotaStore {
+        fn get_usage(&self, user_id: &str, resource: &str) -> Result<u32, QuotaError>;
+        fn increment_usage(&self, user_id: &str, resource: &str) -> Result<u32, QuotaError>;
+        fn reset_usage(&self, user_id: &str, resource: &str) -> Result<(), QuotaError>;
+    }
+
     mock! {
-        pub QuotaStore {
+        pub QuotaStore {}
+
+        impl QuotaStore for QuotaStore {
             fn get_usage(&self, user_id: &str, resource: &str) -> Result<u32, QuotaError>;
             fn increment_usage(&self, user_id: &str, resource: &str) -> Result<u32, QuotaError>;
             fn reset_usage(&self, user_id: &str, resource: &str) -> Result<(), QuotaError>;

@@ -902,7 +902,7 @@ mod integration_tests {
             cap_type: CapabilityType::FileRead,
             scope: CapabilityScope::Filesystem {
                 paths: vec!["/workspace".into()],
-                operations: agentvm_types::FileOperations::all(),
+                operations: agentvm_types::capability::FileOperations::all(),
             },
             rights: Rights::all(),
             quota: Quota::new(100, 1_000_000, 60_000_000_000),

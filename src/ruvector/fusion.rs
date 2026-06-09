@@ -233,6 +233,11 @@ impl BrittlenessMonitor {
         )
     }
 
+    /// Recorded history of observed min-cut values (oldest first).
+    pub fn min_cut_history(&self) -> &[f64] {
+        &self.min_cut_history
+    }
+
     /// Assess current graph health based on min-cut value
     pub fn assess(&mut self, min_cut: f64) -> HealthSignal {
         // Update history

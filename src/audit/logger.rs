@@ -35,6 +35,11 @@ impl AuditLogger {
         }
     }
 
+    /// Borrow the underlying audit store (e.g. to run compliance queries).
+    pub fn store(&self) -> &dyn AuditStore {
+        self.store.as_ref()
+    }
+
     /// Log a generic audit event
     pub async fn log_event(&self, mut event: AuditEvent) -> Result<AuditId> {
         // Add chain hash if chaining is enabled
@@ -144,7 +149,7 @@ impl AuditLogger {
 mod tests {
     use super::*;
     use crate::audit::store::MockAuditStore;
-    use mockall::predicate::*;
+    
 
     #[tokio::test]
     async fn test_log_event_without_chaining() {

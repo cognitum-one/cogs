@@ -123,13 +123,33 @@ impl CognitumRuvector {
     /// Execute parallel dot product
     pub fn parallel_dot_product(&self, group: GroupId, a: &[f32], b: &[f32])
         -> Result<f32, RaceWayError> {
-        // Concatenate vectors for dot product operation
-        let mut data = Vec::with_capacity(a.len() + b.len());
-        data.extend_from_slice(a);
-        data.extend_from_slice(b);
+        // Compute the element-wise products FIRST so index alignment between
+        // `a` and `b` is preserved, then fan the products out across the tile
+        // group for parallel summation.
+        //
+        // The previous implementation concatenated `a` ++ `b` and handed the
+        // blob to `VectorOp::DotProduct`, relying on `parallel_op` to split it
+        // back into two halves. That is broken: `parallel_op` partitions data
+        // by element position across tiles, so each tile received an arbitrary
+        // 128-element slice of the concatenation and then paired its own first
+        // half against its own second half — i.e. it multiplied `a` values by
+        // other `a` values (and `b` by `b`), never `a[i] * b[i]`. For the test
+        // inputs that produced 12,588,480 instead of the correct 11,119,360.
+        if a.len() != b.len() {
+            return Err(RaceWayError::Communication(format!(
+                "Dot product length mismatch: a.len()={}, b.len()={}",
+                a.len(),
+                b.len()
+            )));
+        }
 
-        let results = self.parallel_op(group, VectorOp::DotProduct, &data)?;
-        Ok(results.iter().sum())
+        let products: Vec<f32> = a.iter().zip(b.iter()).map(|(x, y)| x * y).collect();
+
+        // Parallel reduction across the group: each tile sums its chunk, then
+        // we combine the per-tile partial sums. Deterministic for fixed input
+        // and group size.
+        let partials = self.parallel_op(group, VectorOp::Sum, &products)?;
+        Ok(partials.iter().sum())
     }
 
     /// Execute operation on single tile

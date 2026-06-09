@@ -97,10 +97,18 @@ impl AuditStore for InMemoryAuditStore {
         let events = self.events.lock()
             .map_err(|e| StoreError::DatabaseError(format!("Lock error: {}", e)))?;
 
-        let filtered: Vec<AuditEvent> = events.iter()
+        let mut filtered: Vec<AuditEvent> = events.iter()
             .map(|(_, event)| event.clone())
             .filter(|event| filter.matches(event))
             .collect();
+
+        // Honor the filter's limit, if set. Events are stored chronologically,
+        // so the most recent N are taken from the tail of the matched set.
+        if let Some(limit) = filter.limit {
+            if filtered.len() > limit {
+                filtered = filtered.split_off(filtered.len() - limit);
+            }
+        }
 
         Ok(filtered)
     }
@@ -145,7 +153,7 @@ impl AuditStore for InMemoryAuditStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audit::{AuditEvent, AuditOutcome};
+    use crate::audit::AuditEvent;
 
     #[test]
     fn test_in_memory_store_append() {

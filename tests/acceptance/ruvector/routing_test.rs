@@ -85,7 +85,7 @@ mod intelligent_routing {
             num_tiles: 4,
             ..Default::default()
         };
-        let ruvector = CognitumRuvector::new(config);
+        let ruvector = CognitumRuvector::new(config.clone());
 
         // Train model
         let traces: Vec<ExecutionTrace> = (0..100).map(|_| ExecutionTrace::random()).collect();

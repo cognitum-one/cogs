@@ -584,7 +584,7 @@ pub fn l2_sq(a: &[f32], b: &[f32]) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ruvector::types::EmbeddingId;
+    
 
     fn make_centroid_entry(page_id: u64, dim: usize) -> CentroidEntry {
         use rand::Rng;
