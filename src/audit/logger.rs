@@ -149,7 +149,7 @@ impl AuditLogger {
 mod tests {
     use super::*;
     use crate::audit::store::MockAuditStore;
-    use mockall::predicate::*;
+    
 
     #[tokio::test]
     async fn test_log_event_without_chaining() {

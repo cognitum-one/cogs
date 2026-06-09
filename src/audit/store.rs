@@ -153,7 +153,7 @@ impl AuditStore for InMemoryAuditStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audit::{AuditEvent, AuditOutcome};
+    use crate::audit::AuditEvent;
 
     #[test]
     fn test_in_memory_store_append() {

@@ -360,7 +360,7 @@ mod tests {
     #[tokio::test]
     async fn rate_limiter_applies_endpoint_specific_limits() {
         let limiter = create_test_limiter();
-        let api_key = "sk_test_123";
+        let _api_key = "sk_test_123";
 
         // Simulate endpoint has limit of 100
         let sim_limit = limiter.get_limit("/api/v1/simulate");

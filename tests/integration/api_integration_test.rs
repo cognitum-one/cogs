@@ -4,7 +4,7 @@
 
 #[cfg(test)]
 mod api_integration_tests {
-    use std::sync::Arc;
+    
 
     /// Mock HTTP client for testing
     pub struct TestClient {
@@ -16,7 +16,7 @@ mod api_integration_tests {
             Self { base_url }
         }
 
-        pub async fn post(&self, path: &str, body: serde_json::Value) -> TestResponse {
+        pub async fn post(&self, _path: &str, _body: serde_json::Value) -> TestResponse {
             // Simulated HTTP POST
             TestResponse {
                 status: 200,
@@ -27,7 +27,7 @@ mod api_integration_tests {
             }
         }
 
-        pub async fn get(&self, path: &str) -> TestResponse {
+        pub async fn get(&self, _path: &str) -> TestResponse {
             // Simulated HTTP GET
             TestResponse {
                 status: 200,
@@ -125,7 +125,7 @@ mod api_integration_tests {
             "invalid_field": "value"
         });
 
-        let response = client.post("/api/v1/simulations", invalid_request).await;
+        let _response = client.post("/api/v1/simulations", invalid_request).await;
 
         // Then: Should validate and reject (in real implementation)
         // Note: This mock always returns 200, but real test would verify 400

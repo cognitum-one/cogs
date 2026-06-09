@@ -3,10 +3,8 @@
 //! This example demonstrates how to use the SimulatorBridge to connect
 //! the ruvector partitioning system to the real Cognitum chip simulator.
 
-use cognitum::ruvector::{SimulatorBridge, TaskEmbedding, PerformanceMetrics};
+use cognitum::ruvector::{TaskEmbedding, PerformanceMetrics};
 use cognitum::sdk::{CognitumSimulator, SimulatorConfig};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -3,7 +3,7 @@
 //! These tests require a running Redis instance.
 //! Set REDIS_URL environment variable to override default connection.
 
-use cognitum::storage::{RedisStore, RedisConfig, RateLimitResult};
+use cognitum::storage::{RedisStore, RedisConfig};
 use cognitum::api::rate_limit_store::RateLimitStore;
 use std::time::Duration;
 

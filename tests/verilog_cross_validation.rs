@@ -3,7 +3,6 @@
 //! These tests verify that the Rust simulation matches Verilog behavior
 //! by comparing against test vectors from the Verilog testbenches.
 
-use newport_core::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;

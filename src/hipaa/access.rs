@@ -148,7 +148,7 @@ impl AccessControl for MinimumNecessaryAccess {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hipaa::{AnalysisResult, UserId};
+    use crate::hipaa::AnalysisResult;
 
     #[test]
     fn test_clinician_full_access() {

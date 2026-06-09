@@ -181,7 +181,7 @@ impl ApiKeyService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth::errors::StoreError;
+    
 
     #[tokio::test]
     async fn create_key_returns_valid_format() {

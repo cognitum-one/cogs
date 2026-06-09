@@ -2,7 +2,7 @@
 
 use cognitum::audit::{
     AuditEvent, AuditEventType, AuditOutcome,
-    UserId, ResourceId, User,
+    UserId, User,
     store::{AuditStore, InMemoryAuditStore},
     query::{AuditFilter, AuditQuery},
     AuditError,

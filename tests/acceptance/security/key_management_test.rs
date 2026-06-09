@@ -3,7 +3,7 @@
 //! Tests HSM integration, circuit breaker, and key rotation
 
 use cognitum_security::{
-    CircuitBreakerConfig, HsmError, HsmProvider, KeyManagementService, KeyPurpose, KmsError,
+    CircuitBreakerConfig, HsmError, KeyManagementService, KeyPurpose, KmsError,
     MockHsmProvider,
 };
 use mockall::predicate::*;
