@@ -111,3 +111,33 @@ drives the end-to-end on the live cluster:
 - Workflow script: `.claude/workflows/integrate-cogs.js` (this repo).
 - Build-state baseline captured 2026-06-08: root lib fails on the `migrations/`
   dir; 107 cogs + 13 crates pending behind it.
+
+## Stage B results (2026-06-08) — functional WITH the appliance
+
+Ran on the live V0 cluster via the cog supervisor (ADR-220 lifecycle).
+
+- **Cross-compile: 107/107** cogs → `armv7-unknown-linux-gnueabihf` (armhf ELF),
+  **0 failures**. `scripts/build-all-arm.sh` did not exist (only referenced in
+  README/ADR-001) — created it per spec (native `gcc-arm-linux-gnueabihf` +
+  rustup armv7 target; unsets the host `RUSTFLAGS=-fuse-ld=mold` that breaks ARM
+  cross-link). Output: `dist/armv7/`.
+- **Live validation: 101/107 functional** — each a real install → configure
+  (from `cog.toml`) → start → assert running + structured output/metrics → stop
+  → remove round-trip on the live appliance, left clean.
+- **6 honest residuals — absent runtime input, not bugs** (all install/run/stop/
+  remove cleanly): `gait-analysis` (needs ESP32 UDP :5006 sensor feed, none
+  live), `anomaly-attractor` / `ppe-compliance` (need live sensor/vision input),
+  `tailscale` (needs external `tskey-` auth key — parks at NeedsLogin),
+  `swarm-mqtt-bridge` (needs an MQTT broker/peers), `dream-stage` (needs input
+  data). These light up once their real input is present.
+- **Naming fix:** `cog.toml` declares `binary = "cog-<cog>-arm"` but the build
+  emitted `cog-<cog>`, forcing manual `binary_url` overrides on install. Fixed
+  `build-all-arm.sh` to emit the `cog.toml` `binary` name; renamed all 107 dist
+  artifacts to match → installs need no override.
+- **Optimization:** accelerator placement policy — LLM/generative → H10 (v0,
+  cluster-3); embedding → H8 (cluster-1/2); rest → CPU. ADR-240 WiFi cap
+  (12 dBm) confirmed holding under cog load on all 4 nodes; CSI capture
+  unaffected.
+
+**Outcome:** the 107-cog ecosystem is build-green, test-green (597/0), and
+functional with the appliance (101/107 live; 6 input-gated). ADR-019 complete.
