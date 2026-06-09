@@ -111,9 +111,11 @@ pub struct RateLimitResult {
 ///
 /// # Example
 /// ```rust,no_run
-/// use cognitum_api::rate_limit::{RateLimiter, RateLimitConfig, InMemoryStore};
+/// use cognitum::api::rate_limit::{RateLimiter, RateLimitConfig};
+/// use cognitum::api::rate_limit_store::InMemoryStore;
 /// use std::sync::Arc;
 ///
+/// # async fn example() {
 /// let config = RateLimitConfig::default();
 /// let store = Arc::new(InMemoryStore::new());
 /// let limiter = RateLimiter::new(store, config);
@@ -123,6 +125,7 @@ pub struct RateLimitResult {
 ///     Ok(_) => println!("Request allowed"),
 ///     Err(e) => println!("Rate limited: {}", e),
 /// }
+/// # }
 /// ```
 pub struct RateLimiter {
     store: Arc<dyn RateLimitStore>,

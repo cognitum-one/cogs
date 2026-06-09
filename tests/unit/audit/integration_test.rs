@@ -140,7 +140,9 @@ async fn test_security_event_detection_workflow() {
     let store = InMemoryAuditStore::new();
     let logger = AuditLogger::with_chaining(Box::new(store));
 
-    let attacker_ip = "192.168.1.666".parse().unwrap();
+    // Note: 192.168.1.666 is not a valid IPv4 address (666 > 255), so the
+    // original literal panicked at parse().unwrap(). Use a valid attacker IP.
+    let attacker_ip = "192.168.1.200".parse().unwrap();
 
     // Simulate brute force attack
     for i in 0..10 {

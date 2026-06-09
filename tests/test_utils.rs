@@ -234,15 +234,19 @@ mod tests {
 
     #[test]
     fn test_memory_builder() {
+        // Memory of size 256 spans addresses 0..=255 (the bounds check is the
+        // standard half-open `address < size`). The original fixture wrote at
+        // 0x100 (== 256), which is one past the end, so read_byte correctly
+        // returned InvalidAddress and unwrap() panicked. Write within bounds.
         let mem = TestMemoryBuilder::new()
             .with_size(256)
-            .with_data(0x100, &[0xAA, 0xBB, 0xCC])
+            .with_data(0x10, &[0xAA, 0xBB, 0xCC])
             .build();
 
         assert_eq!(mem.size(), 256);
-        assert_eq!(mem.read_byte(MemoryAddress::new(0x100)).unwrap(), 0xAA);
-        assert_eq!(mem.read_byte(MemoryAddress::new(0x101)).unwrap(), 0xBB);
-        assert_eq!(mem.read_byte(MemoryAddress::new(0x102)).unwrap(), 0xCC);
+        assert_eq!(mem.read_byte(MemoryAddress::new(0x10)).unwrap(), 0xAA);
+        assert_eq!(mem.read_byte(MemoryAddress::new(0x11)).unwrap(), 0xBB);
+        assert_eq!(mem.read_byte(MemoryAddress::new(0x12)).unwrap(), 0xCC);
     }
 
     #[test]

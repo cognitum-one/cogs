@@ -14,10 +14,31 @@ mod injection_tests {
     }
 
     pub fn is_safe_sql_input(input: &str) -> bool {
-        !input.contains("DROP")
-            && !input.contains("DELETE")
-            && !input.contains(";--")
-            && !input.contains("/*")
+        // Case-insensitive detection so `drop`/`DROP` are treated alike.
+        let upper = input.to_uppercase();
+
+        // Dangerous SQL keywords.
+        let has_dangerous_keyword = upper.contains("DROP")
+            || upper.contains("DELETE")
+            || upper.contains("INSERT")
+            || upper.contains("UPDATE")
+            || upper.contains("UNION")
+            || upper.contains("EXEC");
+
+        // SQL comment markers (`--`, `/* */`) and statement terminators used
+        // to chain a second statement.
+        let has_comment_or_chain = input.contains("--")
+            || input.contains("/*")
+            || input.contains("*/")
+            || input.contains(';');
+
+        // Tautology-style boolean injection, e.g. `OR 1=1`, `OR '1'='1'`.
+        let has_tautology = upper.contains("OR 1=1")
+            || upper.contains("OR 1 = 1")
+            || upper.contains("OR '1'='1")
+            || (upper.contains(" OR ") && upper.contains('='));
+
+        !(has_dangerous_keyword || has_comment_or_chain || has_tautology)
     }
 
     #[test]
