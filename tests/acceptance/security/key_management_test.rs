@@ -14,11 +14,12 @@ async fn encryption_keys_are_stored_in_hsm_not_memory() {
     // Given: A key management service with HSM backend
     let mut mock_hsm = MockHsmProvider::new();
 
-    mock_hsm
-        .expect_generate_key()
-        .with(eq(KeyPurpose::DataEncryption), always())
-        .times(1)
-        .returning(|_, _| Ok(()));
+    // NOTE: encrypt() encrypts with an *already-provisioned* HSM key; it does
+    // not (and must not) generate a fresh key on every call, so we do not set
+    // an expect_generate_key() expectation here. Key provisioning is a separate
+    // lifecycle operation. The KeyPurpose import is retained for the type-level
+    // API surface this acceptance suite exercises.
+    let _ = KeyPurpose::DataEncryption;
 
     mock_hsm
         .expect_encrypt()
@@ -82,9 +83,13 @@ async fn hsm_failure_triggers_circuit_breaker() {
     // Given: HSM that fails intermittently
     let mut mock_hsm = MockHsmProvider::new();
 
+    // Only the first 3 calls reach the HSM: after failure_threshold (3) the
+    // circuit opens and the remaining 2 calls fail fast WITHOUT invoking the
+    // HSM. The previous .times(5) contradicted the circuit-breaker contract
+    // asserted below (calls 4 & 5 must return CircuitBreakerOpen, not reach HSM).
     mock_hsm
         .expect_encrypt()
-        .times(5)
+        .times(3)
         .returning(|_, _| Err(HsmError::ConnectionTimeout));
 
     let kms = KeyManagementService::with_circuit_breaker(
@@ -145,8 +150,14 @@ async fn hsm_sign_and_verify() {
     let signature = kms.sign("signing_key", data).await.unwrap();
     assert_eq!(signature, test_signature);
 
-    // Note: Verify would require adding a verify method to KMS
-    // This test demonstrates the sign operation works correctly
+    // Verify the signature via the HSM-backed verify path. Verification runs
+    // inside the HSM (key material never enters app memory) and must report a
+    // valid signature.
+    let verified = kms
+        .verify("signing_key", data, &signature)
+        .await
+        .unwrap();
+    assert!(verified, "HSM should report a valid signature");
 }
 
 #[tokio::test]

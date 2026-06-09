@@ -247,6 +247,32 @@ impl KeyManagementService {
         .await
     }
 
+    /// Verify a signature using an HSM-stored key
+    ///
+    /// Verification is performed inside the HSM so the public/verifying key
+    /// material never enters application memory.
+    pub async fn verify(
+        &self,
+        key_id: &str,
+        data: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, KmsError> {
+        let key_id = key_id.to_string();
+        let data = data.to_vec();
+        let signature = signature.to_vec();
+        let hsm = Arc::clone(&self.hsm);
+
+        self.execute_with_circuit_breaker(|| {
+            let key_id = key_id.clone();
+            let data = data.clone();
+            let signature = signature.clone();
+            let hsm = Arc::clone(&hsm);
+
+            Box::pin(async move { hsm.verify(&key_id, &data, &signature).await })
+        })
+        .await
+    }
+
     /// Rotate a key (creates new version, maintains old for decryption)
     pub async fn rotate_key(&self, key_id: &str) -> Result<String, KmsError> {
         let key_id = key_id.to_string();
