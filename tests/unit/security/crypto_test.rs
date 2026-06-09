@@ -239,11 +239,23 @@ fn secure_random_passes_entropy_check() {
     let mut bytes = [0u8; 256];
     rng.fill(&mut bytes).unwrap();
 
-    // Basic entropy check: all bytes should not be same
+    // Basic entropy check: bytes should span a wide range of values.
+    //
+    // NOTE on the threshold (this was the bug): drawing 256 bytes from a
+    // 256-value alphabet is a balls-in-bins / birthday problem. The EXPECTED
+    // number of distinct values is 256 * (1 - (255/256)^256) ≈ 162, with a
+    // standard deviation of ≈ 5. The old `> 200` threshold sits ~7.6σ above
+    // that mean, so a *correct* CSPRNG can essentially never satisfy it — the
+    // assertion, not the RNG, was wrong (it consistently reported "only 162
+    // unique bytes", which is exactly the textbook expected value).
+    //
+    // A lower bound of 130 is ≈6.4σ below the mean: a properly seeded OS
+    // CSPRNG clears it with overwhelming probability, while genuinely
+    // low-entropy output (e.g. a stuck or repeating source) still fails.
     let unique_bytes: HashSet<_> = bytes.iter().collect();
     assert!(
-        unique_bytes.len() > 200,
-        "Insufficient entropy: only {} unique bytes",
+        unique_bytes.len() > 130,
+        "Insufficient entropy: only {} unique bytes (expected ≈162)",
         unique_bytes.len()
     );
 
@@ -327,9 +339,13 @@ fn calculate_chi_square(data: &[u8]) -> f64 {
 
 #[test]
 fn test_chi_square_calculation() {
-    // Perfectly uniform distribution
-    let uniform = vec![1u8; 256];
+    // Perfectly uniform distribution: exactly one of each byte value 0..=255.
+    // (A `vec![1u8; 256]` is the OPPOSITE — all 256 samples land in a single
+    // bucket, giving a maximal chi-square of ~65280, not a low one.)
+    let uniform: Vec<u8> = (0..=255u8).collect();
     let chi = calculate_chi_square(&uniform);
+    // With a perfectly flat histogram every (count - expected) term is zero,
+    // so chi-square is exactly 0.0 — deterministic, no RNG involved.
     assert!(chi < 10.0, "Uniform distribution should have low chi-square");
 
     // All same value (very non-random)
