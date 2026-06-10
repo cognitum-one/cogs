@@ -130,7 +130,13 @@ static int GetAdjustedTime(void)
         time_ms += (offsetms / FRACUNIT);
     }
 
-    return (time_ms * TICRATE) / 1000;
+    // 64-bit multiply: time_ms is elapsed-ms since start and grows without
+    // bound. (time_ms * TICRATE) overflows signed int32 after ~17h of uptime
+    // (time_ms > INT_MAX/35), wrapping negative -> NetUpdate's newtics goes
+    // negative -> BuildNewTic() (the only caller of I_StartTic and the only
+    // thing that advances maketic) stops running -> the whole game freezes
+    // while D_Display keeps drawing. Widen the multiply so it can't overflow.
+    return (int)(((long long)time_ms * TICRATE) / 1000);
 }
 
 static boolean BuildNewTic(void)

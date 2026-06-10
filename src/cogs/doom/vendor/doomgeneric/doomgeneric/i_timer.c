@@ -51,7 +51,10 @@ int  I_GetTime (void)
 
     ticks -= basetime;
 
-    return (ticks * TICRATE) / 1000;
+    // 64-bit multiply: (ticks * TICRATE) overflows uint32 after ~34h of uptime
+    // (ticks > UINT32_MAX/35). Widen so the tic clock stays monotonic. (The
+    // earlier ~17h cliff is in d_loop.c's GetAdjustedTime; fixed there too.)
+    return (int)(((long long)ticks * TICRATE) / 1000);
 }
 
 
