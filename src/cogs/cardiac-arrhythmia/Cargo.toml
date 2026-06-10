@@ -1,6 +1,6 @@
 [package]
 name = "cog-cardiac-arrhythmia"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "Cardiac arrhythmia detection — HRV analysis using RMSSD and pNN50"
 
