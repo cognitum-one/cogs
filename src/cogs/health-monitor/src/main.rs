@@ -171,9 +171,11 @@ struct HealthReport {
     overall_status: String,
     alerts: Vec<String>,
     timestamp: u64,
-    /// Data provenance for this reading: `auto:esp32-udp` (real ESP32 CSI),
-    /// `auto:seed-stream` (synthetic fallback), or an explicit source. Lets
-    /// operators and support tell at a glance whether vitals came from the
+    /// Data provenance for this reading:
+    /// `auto:esp32-vitals` (device-computed vitals packet — preferred),
+    /// `auto:esp32-udp` (DSP over real ESP32 CSI features),
+    /// `auto:seed-stream` (synthetic fallback), or an explicit `--source`.
+    /// Lets operators and support tell at a glance whether vitals came from the
     /// real contactless feed or the demo stream.
     source: String,
 }
@@ -503,12 +505,34 @@ fn main() {
     // a brief gap, and only resume seed-stream after the feed is absent for
     // ESP32_GAP_TOLERANCE consecutive cycles (i.e. the ESP32 looks offline).
     const ESP32_GAP_TOLERANCE: u32 = 3;
+    // Hysteresis over the device presence flag (it flickers at close range —
+    // RuView#996): latch present immediately, clear only after N absent frames.
+    const PRESENCE_CLEAR_AFTER: u32 = 3;
+    // Apnea is only declared after breathing stays sub-threshold for this many
+    // consecutive present cycles — avoids a false alarm on the transient 0 a
+    // person shows the instant they're detected (before the first estimate).
+    // NOTE: whether the device reports breathing==0 for true cessation vs
+    // "no estimate yet" needs firmware confirmation; the sustained gate is
+    // conservative either way.
+    const APNEA_CONFIRM_CYCLES: u32 = 3;
     let udp_listener = match &source {
-        Source::Auto => cog_sensor_sources::Esp32UdpListener::bind(AUTO_UDP_BIND).ok(),
+        Source::Auto => match cog_sensor_sources::Esp32UdpListener::bind(AUTO_UDP_BIND) {
+            Ok(l) => Some(l),
+            Err(e) => {
+                eprintln!(
+                    "[cog-health-monitor] WARNING: cannot bind {AUTO_UDP_BIND} ({e}); \
+                     another CSI cog likely holds it — serving synthetic until it frees"
+                );
+                None
+            }
+        },
         _ => None,
     };
     let mut esp32_seen = false;
     let mut gap_streak: u32 = 0;
+    let mut presence_sticky = false;
+    let mut presence_absent_streak: u32 = 0;
+    let mut low_breath_streak: u32 = 0;
 
     // One acquired cycle is either device-computed vitals (preferred — the ESP32
     // already runs the estimation, v0.7.1-validated) or raw amplitude samples to
@@ -571,12 +595,34 @@ fn main() {
                         // presence, heart rate and breathing come straight from
                         // the ESP32 rather than being re-derived from raw features.
                         vital_stats.update(v.breathing_bpm);
-                        let apnea_detected =
-                            v.breathing_bpm > 0.0 && v.breathing_bpm < APNEA_BREATH_MIN_BPM;
+
+                        // Debounce the flickery device presence flag (RuView#996):
+                        // latch on immediately, clear only after N absent frames.
+                        if v.presence {
+                            presence_sticky = true;
+                            presence_absent_streak = 0;
+                        } else {
+                            presence_absent_streak += 1;
+                            if presence_absent_streak >= PRESENCE_CLEAR_AFTER {
+                                presence_sticky = false;
+                            }
+                        }
+
+                        // Apnea = a PRESENT person whose breathing has dropped to
+                        // ~zero. breathing==0 is the alarm (must be included), but
+                        // require it sustained for APNEA_CONFIRM_CYCLES so the
+                        // transient 0 at first detection doesn't false-alarm.
+                        if presence_sticky && v.breathing_bpm < APNEA_BREATH_MIN_BPM {
+                            low_breath_streak += 1;
+                        } else {
+                            low_breath_streak = 0;
+                        }
+                        let apnea_detected = low_breath_streak >= APNEA_CONFIRM_CYCLES;
+
                         Some(Reading {
                             breathing_bpm: v.breathing_bpm,
                             heart_rate_bpm: v.heart_rate_bpm,
-                            is_present: v.presence,
+                            is_present: presence_sticky,
                             sig_var: v.presence_score as f64,
                             apnea_detected,
                             drop_pct: 0.0,

@@ -108,6 +108,11 @@ fn breathing_effort(envelope: &[f64]) -> f64 {
 #[derive(serde::Serialize)]
 struct RespiratoryReport {
     breathing_rate_bpm: f64,
+    /// Where `breathing_rate_bpm` came from this cycle: `"device"` (ESP32
+    /// on-board estimate) or `"derived"` (cog zero-crossing over the CSI
+    /// waveform). The rate can flip between the two when a vitals packet doesn't
+    /// land in a given drain — this makes that provenance visible.
+    breathing_rate_source: String,
     breathing_effort: f64,
     amplitude_mean: f64,
     cheyne_stokes_detected: bool,
@@ -176,9 +181,9 @@ fn run_once() -> Result<RespiratoryReport, String> {
     // when present this cycle; fall back to the re-derived zero-crossing rate.
     // Effort / envelope / Cheyne-Stokes below still use the CSI waveform — the
     // device vitals packet carries no waveform.
-    let breathing_bpm = match cog_sensor_sources::latest_vitals() {
-        Some(v) if v.breathing_bpm > 0.0 => v.breathing_bpm,
-        _ => zero_crossing_bpm(&filtered, sample_rate),
+    let (breathing_bpm, breathing_rate_source) = match cog_sensor_sources::latest_vitals() {
+        Some(v) if v.breathing_bpm > 0.0 => (v.breathing_bpm, "device"),
+        _ => (zero_crossing_bpm(&filtered, sample_rate), "derived"),
     };
     let envelope = amplitude_envelope(&filtered, 5);
     let effort = breathing_effort(&envelope);
@@ -205,6 +210,7 @@ fn run_once() -> Result<RespiratoryReport, String> {
 
     Ok(RespiratoryReport {
         breathing_rate_bpm: breathing_bpm,
+        breathing_rate_source: breathing_rate_source.into(),
         breathing_effort: effort,
         amplitude_mean: amp_mean,
         cheyne_stokes_detected: cs_detected,

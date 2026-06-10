@@ -34,8 +34,6 @@ const DEFAULT_PROBE_MS: u64 = 2000;
 /// and Apple-Watch-validated in firmware v0.7.1), so cogs should prefer this
 /// over re-deriving vitals from the raw feature packet.
 const MAGIC_VITALS: u32 = 0xC511_0002;
-/// Bytes needed to read through `presence_score` (offset 20..24).
-const VITALS_PKT_MIN: usize = 24;
 
 /// Device-computed vitals decoded from a `MAGIC_VITALS` (0xC5110002) packet.
 #[derive(Debug, Clone, Default)]
@@ -63,32 +61,39 @@ pub struct Esp32Frame {
     pub vitals: Option<Esp32Vitals>,
 }
 
-/// Decode a `MAGIC_VITALS` packet (caller guarantees `n >= VITALS_PKT_MIN`).
-fn decode_vitals(pkt: &[u8], n: usize) -> Esp32Vitals {
+/// Decode a `MAGIC_VITALS` packet from `pkt` (length `pkt.len()` = bytes
+/// received). Returns `None` if the buffer is too short for the fields required
+/// to be meaningful. This is an unauthenticated network boundary (`0.0.0.0:5006`)
+/// — every field is bounds-checked against the received length, never via a
+/// caller "guarantee".
+fn decode_vitals(pkt: &[u8]) -> Option<Esp32Vitals> {
     // 0:magic u32  4:node_id u8  5:flags u8  6:breathing_rate u16 (bpm*100)
     // 8:heartrate u32 (bpm*10000)  12:rssi i8  13:n_persons u8  14:reserved[2]
-    // 16:motion_energy f32  20:presence_score f32  24:timestamp_ms u32
-    let breathing_bpm = u16::from_le_bytes([pkt[6], pkt[7]]) as f64 / 100.0;
+    // 16:motion_energy f32  20:presence_score f32  24:timestamp_ms u32  (32 bytes)
+    let flags = *pkt.get(5)?;
+    let breathing_bpm = u16::from_le_bytes([*pkt.get(6)?, *pkt.get(7)?]) as f64 / 100.0;
     let heart_rate_bpm =
-        u32::from_le_bytes([pkt[8], pkt[9], pkt[10], pkt[11]]) as f64 / 10000.0;
-    let motion_energy = if n >= 20 {
-        f32::from_le_bytes([pkt[16], pkt[17], pkt[18], pkt[19]])
-    } else {
-        0.0
+        u32::from_le_bytes([*pkt.get(8)?, *pkt.get(9)?, *pkt.get(10)?, *pkt.get(11)?]) as f64
+            / 10000.0;
+    let n_persons = *pkt.get(13)?;
+    // Optional trailing fields — present in the full 32-byte packet, defaulted
+    // to 0.0 if a shorter (but still valid) packet omits them.
+    let motion_energy = match (pkt.get(16), pkt.get(19)) {
+        (Some(_), Some(_)) => f32::from_le_bytes([pkt[16], pkt[17], pkt[18], pkt[19]]),
+        _ => 0.0,
     };
-    let presence_score = if n >= 24 {
-        f32::from_le_bytes([pkt[20], pkt[21], pkt[22], pkt[23]])
-    } else {
-        0.0
+    let presence_score = match (pkt.get(20), pkt.get(23)) {
+        (Some(_), Some(_)) => f32::from_le_bytes([pkt[20], pkt[21], pkt[22], pkt[23]]),
+        _ => 0.0,
     };
-    Esp32Vitals {
-        presence: pkt[5] & 0x01 != 0,
+    Some(Esp32Vitals {
+        presence: flags & 0x01 != 0,
         heart_rate_bpm,
         breathing_bpm,
-        n_persons: pkt[13],
+        n_persons,
         presence_score,
         motion_energy,
-    }
+    })
 }
 
 /// Drop-in replacement for the per-cog `fetch_sensors()` function.
@@ -199,9 +204,12 @@ impl Esp32UdpListener {
                                 }
                             }
                         }
-                    } else if magic == MAGIC_VITALS && n >= VITALS_PKT_MIN {
-                        // Keep the freshest vitals packet from this drain.
-                        vitals = Some(decode_vitals(&pkt, n));
+                    } else if magic == MAGIC_VITALS {
+                        // Keep the freshest *valid* vitals packet from this drain;
+                        // decode bounds-checks against the received length.
+                        if let Some(v) = decode_vitals(&pkt[..n]) {
+                            vitals = Some(v);
+                        }
                     }
                 }
                 Ok(_) => continue,
@@ -242,7 +250,18 @@ pub fn latest_vitals() -> Option<Esp32Vitals> {
 
 pub fn fetch_sensors_persistent() -> Result<serde_json::Value, String> {
     static LISTENER: std::sync::OnceLock<Option<Esp32UdpListener>> = std::sync::OnceLock::new();
-    let listener = LISTENER.get_or_init(|| Esp32UdpListener::bind(DEFAULT_UDP_BIND).ok());
+    let listener = LISTENER.get_or_init(|| match Esp32UdpListener::bind(DEFAULT_UDP_BIND) {
+        Ok(l) => Some(l),
+        Err(e) => {
+            // Loud, once: a busy 5006 means another CSI cog holds it and this cog
+            // will silently serve synthetic — exactly the symptom we just fixed.
+            eprintln!(
+                "[cog-sensor-sources] WARNING: cannot bind {DEFAULT_UDP_BIND} ({e}); \
+                 another CSI cog likely holds it — serving seed-stream (synthetic) data"
+            );
+            None
+        }
+    });
     if let Some(l) = listener {
         let frame = l.drain(256);
         // Record this cycle's vitals (or None) so latest_vitals() reflects the
@@ -362,5 +381,86 @@ mod tests {
         thread::sleep(Duration::from_millis(50));
         let result = fetch_from_udp_window(&bind, 500);
         assert!(result.is_err() || result.unwrap().is_empty());
+    }
+
+    /// Build a full 32-byte vitals packet (`0xC5110002`) with known fields.
+    fn vitals_pkt(presence: bool, breathing_x100: u16, hr_x10000: u32, n_persons: u8,
+                  presence_score: f32) -> [u8; 32] {
+        let mut p = [0u8; 32];
+        p[0..4].copy_from_slice(&MAGIC_VITALS.to_le_bytes());
+        p[5] = if presence { 0x01 } else { 0x00 };
+        p[6..8].copy_from_slice(&breathing_x100.to_le_bytes());
+        p[8..12].copy_from_slice(&hr_x10000.to_le_bytes());
+        p[13] = n_persons;
+        p[20..24].copy_from_slice(&presence_score.to_le_bytes());
+        p
+    }
+
+    #[test]
+    fn decode_vitals_golden() {
+        // breathing 15.00 bpm, HR 72.0000 bpm, presence on, 1 person, score 12.5.
+        let pkt = vitals_pkt(true, 1500, 720000, 1, 12.5);
+        let v = decode_vitals(&pkt).expect("valid packet decodes");
+        assert!(v.presence);
+        assert!((v.breathing_bpm - 15.0).abs() < 1e-6, "breathing={}", v.breathing_bpm);
+        assert!((v.heart_rate_bpm - 72.0).abs() < 1e-6, "hr={}", v.heart_rate_bpm);
+        assert_eq!(v.n_persons, 1);
+        assert!((v.presence_score - 12.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn decode_vitals_absent_zero_breathing() {
+        // No person, breathing 0 — must decode cleanly (apnea logic lives in the cog).
+        let pkt = vitals_pkt(false, 0, 0, 0, 0.0);
+        let v = decode_vitals(&pkt).unwrap();
+        assert!(!v.presence);
+        assert_eq!(v.breathing_bpm, 0.0);
+        assert_eq!(v.heart_rate_bpm, 0.0);
+    }
+
+    #[test]
+    fn decode_vitals_short_packet_is_none() {
+        // Too short to reach n_persons@13 — must not panic, returns None.
+        let mut p = [0u8; 12];
+        p[0..4].copy_from_slice(&MAGIC_VITALS.to_le_bytes());
+        assert!(decode_vitals(&p).is_none());
+        // Empty / tiny buffers too.
+        assert!(decode_vitals(&[]).is_none());
+        assert!(decode_vitals(&[0u8; 4]).is_none());
+    }
+
+    #[test]
+    fn drain_routes_vitals_and_features() {
+        let listener = Esp32UdpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.socket.local_addr().unwrap();
+        let tx = UdpSocket::bind("127.0.0.1:0").unwrap();
+
+        // One vitals packet (breathing 18.0, HR 65.0, presence on)...
+        tx.send_to(&vitals_pkt(true, 1800, 650000, 2, 9.0), addr).unwrap();
+        // ...and one feature packet (0xC5110003: 8 f32 at offset 16).
+        let mut fp = [0u8; FEATURE_PKT_SIZE];
+        fp[0..4].copy_from_slice(&MAGIC_FEATURES.to_le_bytes());
+        for i in 0..8 {
+            fp[16 + i * 4..16 + i * 4 + 4].copy_from_slice(&0.5f32.to_le_bytes());
+        }
+        tx.send_to(&fp, addr).unwrap();
+        std::thread::sleep(Duration::from_millis(50));
+
+        let frame = listener.drain(256);
+        let v = frame.vitals.expect("vitals decoded");
+        assert!(v.presence);
+        assert!((v.breathing_bpm - 18.0).abs() < 1e-6);
+        assert!((v.heart_rate_bpm - 65.0).abs() < 1e-6);
+        assert_eq!(v.n_persons, 2);
+        assert_eq!(frame.features.len(), 8, "8 features decoded");
+        assert!((frame.features[0] - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn drain_empty_when_nothing_buffered() {
+        let listener = Esp32UdpListener::bind("127.0.0.1:0").unwrap();
+        let frame = listener.drain(256);
+        assert!(frame.features.is_empty());
+        assert!(frame.vitals.is_none());
     }
 }
