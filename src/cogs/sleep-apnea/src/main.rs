@@ -154,7 +154,13 @@ struct ApneaReport {
 }
 
 fn fetch_sensors() -> Result<serde_json::Value, String> {
-    cog_sensor_sources::fetch_sensors()
+    // Persistent listener: continuous, clean breathing waveform for the
+    // variance/CUSUM apnea detector (no per-call rebind gaps, no synthetic
+    // interleave). Device-presence gating is deliberately NOT applied yet: the
+    // apnea detector needs the waveform, and gating on the device presence flag
+    // is unsafe while that flag flickers (see firmware ticket "presence flag
+    // flickers at close range") — it could suppress a real apnea event.
+    cog_sensor_sources::fetch_sensors_persistent()
 }
 
 fn store_apnea(report: &ApneaReport) -> Result<(), String> {

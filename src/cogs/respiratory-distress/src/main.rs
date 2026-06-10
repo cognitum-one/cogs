@@ -118,7 +118,10 @@ struct RespiratoryReport {
 }
 
 fn fetch_sensors() -> Result<serde_json::Value, String> {
-    cog_sensor_sources::fetch_sensors()
+    // Persistent listener (continuous, clean feature waveform for effort /
+    // Cheyne-Stokes DSP). `latest_vitals()` after this call yields the device's
+    // authoritative breathing rate for this cycle (see run_once).
+    cog_sensor_sources::fetch_sensors_persistent()
 }
 
 fn store_report(report: &RespiratoryReport) -> Result<(), String> {
@@ -169,7 +172,14 @@ fn run_once() -> Result<RespiratoryReport, String> {
     let mut resp_filter = BandpassFilter::new(0.1, 0.8, sample_rate);
     let filtered: Vec<f64> = amplitudes.iter().map(|&v| resp_filter.process(v)).collect();
 
-    let breathing_bpm = zero_crossing_bpm(&filtered, sample_rate);
+    // Prefer the device's authoritative breathing rate (ESP32 on-board estimate)
+    // when present this cycle; fall back to the re-derived zero-crossing rate.
+    // Effort / envelope / Cheyne-Stokes below still use the CSI waveform — the
+    // device vitals packet carries no waveform.
+    let breathing_bpm = match cog_sensor_sources::latest_vitals() {
+        Some(v) if v.breathing_bpm > 0.0 => v.breathing_bpm,
+        _ => zero_crossing_bpm(&filtered, sample_rate),
+    };
     let envelope = amplitude_envelope(&filtered, 5);
     let effort = breathing_effort(&envelope);
     let amp_mean = envelope.iter().sum::<f64>() / envelope.len().max(1) as f64;

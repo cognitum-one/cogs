@@ -171,6 +171,11 @@ struct HealthReport {
     overall_status: String,
     alerts: Vec<String>,
     timestamp: u64,
+    /// Data provenance for this reading: `auto:esp32-udp` (real ESP32 CSI),
+    /// `auto:seed-stream` (synthetic fallback), or an explicit source. Lets
+    /// operators and support tell at a glance whether vitals came from the
+    /// real contactless feed or the demo stream.
+    source: String,
 }
 
 // ── Sensor sources (ADR-091) ─────────────────────────────────────────
@@ -249,9 +254,20 @@ fn fetch_batch(source: &Source, window_ms: u64, max_samples: usize) -> Result<Se
             // if no packets arrive, fall back to seed-stream so cogs on
             // synthetic-only seeds still produce output instead of
             // hanging on an empty UDP socket.
-            match fetch_from_esp32_udp(AUTO_UDP_BIND, AUTO_UDP_PROBE_MS, max_samples) {
-                Ok(mut b) => { b.source_tag = "auto:esp32-udp"; Ok(b) }
-                Err(_) => {
+            //
+            // Use the SHARED, always-compiled probe from cog-sensor-sources.
+            // The local fetch_from_esp32_udp is #[cfg(feature = "esp32-udp")]
+            // and ships stubbed to an Err in the default registry build
+            // (Dockerfile.cog-batch: `cargo build --release`, no --features),
+            // so Auto used to fall straight through to synthetic and never
+            // bound 5006. The shared crate has no such gate — same path the
+            // cardiac-arrhythmia / sleep-apnea / respiratory-distress cogs use.
+            match cog_sensor_sources::fetch_from_udp_window(AUTO_UDP_BIND, AUTO_UDP_PROBE_MS) {
+                Ok(vals) if !vals.is_empty() => Ok(SensorBatch {
+                    amplitudes: vals.into_iter().take(max_samples).collect(),
+                    source_tag: "auto:esp32-udp",
+                }),
+                _ => {
                     let mut b = fetch_from_seed_stream(max_samples)?;
                     b.source_tag = "auto:seed-stream";
                     Ok(b)
@@ -479,90 +495,191 @@ fn main() {
     let mut apnea = ApneaDetector::new();
     let mut vital_stats = WelfordStats::new();
 
+    // Interleave fix: for `auto`, hold ONE persistently-bound UDP listener and
+    // drain it each cycle. The socket stays open, so the kernel buffers ESP32
+    // packets between cycles instead of dropping them (the gaps that used to
+    // force a synthetic fall-back ~half the time and corrupt the stateful DSP).
+    // Once the feed is live we NEVER substitute synthetic — we skip the cycle on
+    // a brief gap, and only resume seed-stream after the feed is absent for
+    // ESP32_GAP_TOLERANCE consecutive cycles (i.e. the ESP32 looks offline).
+    const ESP32_GAP_TOLERANCE: u32 = 3;
+    let udp_listener = match &source {
+        Source::Auto => cog_sensor_sources::Esp32UdpListener::bind(AUTO_UDP_BIND).ok(),
+        _ => None,
+    };
+    let mut esp32_seen = false;
+    let mut gap_streak: u32 = 0;
+
+    // One acquired cycle is either device-computed vitals (preferred — the ESP32
+    // already runs the estimation, v0.7.1-validated) or raw amplitude samples to
+    // run the cog's own DSP over (feature feed or synthetic seed-stream).
+    enum Acquired {
+        Vitals(cog_sensor_sources::Esp32Vitals),
+        Samples { amps: Vec<f64>, source_tag: &'static str },
+    }
+    // Breathing below this (BPM) is treated as apnea on the device-vitals path.
+    const APNEA_BREATH_MIN_BPM: f64 = 5.0;
+
     loop {
         let start = Instant::now();
-        match fetch_batch(&source, window_ms, 256) {
-            Ok(batch) => {
-                let amps = batch.amplitudes;
-                let _source_tag = batch.source_tag; // available for future report enrichment
-                {
-                    if amps.is_empty() {
-                        eprintln!("[cog-health-monitor] no sensor readings");
-                    } else {
-                        // Signal variance for presence
-                        let mut var_stats = WelfordStats::new();
-                        for &v in &amps { var_stats.update(v); }
-                        let sig_var = var_stats.variance();
-                        let is_present = presence.update(sig_var);
-
-                        // Breathing extraction
-                        let breathing: Vec<f64> = amps.iter().map(|&v| breathing_filter.process(v)).collect();
-                        let breathing_bpm = zero_crossing_bpm(&breathing, sample_rate);
-                        let breathing_amp = breathing.iter().map(|v| v.abs()).sum::<f64>() / breathing.len().max(1) as f64;
-
-                        // Heart rate extraction
-                        let hr_signal: Vec<f64> = amps.iter().map(|&v| hr_filter.process(v)).collect();
-                        let heart_rate_bpm = zero_crossing_bpm(&hr_signal, sample_rate);
-
-                        // Apnea check
-                        let (apnea_detected, drop_pct) = apnea.update(breathing_amp);
-
-                        // Track vital trend
-                        vital_stats.update(breathing_bpm);
-
-                        let mut alerts = Vec::new();
-                        if apnea_detected {
-                            alerts.push(format!("APNEA: breathing drop={:.0}%", drop_pct * 100.0));
-                        }
-                        if breathing_bpm > 30.0 {
-                            alerts.push(format!("TACHYPNEA: {:.0} bpm", breathing_bpm));
-                        }
-                        if heart_rate_bpm > 100.0 {
-                            alerts.push(format!("TACHYCARDIA: {:.0} bpm", heart_rate_bpm));
-                        }
-                        if heart_rate_bpm > 0.0 && heart_rate_bpm < 50.0 {
-                            alerts.push(format!("BRADYCARDIA: {:.0} bpm", heart_rate_bpm));
-                        }
-                        if vital_stats.count > 5 {
-                            let z = vital_stats.z_score(breathing_bpm);
-                            if z.abs() > 2.5 {
-                                alerts.push(format!("VITAL_ANOMALY: z={:.2}", z));
-                            }
-                        }
-
-                        let overall = if alerts.iter().any(|a| a.starts_with("APNEA")) {
-                            "critical"
-                        } else if alerts.is_empty() {
-                            "normal"
-                        } else {
-                            "alert"
-                        };
-
-                        let report = HealthReport {
-                            breathing_bpm,
-                            heart_rate_bpm,
-                            presence_detected: is_present,
-                            signal_variance: sig_var,
+        // Acquire one cycle. `Ok(None)` means "skip" (an ESP32 gap we
+        // deliberately do not paper over with synthetic data).
+        let acquired: Result<Option<Acquired>, String> = match udp_listener.as_ref() {
+            Some(listener) => {
+                let frame = listener.drain(256);
+                if let Some(v) = frame.vitals {
+                    // Preferred: device already computed presence + vitals.
+                    esp32_seen = true;
+                    gap_streak = 0;
+                    Ok(Some(Acquired::Vitals(v)))
+                } else if !frame.features.is_empty() {
+                    esp32_seen = true;
+                    gap_streak = 0;
+                    Ok(Some(Acquired::Samples { amps: frame.features, source_tag: "auto:esp32-udp" }))
+                } else if esp32_seen && gap_streak < ESP32_GAP_TOLERANCE {
+                    gap_streak += 1;
+                    Ok(None) // brief gap in a live feed — skip, keep DSP clean
+                } else {
+                    // No ESP32 yet (synthetic-only seed) or feed gone for a while:
+                    // fall back to seed-stream so the cog still produces output.
+                    esp32_seen = false;
+                    gap_streak = gap_streak.saturating_add(1);
+                    fetch_from_seed_stream(256).map(|b| {
+                        Some(Acquired::Samples { amps: b.amplitudes, source_tag: "auto:seed-stream" })
+                    })
+                }
+            }
+            None => fetch_batch(&source, window_ms, 256)
+                .map(|b| Some(Acquired::Samples { amps: b.amplitudes, source_tag: b.source_tag })),
+        };
+        match acquired {
+            Ok(Some(acq)) => {
+                // Reduce either source to a common reading, then run the shared
+                // alert + report path. `None` = nothing to emit this cycle.
+                struct Reading {
+                    breathing_bpm: f64,
+                    heart_rate_bpm: f64,
+                    is_present: bool,
+                    sig_var: f64,
+                    apnea_detected: bool,
+                    drop_pct: f64,
+                    source_tag: &'static str,
+                }
+                let reading: Option<Reading> = match acq {
+                    Acquired::Vitals(v) => {
+                        // Trust the device's on-board estimate (v0.7.1-validated):
+                        // presence, heart rate and breathing come straight from
+                        // the ESP32 rather than being re-derived from raw features.
+                        vital_stats.update(v.breathing_bpm);
+                        let apnea_detected =
+                            v.breathing_bpm > 0.0 && v.breathing_bpm < APNEA_BREATH_MIN_BPM;
+                        Some(Reading {
+                            breathing_bpm: v.breathing_bpm,
+                            heart_rate_bpm: v.heart_rate_bpm,
+                            is_present: v.presence,
+                            sig_var: v.presence_score as f64,
                             apnea_detected,
-                            breathing_drop_pct: drop_pct,
-                            overall_status: overall.into(),
-                            alerts: alerts.clone(),
-                            timestamp: std::time::SystemTime::now()
-                                .duration_since(std::time::UNIX_EPOCH)
-                                .unwrap_or_default()
-                                .as_secs(),
-                        };
+                            drop_pct: 0.0,
+                            source_tag: "auto:esp32-vitals",
+                        })
+                    }
+                    Acquired::Samples { amps, source_tag } => {
+                        if amps.is_empty() {
+                            eprintln!("[cog-health-monitor] no sensor readings");
+                            None
+                        } else {
+                            // Signal variance for presence
+                            let mut var_stats = WelfordStats::new();
+                            for &v in &amps { var_stats.update(v); }
+                            let sig_var = var_stats.variance();
+                            let is_present = presence.update(sig_var);
 
-                        println!("{}", serde_json::to_string(&report).unwrap_or_default());
-                        if let Err(e) = store_report(&report) {
-                            eprintln!("[cog-health-monitor] store error: {e}");
+                            // Breathing extraction
+                            let breathing: Vec<f64> =
+                                amps.iter().map(|&v| breathing_filter.process(v)).collect();
+                            let breathing_bpm = zero_crossing_bpm(&breathing, sample_rate);
+                            let breathing_amp = breathing.iter().map(|v| v.abs()).sum::<f64>()
+                                / breathing.len().max(1) as f64;
+
+                            // Heart rate extraction
+                            let hr_signal: Vec<f64> =
+                                amps.iter().map(|&v| hr_filter.process(v)).collect();
+                            let heart_rate_bpm = zero_crossing_bpm(&hr_signal, sample_rate);
+
+                            // Apnea check
+                            let (apnea_detected, drop_pct) = apnea.update(breathing_amp);
+
+                            // Track vital trend
+                            vital_stats.update(breathing_bpm);
+
+                            Some(Reading {
+                                breathing_bpm,
+                                heart_rate_bpm,
+                                is_present,
+                                sig_var,
+                                apnea_detected,
+                                drop_pct,
+                                source_tag,
+                            })
                         }
-                        if !alerts.is_empty() {
-                            eprintln!("[cog-health-monitor] ALERT: {:?}", alerts);
+                    }
+                };
+
+                if let Some(r) = reading {
+                    let mut alerts = Vec::new();
+                    if r.apnea_detected {
+                        alerts.push(format!("APNEA: breathing drop={:.0}%", r.drop_pct * 100.0));
+                    }
+                    if r.breathing_bpm > 30.0 {
+                        alerts.push(format!("TACHYPNEA: {:.0} bpm", r.breathing_bpm));
+                    }
+                    if r.heart_rate_bpm > 100.0 {
+                        alerts.push(format!("TACHYCARDIA: {:.0} bpm", r.heart_rate_bpm));
+                    }
+                    if r.heart_rate_bpm > 0.0 && r.heart_rate_bpm < 50.0 {
+                        alerts.push(format!("BRADYCARDIA: {:.0} bpm", r.heart_rate_bpm));
+                    }
+                    if vital_stats.count > 5 {
+                        let z = vital_stats.z_score(r.breathing_bpm);
+                        if z.abs() > 2.5 {
+                            alerts.push(format!("VITAL_ANOMALY: z={:.2}", z));
                         }
+                    }
+
+                    let overall = if alerts.iter().any(|a| a.starts_with("APNEA")) {
+                        "critical"
+                    } else if alerts.is_empty() {
+                        "normal"
+                    } else {
+                        "alert"
+                    };
+
+                    let report = HealthReport {
+                        breathing_bpm: r.breathing_bpm,
+                        heart_rate_bpm: r.heart_rate_bpm,
+                        presence_detected: r.is_present,
+                        signal_variance: r.sig_var,
+                        apnea_detected: r.apnea_detected,
+                        breathing_drop_pct: r.drop_pct,
+                        overall_status: overall.into(),
+                        alerts: alerts.clone(),
+                        timestamp: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs(),
+                        source: r.source_tag.to_string(),
+                    };
+
+                    println!("{}", serde_json::to_string(&report).unwrap_or_default());
+                    if let Err(e) = store_report(&report) {
+                        eprintln!("[cog-health-monitor] store error: {e}");
+                    }
+                    if !alerts.is_empty() {
+                        eprintln!("[cog-health-monitor] ALERT: {:?}", alerts);
                     }
                 }
             }
+            Ok(None) => { /* ESP32 gap — skip this cycle; never feed synthetic into the DSP */ }
             Err(e) => eprintln!("[cog-health-monitor] error: {e}"),
         }
         if once { break; }

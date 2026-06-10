@@ -141,7 +141,10 @@ impl DensePoseState {
 }
 
 fn fetch_sensors() -> Result<serde_json::Value, String> {
-    cog_sensor_sources::fetch_sensors()
+    // Persistent listener: continuous, clean feature feed for pose keypoint
+    // extraction (no per-call rebind gaps, no synthetic interleave). Pose comes
+    // from CSI features — there are no keypoints in the device vitals packet.
+    cog_sensor_sources::fetch_sensors_persistent()
 }
 
 fn try_udp_csi() -> Vec<f64> {

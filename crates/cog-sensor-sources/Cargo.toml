@@ -1,6 +1,6 @@
 [package]
 name = "cog-sensor-sources"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Shared self-contained sensor sources for cogs (ADR-091)"
 license = "MIT"

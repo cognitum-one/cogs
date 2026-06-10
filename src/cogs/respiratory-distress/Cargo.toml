@@ -1,6 +1,6 @@
 [package]
 name = "cog-respiratory-distress"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 description = "Respiratory distress monitoring — breathing rate, effort, Cheyne-Stokes detection"
 

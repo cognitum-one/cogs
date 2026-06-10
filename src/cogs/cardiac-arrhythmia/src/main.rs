@@ -117,7 +117,11 @@ struct CardiacReport {
 }
 
 fn fetch_sensors() -> Result<serde_json::Value, String> {
-    cog_sensor_sources::fetch_sensors()
+    // Persistent listener: continuous, clean feature feed for the R-R / HRV DSP
+    // (no per-call rebind gaps, no synthetic interleave). Arrhythmia needs
+    // beat-level intervals, so it stays on the feature feed — the device's
+    // averaged-HR vitals packet can't drive HRV (RMSSD/pNN50).
+    cog_sensor_sources::fetch_sensors_persistent()
 }
 
 fn store_report(report: &CardiacReport) -> Result<(), String> {
