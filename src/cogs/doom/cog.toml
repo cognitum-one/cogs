@@ -44,10 +44,14 @@ endpoints = [
 # as the cognitive-pipeline cog): it fetches the single re-hosted file from the
 # cognitum registry bucket (gs://cognitum-apps), sha256-verifies it, and places
 # it next to the binary as `freedoom1.wad`. `source_url` is provenance only — it
-# is the upstream ZIP; the maintainer must extract `freedoom1.wad` from it and
-# upload that one file to gs://cognitum-apps/<gcs_path>. The sha256 below is the
-# real FreeDoom 0.13.0 freedoom1.wad and is what the install handler verifies
-# (enforced by CI's asset-sha256 gate).
+# is the upstream ZIP; on publish the maintainer must extract `freedoom1.wad`
+# from it and upload that one file to the registry bucket. The agent resolves
+# `gcs_path` under `cogs/<arch>/`, so for this arm-only cog the object lives at
+#   gs://cognitum-apps/cogs/arm/wads/freedoom1.wad
+# (cf. the cognitive-pipeline cog, whose `models/...` gcs_path resolves to
+# `cogs/arm/models/...`). The sha256 below is the real FreeDoom 0.13.0
+# freedoom1.wad and is what the install handler verifies (enforced by CI's
+# asset-sha256 gate).
 [[assets]]
 id = "freedoom1-wad"
 filename = "freedoom1.wad"
