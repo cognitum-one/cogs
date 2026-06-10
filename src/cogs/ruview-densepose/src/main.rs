@@ -314,22 +314,22 @@ fn fetch_from_esp32_udp(_a: &str, _w: u64, _m: usize) -> Result<Vec<f64>, String
 fn run_once(state: &mut DensePoseState, source: &Source, window_ms: u64) -> Result<DensePoseReport, String> {
     let (mut features, src_tag) = match source {
         Source::Auto => {
-            // ADR-091 v1.2.0: probe UDP :5006 (ADR-069 MAGIC_FEATURES)
-            // for 2s; fall back to seed-stream if no packets arrive. 2s
-            // catches both 1 Hz host-side bridges and 50 Hz direct ESP32
-            // senders. Legacy try_udp_csi (200ms, non-ADR-069 packet
-            // shape) is kept in the file for compatibility with older
-            // brokers but no longer used by the auto path.
-            match fetch_from_esp32_udp("0.0.0.0:5006", 2000, 256) {
-                Ok(v) => (v, "auto:esp32-udp"),
-                Err(_) => {
-                    let sensors = fetch_sensors()?;
-                    let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
-                    let vals: Vec<f64> = samples.iter()
-                        .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
-                    (vals, "auto:seed-stream")
-                }
-            }
+            // Use the shared persistent listener (cog_sensor_sources): continuous
+            // feature feed, no per-call rebind gaps. The previous code called the
+            // local fetch_from_esp32_udp(), which is #[cfg(feature="esp32-udp")]-
+            // stubbed in the registry build (no --features) and so ALWAYS errored
+            // → it fell through to the fallback and hardcoded "auto:seed-stream",
+            // mislabeling real ESP32 data as synthetic. Derive the true tag from
+            // the data's own `sensor` field instead.
+            let sensors = fetch_sensors()?;
+            let samples = sensors.get("samples").and_then(|c| c.as_array()).ok_or("no samples")?;
+            let real = samples.first()
+                .and_then(|s| s.get("sensor"))
+                .and_then(|v| v.as_str())
+                == Some("esp32-udp");
+            let vals: Vec<f64> = samples.iter()
+                .filter_map(|s| s.get("value").and_then(|v| v.as_f64())).collect();
+            (vals, if real { "auto:esp32-udp" } else { "auto:seed-stream" })
         }
         Source::SeedStream => {
             let sensors = fetch_sensors()?;
