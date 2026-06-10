@@ -40,15 +40,20 @@ endpoints = [
 # FreeDoom version: v0.13.0 (latest stable as of 2026-06-07).
 # Source: https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip
 #   -> extract freedoom1.wad (the single-IWAD "Phase 1" game data).
-# Maintainers may re-host this WAD to the cognitum registry (gs://cognitum-apps)
-# on publish; if so, add the `gcs_path` field as the other cogs do. The sha256
-# below is the real FreeDoom 0.13.0 freedoom1.wad and is what the install
-# handler must verify (enforced by CI's asset-sha256 gate).
+# The agent auto-provisions this asset at install via `gcs_path` (same mechanism
+# as the cognitive-pipeline cog): it fetches the single re-hosted file from the
+# cognitum registry bucket (gs://cognitum-apps), sha256-verifies it, and places
+# it next to the binary as `freedoom1.wad`. `source_url` is provenance only — it
+# is the upstream ZIP; the maintainer must extract `freedoom1.wad` from it and
+# upload that one file to gs://cognitum-apps/<gcs_path>. The sha256 below is the
+# real FreeDoom 0.13.0 freedoom1.wad and is what the install handler verifies
+# (enforced by CI's asset-sha256 gate).
 [[assets]]
 id = "freedoom1-wad"
 filename = "freedoom1.wad"
 size_bytes = 28_795_076
 sha256 = "7323bcc168c5a45ff10749b339960e98314740a734c30d4b9f3337001f9e703d"
+gcs_path = "wads/freedoom1.wad"
 source_url = "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip"
 license = "BSD-3-Clause (FreeDoom)"
 
