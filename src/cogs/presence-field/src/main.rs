@@ -24,6 +24,9 @@ use std::net::UdpSocket;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const CSI_MAGIC: u32 = 0xC511_0001;
+const VITALS_MAGIC: u32 = 0xC511_0002;
+const FEATURE_MAGIC: u32 = 0xC511_0003;
+const FUSED_MAGIC: u32 = 0xC511_0004;
 const N_SUB: usize = 64; // subcarriers (ESP32-S3 single antenna)
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -184,6 +187,12 @@ fn main() {
     let baseline_path = arg(&args, "--baseline")
         .unwrap_or_else(|| "/var/lib/cognitum/apps/presence-field/baseline.json".to_string());
     let calibrate: Option<u64> = arg(&args, "--calibrate").and_then(|s| s.parse().ok());
+    // Broker fan-out: relay vitals/feature packets to a loopback port so vitals
+    // cogs can still consume them while presence-field owns 5006. Presence is
+    // published to a small JSON file that Health Monitor reads to gate vitals.
+    let relay_addr = arg(&args, "--relay").unwrap_or_else(|| "127.0.0.1:5106".to_string());
+    let presence_file = arg(&args, "--presence-file")
+        .unwrap_or_else(|| "/tmp/cognitum-presence.json".to_string());
 
     let socket = match UdpSocket::bind(&bind) {
         Ok(s) => s,
@@ -231,9 +240,20 @@ fn main() {
     let mut last_present = 0u64;
     let mut buf = [0u8; 4096];
     let mut last_emit = Instant::now();
+    // Broker fan-out socket (best-effort): relays vitals/feature packets so the
+    // Health Monitor (and other vitals cogs) can still consume them while
+    // presence-field owns 5006.
+    let relay_sock = UdpSocket::bind("0.0.0.0:0").ok();
     loop {
         if let Ok((n, _)) = socket.recv_from(&mut buf) {
-            if let Some((nid, amp)) = decode_csi(&buf[..n]) {
+            let pkt = &buf[..n];
+            if n >= 4 {
+                let m = u32::from_le_bytes([pkt[0], pkt[1], pkt[2], pkt[3]]);
+                if m == VITALS_MAGIC || m == FUSED_MAGIC || m == FEATURE_MAGIC {
+                    if let Some(rs) = &relay_sock { let _ = rs.send_to(pkt, &relay_addr); }
+                }
+            }
+            if let Some((nid, amp)) = decode_csi(pkt) {
                 if let Some(m) = base.nodes.get(&nid) {
                     let e = residual_energy(&amp, m);
                     let q = ring.entry(nid).or_default();
@@ -259,6 +279,15 @@ fn main() {
         let ts = now_secs();
         if detected { last_present = ts; }
         let present = detected || (ts.saturating_sub(last_present) < hold); // latch
+
+        // Publish presence for downstream gating (Health Monitor reads this file).
+        let pj = serde_json::json!({
+            "present": present,
+            "score": (best_ratio * 10.0).round() / 10.0,
+            "nodes": base.nodes.len(),
+            "ts": ts,
+        });
+        let _ = std::fs::write(&presence_file, serde_json::to_vec(&pj).unwrap_or_default());
 
         let report = serde_json::json!({
             "presence_detected": present,
