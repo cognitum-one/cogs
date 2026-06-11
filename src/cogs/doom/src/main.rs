@@ -388,6 +388,47 @@ fn bearer_ok(expected: &Option<String>, req: &Request) -> bool {
     false
 }
 
+/// Last-resort bearer-token resolution for when the agent spawned us WITHOUT
+/// injecting `COGNITUM_COG_TOKEN`. The seed agent persists each cog's token as a
+/// `.cog-token` file (0400) in the cog's app dir and is supposed to inject it as
+/// `COGNITUM_COG_TOKEN` on start — but its cold-boot spawn path has been observed
+/// to skip the env var, which leaves the cog with an empty expected token so
+/// every /frame,/input,/stream request 401s even for a correctly-paired client
+/// (the picture never renders). Reading the *same* `.cog-token` the agent/proxy
+/// use as the shared secret makes us resilient to that: the token still matches
+/// what the proxy injects for paired clients, and unpaired clients are still
+/// rejected (so this is not a security downgrade — unlike DOOM_OPEN).
+fn token_from_file() -> Option<String> {
+    let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+    // Next to the binary — where the agent writes it (…/apps/<cog>/.cog-token).
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join(".cog-token"));
+        }
+    }
+    // The agent also exports COGNITUM_COG_DATA_DIR; fall back to the data dir too.
+    for var in ["COGNITUM_COG_DATA_DIR", "COGNITUM_DATA_DIR"] {
+        if let Ok(d) = std::env::var(var) {
+            if !d.is_empty() {
+                candidates.push(std::path::PathBuf::from(d).join(".cog-token"));
+            }
+        }
+    }
+    for p in candidates {
+        if let Ok(s) = std::fs::read_to_string(&p) {
+            let t = s.trim().to_string();
+            if !t.is_empty() {
+                eprintln!(
+                    "[doom] loaded bearer token from {} (COGNITUM_COG_TOKEN was not injected by the agent)",
+                    p.display()
+                );
+                return Some(t);
+            }
+        }
+    }
+    None
+}
+
 fn parse_query_since(url: &str) -> Option<u64> {
     let q = url.split('?').nth(1)?;
     for pair in q.split('&') {
@@ -500,7 +541,59 @@ fn handle_stream(req: Request) {
     }
 }
 
-const INDEX_HTML: &str = include_str!("../assets/index.html");
+/// Resolve the optional "direct-LAN fast path" TCP port advertised in the web
+/// UI. The agent's TLS proxy rate-limits frames to ~1 fps; when a second,
+/// un-proxied instance of this game runs on the LAN (DOOM_OPEN=1 +
+/// DOOM_BIND=0.0.0.0) the UI links to it for full 35 fps play. Resolution order:
+/// env `DOOM_FAST_PORT`, then a `fast-port` file next to the binary / in the data
+/// dir (so it works even when the agent controls our env). Returns the port as a
+/// string, or "" when unset/invalid (then the banner is simply not shown). The
+/// value is validated as a real TCP port so we never inject junk into the page.
+fn fast_port() -> String {
+    let raw = std::env::var("DOOM_FAST_PORT")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .or_else(|| {
+            let mut cands: Vec<std::path::PathBuf> = Vec::new();
+            if let Ok(exe) = std::env::current_exe() {
+                if let Some(dir) = exe.parent() {
+                    cands.push(dir.join("fast-port"));
+                }
+            }
+            for var in ["COGNITUM_COG_DATA_DIR", "COGNITUM_DATA_DIR"] {
+                if let Ok(d) = std::env::var(var) {
+                    if !d.is_empty() {
+                        cands.push(std::path::PathBuf::from(d).join("fast-port"));
+                    }
+                }
+            }
+            cands.iter().find_map(|p| std::fs::read_to_string(p).ok())
+        });
+    match raw.as_deref().map(str::trim).and_then(|t| t.parse::<u16>().ok()) {
+        Some(p) if p > 0 => p.to_string(),
+        _ => String::new(),
+    }
+}
+
+/// The browser client, built once with the `__DOOM_FAST_PORT__` placeholder
+/// substituted for the resolved fast-path port (see fast_port()).
+const INDEX_HTML_TEMPLATE: &str = include_str!("../assets/index.html");
+fn index_html() -> &'static str {
+    static H: OnceLock<String> = OnceLock::new();
+    H.get_or_init(|| {
+        let fp = fast_port();
+        if fp.is_empty() {
+            eprintln!(
+                "[doom] direct-LAN fast-path: not configured (set DOOM_FAST_PORT or a `fast-port` \
+                 file next to the binary to show the 35fps direct-play banner)"
+            );
+        } else {
+            eprintln!("[doom] direct-LAN fast-path: advertising port {fp} in the web UI");
+        }
+        INDEX_HTML_TEMPLATE.replace("__DOOM_FAST_PORT__", &fp)
+    })
+    .as_str()
+}
 
 fn handle_request(req: Request, expected: &Option<String>) {
     let method = req.method().clone();
@@ -510,7 +603,7 @@ fn handle_request(req: Request, expected: &Option<String>) {
     // Open endpoints (no auth).
     match (&method, path.as_str()) {
         (Method::Get, "/") | (Method::Get, "/index.html") => {
-            let resp = Response::from_data(INDEX_HTML.as_bytes().to_vec())
+            let resp = Response::from_data(index_html().as_bytes().to_vec())
                 .with_status_code(200)
                 .with_header(header("Content-Type", "text/html; charset=utf-8"));
             let _ = req.respond(resp);
@@ -562,6 +655,9 @@ fn print_help() {
     println!("  DOOM_BIND            bind address (default 127.0.0.1; set 0.0.0.0 for LAN)");
     println!("  DOOM_OPEN            =1 disables the bearer-token check (direct-LAN play). OFF by default.");
     println!("  DOOM_JPEG_QUALITY    JPEG quality 1-100 (default 55)");
+    println!("  DOOM_FAST_PORT       LAN port of an un-proxied (DOOM_OPEN) instance; shown in the");
+    println!("                       UI as a 'direct, full-speed 35fps' link. Also read from a");
+    println!("                       `fast-port` file next to the binary. Unset = no banner.");
 }
 
 fn main() {
@@ -604,21 +700,33 @@ fn main() {
     } else {
         match std::env::var("COGNITUM_COG_TOKEN") {
             Ok(t) if !t.is_empty() => Some(t),
-            _ => {
-                // No token AND not in open mode: the game endpoints are unreachable
-                // (every request 401s). This is the safe default — the seed agent
-                // injects COGNITUM_COG_TOKEN at /start. Warn loudly so a local dev
-                // who forgot it understands why /frame returns 401.
-                eprintln!(
-                    "[doom] WARNING: COGNITUM_COG_TOKEN is not set and DOOM_OPEN is off — \
-                     /frame,/input,/stream will reject all requests with 401. The seed agent \
-                     normally injects the token; for local testing set COGNITUM_COG_TOKEN=... \
-                     or DOOM_OPEN=1."
-                );
-                Some(String::new()) // empty token: nothing matches -> always 401
-            }
+            // The agent didn't inject the token. Before falling back to the safe
+            // always-401 state, try the `.cog-token` file the agent persists next
+            // to the binary — its cold-boot spawn path has been seen to skip the
+            // env injection, and reading the shared secret directly recovers the
+            // game without weakening auth. See token_from_file().
+            _ => match token_from_file() {
+                Some(t) => Some(t),
+                None => {
+                    // No token (env or file) AND not in open mode: the game
+                    // endpoints are unreachable (every request 401s). This is the
+                    // safe default — the seed agent injects COGNITUM_COG_TOKEN at
+                    // /start. Warn loudly so a local dev who forgot it understands
+                    // why /frame returns 401.
+                    eprintln!(
+                        "[doom] WARNING: COGNITUM_COG_TOKEN is not set, DOOM_OPEN is off, and no \
+                         .cog-token file was found — /frame,/input,/stream will reject all requests \
+                         with 401. The seed agent normally injects the token; for local testing set \
+                         COGNITUM_COG_TOKEN=... or DOOM_OPEN=1."
+                    );
+                    Some(String::new()) // empty token: nothing matches -> always 401
+                }
+            },
         }
     };
+
+    // Warm + log the web client (substitutes the direct-LAN fast-path port).
+    let _ = index_html();
 
     // Start the engine first so frames begin rendering immediately. If the WAD
     // can't be found, fail fast with a clear, actionable error.

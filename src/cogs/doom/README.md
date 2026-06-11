@@ -91,6 +91,23 @@ is a deliberate convenience option, **OFF by default**. Only the *game*
 endpoints are affected — never the device/agent API. See ADR-019 for the
 rationale and the ADR-095 tradeoff.
 
+### Advertising the fast path from the proxied UI
+
+When you run a direct-LAN instance *alongside* the agent-proxied one (a common
+setup: the agent keeps a loopback instance for the secure `:8443` proxy, and a
+second `DOOM_OPEN` instance serves the LAN at full speed), tell the proxied
+instance the direct port so its web UI shows a **"direct, full-speed (35 fps)"**
+banner linking to it (the proxy caps frames at ~1 fps):
+
+```sh
+DOOM_FAST_PORT=1993                       # the direct-LAN instance's port
+# or, when the agent controls the cog's env, drop a file next to the binary:
+echo 1993 > <exe_dir>/fast-port
+```
+
+Unset (the default) → no banner. The banner builds an `http://<host>:<port>/`
+link from the browser's own hostname, so it works for any LAN client.
+
 ## Environment
 
 | Var | Default | Purpose |
@@ -102,6 +119,7 @@ rationale and the ADR-095 tradeoff.
 | `DOOM_BIND`           | `127.0.0.1` | Bind address. `0.0.0.0` faces the LAN directly. |
 | `DOOM_OPEN`           | unset  | `=1` disables token auth (direct-LAN play). |
 | `DOOM_JPEG_QUALITY`   | `55`   | JPEG quality 1–100 (also `cog.toml [config.jpeg_quality]` / `--jpeg-quality`). |
+| `DOOM_FAST_PORT`      | unset  | LAN port of an un-proxied (`DOOM_OPEN`) instance; advertised in the UI as a direct 35 fps link. Also read from a `fast-port` file next to the binary. |
 
 ## Build
 

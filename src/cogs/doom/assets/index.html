@@ -256,19 +256,21 @@
   applyScale(scaleSel.value);
   scaleSel.addEventListener("change", function () { applyScale(scaleSel.value); scaleSel.blur(); });
 
-  // ---- optional direct-LAN banner -------------------------------------------
-  // When the cog runs in opt-in direct-LAN mode (DOOM_OPEN=1 + DOOM_BIND=0.0.0.0),
-  // the game is reachable over plain HTTP on the LAN, bypassing the agent proxy's
-  // rate limit (~1fps). We ONLY advertise that when this page is already being
-  // served over plain http to a LAN host (i.e. NOT through the agent's https
-  // proxy on :8443) — otherwise the link would be dead and the banner just noise.
-  var FAST_PORT = "8066";
-  var proxied = (location.protocol === "https:") || location.port === "8443";
-  if (!proxied && location.port !== FAST_PORT && location.hostname) {
+  // ---- direct-LAN fast-path banner ------------------------------------------
+  // The agent's TLS proxy (…:8443/api/v1/cogs/doom) rate-limits frames to ~1 fps.
+  // A second, un-proxied instance of this game can run on the LAN in open mode
+  // (DOOM_OPEN=1 + DOOM_BIND=0.0.0.0) and render at DOOM's native 35 fps. The cog
+  // substitutes that instance's port below (empty string when none is configured
+  // — see fast_port() / DOOM_FAST_PORT in main.rs). When a port is set and we're
+  // not already on it (e.g. we're viewing the slow proxy), advertise the fast one.
+  // The direct instance is always plain HTTP, so we build an http:// link.
+  var FAST_PORT = "__DOOM_FAST_PORT__";
+  if (/^[0-9]+$/.test(FAST_PORT) && location.port !== FAST_PORT && location.hostname) {
     var fastUrl = "http://" + location.hostname + ":" + FAST_PORT + "/";
     var fl = document.getElementById("fastlink");
-    fl.innerHTML = "⚡ Laggy here? Open the <a href=\"" + fastUrl + "\">direct, full-speed version (" +
-                   location.hostname + ":" + FAST_PORT + ")</a> on your LAN.";
+    fl.innerHTML = "⚡ This secure view is capped at ~1 fps. Play the " +
+                   "<a href=\"" + fastUrl + "\">direct, full-speed version (35 fps)</a> on your LAN — " +
+                   location.hostname + ":" + FAST_PORT + ".";
     fl.style.display = "block";
   }
 
