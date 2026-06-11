@@ -162,12 +162,16 @@ fn now_secs() -> u64 {
 }
 
 /// Optional: persist a presence reading to the seed store (best-effort).
+/// MUST NOT block the presence loop — uses a short connect timeout because on the
+/// seed an unanswered SYN to :80 otherwise hangs the loop ~15s (frames go stale).
 fn store_presence(present: bool, score: f64) {
     let vector = vec![if present { 1.0 } else { 0.0 }, (score / 100.0).min(1.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
     let payload = serde_json::json!({ "vectors": [[0, vector]], "dedup": true });
     let body = match serde_json::to_vec(&payload) { Ok(b) => b, Err(_) => return };
-    if let Ok(mut conn) = std::net::TcpStream::connect("127.0.0.1:80") {
-        let _ = conn.set_write_timeout(Some(Duration::from_secs(3)));
+    let addr: std::net::SocketAddr = match "127.0.0.1:80".parse() { Ok(a) => a, Err(_) => return };
+    if let Ok(mut conn) = std::net::TcpStream::connect_timeout(&addr, Duration::from_millis(300)) {
+        let _ = conn.set_write_timeout(Some(Duration::from_millis(500)));
+        let _ = conn.set_read_timeout(Some(Duration::from_millis(500)));
         use std::io::Write;
         let _ = write!(conn, "POST /api/v1/store/ingest HTTP/1.0\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", body.len());
         let _ = conn.write_all(&body);
