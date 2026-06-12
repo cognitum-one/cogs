@@ -1,7 +1,7 @@
 [cog]
 id = "health-monitor"
 name = "Health Monitor"
-version = "1.0.0"
+version = "1.2.1"
 category = "health"
 description = "Combined vital signs dashboard with heart rate, breathing, presence, and apnea detection in one process"
 binary = "cog-health-monitor-arm"
