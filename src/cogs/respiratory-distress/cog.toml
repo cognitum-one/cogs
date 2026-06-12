@@ -1,7 +1,7 @@
 [cog]
 id = "respiratory-distress"
 name = "Respiratory Distress"
-version = "1.0.0"
+version = "1.2.1"
 category = "health"
 description = "Breathing rate, effort, and Cheyne-Stokes pattern detection for respiratory distress monitoring"
 binary = "cog-respiratory-distress-arm"

@@ -1,7 +1,7 @@
 [cog]
 id = "cardiac-arrhythmia"
 name = "Cardiac Arrhythmia"
-version = "1.0.0"
+version = "1.2.1"
 category = "health"
 description = "HRV analysis using RMSSD and pNN50 from bandpass-filtered heart rate signal for arrhythmia detection"
 binary = "cog-cardiac-arrhythmia-arm"
