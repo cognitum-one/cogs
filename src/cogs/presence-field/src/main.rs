@@ -259,6 +259,9 @@ fn main() {
     let breath_secs = arg(&args, "--breath-secs").and_then(|s| s.parse().ok()).unwrap_or(45u64);
     let breath_snr = arg(&args, "--breath-snr").and_then(|s| s.parse().ok()).unwrap_or(4.0f64);
     let breath_stable = arg(&args, "--breath-stable").and_then(|s| s.parse().ok()).unwrap_or(3usize);
+    // Multi-node fusion: presence requires `quorum` nodes over thresh. Default 1
+    // (== max-over-nodes, prior behaviour); use 2 for a robust 2-of-N medical gate.
+    let quorum = arg(&args, "--quorum").and_then(|s| s.parse().ok()).unwrap_or(1usize).max(1);
     let baseline_path = arg(&args, "--baseline")
         .unwrap_or_else(|| "/var/lib/cognitum/apps/presence-field/baseline.json".to_string());
     let calibrate: Option<u64> = arg(&args, "--calibrate").and_then(|s| s.parse().ok());
@@ -295,6 +298,23 @@ fn main() {
             }
         }
         if base.nodes.is_empty() { eprintln!("[presence-field] calibration FAILED — no CSI received"); std::process::exit(3); }
+        // Calibration-quality guard: if the "empty" baseline already carries a
+        // stable respiration-band peak, the room was NOT empty (occupant, or
+        // through-wall motion from elsewhere in the home). A contaminated baseline
+        // silently destroys later detection — bench-verified 2026-06-15, where the
+        // still-person ratio collapsed from ~6x to ~2x until the baseline was
+        // re-taken clean. Warn loudly so the operator re-calibrates.
+        for (nid, frames) in &per {
+            if let Some(m) = base.nodes.get(nid) {
+                let series: Vec<f64> = frames.iter().map(|f| residual_energy(f, m)).collect();
+                let fs = frames.len() as f64 / secs.max(1) as f64;
+                if let Some((bpm, snr)) = breathing_band(&series, fs) {
+                    if snr >= breath_snr && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&bpm) {
+                        eprintln!("[presence-field] ⚠ node{nid}: empty baseline shows a respiration band ({bpm:.0} bpm, snr {snr:.1}) — the room may NOT have been empty. RE-CALIBRATE with the room truly clear or detection will be degraded.");
+                    }
+                }
+            }
+        }
         if let Some(parent) = std::path::Path::new(&baseline_path).parent() { let _ = std::fs::create_dir_all(parent); }
         match std::fs::write(&baseline_path, serde_json::to_vec_pretty(&base).unwrap_or_default()) {
             Ok(_) => eprintln!("[presence-field] baseline saved -> {baseline_path} ({} nodes)", base.nodes.len()),
@@ -354,6 +374,7 @@ fn main() {
 
         // presence = max over nodes of (avg residual / empty floor)
         let mut best_ratio = 0.0f64;
+        let mut nodes_over = 0usize; // nodes whose residual ratio clears thresh (for quorum fusion)
         let mut per_node = serde_json::Map::new();
         for (nid, m) in &base.nodes {
             let avg = ring.get(nid).filter(|q| !q.is_empty())
@@ -361,6 +382,7 @@ fn main() {
             let ratio = avg / m.floor;
             per_node.insert(format!("node{nid}"), serde_json::json!((ratio * 10.0).round() / 10.0));
             if ratio > best_ratio { best_ratio = ratio; }
+            if ratio > thresh { nodes_over += 1; }
         }
         // ── Breathing-band still-person detection ─────────────────────────
         // FFT each node's residual history in the respiration band; a stable,
@@ -395,13 +417,23 @@ fn main() {
             mx - mn <= 4.0
         };
 
-        let motion_detected = best_ratio > thresh;
-        let detected = motion_detected || breath_present; // still-person OR moving
+        // Presence trigger = field-model residual energy with multi-node quorum.
+        // Bench-validated (2026-06-15, 3× ESP32-S3, clean empty calibration): a
+        // still person reads 10-68x the empty floor on every node, so requiring
+        // `quorum` of N nodes over thresh is robust and not hostage to one node's
+        // geometry. Default quorum=1 (== single-best max-over-nodes, prior
+        // behaviour); set --quorum 2 for a medical-grade 2-of-N gate.
+        let detected = nodes_over >= quorum;
         let ts = now_secs();
         if detected { last_present = ts; }
         let present = detected || (ts.saturating_sub(last_present) < hold); // latch
-        let method = if motion_detected { "motion-residual" }
-            else if breath_present { "breathing-band" }
+        // Breathing-band is ADVISORY-ONLY liveness — it never gates presence.
+        // On real data the empty-room respiration SNR (WiFi-CSI sees through
+        // walls → family/pets elsewhere in the home) can equal or exceed the
+        // still-person SNR, so an in-band peak alone cannot confirm an occupant
+        // *in this room*. It is reported to corroborate a residual-energy lock.
+        let breath_advisory = breath_present;
+        let method = if detected { "field-residual" }
             else if present { "hold" }
             else { "none" };
 
@@ -410,6 +442,9 @@ fn main() {
             "present": present,
             "score": (best_ratio * 10.0).round() / 10.0,
             "method": method,
+            "nodes_over_thresh": nodes_over,
+            "quorum": quorum,
+            "breathing_advisory": breath_advisory,
             "breathing_bpm": (breath_bpm * 10.0).round() / 10.0,
             "nodes": base.nodes.len(),
             "ts": ts,
@@ -418,9 +453,12 @@ fn main() {
 
         let report = serde_json::json!({
             "presence_detected": present,
-            "score": (best_ratio * 10.0).round() / 10.0,   // motion ratio over empty baseline
+            "score": (best_ratio * 10.0).round() / 10.0,   // residual ratio over empty baseline
             "threshold": thresh,
+            "nodes_over_thresh": nodes_over,
+            "quorum": quorum,
             "per_node_ratio": per_node,
+            "breathing_advisory": breath_advisory,         // liveness hint only — does NOT gate presence
             "breathing_bpm": (breath_bpm * 10.0).round() / 10.0,
             "breathing_snr": (breath_snr_best * 10.0).round() / 10.0,
             "nodes": base.nodes.len(),

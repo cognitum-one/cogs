@@ -17,6 +17,15 @@ min = 1.0
 max = 100.0
 cli_arg = "--thresh"
 
+[config.quorum]
+type = "integer"
+label = "Node quorum"
+description = "Number of nodes whose residual must exceed the threshold to declare presence (multi-node fusion). 1 = any node; 2+ = robust medical-grade N-of-M gate that rejects a single through-wall node."
+default = 1
+min = 1
+max = 8
+cli_arg = "--quorum"
+
 [config.modes]
 type = "integer"
 label = "Environmental modes"
