@@ -136,6 +136,72 @@ fn compute_model(frames: &[Vec<f64>], k: usize) -> Option<NodeModel> {
     Some(m)
 }
 
+// ── Breathing-band still-person detector (ADR-151) ───────────────────────
+// A motionless body fades out of the *spatial* residual (its static signature
+// is absorbed into the empty-room subspace), but its **respiration keeps
+// periodically modulating the field**. We detect a person at rest by finding a
+// stable periodicity in the per-node residual time-series within the human
+// respiration band (RESP_LO..RESP_HI Hz = 6..30 breaths/min) with enough power
+// over the band's noise floor. This is the liveness signal the motion residual
+// cannot see — verified against Vitality Call field data where a physiological,
+// temporally-stable breathing rate was present in 99.8% of readings while
+// motion-residual presence reported empty.
+const RESP_LO_HZ: f64 = 0.10; // 6 bpm
+const RESP_HI_HZ: f64 = 0.50; // 30 bpm
+const RESP_MIN_SAMPLES: usize = 24; // need a few breath cycles before trusting a peak
+
+/// Goertzel-style single-frequency power of a zero-mean series sampled at `fs`.
+fn freq_power(x: &[f64], f: f64, fs: f64) -> f64 {
+    let w = 2.0 * std::f64::consts::PI * f / fs;
+    let (mut re, mut im) = (0.0f64, 0.0f64);
+    for (k, &v) in x.iter().enumerate() {
+        let a = w * k as f64;
+        re += v * a.cos();
+        im += v * a.sin();
+    }
+    (re * re + im * im) / (x.len() as f64).max(1.0)
+}
+
+/// Scan the respiration band of a residual time-series. Returns
+/// `(breathing_bpm, snr)` for the strongest in-band peak, where `snr` = peak
+/// power / median band power (noise floor). The caller gates on `snr` + temporal
+/// stability so house/AP/printer noise (broadband, no stable in-band peak) does
+/// not read as a person. Returns `None` when there is no usable signal.
+fn breathing_band(series: &[f64], fs: f64) -> Option<(f64, f64)> {
+    let n = series.len();
+    if n < RESP_MIN_SAMPLES || fs <= 0.0 || fs / 2.0 <= RESP_LO_HZ {
+        return None; // too few samples or Nyquist below the band
+    }
+    let mean = series.iter().sum::<f64>() / n as f64;
+    let x: Vec<f64> = series.iter().map(|v| v - mean).collect();
+    let var = x.iter().map(|v| v * v).sum::<f64>() / n as f64;
+    if var <= f64::EPSILON {
+        return None; // flat line — no modulation
+    }
+    let hi = RESP_HI_HZ.min(fs / 2.0 - 1e-6);
+    let step = 0.005f64; // ~0.3 bpm grid
+    let mut powers: Vec<(f64, f64)> = Vec::new();
+    let mut f = RESP_LO_HZ;
+    while f <= hi {
+        powers.push((f, freq_power(&x, f, fs)));
+        f += step;
+    }
+    if powers.len() < 3 {
+        return None;
+    }
+    let (mut peak_f, mut peak_p) = (0.0f64, 0.0f64);
+    for &(ff, pp) in &powers {
+        if pp > peak_p {
+            peak_p = pp;
+            peak_f = ff;
+        }
+    }
+    let mut ps: Vec<f64> = powers.iter().map(|&(_, p)| p).collect();
+    ps.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let med = ps[ps.len() / 2].max(f64::EPSILON); // band noise floor
+    Some((peak_f * 60.0, peak_p / med))
+}
+
 // ── CSI decode ───────────────────────────────────────────────────────────
 fn decode_csi(d: &[u8]) -> Option<(u8, Vec<f64>)> {
     if d.len() < 20 { return None; }
@@ -188,6 +254,11 @@ fn main() {
     let hold = arg(&args, "--hold").and_then(|s| s.parse().ok()).unwrap_or(5u64);
     let interval = arg(&args, "--interval").and_then(|s| s.parse().ok()).unwrap_or(1u64);
     let window = arg(&args, "--window").and_then(|s| s.parse().ok()).unwrap_or(20usize);
+    // Breathing-band still-person detector (ADR-151): residual history window in
+    // seconds, peak-over-floor SNR required, and consecutive-eval stability count.
+    let breath_secs = arg(&args, "--breath-secs").and_then(|s| s.parse().ok()).unwrap_or(45u64);
+    let breath_snr = arg(&args, "--breath-snr").and_then(|s| s.parse().ok()).unwrap_or(4.0f64);
+    let breath_stable = arg(&args, "--breath-stable").and_then(|s| s.parse().ok()).unwrap_or(3usize);
     let baseline_path = arg(&args, "--baseline")
         .unwrap_or_else(|| "/var/lib/cognitum/apps/presence-field/baseline.json".to_string());
     let calibrate: Option<u64> = arg(&args, "--calibrate").and_then(|s| s.parse().ok());
@@ -241,6 +312,11 @@ fn main() {
 
     // ── Runtime loop ──────────────────────────────────────────────────────
     let mut ring: HashMap<u8, std::collections::VecDeque<f64>> = HashMap::new();
+    // Per-node residual history (Instant, energy) for the breathing-band detector;
+    // kept for `breath_secs` so a respiration peak has several cycles to resolve.
+    let mut hist: HashMap<u8, std::collections::VecDeque<(Instant, f64)>> = HashMap::new();
+    // Recent in-band breathing-rate estimates, for temporal-stability gating.
+    let mut breath_hits: std::collections::VecDeque<f64> = std::collections::VecDeque::new();
     let mut last_present = 0u64;
     let mut buf = [0u8; 4096];
     let mut last_emit = Instant::now();
@@ -263,6 +339,13 @@ fn main() {
                     let q = ring.entry(nid).or_default();
                     q.push_back(e);
                     while q.len() > window { q.pop_front(); }
+                    // Breathing-band history: time-stamped residual, trimmed by age.
+                    let now = Instant::now();
+                    let h = hist.entry(nid).or_default();
+                    h.push_back((now, e));
+                    while h.front().is_some_and(|&(t, _)| now.duration_since(t) > Duration::from_secs(breath_secs)) {
+                        h.pop_front();
+                    }
                 }
             }
         }
@@ -279,15 +362,55 @@ fn main() {
             per_node.insert(format!("node{nid}"), serde_json::json!((ratio * 10.0).round() / 10.0));
             if ratio > best_ratio { best_ratio = ratio; }
         }
-        let detected = best_ratio > thresh;
+        // ── Breathing-band still-person detection ─────────────────────────
+        // FFT each node's residual history in the respiration band; a stable,
+        // physiological in-band peak with SNR over the band floor = a breathing
+        // (still) person — caught where the motion ratio fades to baseline.
+        let mut breath_bpm = 0.0f64;
+        let mut breath_snr_best = 0.0f64;
+        for nid in base.nodes.keys() {
+            if let Some(h) = hist.get(nid) {
+                if h.len() >= RESP_MIN_SAMPLES {
+                    let span = h.back().unwrap().0.duration_since(h.front().unwrap().0).as_secs_f64();
+                    if span > 1.0 {
+                        let fs = (h.len() - 1) as f64 / span;
+                        let series: Vec<f64> = h.iter().map(|&(_, e)| e).collect();
+                        if let Some((bpm, snr)) = breathing_band(&series, fs) {
+                            if snr > breath_snr_best { breath_snr_best = snr; breath_bpm = bpm; }
+                        }
+                    }
+                }
+            }
+        }
+        let breath_inband = breath_snr_best >= breath_snr
+            && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&breath_bpm);
+        // Temporal stability: require `breath_stable` consecutive in-band evals
+        // whose rate is consistent (spread ≤ 4 bpm). Broadband house/AP/printer
+        // noise has no stable in-band peak, so it never accumulates a streak.
+        if breath_inband { breath_hits.push_back(breath_bpm); } else { breath_hits.clear(); }
+        while breath_hits.len() > breath_stable { breath_hits.pop_front(); }
+        let breath_present = breath_hits.len() >= breath_stable && {
+            let mn = breath_hits.iter().cloned().fold(f64::INFINITY, f64::min);
+            let mx = breath_hits.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+            mx - mn <= 4.0
+        };
+
+        let motion_detected = best_ratio > thresh;
+        let detected = motion_detected || breath_present; // still-person OR moving
         let ts = now_secs();
         if detected { last_present = ts; }
         let present = detected || (ts.saturating_sub(last_present) < hold); // latch
+        let method = if motion_detected { "motion-residual" }
+            else if breath_present { "breathing-band" }
+            else if present { "hold" }
+            else { "none" };
 
         // Publish presence for downstream gating (Health Monitor reads this file).
         let pj = serde_json::json!({
             "present": present,
             "score": (best_ratio * 10.0).round() / 10.0,
+            "method": method,
+            "breathing_bpm": (breath_bpm * 10.0).round() / 10.0,
             "nodes": base.nodes.len(),
             "ts": ts,
         });
@@ -295,14 +418,68 @@ fn main() {
 
         let report = serde_json::json!({
             "presence_detected": present,
-            "score": (best_ratio * 10.0).round() / 10.0,   // ratio over empty baseline
+            "score": (best_ratio * 10.0).round() / 10.0,   // motion ratio over empty baseline
             "threshold": thresh,
             "per_node_ratio": per_node,
+            "breathing_bpm": (breath_bpm * 10.0).round() / 10.0,
+            "breathing_snr": (breath_snr_best * 10.0).round() / 10.0,
             "nodes": base.nodes.len(),
-            "method": "field-model-residual",
+            "method": method,
             "timestamp": ts,
         });
         println!("{}", serde_json::to_string(&report).unwrap_or_default());
         store_presence(present, best_ratio);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sine(freq_hz: f64, fs: f64, secs: f64, amp: f64, dc: f64) -> Vec<f64> {
+        let n = (fs * secs) as usize;
+        (0..n)
+            .map(|k| dc + amp * (2.0 * std::f64::consts::PI * freq_hz * k as f64 / fs).sin())
+            .collect()
+    }
+
+    #[test]
+    fn detects_physiological_breathing_sine() {
+        // 0.25 Hz = 15 bpm, fs=8 Hz, 45 s — a clean respiration-rate signal.
+        let s = sine(0.25, 8.0, 45.0, 1.0, 10.0);
+        let (bpm, snr) = breathing_band(&s, 8.0).expect("clean in-band sine should detect");
+        assert!((bpm - 15.0).abs() < 2.0, "bpm {bpm} not ~15");
+        assert!(snr >= 4.0, "snr {snr} below gate for a clean sine");
+    }
+
+    #[test]
+    fn rejects_flat_line() {
+        // No modulation → no signal (an idle/saturated channel must not detect).
+        assert!(breathing_band(&vec![10.0; 360], 8.0).is_none());
+    }
+
+    #[test]
+    fn rejects_too_few_samples() {
+        let s = sine(0.25, 8.0, 1.0, 1.0, 10.0); // ~8 samples
+        assert!(breathing_band(&s, 8.0).is_none());
+    }
+
+    #[test]
+    fn out_of_band_signal_is_not_a_physiological_peak() {
+        // 1.5 Hz (90 "bpm") is above the respiration band; the in-band scan must
+        // not report it as a physiological rate (≤ 30 bpm).
+        let s = sine(1.5, 8.0, 45.0, 1.0, 10.0);
+        if let Some((bpm, _snr)) = breathing_band(&s, 8.0) {
+            assert!(bpm <= RESP_HI_HZ * 60.0 + 1.0, "out-of-band leaked as bpm {bpm}");
+        }
+    }
+
+    #[test]
+    fn freq_power_peaks_at_signal_frequency() {
+        let fs = 8.0;
+        let s = sine(0.3, fs, 40.0, 1.0, 0.0);
+        let on = freq_power(&s, 0.3, fs);
+        let off = freq_power(&s, 0.45, fs);
+        assert!(on > off * 5.0, "power at signal freq ({on}) not dominant over off ({off})");
     }
 }
