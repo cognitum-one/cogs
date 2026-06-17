@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table Turnover</title>
+<style>
+/* Cognitum design system (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG Application design system
+   Tokens lifted verbatim from seed.cognitum.one/store.
+   Full multi-section app shell + rich widget components.
+   (Inlined into each standalone .html at build time.)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code',Consolas,monospace;
+  --bg:#0a0e1a;--bg2:#111627;--card:#171d30;--card-h:#1e2540;--border:#252d45;
+  --t1:#e0e4f0;--t2:#8890a8;--t3:#505872;
+  --cyan:#4ecdc4;--cyan-d:rgba(78,205,196,0.15);
+  --green:#6bcb77;--green-d:rgba(107,203,119,0.15);
+  --amber:#d4a574;--amber-d:rgba(212,165,116,0.15);
+  --red:#e06060;--red-d:rgba(224,96,96,0.15);
+  --purple:#a78bfa;--purple-d:rgba(167,139,250,0.15);
+  --pink:#f472b6;--pink-d:rgba(244,114,182,0.15);
+  --blue:#60a5fa;--blue-d:rgba(96,165,250,0.15);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.15);
+  --gray:#94a3b8;--gray-d:rgba(148,163,184,0.15);
+  --r:10px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);line-height:1.6;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+
+/* ---- Top bar: shows the COG's own name ---- */
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(17,22,39,0.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;backdrop-filter:blur(16px)}
+.app-brand{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.app-mark{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.app-id{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.app-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sub{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.app-sub .dot{color:var(--t3)}
+.top-right{display:flex;align-items:center;gap:10px}
+.uplink{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:var(--green-d);border:1px solid rgba(107,203,119,0.3);padding:5px 11px;border-radius:6px;font-weight:600}
+.uplink .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,0.6);animation:pulse 2s infinite}
+.power{font-size:11px;color:var(--t2);font-family:var(--mono)}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.45}100%{opacity:1}}
+
+/* ---- App nav tabs ---- */
+.tabbar{position:sticky;top:58px;z-index:90;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.tab{padding:13px 20px;font-size:13px;font-weight:600;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:var(--font);white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:.18s}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab .tcount{font-size:10px;background:var(--bg2);color:var(--t2);padding:1px 6px;border-radius:9px}
+.tab.active .tcount{background:var(--cyan-d);color:var(--cyan)}
+
+/* ---- Layout ---- */
+.main{max-width:1320px;margin:0 auto;padding:22px 28px 90px}
+.view{display:none;animation:fade .25s}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 14px;flex-wrap:wrap;gap:8px}
+.section-head:first-child{margin-top:6px}
+.section-title{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.section-title .ico{font-size:17px}
+.section-sub{font-size:12px;color:var(--t3)}
+
+/* ---- Grids ---- */
+.grid{display:grid;gap:16px;margin-bottom:6px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}
+.g-1-2{grid-template-columns:1fr 2fr}
+.span2{grid-column:span 2}
+
+/* ---- Panels ---- */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;min-width:0}
+.panel.flush{padding:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.panel-title{font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.panel-title .ico{font-size:14px}
+.panel-tools{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
+.legend{display:flex;gap:13px;font-size:11px;color:var(--t2);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+canvas{display:block;width:100%}
+
+/* ---- KPI tiles ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:6px}
+.kpis.six{grid-template-columns:repeat(6,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan));opacity:.75}
+.kpi-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi-value small{font-size:12px;color:var(--t2);font-weight:500}
+.kpi-spark{margin-top:8px}
+.kpi-sub{font-size:11px;color:var(--t2);margin-top:3px;display:flex;align-items:center;gap:5px}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--t3)}
+
+/* ---- Badges / pills ---- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.badge-cat{text-transform:uppercase;letter-spacing:.5px}
+.badge-ver{background:var(--bg2);color:var(--t2);border:1px solid var(--border);font-family:var(--mono)}
+.badge-size{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+.badge-diff{text-transform:uppercase;letter-spacing:.5px}
+.diff-easy{background:var(--green-d);color:var(--green)}
+.diff-medium{background:var(--amber-d);color:var(--amber)}
+.diff-hard{background:var(--red-d);color:var(--red)}
+.badge-live{background:var(--green-d);color:var(--green);border:1px solid rgba(107,203,119,.3)}
+.badge-live .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,.6);animation:pulse 2s infinite;margin-right:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600}
+.pill .status-dot{width:6px;height:6px;border-radius:50%}
+.pill-ok{background:var(--green-d);color:var(--green)}
+.pill-warn{background:var(--amber-d);color:var(--amber)}
+.pill-err{background:var(--red-d);color:var(--red)}
+.pill-info{background:var(--blue-d);color:var(--blue)}
+.pill-mute{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+
+/* ---- Category color coding (store) ---- */
+.cat-health{background:var(--green-d);color:var(--green)}
+.cat-security{background:var(--red-d);color:var(--red)}
+.cat-building{background:var(--blue-d);color:var(--blue)}
+.cat-retail{background:var(--orange-d);color:var(--orange)}
+.cat-industrial{background:var(--amber-d);color:var(--amber)}
+.cat-research{background:var(--purple-d);color:var(--purple)}
+.cat-signal{background:var(--cyan-d);color:var(--cyan)}
+.cat-ai{background:var(--pink-d);color:var(--pink)}
+.cat-developer{background:var(--gray-d);color:var(--gray)}
+.cat-swarm{background:var(--blue-d);color:var(--blue)}
+.icon-health{background:var(--green-d)}.icon-security{background:var(--red-d)}
+.icon-building{background:var(--blue-d)}.icon-retail{background:var(--orange-d)}
+.icon-industrial{background:var(--amber-d)}.icon-research{background:var(--purple-d)}
+.icon-signal{background:var(--cyan-d)}.icon-ai{background:var(--pink-d)}
+.icon-developer{background:var(--gray-d)}.icon-swarm{background:var(--blue-d)}
+
+/* ---- Buttons ---- */
+.btn{padding:8px 15px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--cyan);color:#0a0e1a}
+.btn-primary:hover{background:#3dbdb5;transform:scale(1.02)}
+.btn-primary:active{transform:scale(.98)}
+.btn-installed{background:var(--green-d);color:var(--green)}
+.btn-installed:hover{background:var(--red-d);color:var(--red)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--cyan);border-color:var(--cyan)}
+.btn-danger{background:var(--red-d);color:var(--red)}
+.btn-danger:hover{background:rgba(224,96,96,.3)}
+.btn-sm{padding:5px 11px;font-size:11px}
+
+/* ---- Alert banner ---- */
+.banner{display:none;align-items:center;gap:13px;border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;animation:fade .3s}
+.banner.show{display:flex}
+.banner.alert{background:var(--red-d);border:1px solid var(--red);color:var(--red)}
+.banner.warn{background:var(--amber-d);border:1px solid var(--amber);color:var(--amber)}
+.banner.ok{background:var(--green-d);border:1px solid var(--green);color:var(--green)}
+.banner .b-icon{font-size:21px}.banner .b-title{font-weight:700;color:#fff}
+.banner .b-sub{color:var(--t2);font-size:12px}.banner .spacer{flex:1}
+
+/* ---- Stat lists ---- */
+.statline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.statline:last-child{border-bottom:none}
+.statline .k{color:var(--t2)}
+.statline .v{font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.bar{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--accent,var(--cyan));transition:width .6s ease}
+.mini-stat{text-align:center;padding:6px 4px}
+.mini-stat .mv{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.mini-stat .ml{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ---- Event feed ---- */
+.feed{display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
+.feed-row{display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(37,45,69,.5);font-size:12px;animation:fade .25s}
+.feed-time{font-family:var(--mono);font-size:10px;color:var(--t3);flex-shrink:0;width:58px;padding-top:1px}
+.feed-tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:600;background:var(--cyan-d);color:var(--cyan)}
+.feed-tag.ok{background:var(--green-d);color:var(--green)}
+.feed-tag.warn{background:var(--amber-d);color:var(--amber)}
+.feed-tag.err{background:var(--red-d);color:var(--red)}
+.feed-tag.info{background:var(--blue-d);color:var(--blue)}
+.feed-msg{color:var(--t2);flex:1;min-width:0}.feed-msg b{color:var(--t1)}
+
+/* ---- Data table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:10px;padding:9px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(37,45,69,.5);color:var(--t2)}
+.tbl td b{color:var(--t1)}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl .mono{font-family:var(--mono);font-size:11px}
+.tbl-wrap{max-height:380px;overflow-y:auto}
+
+/* ---- Event tags ---- */
+.event-tags{display:flex;flex-wrap:wrap;gap:6px}
+.event-tag{background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--cyan)}
+
+/* ---- Detail rows ---- */
+.detail-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--t3);min-width:110px;font-weight:500}
+.detail-value{color:var(--t1)}
+.detail-value.mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+
+/* ---- Node / chip grid ---- */
+.node-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.node{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;transition:.2s}
+.node.lead{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan-d)}
+.node.down{opacity:.45;border-style:dashed}
+.node-id{font-family:var(--mono);font-size:11px;color:var(--t1);font-weight:600}
+.node-role{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.node-stat{font-size:11px;margin-top:6px;font-family:var(--mono)}
+
+/* ---- Config controls ---- */
+.cfg-group{margin-bottom:18px}
+.cfg-label{display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px}
+.cfg-hint{font-size:11px;color:var(--t3);margin-top:4px}
+.cfg-input,.cfg-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none}
+.cfg-input:focus,.cfg-select:focus{border-color:var(--cyan)}
+.cfg-range-wrap{display:flex;align-items:center;gap:12px}
+.cfg-range{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--cyan);cursor:pointer}
+.cfg-range-val{font-size:12px;color:var(--cyan);font-family:var(--mono);min-width:54px;text-align:right}
+.cfg-toggle{position:relative;width:42px;height:23px;display:inline-block;flex-shrink:0}
+.cfg-toggle input{opacity:0;width:0;height:0}
+.cfg-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:.2s}
+.cfg-toggle .slider::before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s}
+.cfg-toggle input:checked+.slider{background:var(--cyan)}
+.cfg-toggle input:checked+.slider::before{transform:translateX(19px)}
+.cfg-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(37,45,69,.5)}
+.cfg-toggle-row:last-child{border-bottom:none}
+.cfg-toggle-row .lbl{font-size:13px;color:var(--t1)}
+.cfg-toggle-row .sub{font-size:11px;color:var(--t3)}
+
+/* ---- Footer ---- */
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3);flex-wrap:wrap;gap:10px}
+.foot .mono{font-family:var(--mono)}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+
+/* ---- Responsive ---- */
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.kpis,.kpis.six{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){.g2,.g3,.g-2-1,.g-1-2,.g4{grid-template-columns:1fr}.span2{grid-column:auto}.kpis,.kpis.six{grid-template-columns:repeat(2,1fr)}.main{padding:16px}}
+@media(max-width:520px){.kpis,.kpis.six{grid-template-columns:1fr}.top-bar{padding:0 12px}.tabbar{padding:0 10px}}
+
+</style>
+<style>:root{--accent:var(--orange)}</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="app-brand">
+    <div class="app-mark icon-retail">&#127869;</div>
+    <div class="app-id">
+      <div class="app-name">Table Turnover</div>
+      <div class="app-sub"><span class="badge badge-cat cat-retail">Retail</span><span class="dot">·</span>v1.0.0<span class="dot">·</span>ESP32-S3</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="badge badge-live"><span class="status-dot"></span>LIVE</span>
+    <span class="uplink"><span class="status-dot"></span> Seed online</span>
+    <span class="power">CSI presence</span>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <button class="tab active" data-tab="overview">&#128202; Overview</button>
+  <button class="tab" data-tab="monitor">&#127869; Live Monitor</button>
+  <button class="tab" data-tab="analytics">&#128200; Analytics</button>
+  <button class="tab" data-tab="events">&#128276; Event Log <span class="tcount" id="evcount">0</span></button>
+  <button class="tab" data-tab="config">&#9881; Configuration</button>
+</nav>
+
+<main class="main">
+
+  <div class="banner warn" id="banner">
+    <span class="b-icon">&#9203;</span>
+    <div><div class="b-title">Table overdue for turnover</div>
+      <div class="b-sub" id="banner-sub">A table has exceeded the target dwell time — flag for service</div></div>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost" onclick="document.getElementById('banner').classList.remove('show')">Dismiss</button>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="view active" data-view="overview">
+    <div class="kpis six">
+      <div class="kpi"><div class="kpi-label">Occupancy</div><div class="kpi-value"><span id="k-occ">62</span><small> %</small></div><canvas class="kpi-spark" id="sp-occ"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Turnover Rate</div><div class="kpi-value"><span id="k-turn">1.8</span><small> /hr</small></div><canvas class="kpi-spark" id="sp-turn"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Avg Duration</div><div class="kpi-value"><span id="k-dur">52</span><small> min</small></div><div class="kpi-sub">seated &#8594; check</div></div>
+      <div class="kpi"><div class="kpi-label">Tables Occupied</div><div class="kpi-value"><span id="k-tabs">7</span><small> / 12</small></div><div class="kpi-sub" id="k-tabs-sub">5 open</div></div>
+      <div class="kpi"><div class="kpi-label">Covers Today</div><div class="kpi-value" id="k-covers">186</div><div class="kpi-sub">+12% vs avg</div></div>
+      <div class="kpi"><div class="kpi-label">Waiting Check</div><div class="kpi-value" id="k-wait" style="color:var(--amber)">2</div><div class="kpi-sub">flag service</div></div>
+    </div>
+
+    <div class="grid g-2-1">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128202;</span> Occupancy %</div>
+          <div class="legend"><span><i style="background:var(--orange)"></i>occupied</span><span><i style="background:var(--cyan)"></i>turnover/hr</span></div></div>
+        <canvas id="ov-occ"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#127869;</span> Table States</div></div>
+        <canvas id="ov-donut"></canvas>
+        <div class="statline"><span class="k">Peak occupancy</span><span class="v">100%</span></div>
+        <div class="statline"><span class="k">Fastest turn</span><span class="v">31 min</span></div>
+        <div class="statline"><span class="k">Slowest turn</span><span class="v">94 min</span></div>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#9201;</span> Turnover by Hour</div></div><canvas id="ov-hours"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128221;</span> Service Snapshot</div></div>
+        <div class="grid g2" style="gap:8px">
+          <div class="mini-stat"><div class="mv" id="m-seated">7</div><div class="ml">seated</div></div>
+          <div class="mini-stat"><div class="mv" id="m-eating">4</div><div class="ml">eating</div></div>
+          <div class="mini-stat"><div class="mv" id="m-waiting">2</div><div class="ml">waiting check</div></div>
+          <div class="mini-stat"><div class="mv" id="m-empty">5</div><div class="ml">empty</div></div>
+        </div>
+        <canvas id="ov-spark" style="margin-top:8px"></canvas>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128274;</span> System Status</div></div>
+        <div class="statline"><span class="k">Presence sensing</span><span class="v" style="color:var(--green)">Active</span></div>
+        <div class="statline"><span class="k">CSI link</span><span class="v" style="color:var(--green)">Stable</span></div>
+        <div class="statline"><span class="k">Tables mapped</span><span class="v">12</span></div>
+        <div class="statline"><span class="k">Target dwell</span><span class="v">75 min</span></div>
+        <div class="statline"><span class="k">Model</span><span class="v">presence-net v2</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE MONITOR ===================== -->
+  <section class="view" data-view="monitor">
+    <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127869;</span> Floor Plan — Table States</div><span class="panel-tools">12 tables</span></div>
+      <div class="node-grid" id="floor"></div>
+      <div class="legend" style="margin-top:12px"><span><i style="background:var(--t3)"></i>empty</span><span><i style="background:var(--cyan)"></i>seated</span><span><i style="background:var(--green)"></i>eating</span><span><i style="background:var(--amber)"></i>waiting check</span></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128202;</span> Live Occupancy</div><span class="panel-tools">30s window</span></div><canvas id="mo-occ"></canvas>
+        <div class="statline"><span class="k">Current occupancy</span><span class="v"><span id="mo-occv">62</span>%</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#9201;</span> Turnover Rate</div></div><canvas id="mo-gauge"></canvas>
+        <div class="statline"><span class="k">Tables turned (hr)</span><span class="v" id="mo-turned">21</span></div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128221;</span> Per-Table Dwell Time</div><span class="panel-tools">minutes seated</span></div><canvas id="mo-dwell"></canvas>
+      <div class="legend" style="margin-top:8px"><span>bars over 75 min target shown amber / red</span></div></div>
+  </section>
+
+  <!-- ===================== ANALYTICS ===================== -->
+  <section class="view" data-view="analytics">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Avg Turns/Table</div><div class="kpi-value">4.2<small> /day</small></div><div class="kpi-sub">last 30 days</div></div>
+      <div class="kpi"><div class="kpi-label">Peak Occupancy</div><div class="kpi-value">100<small> %</small></div><div class="kpi-sub">Fri 20:00</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Duration</div><div class="kpi-value">54<small> min</small></div><div class="kpi-sub">all tables</div></div>
+      <div class="kpi"><div class="kpi-label">No-shows</div><div class="kpi-value">3</div><div class="kpi-sub">held &gt; 10 min</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128197;</span> Turnover per Day</div><span class="panel-tools">14 days</span></div><canvas id="an-days"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Dwell Time Distribution</div></div><canvas id="an-dur"></canvas></div>
+    </div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Occupancy — Table × Hour</div><span class="panel-tools">12×24</span></div><canvas id="an-heat"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127869;</span> State Mix</div></div><canvas id="an-mix"></canvas>
+        <div class="statline"><span class="k">Eating</span><span class="v">41%</span></div>
+        <div class="statline"><span class="k">Seated</span><span class="v">28%</span></div>
+        <div class="statline"><span class="k">Empty</span><span class="v">23%</span></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== EVENT LOG ===================== -->
+  <section class="view" data-view="events">
+    <div class="grid g-2-1">
+      <div class="panel flush">
+        <div class="panel-head" style="padding:16px 18px 0"><div class="panel-title"><span class="ico">&#128203;</span> Event Log</div>
+          <div class="panel-tools"><span class="pill pill-mute">All</span></div></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Event</th><th>Severity</th><th>Detail</th></tr></thead><tbody id="log"></tbody></table></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Live Stream</div><span class="panel-tools">tail</span></div><div class="feed" id="feed"></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURATION ===================== -->
+  <section class="view" data-view="config">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127899;</span> Service Tuning</div></div>
+        <div class="cfg-group"><label class="cfg-label">Presence sensitivity</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="1" max="100" value="74" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="cfg-range-val">74%</span></div>
+          <div class="cfg-hint">Higher sensitivity detects briefly-vacated tables faster.</div></div>
+        <div class="cfg-group"><label class="cfg-label">Target dwell time</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="30" max="120" value="75" oninput="this.nextElementSibling.textContent=this.value+' min'"><span class="cfg-range-val">75 min</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Vacancy hold time</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="1" max="15" value="4" oninput="this.nextElementSibling.textContent=this.value+' min'"><span class="cfg-range-val">4 min</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Floor layout</label>
+          <select class="cfg-select"><option>12 tables (current)</option><option>8 tables</option><option>20 tables</option></select></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Alerts &amp; Routing</div></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Overdue table alert</div><div class="sub">Flag when dwell exceeds target</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Waiting-check ping</div><div class="sub">Notify server station</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Hostess turnover board</div><div class="sub">Push open tables to display</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Quiet hours</div><div class="sub">Suppress alerts before 11:00</div></div><label class="cfg-toggle"><input type="checkbox"><span class="slider"></span></label></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-primary">Save changes</button><button class="btn btn-ghost">Reset</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><span class="ico">&#128203;</span> Cog Details</div><button class="btn btn-installed btn-sm">&#10003; Installed</button></div>
+      <div class="grid g2" style="gap:0 28px">
+        <div>
+          <div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">Tracks restaurant table states (empty, seated, eating, waiting for check) with turnover rate analytics.</span></div>
+          <div class="detail-row"><span class="detail-label">Events</span><span class="detail-value"><div class="event-tags"><span class="event-tag">table_state</span><span class="event-tag">turnover_rate</span><span class="event-tag">occupancy_pct</span><span class="event-tag">avg_duration</span></div></span></div>
+        </div>
+        <div>
+          <div class="detail-row"><span class="detail-label">Hardware</span><span class="detail-value">ESP32-S3</span></div>
+          <div class="detail-row"><span class="detail-label">Input</span><span class="detail-value">CSI presence</span></div>
+          <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">v1.0.0 · 14 KB · Easy</span></div>
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value mono"><a href="#">cognitum-one/cogs/src/cogs/table-turnover</a></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Running on <b style="color:var(--t2)">Cognitum Seed</b> · cognitum-esp32s3-v0.6.3</span>
+    <span class="mono">table-turnover@1.0.0</span>
+  </footer>
+</main>
+
+<script>
+/* Cognitum dashboard runtime (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG application runtime
+   Dependency-free canvas widgets + app shell helpers.
+   Simulated live telemetry so each app runs offline.
+   ============================================================ */
+(function (global) {
+  'use strict';
+  const C = getComputedStyle(document.documentElement);
+  const css = (n, f) => (C.getPropertyValue(n).trim() || f);
+  const COL = {
+    cyan: css('--cyan', '#4ecdc4'), green: css('--green', '#6bcb77'),
+    amber: css('--amber', '#d4a574'), red: css('--red', '#e06060'),
+    purple: css('--purple', '#a78bfa'), pink: css('--pink', '#f472b6'),
+    blue: css('--blue', '#60a5fa'), orange: css('--orange', '#fb923c'),
+    gray: css('--gray', '#94a3b8'), t1: css('--t1', '#e0e4f0'),
+    t2: css('--t2', '#8890a8'), t3: css('--t3', '#505872'),
+    border: css('--border', '#252d45'), bg2: css('--bg2', '#111627'),
+    card: css('--card', '#171d30')
+  };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const pad = n => String(n).padStart(2, '0');
+  function now() {
+    try { return new Date().toTimeString().slice(0, 8); }
+    catch (e) { return '00:00:00'; }
+  }
+  function withAlpha(hex, a) {
+    if (typeof hex !== 'string') return 'rgba(78,205,196,' + a + ')';
+    hex = hex.trim();
+    if (hex[0] === '#') {
+      const m = hex.slice(1);
+      const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(78,205,196,' + a + ')';
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    const nums = hex.match(/[\d.]+/g);
+    if (nums && nums.length >= 3) return `rgba(${nums[0]},${nums[1]},${nums[2]},${a})`;
+    return hex;
+  }
+  function fit(canvas, h) {
+    const dpr = global.devicePixelRatio || 1;
+    const w = canvas.clientWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 600;
+    canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h };
+  }
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.abs(h) / 2); if (h <= 0) h = 0.6;
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /* ---- Rolling multi-series line / area chart ---- */
+  function LineChart(canvas, opts) {
+    opts = opts || {};
+    const series = opts.series || [{ color: COL.cyan }];
+    const N = opts.points || 90, h = opts.height || 220;
+    const ymin = opts.min != null ? opts.min : 0, ymax = opts.max != null ? opts.max : 1;
+    const mid = ymin + (ymax - ymin) * 0.5, sa = (ymax - ymin) * 0.16;
+    const data = series.map((s, si) => Array.from({ length: N },
+      (_, i) => mid + Math.sin(i / 7 + si * 1.6) * sa + (Math.random() - 0.5) * sa));
+    function push(vals) {
+      if (!Array.isArray(vals)) vals = [vals];
+      vals.forEach((v, i) => { if (data[i]) { data[i].push(v); if (data[i].length > N) data[i].shift(); } });
+      draw();
+    }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = withAlpha(COL.border, 0.6); ctx.lineWidth = 1;
+      for (let g = 0; g <= 4; g++) { const y = (h - 8) * g / 4 + 4; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      const sx = w / (N - 1), span = (ymax - ymin) || 1;
+      const Y = v => (h - 8) - ((clamp(v, ymin, ymax) - ymin) / span) * (h - 16);
+      series.forEach((s, si) => {
+        const d = data[si], c = s.color || COL.cyan;
+        if (s.fill !== false) {
+          const grd = ctx.createLinearGradient(0, 0, 0, h);
+          grd.addColorStop(0, withAlpha(c, 0.28)); grd.addColorStop(1, withAlpha(c, 0));
+          ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v)));
+          ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+        }
+        ctx.beginPath(); ctx.lineWidth = s.width || 2; ctx.strokeStyle = c; ctx.lineJoin = 'round';
+        d.forEach((v, i) => { const x = i * sx, y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.stroke();
+        if (s.dot !== false) {
+          const lx = (d.length - 1) * sx, ly = Y(d[d.length - 1]);
+          ctx.beginPath(); ctx.arc(lx, ly, 3, 0, 7); ctx.fillStyle = c; ctx.fill();
+          ctx.beginPath(); ctx.arc(lx, ly, 6, 0, 7); ctx.strokeStyle = withAlpha(c, 0.4); ctx.stroke();
+        }
+      });
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw, data };
+  }
+
+  /* ---- Bars (spectrum / histogram / categorical) ---- */
+  function Bars(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, n = opts.bars || 24, col = opts.color || COL.cyan;
+    let vals = Array.from({ length: n }, () => rand(0.15, 0.85));
+    const labels = opts.labels || null;
+    function set(v) { vals = Array.isArray(v) ? v : [v]; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const padb = labels ? 18 : 4, bw = w / vals.length, gap = Math.min(5, bw * 0.18);
+      vals.forEach((v, i) => {
+        const bh = clamp(v, 0, 1) * (h - padb - 6), x = i * bw + gap / 2, y = (h - padb) - bh;
+        const c = typeof col === 'function' ? col(v, i) : col;
+        const grd = ctx.createLinearGradient(0, y, 0, h - padb);
+        grd.addColorStop(0, c); grd.addColorStop(1, withAlpha(c, 0.25));
+        ctx.fillStyle = grd; ctx.beginPath(); rr(ctx, x, y, bw - gap, bh, Math.min(3, (bw - gap) / 2)); ctx.fill();
+      });
+      if (labels) {
+        ctx.fillStyle = COL.t3; ctx.font = '9px ' + css('--mono', 'monospace'); ctx.textAlign = 'center';
+        const step = Math.ceil(labels.length / 16);
+        labels.forEach((l, i) => { if (i % step === 0) ctx.fillText(l, i * bw + bw / 2, h - 4); });
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get vals() { return vals; } };
+  }
+
+  /* ---- Radial gauge ---- */
+  function Gauge(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, max = opts.max || 100;
+    let val = opts.value || 0;
+    const col = opts.color || COL.cyan, unit = opts.unit || '';
+    function set(v) { val = v; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h * 0.9, r = Math.min(w / 2 - 14, h * 0.8);
+      ctx.lineWidth = 13; ctx.lineCap = 'round';
+      ctx.strokeStyle = COL.bg2; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI); ctx.stroke();
+      const frac = clamp(val / max, 0, 1), c = typeof col === 'function' ? col(val) : col;
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + frac * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '700 30px ' + css('--font', 'sans-serif');
+      ctx.fillText(Math.round(val * 10) / 10 + '', cx, cy - 6);
+      ctx.fillStyle = COL.t2; ctx.font = '11px ' + css('--font', 'sans-serif'); ctx.fillText(unit, cx, cy + 12);
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get value() { return val; } };
+  }
+
+  /* ---- Donut / ring ---- */
+  function Donut(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180;
+    let segs = opts.segments || [];
+    const centerLabel = opts.centerLabel || '';
+    function set(s) { segs = s; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 10, ir = r * 0.62;
+      const total = segs.reduce((a, s) => a + (s.value || 0), 0) || 1;
+      let a0 = -Math.PI / 2;
+      segs.forEach(s => {
+        const a1 = a0 + (s.value / total) * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a0, a1); ctx.closePath();
+        ctx.fillStyle = s.color || COL.cyan; ctx.fill(); a0 = a1;
+      });
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath(); ctx.arc(cx, cy, ir, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      const big = centerLabel || total;
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 22px ' + css('--font', 'sans-serif');
+      ctx.fillText(big + '', cx, cy + 2);
+      if (opts.centerSub) { ctx.fillStyle = COL.t3; ctx.font = '10px ' + css('--font', 'sans-serif'); ctx.fillText(opts.centerSub, cx, cy + 18); }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw };
+  }
+
+  /* ---- Heatmap (rows x cols, values 0..1) ---- */
+  function Heatmap(canvas, opts) {
+    opts = opts || {};
+    const rows = opts.rows || 7, cols = opts.cols || 24, h = opts.height || 150;
+    const base = opts.color || COL.cyan;
+    let grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => rand(0, 1)));
+    function set(g) { grid = g; draw(); }
+    function poke(r, c, v) { if (grid[r]) grid[r][c] = v; }
+    function shift(col) { grid.forEach(row => { row.shift(); row.push(0); }); if (col) { /* caller fills last col */ } draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const gap = 2, cw = (w - (cols - 1) * gap) / cols, ch = (h - (rows - 1) * gap) / rows;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = clamp(grid[r][c], 0, 1);
+        ctx.fillStyle = v < 0.04 ? COL.bg2 : withAlpha(base, 0.12 + v * 0.88);
+        ctx.beginPath(); rr(ctx, c * (cw + gap), r * (ch + gap), cw, ch, 2); ctx.fill();
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, poke, shift, draw, get grid() { return grid; } };
+  }
+
+  /* ---- Sparkline ---- */
+  function Sparkline(canvas, opts) {
+    opts = opts || {};
+    const N = opts.points || 40, h = opts.height || 34, c = opts.color || COL.cyan;
+    let d = Array.from({ length: N }, () => rand(0.3, 0.7));
+    function push(v) { d.push(v); if (d.length > N) d.shift(); draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const sx = w / (N - 1), Y = v => (h - 3) - clamp(v, 0, 1) * (h - 6);
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, withAlpha(c, 0.3)); grd.addColorStop(1, withAlpha(c, 0));
+      ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v))); ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      d.forEach((v, i) => { i ? ctx.lineTo(i * sx, Y(v)) : ctx.moveTo(i * sx, Y(v)); }); ctx.stroke();
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw };
+  }
+
+  /* ---- Rolling event feed ---- */
+  function Feed(el, opts) {
+    opts = opts || {}; const max = opts.max || 50;
+    function add(tag, kind, msg) {
+      if (!el) return;
+      const row = document.createElement('div'); row.className = 'feed-row';
+      row.innerHTML = `<span class="feed-time">${now()}</span><span class="feed-tag ${kind || ''}">${tag}</span><span class="feed-msg">${msg}</span>`;
+      el.insertBefore(row, el.firstChild);
+      while (el.children.length > max) el.removeChild(el.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Event log table (newest on top) ---- */
+  function LogTable(tbody, opts) {
+    opts = opts || {}; const max = opts.max || 80;
+    function add(cells, kind) {
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono">${now()}</td>` + cells.map(c => `<td>${c}</td>`).join('');
+      tbody.insertBefore(tr, tbody.firstChild);
+      while (tbody.children.length > max) tbody.removeChild(tbody.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Tab controller: .tab[data-tab] -> .view[data-view] ---- */
+  function tabs() {
+    const tbtns = document.querySelectorAll('.tab');
+    tbtns.forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-tab');
+      tbtns.forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === id));
+      global.dispatchEvent(new Event('resize'));
+    }));
+  }
+
+  function loop(fn, ms) { fn(); return setInterval(fn, ms || 1000); }
+
+  global.Cog = { LineChart, Bars, Gauge, Donut, Heatmap, Sparkline, Feed, LogTable, tabs, loop, rand, clamp, pick, pad, now, COL, withAlpha };
+})(window);
+
+</script>
+<script>
+(function(){
+  Cog.tabs();
+  const NT = 12;
+  const STATES = ['empty','seated','eating','waiting'];
+  const SCOL = {empty:Cog.COL.gray, seated:Cog.COL.cyan, eating:Cog.COL.green, waiting:Cog.COL.amber};
+
+  const occChart = Cog.LineChart(document.getElementById('ov-occ'),{height:240,points:90,min:0,max:100,series:[{color:Cog.COL.orange},{color:Cog.COL.cyan,fill:false,width:1.5}]});
+  const donut = Cog.Donut(document.getElementById('ov-donut'),{height:170,centerSub:'tables',segments:[]});
+  const ovHours = Cog.Bars(document.getElementById('ov-hours'),{height:170,bars:14,color:Cog.COL.orange,labels:['11','','13','','15','','17','','19','','21','','23','']});
+  ovHours.set([0.4,0.55,0.85,0.7,0.45,0.35,0.4,0.6,0.95,1,0.85,0.7,0.5,0.3]);
+  const ovSpark = Cog.Sparkline(document.getElementById('ov-spark'),{height:46,color:Cog.COL.orange});
+  const spOcc = Cog.Sparkline(document.getElementById('sp-occ'),{height:30,color:Cog.COL.orange});
+  const spTurn = Cog.Sparkline(document.getElementById('sp-turn'),{height:30,color:Cog.COL.cyan});
+
+  const moOcc = Cog.LineChart(document.getElementById('mo-occ'),{height:200,points:90,min:0,max:100,series:[{color:Cog.COL.orange}]});
+  const moGauge = Cog.Gauge(document.getElementById('mo-gauge'),{height:160,max:4,unit:'turns / hr',color:v=>v<1?Cog.COL.amber:v>3?Cog.COL.red:Cog.COL.green});
+  const moDwell = Cog.Bars(document.getElementById('mo-dwell'),{height:200,bars:NT,color:(v)=>v>0.79?Cog.COL.red:v>0.62?Cog.COL.amber:Cog.COL.cyan,labels:Array.from({length:NT},(_,i)=>'T'+(i+1))});
+
+  const anDays = Cog.Bars(document.getElementById('an-days'),{height:200,bars:14,color:Cog.COL.orange,labels:Array.from({length:14},(_,i)=>i%2?'':String(i+1))});
+  anDays.set(Array.from({length:14},()=>Cog.rand(0.4,0.7)).map((v,i)=>i===5||i===12?0.95:v));
+  const anDur = Cog.Bars(document.getElementById('an-dur'),{height:200,bars:10,color:Cog.COL.cyan,labels:['30','','50','','70','','90','','110','130']});
+  anDur.set([0.15,0.45,0.85,1,0.7,0.45,0.3,0.18,0.1,0.05]);
+  const anHeat = Cog.Heatmap(document.getElementById('an-heat'),{rows:NT,cols:24,height:200,color:Cog.COL.orange});
+  Cog.Donut(document.getElementById('an-mix'),{height:150,centerLabel:'30d',centerSub:'state mix',segments:[{label:'eating',value:41,color:Cog.COL.green},{label:'seated',value:28,color:Cog.COL.cyan},{label:'empty',value:23,color:Cog.COL.gray},{label:'waiting',value:8,color:Cog.COL.amber}]});
+
+  const feed = Cog.Feed(document.getElementById('feed'));
+  const log = Cog.LogTable(document.getElementById('log'));
+  feed.add('boot','ok','Presence sensing active · <b>12 tables</b> mapped');
+  log.add(['<b>boot</b>','<span class="pill pill-ok">ok</span>','Floor mapped · model presence-net v2']);
+
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+
+  const floor = document.getElementById('floor');
+  const tables = Array.from({length:NT},(_,i)=>({id:i+1, state:Cog.pick(STATES), dwell:Cog.rand(0,70)}));
+  tables.forEach(t=>{
+    const n=document.createElement('div'); n.className='node';
+    n.innerHTML='<div class="node-id">T'+t.id+'</div><div class="node-role" id="nr-'+t.id+'">'+t.state+'</div><div class="node-stat" id="ns-'+t.id+'">—</div>';
+    floor.appendChild(n);
+  });
+  function renderTable(t){
+    document.getElementById('nr-'+t.id).textContent=t.state;
+    const ns=document.getElementById('ns-'+t.id);
+    ns.textContent = t.state==='empty' ? 'open' : Math.round(t.dwell)+' min';
+    ns.style.color = SCOL[t.state];
+  }
+
+  let evCount=1, covers=186, turned=21, t=0;
+  Cog.loop(function(){
+    t++;
+    tables.forEach(tb=>{
+      if(tb.state==='empty'){
+        if(Math.random()<0.18){ tb.state='seated'; tb.dwell=0; evCount++;
+          feed.add('table_state','info','T'+tb.id+' seated — party arrived');
+          log.add(['<b>table_state</b>','<span class="pill pill-mute">info</span>','T'+tb.id+' → seated']); }
+      } else {
+        tb.dwell += Cog.rand(1.4,2.6);
+        if(tb.state==='seated' && tb.dwell>14 && Math.random()<0.3){ tb.state='eating';
+          log.add(['<b>table_state</b>','<span class="pill pill-mute">info</span>','T'+tb.id+' → eating']); }
+        else if(tb.state==='eating' && tb.dwell>42 && Math.random()<0.28){ tb.state='waiting'; evCount++;
+          feed.add('table_state','warn','T'+tb.id+' waiting for check · '+Math.round(tb.dwell)+' min'); }
+        else if(tb.state==='waiting' && Math.random()<0.4){ const dur=Math.round(tb.dwell);
+          tb.state='empty'; tb.dwell=0; turned++; covers+=Cog.pick([2,2,3,4]); evCount++;
+          feed.add('avg_duration','ok','T'+tb.id+' turned · seated→check <b>'+dur+' min</b>');
+          log.add(['<b>turnover_rate</b>','<span class="pill pill-ok">turn</span>','T'+tb.id+' cleared after '+dur+' min']); }
+        if(tb.dwell>90 && Math.random()<0.1){
+          document.getElementById('banner').classList.add('show');
+          set('banner-sub','T'+tb.id+' at '+Math.round(tb.dwell)+' min — exceeds 75 min target'); }
+      }
+      renderTable(tb);
+    });
+
+    const occCount = tables.filter(x=>x.state!=='empty').length;
+    const occPct = Math.round(occCount/NT*100);
+    const trDisplay = Cog.clamp(+(1.4+Math.sin(t/20)*0.6+Cog.rand(-0.1,0.1)).toFixed(1),0.5,3.5);
+
+    occChart.push([occPct, trDisplay/4*100]);
+    moOcc.push(occPct);
+    moGauge.set(trDisplay);
+    spOcc.push(occPct/100); spTurn.push(trDisplay/4); ovSpark.push(occCount/NT);
+    moDwell.set(tables.map(x=>Cog.clamp(x.dwell/120,0,1)));
+
+    if(t%5===0){ anHeat.grid.forEach(r=>{r.shift();r.push(Cog.rand(0.1,0.95));}); anHeat.draw(); }
+
+    const counts={empty:0,seated:0,eating:0,waiting:0};
+    tables.forEach(x=>counts[x.state]++);
+    donut.set([
+      {label:'empty',value:counts.empty+0.01,color:SCOL.empty},
+      {label:'seated',value:counts.seated+0.01,color:SCOL.seated},
+      {label:'eating',value:counts.eating+0.01,color:SCOL.eating},
+      {label:'waiting',value:counts.waiting+0.01,color:SCOL.waiting}]);
+
+    set('evcount',evCount);
+    set('k-occ',occPct); set('k-turn',trDisplay.toFixed(1));
+    set('k-dur',Math.round(Cog.rand(48,58)));
+    set('k-tabs',occCount); set('k-tabs-sub',(NT-occCount)+' open');
+    set('k-covers',covers); set('k-wait',counts.waiting);
+    set('mo-occv',occPct); set('mo-turned',turned);
+    set('m-seated',counts.seated); set('m-eating',counts.eating);
+    set('m-waiting',counts.waiting); set('m-empty',counts.empty);
+  },1000);
+})();
+</script>
+</body>
+</html>

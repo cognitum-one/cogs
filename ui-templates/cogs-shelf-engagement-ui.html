@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf Engagement</title>
+<style>
+/* Cognitum design system (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG Application design system
+   Tokens lifted verbatim from seed.cognitum.one/store.
+   Full multi-section app shell + rich widget components.
+   (Inlined into each standalone .html at build time.)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code',Consolas,monospace;
+  --bg:#0a0e1a;--bg2:#111627;--card:#171d30;--card-h:#1e2540;--border:#252d45;
+  --t1:#e0e4f0;--t2:#8890a8;--t3:#505872;
+  --cyan:#4ecdc4;--cyan-d:rgba(78,205,196,0.15);
+  --green:#6bcb77;--green-d:rgba(107,203,119,0.15);
+  --amber:#d4a574;--amber-d:rgba(212,165,116,0.15);
+  --red:#e06060;--red-d:rgba(224,96,96,0.15);
+  --purple:#a78bfa;--purple-d:rgba(167,139,250,0.15);
+  --pink:#f472b6;--pink-d:rgba(244,114,182,0.15);
+  --blue:#60a5fa;--blue-d:rgba(96,165,250,0.15);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.15);
+  --gray:#94a3b8;--gray-d:rgba(148,163,184,0.15);
+  --r:10px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);line-height:1.6;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+
+/* ---- Top bar: shows the COG's own name ---- */
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(17,22,39,0.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;backdrop-filter:blur(16px)}
+.app-brand{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.app-mark{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.app-id{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.app-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sub{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.app-sub .dot{color:var(--t3)}
+.top-right{display:flex;align-items:center;gap:10px}
+.uplink{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:var(--green-d);border:1px solid rgba(107,203,119,0.3);padding:5px 11px;border-radius:6px;font-weight:600}
+.uplink .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,0.6);animation:pulse 2s infinite}
+.power{font-size:11px;color:var(--t2);font-family:var(--mono)}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.45}100%{opacity:1}}
+
+/* ---- App nav tabs ---- */
+.tabbar{position:sticky;top:58px;z-index:90;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.tab{padding:13px 20px;font-size:13px;font-weight:600;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:var(--font);white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:.18s}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab .tcount{font-size:10px;background:var(--bg2);color:var(--t2);padding:1px 6px;border-radius:9px}
+.tab.active .tcount{background:var(--cyan-d);color:var(--cyan)}
+
+/* ---- Layout ---- */
+.main{max-width:1320px;margin:0 auto;padding:22px 28px 90px}
+.view{display:none;animation:fade .25s}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 14px;flex-wrap:wrap;gap:8px}
+.section-head:first-child{margin-top:6px}
+.section-title{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.section-title .ico{font-size:17px}
+.section-sub{font-size:12px;color:var(--t3)}
+
+/* ---- Grids ---- */
+.grid{display:grid;gap:16px;margin-bottom:6px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}
+.g-1-2{grid-template-columns:1fr 2fr}
+.span2{grid-column:span 2}
+
+/* ---- Panels ---- */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;min-width:0}
+.panel.flush{padding:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.panel-title{font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.panel-title .ico{font-size:14px}
+.panel-tools{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
+.legend{display:flex;gap:13px;font-size:11px;color:var(--t2);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+canvas{display:block;width:100%}
+
+/* ---- KPI tiles ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:6px}
+.kpis.six{grid-template-columns:repeat(6,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan));opacity:.75}
+.kpi-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi-value small{font-size:12px;color:var(--t2);font-weight:500}
+.kpi-spark{margin-top:8px}
+.kpi-sub{font-size:11px;color:var(--t2);margin-top:3px;display:flex;align-items:center;gap:5px}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--t3)}
+
+/* ---- Badges / pills ---- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.badge-cat{text-transform:uppercase;letter-spacing:.5px}
+.badge-ver{background:var(--bg2);color:var(--t2);border:1px solid var(--border);font-family:var(--mono)}
+.badge-size{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+.badge-diff{text-transform:uppercase;letter-spacing:.5px}
+.diff-easy{background:var(--green-d);color:var(--green)}
+.diff-medium{background:var(--amber-d);color:var(--amber)}
+.diff-hard{background:var(--red-d);color:var(--red)}
+.badge-live{background:var(--green-d);color:var(--green);border:1px solid rgba(107,203,119,.3)}
+.badge-live .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,.6);animation:pulse 2s infinite;margin-right:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600}
+.pill .status-dot{width:6px;height:6px;border-radius:50%}
+.pill-ok{background:var(--green-d);color:var(--green)}
+.pill-warn{background:var(--amber-d);color:var(--amber)}
+.pill-err{background:var(--red-d);color:var(--red)}
+.pill-info{background:var(--blue-d);color:var(--blue)}
+.pill-mute{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+
+/* ---- Category color coding (store) ---- */
+.cat-health{background:var(--green-d);color:var(--green)}
+.cat-security{background:var(--red-d);color:var(--red)}
+.cat-building{background:var(--blue-d);color:var(--blue)}
+.cat-retail{background:var(--orange-d);color:var(--orange)}
+.cat-industrial{background:var(--amber-d);color:var(--amber)}
+.cat-research{background:var(--purple-d);color:var(--purple)}
+.cat-signal{background:var(--cyan-d);color:var(--cyan)}
+.cat-ai{background:var(--pink-d);color:var(--pink)}
+.cat-developer{background:var(--gray-d);color:var(--gray)}
+.cat-swarm{background:var(--blue-d);color:var(--blue)}
+.icon-health{background:var(--green-d)}.icon-security{background:var(--red-d)}
+.icon-building{background:var(--blue-d)}.icon-retail{background:var(--orange-d)}
+.icon-industrial{background:var(--amber-d)}.icon-research{background:var(--purple-d)}
+.icon-signal{background:var(--cyan-d)}.icon-ai{background:var(--pink-d)}
+.icon-developer{background:var(--gray-d)}.icon-swarm{background:var(--blue-d)}
+
+/* ---- Buttons ---- */
+.btn{padding:8px 15px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--cyan);color:#0a0e1a}
+.btn-primary:hover{background:#3dbdb5;transform:scale(1.02)}
+.btn-primary:active{transform:scale(.98)}
+.btn-installed{background:var(--green-d);color:var(--green)}
+.btn-installed:hover{background:var(--red-d);color:var(--red)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--cyan);border-color:var(--cyan)}
+.btn-danger{background:var(--red-d);color:var(--red)}
+.btn-danger:hover{background:rgba(224,96,96,.3)}
+.btn-sm{padding:5px 11px;font-size:11px}
+
+/* ---- Alert banner ---- */
+.banner{display:none;align-items:center;gap:13px;border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;animation:fade .3s}
+.banner.show{display:flex}
+.banner.alert{background:var(--red-d);border:1px solid var(--red);color:var(--red)}
+.banner.warn{background:var(--amber-d);border:1px solid var(--amber);color:var(--amber)}
+.banner.ok{background:var(--green-d);border:1px solid var(--green);color:var(--green)}
+.banner .b-icon{font-size:21px}.banner .b-title{font-weight:700;color:#fff}
+.banner .b-sub{color:var(--t2);font-size:12px}.banner .spacer{flex:1}
+
+/* ---- Stat lists ---- */
+.statline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.statline:last-child{border-bottom:none}
+.statline .k{color:var(--t2)}
+.statline .v{font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.bar{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--accent,var(--cyan));transition:width .6s ease}
+.mini-stat{text-align:center;padding:6px 4px}
+.mini-stat .mv{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.mini-stat .ml{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ---- Event feed ---- */
+.feed{display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
+.feed-row{display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(37,45,69,.5);font-size:12px;animation:fade .25s}
+.feed-time{font-family:var(--mono);font-size:10px;color:var(--t3);flex-shrink:0;width:58px;padding-top:1px}
+.feed-tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:600;background:var(--cyan-d);color:var(--cyan)}
+.feed-tag.ok{background:var(--green-d);color:var(--green)}
+.feed-tag.warn{background:var(--amber-d);color:var(--amber)}
+.feed-tag.err{background:var(--red-d);color:var(--red)}
+.feed-tag.info{background:var(--blue-d);color:var(--blue)}
+.feed-msg{color:var(--t2);flex:1;min-width:0}.feed-msg b{color:var(--t1)}
+
+/* ---- Data table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:10px;padding:9px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(37,45,69,.5);color:var(--t2)}
+.tbl td b{color:var(--t1)}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl .mono{font-family:var(--mono);font-size:11px}
+.tbl-wrap{max-height:380px;overflow-y:auto}
+
+/* ---- Event tags ---- */
+.event-tags{display:flex;flex-wrap:wrap;gap:6px}
+.event-tag{background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--cyan)}
+
+/* ---- Detail rows ---- */
+.detail-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--t3);min-width:110px;font-weight:500}
+.detail-value{color:var(--t1)}
+.detail-value.mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+
+/* ---- Node / chip grid ---- */
+.node-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.node{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;transition:.2s}
+.node.lead{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan-d)}
+.node.down{opacity:.45;border-style:dashed}
+.node-id{font-family:var(--mono);font-size:11px;color:var(--t1);font-weight:600}
+.node-role{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.node-stat{font-size:11px;margin-top:6px;font-family:var(--mono)}
+
+/* ---- Config controls ---- */
+.cfg-group{margin-bottom:18px}
+.cfg-label{display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px}
+.cfg-hint{font-size:11px;color:var(--t3);margin-top:4px}
+.cfg-input,.cfg-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none}
+.cfg-input:focus,.cfg-select:focus{border-color:var(--cyan)}
+.cfg-range-wrap{display:flex;align-items:center;gap:12px}
+.cfg-range{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--cyan);cursor:pointer}
+.cfg-range-val{font-size:12px;color:var(--cyan);font-family:var(--mono);min-width:54px;text-align:right}
+.cfg-toggle{position:relative;width:42px;height:23px;display:inline-block;flex-shrink:0}
+.cfg-toggle input{opacity:0;width:0;height:0}
+.cfg-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:.2s}
+.cfg-toggle .slider::before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s}
+.cfg-toggle input:checked+.slider{background:var(--cyan)}
+.cfg-toggle input:checked+.slider::before{transform:translateX(19px)}
+.cfg-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(37,45,69,.5)}
+.cfg-toggle-row:last-child{border-bottom:none}
+.cfg-toggle-row .lbl{font-size:13px;color:var(--t1)}
+.cfg-toggle-row .sub{font-size:11px;color:var(--t3)}
+
+/* ---- Footer ---- */
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3);flex-wrap:wrap;gap:10px}
+.foot .mono{font-family:var(--mono)}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+
+/* ---- Responsive ---- */
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.kpis,.kpis.six{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){.g2,.g3,.g-2-1,.g-1-2,.g4{grid-template-columns:1fr}.span2{grid-column:auto}.kpis,.kpis.six{grid-template-columns:repeat(2,1fr)}.main{padding:16px}}
+@media(max-width:520px){.kpis,.kpis.six{grid-template-columns:1fr}.top-bar{padding:0 12px}.tabbar{padding:0 10px}}
+
+</style>
+<style>:root{--accent:var(--orange)}</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="app-brand">
+    <div class="app-mark icon-retail">&#128722;</div>
+    <div class="app-id">
+      <div class="app-name">Shelf Engagement</div>
+      <div class="app-sub"><span class="badge badge-cat cat-retail">Retail</span><span class="dot">·</span>v0.8.0<span class="dot">·</span>ESP32-S3</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="badge badge-live"><span class="status-dot"></span>LIVE</span>
+    <span class="uplink"><span class="status-dot"></span> Seed online</span>
+    <span class="power">CSI presence, motion</span>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <button class="tab active" data-tab="overview">&#128202; Overview</button>
+  <button class="tab" data-tab="monitor">&#128722; Live Monitor</button>
+  <button class="tab" data-tab="analytics">&#128200; Analytics</button>
+  <button class="tab" data-tab="events">&#128276; Event Log <span class="tcount" id="evcount">0</span></button>
+  <button class="tab" data-tab="config">&#9881; Configuration</button>
+</nav>
+
+<main class="main">
+
+  <div class="banner alert" id="banner">
+    <span class="b-icon">&#128293;</span>
+    <div><div class="b-title">High engagement spike</div>
+      <div class="b-sub" id="banner-sub">Sustained reaching at shelf zone — restock or staff attention suggested</div></div>
+    <span class="spacer"></span>
+    <button class="btn btn-danger" onclick="document.getElementById('banner').classList.remove('show')">Acknowledge</button>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="view active" data-view="overview">
+    <div class="kpis six">
+      <div class="kpi"><div class="kpi-label">Shopper State</div><div class="kpi-value" id="k-state" style="font-size:21px;color:var(--gray)">Idle</div><div class="kpi-sub" id="k-state-sub">aisle empty</div></div>
+      <div class="kpi"><div class="kpi-label">Interactions Today</div><div class="kpi-value" id="k-int">0</div><canvas class="kpi-spark" id="sp-int"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Avg Browse Time</div><div class="kpi-value"><span id="k-browse">0</span><small> s</small></div><canvas class="kpi-spark" id="sp-browse"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Reach Events</div><div class="kpi-value" id="k-reach">0</div><div class="kpi-sub">product touches</div></div>
+      <div class="kpi"><div class="kpi-label">Engagement Score</div><div class="kpi-value"><span id="k-score">0</span><small> / 100</small></div><div class="kpi-sub" id="k-score-sub">low</div></div>
+      <div class="kpi"><div class="kpi-label">Conversion Hint</div><div class="kpi-value" style="font-size:19px" id="k-conv">—</div><div class="kpi-sub">reach → dwell</div></div>
+    </div>
+
+    <div class="grid g-2-1">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128202;</span> Browse Time</div>
+          <div class="legend"><span><i style="background:var(--orange)"></i>dwell (s)</span><span><i style="background:var(--cyan)"></i>presence</span></div></div>
+        <canvas id="ov-browse"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128137;</span> Engagement Score</div></div>
+        <canvas id="ov-gauge"></canvas>
+        <div class="statline"><span class="k">Dwell weight</span><span class="v" id="s-dwell">0.31</span></div>
+        <div class="statline"><span class="k">Reach weight</span><span class="v" id="s-rweight">0.18</span></div>
+        <div class="statline"><span class="k">Live session</span><span class="v" id="s-dur">—</span></div>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Reach vs Browse</div></div><canvas id="ov-donut"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128241;</span> Zone Snapshot</div></div>
+        <div class="grid g2" style="gap:8px">
+          <div class="mini-stat"><div class="mv" id="m-zone">A</div><div class="ml">hot zone</div></div>
+          <div class="mini-stat"><div class="mv" id="m-shoppers">0</div><div class="ml">in aisle</div></div>
+          <div class="mini-stat"><div class="mv" id="m-peak">14:20</div><div class="ml">peak hour</div></div>
+          <div class="mini-stat"><div class="mv" id="m-trend">Low</div><div class="ml">traffic</div></div>
+        </div>
+        <canvas id="ov-pres" style="margin-top:8px"></canvas>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128274;</span> Sensor Status</div></div>
+        <div class="statline"><span class="k">Detector</span><span class="v" style="color:var(--green)">Active</span></div>
+        <div class="statline"><span class="k">CSI link</span><span class="v" style="color:var(--green)">Stable</span></div>
+        <div class="statline"><span class="k">Zones tracked</span><span class="v">4 (A–D)</span></div>
+        <div class="statline"><span class="k">Sample rate</span><span class="v">20 Hz</span></div>
+        <div class="statline"><span class="k">Model</span><span class="v">engage-net v2</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE MONITOR ===================== -->
+  <section class="view" data-view="monitor">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128247;</span> Live Presence Signal</div><span class="panel-tools">20 Hz</span></div><canvas id="mo-wave"></canvas>
+        <div class="statline"><span class="k">Motion energy</span><span class="v" id="mo-energy">0.08</span></div>
+        <div class="statline"><span class="k">Reach distance</span><span class="v"><span id="mo-reach">—</span> cm</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#9201;</span> Engagement Level</div></div><canvas id="mo-gauge"></canvas>
+        <div class="statline"><span class="k">Active zone</span><span class="v" id="mo-zone">none</span></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Per-Zone Activity</div><span class="panel-tools">A–D</span></div><canvas id="mo-zones"></canvas>
+        <div class="legend" style="margin-top:8px"><span>zones: A · B · C · D (left → right shelf)</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129106;</span> Reach Frequency</div></div><canvas id="mo-reachchart"></canvas>
+        <div class="statline"><span class="k">Reaches / min</span><span class="v" id="mo-rpm">0</span></div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Shelf Zone Heatmap</div><span class="panel-tools">zone × time</span></div><canvas id="mo-heat"></canvas>
+      <div class="legend" style="margin-top:8px"><span>rows: zone A · zone B · zone C · zone D</span></div></div>
+  </section>
+
+  <!-- ===================== ANALYTICS ===================== -->
+  <section class="view" data-view="analytics">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Peak Engagement</div><div class="kpi-value">87<small> / 100</small></div><div class="kpi-sub">at 14:20</div></div>
+      <div class="kpi"><div class="kpi-label">Total Reaches</div><div class="kpi-value" id="an-reaches">312</div><div class="kpi-sub">today</div></div>
+      <div class="kpi"><div class="kpi-label">Reach Rate</div><div class="kpi-value">38<small> %</small></div><div class="kpi-sub">of browsers</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Dwell</div><div class="kpi-value">22<small> s</small></div><div class="kpi-sub">per shopper</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128197;</span> Engagement by Hour</div><span class="panel-tools">store hours</span></div><canvas id="an-hours"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Browse Time Distribution</div></div><canvas id="an-dur"></canvas></div>
+    </div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Zone Activity by Hour</div><span class="panel-tools">4×24</span></div><canvas id="an-heat"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Interaction Type</div></div><canvas id="an-mix"></canvas>
+        <div class="statline"><span class="k">Browse-only</span><span class="v">54%</span></div>
+        <div class="statline"><span class="k">Reach + inspect</span><span class="v">31%</span></div>
+        <div class="statline"><span class="k">Pick up</span><span class="v">15%</span></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== EVENT LOG ===================== -->
+  <section class="view" data-view="events">
+    <div class="grid g-2-1">
+      <div class="panel flush">
+        <div class="panel-head" style="padding:16px 18px 0"><div class="panel-title"><span class="ico">&#128203;</span> Event Log</div>
+          <div class="panel-tools"><span class="pill pill-mute">All</span></div></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Event</th><th>Severity</th><th>Detail</th></tr></thead><tbody id="log"></tbody></table></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Live Stream</div><span class="panel-tools">tail</span></div><div class="feed" id="feed"></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURATION ===================== -->
+  <section class="view" data-view="config">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127899;</span> Detection Tuning</div></div>
+        <div class="cfg-group"><label class="cfg-label">Presence sensitivity</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="1" max="100" value="68" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="cfg-range-val">68%</span></div>
+          <div class="cfg-hint">Higher sensitivity detects lingering shoppers from farther away.</div></div>
+        <div class="cfg-group"><label class="cfg-label">Min browse time</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="2" max="30" value="5" oninput="this.nextElementSibling.textContent=this.value+' s'"><span class="cfg-range-val">5 s</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Reach threshold</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="20" max="90" value="55" oninput="this.nextElementSibling.textContent=this.value+' cm'"><span class="cfg-range-val">55 cm</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Tracked zones</label>
+          <select class="cfg-select"><option>4 zones (A–D)</option><option>2 zones (A–B)</option><option>8 zones (A–H)</option></select></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Alerts & Reporting</div></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">High-engagement alert</div><div class="sub">Notify staff on sustained reaching</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Low-stock inference</div><div class="sub">Flag repeated reaches, no pickup</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Hourly report push</div><div class="sub">Send engagement summary to dashboard</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Anonymous mode</div><div class="sub">Counts only, no path tracking</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-primary">Save changes</button><button class="btn btn-ghost">Reset</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><span class="ico">&#128203;</span> Cog Details</div><button class="btn btn-installed btn-sm">&#10003; Installed</button></div>
+      <div class="grid g2" style="gap:0 28px">
+        <div>
+          <div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">Detects customer interaction with product shelves including browsing duration, reach events, and engagement scoring.</span></div>
+          <div class="detail-row"><span class="detail-label">Events</span><span class="detail-value"><div class="event-tags"><span class="event-tag">shelf_interaction</span><span class="event-tag">browse_time</span><span class="event-tag">reach_event</span><span class="event-tag">engagement_score</span></div></span></div>
+        </div>
+        <div>
+          <div class="detail-row"><span class="detail-label">Hardware</span><span class="detail-value">ESP32-S3</span></div>
+          <div class="detail-row"><span class="detail-label">Input</span><span class="detail-value">CSI presence, motion</span></div>
+          <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">v0.8.0 · 22 KB · Medium</span></div>
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value mono"><a href="#">cognitum-one/cogs/src/cogs/shelf-engagement</a></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Running on <b style="color:var(--t2)">Cognitum Seed</b> · cognitum-esp32s3-v0.6.3</span>
+    <span class="mono">shelf-engagement@0.8.0</span>
+  </footer>
+</main>
+
+<script>
+/* Cognitum dashboard runtime (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG application runtime
+   Dependency-free canvas widgets + app shell helpers.
+   Simulated live telemetry so each app runs offline.
+   ============================================================ */
+(function (global) {
+  'use strict';
+  const C = getComputedStyle(document.documentElement);
+  const css = (n, f) => (C.getPropertyValue(n).trim() || f);
+  const COL = {
+    cyan: css('--cyan', '#4ecdc4'), green: css('--green', '#6bcb77'),
+    amber: css('--amber', '#d4a574'), red: css('--red', '#e06060'),
+    purple: css('--purple', '#a78bfa'), pink: css('--pink', '#f472b6'),
+    blue: css('--blue', '#60a5fa'), orange: css('--orange', '#fb923c'),
+    gray: css('--gray', '#94a3b8'), t1: css('--t1', '#e0e4f0'),
+    t2: css('--t2', '#8890a8'), t3: css('--t3', '#505872'),
+    border: css('--border', '#252d45'), bg2: css('--bg2', '#111627'),
+    card: css('--card', '#171d30')
+  };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const pad = n => String(n).padStart(2, '0');
+  function now() {
+    try { return new Date().toTimeString().slice(0, 8); }
+    catch (e) { return '00:00:00'; }
+  }
+  function withAlpha(hex, a) {
+    if (typeof hex !== 'string') return 'rgba(78,205,196,' + a + ')';
+    hex = hex.trim();
+    if (hex[0] === '#') {
+      const m = hex.slice(1);
+      const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(78,205,196,' + a + ')';
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    const nums = hex.match(/[\d.]+/g);
+    if (nums && nums.length >= 3) return `rgba(${nums[0]},${nums[1]},${nums[2]},${a})`;
+    return hex;
+  }
+  function fit(canvas, h) {
+    const dpr = global.devicePixelRatio || 1;
+    const w = canvas.clientWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 600;
+    canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h };
+  }
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.abs(h) / 2); if (h <= 0) h = 0.6;
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /* ---- Rolling multi-series line / area chart ---- */
+  function LineChart(canvas, opts) {
+    opts = opts || {};
+    const series = opts.series || [{ color: COL.cyan }];
+    const N = opts.points || 90, h = opts.height || 220;
+    const ymin = opts.min != null ? opts.min : 0, ymax = opts.max != null ? opts.max : 1;
+    const mid = ymin + (ymax - ymin) * 0.5, sa = (ymax - ymin) * 0.16;
+    const data = series.map((s, si) => Array.from({ length: N },
+      (_, i) => mid + Math.sin(i / 7 + si * 1.6) * sa + (Math.random() - 0.5) * sa));
+    function push(vals) {
+      if (!Array.isArray(vals)) vals = [vals];
+      vals.forEach((v, i) => { if (data[i]) { data[i].push(v); if (data[i].length > N) data[i].shift(); } });
+      draw();
+    }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = withAlpha(COL.border, 0.6); ctx.lineWidth = 1;
+      for (let g = 0; g <= 4; g++) { const y = (h - 8) * g / 4 + 4; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      const sx = w / (N - 1), span = (ymax - ymin) || 1;
+      const Y = v => (h - 8) - ((clamp(v, ymin, ymax) - ymin) / span) * (h - 16);
+      series.forEach((s, si) => {
+        const d = data[si], c = s.color || COL.cyan;
+        if (s.fill !== false) {
+          const grd = ctx.createLinearGradient(0, 0, 0, h);
+          grd.addColorStop(0, withAlpha(c, 0.28)); grd.addColorStop(1, withAlpha(c, 0));
+          ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v)));
+          ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+        }
+        ctx.beginPath(); ctx.lineWidth = s.width || 2; ctx.strokeStyle = c; ctx.lineJoin = 'round';
+        d.forEach((v, i) => { const x = i * sx, y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.stroke();
+        if (s.dot !== false) {
+          const lx = (d.length - 1) * sx, ly = Y(d[d.length - 1]);
+          ctx.beginPath(); ctx.arc(lx, ly, 3, 0, 7); ctx.fillStyle = c; ctx.fill();
+          ctx.beginPath(); ctx.arc(lx, ly, 6, 0, 7); ctx.strokeStyle = withAlpha(c, 0.4); ctx.stroke();
+        }
+      });
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw, data };
+  }
+
+  /* ---- Bars (spectrum / histogram / categorical) ---- */
+  function Bars(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, n = opts.bars || 24, col = opts.color || COL.cyan;
+    let vals = Array.from({ length: n }, () => rand(0.15, 0.85));
+    const labels = opts.labels || null;
+    function set(v) { vals = Array.isArray(v) ? v : [v]; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const padb = labels ? 18 : 4, bw = w / vals.length, gap = Math.min(5, bw * 0.18);
+      vals.forEach((v, i) => {
+        const bh = clamp(v, 0, 1) * (h - padb - 6), x = i * bw + gap / 2, y = (h - padb) - bh;
+        const c = typeof col === 'function' ? col(v, i) : col;
+        const grd = ctx.createLinearGradient(0, y, 0, h - padb);
+        grd.addColorStop(0, c); grd.addColorStop(1, withAlpha(c, 0.25));
+        ctx.fillStyle = grd; ctx.beginPath(); rr(ctx, x, y, bw - gap, bh, Math.min(3, (bw - gap) / 2)); ctx.fill();
+      });
+      if (labels) {
+        ctx.fillStyle = COL.t3; ctx.font = '9px ' + css('--mono', 'monospace'); ctx.textAlign = 'center';
+        const step = Math.ceil(labels.length / 16);
+        labels.forEach((l, i) => { if (i % step === 0) ctx.fillText(l, i * bw + bw / 2, h - 4); });
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get vals() { return vals; } };
+  }
+
+  /* ---- Radial gauge ---- */
+  function Gauge(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, max = opts.max || 100;
+    let val = opts.value || 0;
+    const col = opts.color || COL.cyan, unit = opts.unit || '';
+    function set(v) { val = v; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h * 0.9, r = Math.min(w / 2 - 14, h * 0.8);
+      ctx.lineWidth = 13; ctx.lineCap = 'round';
+      ctx.strokeStyle = COL.bg2; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI); ctx.stroke();
+      const frac = clamp(val / max, 0, 1), c = typeof col === 'function' ? col(val) : col;
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + frac * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '700 30px ' + css('--font', 'sans-serif');
+      ctx.fillText(Math.round(val * 10) / 10 + '', cx, cy - 6);
+      ctx.fillStyle = COL.t2; ctx.font = '11px ' + css('--font', 'sans-serif'); ctx.fillText(unit, cx, cy + 12);
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get value() { return val; } };
+  }
+
+  /* ---- Donut / ring ---- */
+  function Donut(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180;
+    let segs = opts.segments || [];
+    const centerLabel = opts.centerLabel || '';
+    function set(s) { segs = s; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 10, ir = r * 0.62;
+      const total = segs.reduce((a, s) => a + (s.value || 0), 0) || 1;
+      let a0 = -Math.PI / 2;
+      segs.forEach(s => {
+        const a1 = a0 + (s.value / total) * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a0, a1); ctx.closePath();
+        ctx.fillStyle = s.color || COL.cyan; ctx.fill(); a0 = a1;
+      });
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath(); ctx.arc(cx, cy, ir, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      const big = centerLabel || total;
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 22px ' + css('--font', 'sans-serif');
+      ctx.fillText(big + '', cx, cy + 2);
+      if (opts.centerSub) { ctx.fillStyle = COL.t3; ctx.font = '10px ' + css('--font', 'sans-serif'); ctx.fillText(opts.centerSub, cx, cy + 18); }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw };
+  }
+
+  /* ---- Heatmap (rows x cols, values 0..1) ---- */
+  function Heatmap(canvas, opts) {
+    opts = opts || {};
+    const rows = opts.rows || 7, cols = opts.cols || 24, h = opts.height || 150;
+    const base = opts.color || COL.cyan;
+    let grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => rand(0, 1)));
+    function set(g) { grid = g; draw(); }
+    function poke(r, c, v) { if (grid[r]) grid[r][c] = v; }
+    function shift(col) { grid.forEach(row => { row.shift(); row.push(0); }); if (col) { /* caller fills last col */ } draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const gap = 2, cw = (w - (cols - 1) * gap) / cols, ch = (h - (rows - 1) * gap) / rows;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = clamp(grid[r][c], 0, 1);
+        ctx.fillStyle = v < 0.04 ? COL.bg2 : withAlpha(base, 0.12 + v * 0.88);
+        ctx.beginPath(); rr(ctx, c * (cw + gap), r * (ch + gap), cw, ch, 2); ctx.fill();
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, poke, shift, draw, get grid() { return grid; } };
+  }
+
+  /* ---- Sparkline ---- */
+  function Sparkline(canvas, opts) {
+    opts = opts || {};
+    const N = opts.points || 40, h = opts.height || 34, c = opts.color || COL.cyan;
+    let d = Array.from({ length: N }, () => rand(0.3, 0.7));
+    function push(v) { d.push(v); if (d.length > N) d.shift(); draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const sx = w / (N - 1), Y = v => (h - 3) - clamp(v, 0, 1) * (h - 6);
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, withAlpha(c, 0.3)); grd.addColorStop(1, withAlpha(c, 0));
+      ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v))); ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      d.forEach((v, i) => { i ? ctx.lineTo(i * sx, Y(v)) : ctx.moveTo(i * sx, Y(v)); }); ctx.stroke();
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw };
+  }
+
+  /* ---- Rolling event feed ---- */
+  function Feed(el, opts) {
+    opts = opts || {}; const max = opts.max || 50;
+    function add(tag, kind, msg) {
+      if (!el) return;
+      const row = document.createElement('div'); row.className = 'feed-row';
+      row.innerHTML = `<span class="feed-time">${now()}</span><span class="feed-tag ${kind || ''}">${tag}</span><span class="feed-msg">${msg}</span>`;
+      el.insertBefore(row, el.firstChild);
+      while (el.children.length > max) el.removeChild(el.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Event log table (newest on top) ---- */
+  function LogTable(tbody, opts) {
+    opts = opts || {}; const max = opts.max || 80;
+    function add(cells, kind) {
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono">${now()}</td>` + cells.map(c => `<td>${c}</td>`).join('');
+      tbody.insertBefore(tr, tbody.firstChild);
+      while (tbody.children.length > max) tbody.removeChild(tbody.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Tab controller: .tab[data-tab] -> .view[data-view] ---- */
+  function tabs() {
+    const tbtns = document.querySelectorAll('.tab');
+    tbtns.forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-tab');
+      tbtns.forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === id));
+      global.dispatchEvent(new Event('resize'));
+    }));
+  }
+
+  function loop(fn, ms) { fn(); return setInterval(fn, ms || 1000); }
+
+  global.Cog = { LineChart, Bars, Gauge, Donut, Heatmap, Sparkline, Feed, LogTable, tabs, loop, rand, clamp, pick, pad, now, COL, withAlpha };
+})(window);
+
+</script>
+<script>
+(function(){
+  Cog.tabs();
+  const ZONES=['A','B','C','D'];
+  const browse = Cog.LineChart(document.getElementById('ov-browse'),{height:240,points:90,min:0,max:1,series:[{color:Cog.COL.orange},{color:Cog.COL.cyan,fill:false,width:1.5}]});
+  const gauge = Cog.Gauge(document.getElementById('ov-gauge'),{height:160,max:100,unit:'engagement',color:v=>v>70?Cog.COL.orange:v>40?Cog.COL.amber:Cog.COL.gray});
+  const donut = Cog.Donut(document.getElementById('ov-donut'),{height:170,centerSub:'events',segments:[]});
+  const ovPres = Cog.Sparkline(document.getElementById('ov-pres'),{height:46,color:Cog.COL.orange});
+  const spInt = Cog.Sparkline(document.getElementById('sp-int'),{height:30,color:Cog.COL.orange});
+  const spBrowse = Cog.Sparkline(document.getElementById('sp-browse'),{height:30,color:Cog.COL.cyan});
+  const wave = Cog.LineChart(document.getElementById('mo-wave'),{height:220,min:0,max:1,series:[{color:Cog.COL.orange}]});
+  const moGauge = Cog.Gauge(document.getElementById('mo-gauge'),{height:170,max:100,unit:'live score',color:v=>v>70?Cog.COL.orange:v>40?Cog.COL.amber:Cog.COL.gray});
+  const moZones = Cog.Bars(document.getElementById('mo-zones'),{height:180,bars:4,color:(v)=>v>0.65?Cog.COL.orange:Cog.COL.cyan,labels:ZONES});
+  const moReach = Cog.LineChart(document.getElementById('mo-reachchart'),{height:160,min:0,max:1,series:[{color:Cog.COL.pink}]});
+  const heat = Cog.Heatmap(document.getElementById('mo-heat'),{rows:4,cols:40,height:150,color:Cog.COL.orange});
+  const anHours = Cog.Bars(document.getElementById('an-hours'),{height:200,bars:14,color:Cog.COL.orange,labels:['8','','10','','12','','14','','16','','18','','20','']});
+  anHours.set([0.2,0.35,0.5,0.62,0.7,0.55,0.85,0.92,0.78,0.66,0.74,0.6,0.45,0.3]);
+  const anDur = Cog.Bars(document.getElementById('an-dur'),{height:200,bars:10,color:Cog.COL.cyan,labels:['5','','15','','25','','35','','45','55']});
+  anDur.set([0.35,0.85,0.95,0.7,0.5,0.32,0.2,0.12,0.07,0.04]);
+  const anHeat = Cog.Heatmap(document.getElementById('an-heat'),{rows:4,cols:24,height:170,color:Cog.COL.orange});
+  Cog.Donut(document.getElementById('an-mix'),{height:150,centerLabel:'today',centerSub:'sessions',segments:[{label:'browse',value:54,color:Cog.COL.cyan},{label:'reach',value:31,color:Cog.COL.orange},{label:'pick up',value:15,color:Cog.COL.pink}]});
+  const feed = Cog.Feed(document.getElementById('feed'));
+  const log = Cog.LogTable(document.getElementById('log'));
+  feed.add('boot','ok','Detector active · tracking <b>4 zones</b>');
+  log.add(['<b>engagement_score</b>','<span class="pill pill-ok">ok</span>','Baseline calibrated, zones A–D armed']);
+
+  let t=0,present=false,session=0,interactions=0,reaches=0,score=0,evCount=1,reachPulse=0,rpmWindow=0;
+  const evDonut={shelf_interaction:0,reach_event:0,browse_time:0};
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  function refreshDonut(){donut.set([
+    {label:'interaction',value:evDonut.shelf_interaction+1,color:Cog.COL.cyan},
+    {label:'reach',value:evDonut.reach_event+1,color:Cog.COL.orange},
+    {label:'browse',value:evDonut.browse_time+1,color:Cog.COL.pink}]);}
+  refreshDonut();
+
+  Cog.loop(function(){
+    t++;
+    // shopper arrives
+    if(!present && Math.random()<0.16){present=true;session=0;interactions++;evCount++;evDonut.shelf_interaction++;
+      const z=Cog.pick(ZONES);
+      feed.add('shelf_interaction','info','Shopper detected at zone <b>'+z+'</b>');
+      log.add(['<b>shelf_interaction</b>','<span class="pill pill-info">info</span>','Presence onset, zone '+z]);
+      set('mo-zone','zone '+z); set('m-zone',z);}
+    if(present){session++;
+      // reach events while browsing
+      if(Math.random()<0.22){reaches++;reachPulse=4;rpmWindow++;evCount++;evDonut.reach_event++;
+        feed.add('reach_event','warn','Reach detected — product touch at <b>'+Math.round(Cog.rand(35,70))+' cm</b>');
+        log.add(['<b>reach_event</b>','<span class="pill pill-warn">reach</span>','Arm extension toward shelf, dwell continues']);}
+      // sustained high engagement -> banner
+      if(session>10 && score>78 && Math.random()<0.2){
+        feed.add('engagement_score','warn','Sustained high engagement — score <b>'+Math.round(score)+'</b>');
+        log.add(['<b>engagement_score</b>','<span class="pill pill-warn">high</span>','Prolonged reaching, possible low stock']);
+        document.getElementById('banner-sub').textContent='Sustained reaching at zone '+document.getElementById('m-zone').textContent+' — restock or staff attention suggested';
+        document.getElementById('banner').classList.add('show'); evCount++;}
+      // shopper leaves
+      if(session>6 && Math.random()<0.16){present=false;evCount++;evDonut.browse_time++;
+        feed.add('browse_time','ok','Session ended · browsed <b>'+session+'s</b>');
+        log.add(['<b>browse_time</b>','<span class="pill pill-ok">done</span>','Shopper left zone after '+session+'s, '+(reachPulse>0?'reached':'browse-only')+'']);
+        set('mo-zone','none'); session=0;}
+    }
+    if(reachPulse>0)reachPulse--;
+
+    set('evcount',evCount); set('k-int',interactions); set('k-reach',reaches);
+    set('an-reaches',312+reaches); refreshDonut();
+
+    const energy = present?Cog.rand(0.4,0.95):Cog.rand(0.02,0.12);
+    const pres = present?Cog.rand(0.55,1):Cog.rand(0,0.15);
+    wave.push(energy + (reachPulse>0?Cog.rand(0,0.05):0));
+    browse.push([Cog.clamp(session/30,0,1), pres]);
+    moReach.push(reachPulse>0?Cog.rand(0.7,1):Cog.rand(0,0.15));
+    score = present?Cog.clamp(score+Cog.rand(4,12),0,98):Cog.clamp(score-Cog.rand(5,12),0,98);
+    gauge.set(score); moGauge.set(score);
+    spInt.push(Cog.clamp(interactions/50,0,1)); spBrowse.push(Cog.clamp(session/30,0,1)); ovPres.push(pres);
+
+    // zone bars
+    const zv=ZONES.map((_,i)=> (present && document.getElementById('m-zone').textContent===ZONES[i]) ? Cog.rand(0.6,1) : Cog.rand(0.05,0.4));
+    moZones.set(zv);
+
+    // heatmaps
+    heat.grid.forEach((r,i)=>{r.shift();r.push(zv[i]*Cog.rand(0.7,1));}); heat.draw();
+    if(t%6===0){anHeat.grid.forEach((r)=>{r.shift();r.push(Cog.rand(0.1,0.9));}); anHeat.draw();}
+
+    if(t%5===0){set('mo-rpm', rpmWindow); rpmWindow=0;}
+    set('mo-energy',energy.toFixed(2));
+    set('mo-reach', reachPulse>0?Math.round(Cog.rand(35,70)):'—');
+    set('k-browse', present?session:'0');
+    set('k-score',Math.round(score));
+    set('s-dwell',(present?Cog.rand(0.5,0.9):Cog.rand(0.05,0.25)).toFixed(2));
+    set('s-rweight',(reachPulse>0?Cog.rand(0.6,0.9):Cog.rand(0.05,0.25)).toFixed(2));
+    set('m-shoppers', present?1:0);
+
+    const ssub=document.getElementById('k-score-sub');
+    if(score>70){ssub.textContent='high';ssub.style.color='var(--orange)';}
+    else if(score>40){ssub.textContent='moderate';ssub.style.color='var(--amber)';}
+    else{ssub.textContent='low';ssub.style.color='';}
+
+    set('k-conv', reaches>0 ? Math.round(reaches/Math.max(1,interactions)*100)+'%' : '—');
+    set('m-trend', present?'Active':'Low');
+
+    const stEl=document.getElementById('k-state');
+    if(present){stEl.textContent= reachPulse>0?'Reaching':'Browsing';stEl.style.color='var(--orange)';
+      set('k-state-sub','session · '+session+'s'); set('s-dur',session+'s');}
+    else{stEl.textContent='Idle';stEl.style.color='var(--gray)';set('k-state-sub','aisle empty');set('s-dur','—');}
+  },1000);
+})();
+</script>
+</body>
+</html>
