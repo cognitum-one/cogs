@@ -28,6 +28,14 @@ const FEATURE_PKT_SIZE: usize = 48;
 const DEFAULT_UDP_BIND: &str = "0.0.0.0:5006";
 const DEFAULT_PROBE_MS: u64 = 2000;
 
+/// Bind address for the ESP32 CSI/vitals UDP stream. Defaults to the direct ESP32
+/// port (`0.0.0.0:5006`); override with `COG_CSI_BIND` when running behind the
+/// `presence-field` broker, which owns 5006 and relays vitals/feature packets to
+/// a loopback port (e.g. `0.0.0.0:5106`). Lets multiple cogs coexist.
+pub fn csi_bind_addr() -> String {
+    std::env::var("COG_CSI_BIND").unwrap_or_else(|_| DEFAULT_UDP_BIND.to_string())
+}
+
 /// ADR-069 / ADR-063 device-computed vitals packet (`edge_vitals_pkt_t`,
 /// 32 bytes, `__attribute__((packed))`, little-endian). The ESP32 already runs
 /// the breathing/heart-rate/presence estimation on-device (the estimate fixed
@@ -101,7 +109,7 @@ fn decode_vitals(pkt: &[u8]) -> Option<Esp32Vitals> {
 /// `{"samples": [{"value": f, ...}, ...]}` shape so cogs need no other
 /// changes.
 pub fn fetch_sensors() -> Result<serde_json::Value, String> {
-    match fetch_from_udp_window(DEFAULT_UDP_BIND, DEFAULT_PROBE_MS) {
+    match fetch_from_udp_window(&csi_bind_addr(), DEFAULT_PROBE_MS) {
         Ok(values) if !values.is_empty() => Ok(udp_values_to_json(&values, "esp32-udp")),
         _ => fetch_from_seed_stream(),
     }
@@ -250,7 +258,7 @@ pub fn latest_vitals() -> Option<Esp32Vitals> {
 
 pub fn fetch_sensors_persistent() -> Result<serde_json::Value, String> {
     static LISTENER: std::sync::OnceLock<Option<Esp32UdpListener>> = std::sync::OnceLock::new();
-    let listener = LISTENER.get_or_init(|| match Esp32UdpListener::bind(DEFAULT_UDP_BIND) {
+    let listener = LISTENER.get_or_init(|| match Esp32UdpListener::bind(&csi_bind_addr()) {
         Ok(l) => Some(l),
         Err(e) => {
             // Loud, once: a busy 5006 means another CSI cog holds it and this cog

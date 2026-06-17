@@ -1,0 +1,61 @@
+[cog]
+id = "presence-field"
+name = "Presence Field"
+version = "0.1.0"
+category = "presence"
+description = "Multi-node WiFi-CSI presence via field-model residual (ADR-151). Learns an empty-room baseline per node, then detects a person as the residual after projecting out environmental modes, maxed across nodes. Owns UDP 5006 and relays vitals/feature packets to a loopback port so vitals cogs coexist."
+binary = "cog-presence-field-arm"
+
+[config]
+
+[config.thresh]
+type = "number"
+label = "Presence threshold"
+description = "Residual energy multiple over the empty-room floor required to declare a person present. On-seed testing read lower than the 4.0 default, so this is tunable per site."
+default = 4.0
+min = 1.0
+max = 100.0
+cli_arg = "--thresh"
+
+[config.quorum]
+type = "integer"
+label = "Node quorum"
+description = "Number of nodes whose residual must exceed the threshold to declare presence (multi-node fusion). 1 = any node; 2+ = robust medical-grade N-of-M gate that rejects a single through-wall node."
+default = 1
+min = 1
+max = 8
+cli_arg = "--quorum"
+
+[config.modes]
+type = "integer"
+label = "Environmental modes"
+description = "Number of top environmental eigenmodes projected out of the signal, per node."
+default = 8
+min = 1
+max = 32
+cli_arg = "--modes"
+
+[config.hold]
+type = "integer"
+label = "Presence hold"
+description = "Seconds to keep presence latched true after the last detection."
+default = 5
+min = 1
+max = 120
+unit = "seconds"
+cli_arg = "--hold"
+
+[config.interval]
+type = "integer"
+label = "Evaluation interval"
+description = "Seconds between presence evaluations."
+default = 1
+min = 1
+max = 60
+unit = "seconds"
+cli_arg = "--interval"
+
+[console]
+allowed_commands = ["--help"]
+max_runtime_secs = 10
+output_limit_bytes = 65536

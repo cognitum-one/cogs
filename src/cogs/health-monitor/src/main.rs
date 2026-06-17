@@ -264,7 +264,7 @@ fn fetch_batch(source: &Source, window_ms: u64, max_samples: usize) -> Result<Se
             // so Auto used to fall straight through to synthetic and never
             // bound 5006. The shared crate has no such gate — same path the
             // cardiac-arrhythmia / sleep-apnea / respiratory-distress cogs use.
-            match cog_sensor_sources::fetch_from_udp_window(AUTO_UDP_BIND, AUTO_UDP_PROBE_MS) {
+            match cog_sensor_sources::fetch_from_udp_window(&cog_sensor_sources::csi_bind_addr(), AUTO_UDP_PROBE_MS) {
                 Ok(vals) if !vals.is_empty() => Ok(SensorBatch {
                     amplitudes: vals.into_iter().take(max_samples).collect(),
                     source_tag: "auto:esp32-udp",
@@ -424,6 +424,26 @@ fn fetch_from_esp32_udp(_addr: &str, _window_ms: u64, _max_samples: usize) -> Re
     Err("--source esp32-udp not enabled in this build (rebuild with --features esp32-udp)".into())
 }
 
+/// Field-model presence published by the `presence-field` broker cog (ADR-151).
+/// Returns `Some(present)` only when the file exists and is fresh (< 8 s old), so
+/// HM gates on robust multi-node presence instead of the device's flaky flag, and
+/// falls back to its own presence when the broker isn't running.
+fn read_field_presence() -> Option<bool> {
+    let path = std::env::var("COG_PRESENCE_FILE")
+        .unwrap_or_else(|_| "/tmp/cognitum-presence.json".to_string());
+    let data = std::fs::read(&path).ok()?;
+    let v: serde_json::Value = serde_json::from_slice(&data).ok()?;
+    let ts = v.get("ts")?.as_u64()?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    if now.saturating_sub(ts) > 8 {
+        return None; // stale — broker stopped; fall back to HM's own presence
+    }
+    v.get("present")?.as_bool()
+}
+
 fn store_report(report: &HealthReport) -> Result<(), String> {
     let status_code = match report.overall_status.as_str() {
         "normal" => 0.0, "alert" => 0.7, "critical" => 1.0, _ => 0.3,
@@ -516,7 +536,7 @@ fn main() {
     // conservative either way.
     const APNEA_CONFIRM_CYCLES: u32 = 3;
     let udp_listener = match &source {
-        Source::Auto => match cog_sensor_sources::Esp32UdpListener::bind(AUTO_UDP_BIND) {
+        Source::Auto => match cog_sensor_sources::Esp32UdpListener::bind(&cog_sensor_sources::csi_bind_addr()) {
             Ok(l) => Some(l),
             Err(e) => {
                 eprintln!(
@@ -671,7 +691,14 @@ fn main() {
                     }
                 };
 
-                if let Some(r) = reading {
+                if let Some(mut r) = reading {
+                    // ADR-151: prefer the field-model broker's robust multi-node
+                    // presence over the device's unreliable single-node flag, when
+                    // a fresh reading is available. Gates vitals/alerts on it.
+                    if let Some(fp) = read_field_presence() {
+                        r.is_present = fp;
+                        if !fp { r.apnea_detected = false; } // no person -> no apnea alarm
+                    }
                     let mut alerts = Vec::new();
                     if r.apnea_detected {
                         alerts.push(format!("APNEA: breathing drop={:.0}%", r.drop_pct * 100.0));

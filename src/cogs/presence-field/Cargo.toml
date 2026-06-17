@@ -1,0 +1,20 @@
+[package]
+name = "cog-presence-field"
+version = "0.1.0"
+edition = "2021"
+description = "🛰️ Multi-node WiFi-CSI presence via field-model residual (ADR-151). Learns an empty-room baseline per node, then presence = body-perturbation residual after projecting out environmental modes, maxed across nodes. Detects a still person where single-node phase-variance cannot."
+
+[[bin]]
+name = "cog-presence-field"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
