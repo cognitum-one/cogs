@@ -248,7 +248,13 @@ fn store_presence(present: bool, score: f64) {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let bind = arg(&args, "--bind").unwrap_or_else(|| "0.0.0.0:5006".to_string());
+    // Bind precedence: --bind > COG_CSI_BIND env > :5006 default. Under ADR-104
+    // P2 the cognitum-csi-relay is the single binder on :5006 and the agent sets
+    // COG_CSI_BIND to this cog's loopback fan-out port, so presence-field becomes
+    // a relay consumer instead of binding the data port itself.
+    let bind = arg(&args, "--bind")
+        .or_else(|| std::env::var("COG_CSI_BIND").ok().filter(|s| !s.is_empty()))
+        .unwrap_or_else(|| "0.0.0.0:5006".to_string());
     let k = arg(&args, "--modes").and_then(|s| s.parse().ok()).unwrap_or(8usize);
     let thresh = arg(&args, "--thresh").and_then(|s| s.parse().ok()).unwrap_or(4.0f64);
     let hold = arg(&args, "--hold").and_then(|s| s.parse().ok()).unwrap_or(5u64);
