@@ -87,6 +87,46 @@ fn zero_crossing_bpm(signal: &[f64], sample_rate: f64) -> f64 {
     (crossings as f64 / (2.0 * duration_s)) * 60.0
 }
 
+/// Fixed-size sliding window returning the median of the last `cap` values.
+/// WiFi-CSI vitals are estimated per-window and are spiky frame-to-frame; a
+/// short median rejects single-cycle outliers without the lag of a long moving
+/// average. Median (not mean) so one wild spike cannot drag the published rate.
+struct SmoothWindow {
+    cap: usize,
+    buf: std::collections::VecDeque<f64>,
+}
+
+impl SmoothWindow {
+    fn new(cap: usize) -> Self {
+        Self { cap: cap.max(1), buf: std::collections::VecDeque::new() }
+    }
+    fn clear(&mut self) {
+        self.buf.clear();
+    }
+    /// Push a sample and return the median over the (capped) window.
+    fn push_median(&mut self, v: f64) -> f64 {
+        if self.buf.len() == self.cap {
+            self.buf.pop_front();
+        }
+        self.buf.push_back(v);
+        let mut s: Vec<f64> = self.buf.iter().copied().collect();
+        s.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let n = s.len();
+        if n % 2 == 1 { s[n / 2] } else { (s[n / 2 - 1] + s[n / 2]) / 2.0 }
+    }
+}
+
+/// Sustained-alarm gate (cogs#41). Advances a per-alarm streak: `elevated` is
+/// whether this cycle's reading is past the threshold. Returns the new streak
+/// and whether the alarm should fire (streak has reached `confirm` consecutive
+/// cycles). A non-elevated cycle resets the streak to 0. Pure → unit-testable;
+/// every rate alarm (TACHYPNEA/TACHYCARDIA/BRADYCARDIA) routes through it so a
+/// single noisy per-window estimate can't raise a false clinical alert.
+fn sustained(elevated: bool, streak: u32, confirm: u32) -> (u32, bool) {
+    let s = if elevated { streak.saturating_add(1) } else { 0 };
+    (s, s >= confirm)
+}
+
 /// Presence detection via signal variance threshold
 struct PresenceDetector {
     baseline_var: f64,
@@ -535,6 +575,22 @@ fn main() {
     // "no estimate yet" needs firmware confirmation; the sustained gate is
     // conservative either way.
     const APNEA_CONFIRM_CYCLES: u32 = 3;
+    // High-rate alarms (TACHYPNEA/TACHYCARDIA) require the elevation to persist
+    // for this many consecutive present cycles before firing — mirrors the
+    // APNEA gate so a single noisy per-window estimate can't raise a false
+    // clinical alert (cogs#41).
+    const TACHYPNEA_CONFIRM_CYCLES: u32 = 3;
+    const TACHYCARDIA_CONFIRM_CYCLES: u32 = 3;
+    // Low-rate alarm (BRADYCARDIA) is gated the same way — an elderly resting
+    // heart rate legitimately sits near the 50 bpm line and the contactless
+    // estimate is noisy, so a single sub-50 sample must not alarm (cogs#41:
+    // the high-rate gate left this path asymmetric and it false-fired in the
+    // field at HR~46).
+    const BRADYCARDIA_CONFIRM_CYCLES: u32 = 3;
+    // Median window over the published breathing/HR rate. WiFi-CSI vitals are
+    // estimated per-window and swing cycle-to-cycle; a short median rejects
+    // single-cycle outliers before display/alerting (cogs#41).
+    const VITALS_SMOOTH_WINDOW: usize = 5;
     let udp_listener = match &source {
         Source::Auto => match cog_sensor_sources::Esp32UdpListener::bind(&cog_sensor_sources::csi_bind_addr()) {
             Ok(l) => Some(l),
@@ -553,6 +609,12 @@ fn main() {
     let mut presence_sticky = false;
     let mut presence_absent_streak: u32 = 0;
     let mut low_breath_streak: u32 = 0;
+    // cogs#41: sustained high-rate alarm gates + per-rate median smoothers.
+    let mut high_breath_streak: u32 = 0;
+    let mut high_hr_streak: u32 = 0;
+    let mut low_hr_streak: u32 = 0;
+    let mut breath_smooth = SmoothWindow::new(VITALS_SMOOTH_WINDOW);
+    let mut hr_smooth = SmoothWindow::new(VITALS_SMOOTH_WINDOW);
 
     // One acquired cycle is either device-computed vitals (preferred — the ESP32
     // already runs the estimation, v0.7.1-validated) or raw amplitude samples to
@@ -699,24 +761,51 @@ fn main() {
                         r.is_present = fp;
                         if !fp { r.apnea_detected = false; } // no person -> no apnea alarm
                     }
+
+                    // cogs#41: temporal median smoothing of the published rates.
+                    // Per-window CSI vitals are spiky; publish a short-window
+                    // median so a single noisy estimate can't spike the displayed
+                    // rate or trip an alarm. Only smooth a present reading; reset
+                    // on absence so stale values don't carry across an empty room.
+                    if r.is_present {
+                        r.breathing_bpm = breath_smooth.push_median(r.breathing_bpm);
+                        r.heart_rate_bpm = hr_smooth.push_median(r.heart_rate_bpm);
+                    } else {
+                        breath_smooth.clear();
+                        hr_smooth.clear();
+                    }
+
                     let mut alerts = Vec::new();
                     if r.apnea_detected {
                         alerts.push(format!("APNEA: breathing drop={:.0}%", r.drop_pct * 100.0));
                     }
-                    if r.breathing_bpm > 30.0 {
-                        alerts.push(format!("TACHYPNEA: {:.0} bpm", r.breathing_bpm));
-                    }
-                    if r.heart_rate_bpm > 100.0 {
-                        alerts.push(format!("TACHYCARDIA: {:.0} bpm", r.heart_rate_bpm));
-                    }
-                    if r.heart_rate_bpm > 0.0 && r.heart_rate_bpm < 50.0 {
-                        alerts.push(format!("BRADYCARDIA: {:.0} bpm", r.heart_rate_bpm));
-                    }
-                    if vital_stats.count > 5 {
-                        let z = vital_stats.z_score(r.breathing_bpm);
-                        if z.abs() > 2.5 {
-                            alerts.push(format!("VITAL_ANOMALY: z={:.2}", z));
+                    // cogs#41: high-rate alarms require SUSTAINED elevation (N
+                    // consecutive present cycles), mirroring the apnea gate — a
+                    // transient artifact spike no longer raises a false alert. No
+                    // vitals alarms while no person is present.
+                    if r.is_present {
+                        let (s, fire) = sustained(r.breathing_bpm > 30.0, high_breath_streak, TACHYPNEA_CONFIRM_CYCLES);
+                        high_breath_streak = s;
+                        if fire { alerts.push(format!("TACHYPNEA: {:.0} bpm", r.breathing_bpm)); }
+
+                        let (s, fire) = sustained(r.heart_rate_bpm > 100.0, high_hr_streak, TACHYCARDIA_CONFIRM_CYCLES);
+                        high_hr_streak = s;
+                        if fire { alerts.push(format!("TACHYCARDIA: {:.0} bpm", r.heart_rate_bpm)); }
+
+                        let (s, fire) = sustained(r.heart_rate_bpm > 0.0 && r.heart_rate_bpm < 50.0, low_hr_streak, BRADYCARDIA_CONFIRM_CYCLES);
+                        low_hr_streak = s;
+                        if fire { alerts.push(format!("BRADYCARDIA: {:.0} bpm", r.heart_rate_bpm)); }
+
+                        if vital_stats.count > 5 {
+                            let z = vital_stats.z_score(r.breathing_bpm);
+                            if z.abs() > 2.5 {
+                                alerts.push(format!("VITAL_ANOMALY: z={:.2}", z));
+                            }
                         }
+                    } else {
+                        high_breath_streak = 0;
+                        high_hr_streak = 0;
+                        low_hr_streak = 0;
                     }
 
                     let overall = if alerts.iter().any(|a| a.starts_with("APNEA")) {
@@ -760,5 +849,83 @@ fn main() {
         if elapsed < Duration::from_secs(interval) {
             std::thread::sleep(Duration::from_secs(interval) - elapsed);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SmoothWindow, sustained};
+
+    #[test]
+    fn median_rejects_a_single_spike() {
+        // Resting breathing ~16 bpm with one artifact spike to 33.
+        let mut w = SmoothWindow::new(5);
+        for v in [16.0, 17.0, 16.0, 33.0, 15.0] {
+            w.push_median(v);
+        }
+        // Median over the window ignores the lone 33 spike.
+        let m = w.push_median(16.0);
+        assert!(m < 20.0, "median {m} should stay near resting rate, not chase the spike");
+    }
+
+    #[test]
+    fn median_tracks_a_sustained_shift() {
+        // A genuine sustained rise must come through (not be suppressed).
+        let mut w = SmoothWindow::new(5);
+        let mut last = 0.0;
+        for v in [12.0, 13.0, 28.0, 29.0, 30.0, 31.0, 32.0] {
+            last = w.push_median(v);
+        }
+        assert!(last >= 29.0, "sustained elevation {last} should propagate through the median");
+    }
+
+    #[test]
+    fn clear_resets_the_window() {
+        let mut w = SmoothWindow::new(3);
+        w.push_median(40.0);
+        w.push_median(41.0);
+        w.clear();
+        // After clear, the first new sample is its own median.
+        assert_eq!(w.push_median(15.0), 15.0);
+    }
+
+    #[test]
+    fn window_never_exceeds_cap() {
+        let mut w = SmoothWindow::new(3);
+        for v in [1.0, 2.0, 3.0, 4.0, 5.0] {
+            w.push_median(v);
+        }
+        // Last 3 are [3,4,5] -> median 4.
+        assert_eq!(w.push_median(6.0), 5.0); // window [4,5,6] -> 5
+    }
+
+    #[test]
+    fn sustained_gate_requires_three_consecutive() {
+        // cogs#41: two elevated cycles must NOT fire; the third must.
+        let (s1, f1) = sustained(true, 0, 3);
+        assert_eq!((s1, f1), (1, false));
+        let (s2, f2) = sustained(true, s1, 3);
+        assert_eq!((s2, f2), (2, false));
+        let (s3, f3) = sustained(true, s2, 3);
+        assert_eq!((s3, f3), (3, true), "third consecutive cycle fires");
+        // and it stays fired while elevation persists
+        let (_s4, f4) = sustained(true, s3, 3);
+        assert!(f4);
+    }
+
+    #[test]
+    fn sustained_gate_resets_on_a_normal_cycle() {
+        // A single normal reading between spikes resets the streak — so an
+        // isolated spike (the field BRADYCARDIA/TACHYPNEA false-alarm) never
+        // reaches the confirm count.
+        let (s1, _) = sustained(true, 0, 3);
+        let (s2, _) = sustained(true, s1, 3);
+        let (s3, fired) = sustained(false, s2, 3); // normal cycle
+        assert_eq!((s3, fired), (0, false), "one normal reading clears the streak");
+        // Two isolated spikes separated by a normal cycle never fire.
+        let (a, _) = sustained(true, 0, 3);
+        let (b, _) = sustained(false, a, 3);
+        let (_c, f) = sustained(true, b, 3);
+        assert!(!f);
     }
 }

@@ -1,10 +1,14 @@
 [cog]
 id = "health-monitor"
 name = "Health Monitor"
-version = "1.2.3"
+version = "1.2.4"
 category = "health"
 description = "Combined vital signs dashboard with heart rate, breathing, presence, and apnea detection in one process"
 binary = "cog-health-monitor-arm"
+# seed#213: this cog consumes only the ESP32 vitals packet (0xC5110002), not
+# the raw-CSI firehose. The agent turns this into a packet-type allowlist in
+# the csi-relay routes so the relay stops flooding our receive socket.
+csi_packet_types = ["vitals"]
 
 [config]
 
