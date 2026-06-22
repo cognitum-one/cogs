@@ -1,10 +1,13 @@
 [cog]
 id = "ruview-densepose"
 name = "RuView WiFi DensePose"
-version = "1.2.1"
+version = "1.2.2"
 category = "research"
 description = "ESP32 CSI to 17-keypoint skeleton proxy via Hampel outlier rejection and phase sanitization"
 binary = "cog-ruview-densepose-arm"
+# seed#213: consumes only the ESP32 feature packet (0xC5110003), so the
+# csi-relay should not fan the raw-CSI firehose at this cog.
+csi_packet_types = ["feature"]
 
 [config]
 
