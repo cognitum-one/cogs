@@ -1,0 +1,27 @@
+doomgeneric (vendored)
+======================
+
+Origin: https://github.com/ozkl/doomgeneric
+License: GNU General Public License v2 (see ./LICENSE)
+
+doomgeneric is a portable port of id Software's DOOM that reduces the
+platform layer to a handful of DG_* callbacks. This directory vendors the
+subset of the C engine that the `doom` cog compiles via build.rs (the
+`cc` crate). We deliberately DO NOT vendor any of the upstream platform
+backends (doomgeneric_sdl.c, _xlib.c, _allegro.c, _win.c, _soso*.c,
+_linuxvt.c, _emscripten.c) — the cog provides its own headless DG_*
+backend in ../../src/main.rs. The SDL/Allegro sound mixers are likewise
+omitted; the engine builds against the generic sound stub (no audio out).
+
+Why vendored (not a submodule):
+  * The PR is self-contained and CI (`cargo check`) builds without
+    `git submodule update`.
+  * The exact source set we compile is pinned and reviewable in-tree.
+
+Licensing note:
+  doomgeneric and the original DOOM source it derives from are GPLv2.
+  Linking this engine makes the `doom` cog binary a GPLv2 derivative —
+  hence the `doom` cog ships under GPLv2 (see ../../LICENSE and
+  ../../NOTICE) even though the rest of the cognitum-one/cogs repo is
+  MIT. No DOOM game data (WAD) is vendored here; the cog uses the
+  freely-redistributable FreeDoom IWAD as a runtime asset.
