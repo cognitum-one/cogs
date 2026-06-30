@@ -5,7 +5,10 @@ version = "0.1.0"
 category = "network"
 description = "Reach the seed from anywhere via a private Tailscale network (WireGuard). Userspace mode — no root, no kernel routing."
 binary = "cog-tailscale-arm"
-hardware_requirement = ["pi-zero-2w", "v0-appliance"]
+# Seed-only: the v0 appliance runs Tailscale as a native system service
+# (tailscale.com/install.sh + `tailscale up`, see v0-appliance/FLASHING.md), so
+# the rootless userspace-mode cog is not built for aarch64.
+hardware_requirement = ["pi-zero-2w"]
 
 # Upstream Tailscale binaries bundled alongside the cog (handled by
 # publish-extra.sh during a deliberate `publish-cog` run — NOT the routine

@@ -37,9 +37,12 @@ is accepted). `scripts/cog-targets.py` maps device → arch:
 | `v0-appliance` | aarch64 | `aarch64-unknown-linux-gnu` | `cogs/arm64/` | `-aarch64` |
 
 A missing/empty value defaults to **both**. `ci.yml`'s `manifest-validate` job
-fails the build if any cog omits it or names an unknown device. All 108 cogs are
-currently `["pi-zero-2w", "v0-appliance"]`; a future Hailo-only vision cog opts
-out of armhf with a one-line `["v0-appliance"]`.
+fails the build if any cog omits it or names an unknown device. 107 of 108 cogs
+are `["pi-zero-2w", "v0-appliance"]` (all CSI/audio/sensor-DSP, no camera/NPU-only
+members). The exception is **tailscale** (`["pi-zero-2w"]`): the v0 appliance runs
+Tailscale as a native system service, so the rootless userspace-mode cog is
+seed-only. A future Hailo-only vision cog would likewise opt out with
+`["v0-appliance"]`.
 
 ### 2. Two CI workflows replace the manual scripts and the seed-side stub
 
