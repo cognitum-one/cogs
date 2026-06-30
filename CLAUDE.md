@@ -51,6 +51,26 @@ cargo check
 cd cognitum-sim && cargo build -p cognitum-wasm-sim
 ```
 
+## Building & Publishing cogs (ADR-020)
+
+This repo owns cog source **and** build **and** publish (dual-arch). The seed
+firmware does not build cogs — it installs the binaries this repo publishes.
+
+- **Every cog MUST declare `hardware_requirement` in `cog.toml`** — a list of
+  devices: `pi-zero-2w` (→ armhf, seed) and/or `v0-appliance` (→ aarch64, v0).
+  **CI fails the build if it's missing or names an unknown device.** Most cogs
+  are `["pi-zero-2w", "v0-appliance"]`; declare a single device to opt out of an
+  arch (e.g. `tailscale` is `["pi-zero-2w"]` — v0 runs Tailscale natively).
+- `scripts/cog-targets.py` maps `hardware_requirement` → build arches.
+- **Publish via CI, not by hand:**
+  - `gh workflow run publish-cog.yml -f cog=<id>` — build + upload one cog to
+    `gs://cognitum-apps/cogs/{arm,arm64}/`, prints sha256s.
+  - `build-all-cogs.yml` — umbrella batch (`-f publish=false` = build-only smoke;
+    `publish=true` or a `cogs-v*` tag = upload).
+- The install catalog `app-registry.json` lives in **cognitum-one/seed** — bump
+  it by hand from a publish run's sha256 summary.
+- `scripts/build-all-arm*.sh` are offline/dev helpers only.
+
 ## Key Directories
 
 | Path | Contents |
