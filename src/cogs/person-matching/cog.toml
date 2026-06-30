@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "signal"
 description = "Distinguish multiple people in the same room via signal feature clustering"
 binary = "cog-person-matching-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

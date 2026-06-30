@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Monitor workers in confined spaces with presence duration tracking, breathing analysis, and inactivity alerts"
 binary = "cog-confined-space-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

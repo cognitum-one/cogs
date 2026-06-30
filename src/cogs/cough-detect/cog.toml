@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Acoustic transient + spectral cough detector with 30s cluster aggregation. Early-warning signal for respiratory illness."
 binary = "cog-cough-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

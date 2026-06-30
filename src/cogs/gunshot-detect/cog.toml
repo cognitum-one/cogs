@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Saturating peak + exponential decay acoustic detector with optional ruview CSI motion-drop reinforcement."
 binary = "cog-gunshot-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

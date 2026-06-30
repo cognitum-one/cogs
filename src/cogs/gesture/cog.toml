@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "developer"
 description = "Core gesture recognition building block using template-based DTW matching"
 binary = "cog-gesture-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

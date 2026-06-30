@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Detect large moving objects via strong multi-channel signal disruption with rapid approach alerting"
 binary = "cog-forklift-proximity-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Acoustic hive state classifier. Detects healthy / chaotic / queenless / swarming / robbing via hum-band energy + chaos + piping autocorr."
 binary = "cog-beehive-monitor-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Extract tempo from periodic arm gestures via autocorrelation for conductor gesture reading"
 binary = "cog-music-conductor-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

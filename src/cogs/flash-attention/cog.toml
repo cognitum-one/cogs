@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "signal"
 description = "Adaptive sensing that focuses processing on highest-information channels by variance and entropy ranking"
 binary = "cog-flash-attention-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

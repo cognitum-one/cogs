@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Daily routine detection via hourly pattern matching and deviation scoring"
 binary = "cog-pattern-sequence-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

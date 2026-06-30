@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "retail"
 description = "Per-zone parking occupancy via ESP32 CSI subcarrier-amplitude shift. Tracks utilization and churn-per-hour. Requires ruview."
 binary = "cog-parking-occupancy-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

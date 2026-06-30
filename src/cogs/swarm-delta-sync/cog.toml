@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Bi-directional vector sync between seeds with epoch tracking — only sends changes"
 binary = "cog-swarm-delta-sync-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

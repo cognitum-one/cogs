@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Market data analysis with OHLCV embedding, pattern matching, and trend detection"
 binary = "cog-neural-trader-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

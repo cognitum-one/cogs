@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Elastic Weight Consolidation to prevent catastrophic forgetting of learned baselines"
 binary = "cog-ewc-lifelong-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

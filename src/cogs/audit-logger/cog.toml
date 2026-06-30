@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Tamper-proof event logging with hash-chain and witness attestation, optional cloud forwarding"
 binary = "cog-audit-logger-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

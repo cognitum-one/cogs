@@ -26,5 +26,9 @@ dist/
 .mcp.json
 *.db
 
-# Build artifacts
+# Build artifacts — cross-compiled cog binaries (published to GCS, not git).
+# Covers -arm / -aarch64 outputs and local *-fix iteration builds.
 cog-*-arm
+cog-*-arm-fix*
+cog-*-aarch64
+out/

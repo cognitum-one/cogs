@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "State machine that detects stationary presence beyond a configurable time threshold"
 binary = "cog-loitering-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

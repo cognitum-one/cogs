@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Arrival/departure detection with debounce timers for HVAC control and schedule pattern tracking"
 binary = "cog-hvac-presence-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

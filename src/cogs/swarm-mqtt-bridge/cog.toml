@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Lightweight TCP-based pub/sub event sharing between seeds"
 binary = "cog-swarm-mqtt-bridge-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

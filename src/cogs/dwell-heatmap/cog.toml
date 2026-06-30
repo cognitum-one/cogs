@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "retail"
 description = "Track dwell time per zone with rolling 1-hour window heatmap and top zones reporting"
 binary = "cog-dwell-heatmap-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

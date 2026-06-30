@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Cross-correlation and phase coherence between sensor channels to detect synchronized breathing"
 binary = "cog-breathing-sync-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

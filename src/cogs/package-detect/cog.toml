@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "retail"
 description = "Sustained CSI-shift detector for porch / loading bay package arrivals and departures. Requires ESP32 CSI ruview input."
 binary = "cog-package-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

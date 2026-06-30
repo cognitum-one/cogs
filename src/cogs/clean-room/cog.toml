@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Enforce maximum headcount in controlled environments via simultaneous presence counting"
 binary = "cog-clean-room-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Vibration harmonic analyzer for rotating equipment. Tracks F1 / 2×F1 / high-order / sideband energy to score degradation severity."
 binary = "cog-predictive-maintenance-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

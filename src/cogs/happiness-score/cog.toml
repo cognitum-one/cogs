@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Composite well-being score from movement, breathing regularity, and activity on a 0-100 scale"
 binary = "cog-happiness-score-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

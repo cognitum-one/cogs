@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Periodic low-band energy tracker for sleep-quality / apnea-risk trending. Companion to sleep-apnea cog."
 binary = "cog-snore-monitor-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

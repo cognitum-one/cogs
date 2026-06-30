@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Tracks breathing and heart rate trends using bandpass filtering and zero-crossing BPM"
 binary = "cog-vital-trend-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 # Each field maps to a CLI argument

@@ -5,10 +5,10 @@ version = "0.1.1"
 category = "ai"
 description = "FastGRNN anomaly gate + SmolLM2 sparse-LLM inference for on-device Pi Zero 2W cognitive events"
 binary = "cog-cognitive-pipeline-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 # ADR-095: list, not single string. ADR-094 hardware envelope says Pi Zero 2W
 # is the canonical target; v0-appliance (Pi 5) can also run this comfortably.
-hardware_requirements = ["pi-zero-2w", "v0-appliance"]
 hardware_override_allowed = true   # alpha + dev seeds opt-in via `force_hardware: true`
 
 # ADR-095 §5: per-cog memory budget — counts against the seed's RAM envelope

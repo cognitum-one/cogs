@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Monitor power metrics, track solar input vs battery drain, compute energy balance and duty cycle recommendations"
 binary = "cog-energy-harvester-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Predicts frost 6 hours ahead via temperature trend + dewpoint-depression gate. Field/orchard agriculture."
 binary = "cog-frost-warning-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

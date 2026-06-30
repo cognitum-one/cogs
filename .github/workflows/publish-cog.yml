@@ -1,0 +1,147 @@
+name: Publish Cog
+
+# Per-cog manual-dispatch publish: cross-compiles ONE cog for every arch its
+# cog.toml `hardware_requirement` declares (armhf for pi-zero-2w, aarch64 for
+# v0-appliance — see scripts/cog-targets.py), uploads the stripped binary to
+# gs://cognitum-apps/cogs/{arm,arm64}/, and prints the sha256s for the
+# app-registry.json bump.
+#
+# This repo OWNS cog source + build + publish. The install catalog
+# (app-registry.json) lives in cognitum-one/seed — update it by hand from the
+# sha256 table in this run's summary (minimal topology, no cross-repo token).
+# See docs/adrs/ADR-018-tailscale-cog.md / ADR-101-cog-publish-pipeline.md.
+#
+# Secret required: GCP_COGNITUM_APPS_SA (SA JSON with objectAdmin on
+# gs://cognitum-apps).
+
+on:
+  workflow_dispatch:
+    inputs:
+      cog:
+        description: 'Cog id (directory under src/cogs/, e.g. tailscale)'
+        required: true
+      cog_version:
+        description: 'Cog version override (blank = cog.toml [cog].version)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: Resolve build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.gen.outputs.include }}
+      version: ${{ steps.gen.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate cog + resolve arches
+        id: gen
+        run: |
+          set -euo pipefail
+          COG='${{ inputs.cog }}'
+          if [ ! -f "src/cogs/$COG/cog.toml" ]; then
+            echo "::error::no such cog: src/cogs/$COG/cog.toml does not exist"
+            exit 1
+          fi
+          MATRIX=$(python3 scripts/cog-targets.py --matrix "$COG")
+          echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
+          V='${{ inputs.cog_version }}'
+          if [ -z "$V" ]; then
+            V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Publishing $COG v$V for: $(echo "$MATRIX" | jq -r '.include[].arch' | tr '\n' ' ')"
+
+  publish:
+    name: ${{ matrix.cog }} (${{ matrix.arch }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.triple }}
+
+      - name: Install cross toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ${{ matrix.apt }}
+
+      - name: Cross-compile cog-${{ matrix.cog }} (${{ matrix.arch }})
+        env:
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          cargo build --release --target ${{ matrix.triple }}
+          BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
+          ${{ matrix.strip }} "$BIN"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp "$BIN" "$GITHUB_WORKSPACE/out/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
+          file "$BIN"
+
+      - name: Stage cog-specific extra assets (optional publish-extra.sh)
+        env:
+          ARCH: ${{ matrix.arch }}
+          TRIPLE: ${{ matrix.triple }}
+          SUFFIX: ${{ matrix.suffix }}
+          GCS: ${{ matrix.gcs }}
+          COG_VERSION: ${{ needs.matrix.outputs.version }}
+          OUT_DIR: ${{ github.workspace }}/out
+        run: |
+          set -euo pipefail
+          EXTRA="src/cogs/${{ matrix.cog }}/publish-extra.sh"
+          if [ -f "$EXTRA" ]; then
+            echo "Running $EXTRA for arch=$ARCH"
+            bash "$EXTRA"
+          else
+            echo "no publish-extra.sh for ${{ matrix.cog }} — binary-only cog"
+          fi
+
+      - name: Compute sha256s
+        id: sha
+        run: |
+          set -euo pipefail
+          {
+            echo "### ${{ matrix.cog }} — ${{ matrix.arch }} (v${{ needs.matrix.outputs.version }})"
+            echo ""
+            echo "| asset | sha256 | bytes |"
+            echo "|---|---|---|"
+            for f in out/*; do
+              [ -f "$f" ] || continue
+              s=$(sha256sum "$f" | awk '{print $1}')
+              b=$(stat -c%s "$f")
+              echo "| \`$(basename "$f")\` | \`$s\` | $b |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_COGNITUM_APPS_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload to gs://cognitum-apps/cogs/${{ matrix.gcs }}/
+        run: |
+          set -euo pipefail
+          # Main cog binary lands at the catalog root for its arch.
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" \
+            "gs://cognitum-apps/cogs/${{ matrix.gcs }}/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
+          # Any extra assets staged under out/extra/<path> mirror into the
+          # cog's versioned prefix (publish-extra.sh decides the layout).
+          if [ -d out/extra ]; then
+            gcloud storage cp -r out/extra/* \
+              "gs://cognitum-apps/cogs/${{ matrix.gcs }}/" || true
+          fi
+          echo "Uploaded cog-${{ matrix.cog }}-${{ matrix.suffix }} to gs://cognitum-apps/cogs/${{ matrix.gcs }}/"

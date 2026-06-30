@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Multi-seed voting protocol with simple 2-phase commit for coordinated decisions"
 binary = "cog-swarm-consensus-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

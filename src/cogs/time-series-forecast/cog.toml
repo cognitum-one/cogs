@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Holt-Winters exponential smoothing for sensor value forecasting and trend prediction"
 binary = "cog-time-series-forecast-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

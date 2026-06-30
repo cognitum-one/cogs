@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Learn daily usage patterns with hourly Welford statistics, detect wasted energy and report savings estimates"
 binary = "cog-energy-audit-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

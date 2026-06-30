@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Detect unexplained environmental anomalies via multi-channel correlation breakdown"
 binary = "cog-ghost-hunter-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

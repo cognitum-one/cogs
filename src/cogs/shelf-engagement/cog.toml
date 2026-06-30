@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "retail"
 description = "Detect brief customer interactions near zones — short dwell (5-30s) indicates product engagement"
 binary = "cog-shelf-engagement-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

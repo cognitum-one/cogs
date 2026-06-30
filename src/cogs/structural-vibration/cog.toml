@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Detect dangerous vibrations in buildings or machines via high-pass filter and RMS energy analysis"
 binary = "cog-structural-vibration-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

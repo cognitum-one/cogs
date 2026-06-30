@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Cog-composition layer: alerts when ruview-densepose detects presence in a restricted zone without an accompanying PPE-camera-cog confirmation vector."
 binary = "cog-ppe-compliance-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

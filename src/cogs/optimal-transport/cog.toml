@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "signal"
 description = "Wasserstein distance between signal distributions over time for shape-aware motion measurement"
 binary = "cog-optimal-transport-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

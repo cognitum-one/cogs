@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Install or remove cogs on peer seeds via apps API fan-out"
 binary = "cog-swarm-deploy-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

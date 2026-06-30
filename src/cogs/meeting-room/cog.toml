@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Binary occupied/free status with confidence, meeting duration, and utilization tracking"
 binary = "cog-meeting-room-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

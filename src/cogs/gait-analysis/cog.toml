@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Walking cadence, symmetry ratio, regularity index, and fall risk scoring via autocorrelation"
 binary = "cog-gait-analysis-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 
