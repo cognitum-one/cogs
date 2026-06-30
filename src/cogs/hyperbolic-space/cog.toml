@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Map signal vectors into the Poincare ball model for hierarchical relationship analysis"
 binary = "cog-hyperbolic-space-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

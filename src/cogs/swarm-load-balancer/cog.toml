@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Distribute queries across seeds based on load metrics so no single one overloads"
 binary = "cog-swarm-load-balancer-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

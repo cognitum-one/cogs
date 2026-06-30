@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Distribute vectors across seeds with hash partitioning and fan-out query"
 binary = "cog-swarm-distributed-store-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

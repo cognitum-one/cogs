@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Hierarchical Navigable Small World graph for fast on-device fingerprint matching and classification"
 binary = "cog-micro-hnsw-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

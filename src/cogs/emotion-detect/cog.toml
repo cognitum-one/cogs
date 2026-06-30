@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Arousal/valence estimation from body movement patterns using the Russell circumplex model"
 binary = "cog-emotion-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

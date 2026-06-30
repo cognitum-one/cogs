@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Monitor and block unauthorized outbound network connections per cog"
 binary = "cog-network-firewall-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

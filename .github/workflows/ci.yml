@@ -148,6 +148,38 @@ jobs:
           fi
           echo "::notice::all $(ls -d src/cogs/*/ | wc -l) cogs have valid manifests"
 
+      - name: Validate hardware_requirement (device → build-arch gating)
+        shell: bash
+        run: |
+          set -eo pipefail
+          # hardware_requirement drives which arch(es) the publish lane builds
+          # (scripts/cog-targets.py). Require it present and made only of known
+          # devices so a typo can't silently drop a cog from a fleet's catalog.
+          python3 - <<'PY'
+          import sys, tomllib, pathlib
+          KNOWN = {"pi-zero-2w", "v0-appliance"}
+          fail = 0
+          for t in sorted(pathlib.Path("src/cogs").glob("*/cog.toml")):
+              cog = t.parent.name
+              data = tomllib.load(t.open("rb")).get("cog", {})
+              hw = data.get("hardware_requirement")
+              if hw is None:
+                  print(f"::error file={t}::cog '{cog}' missing hardware_requirement")
+                  fail += 1; continue
+              if isinstance(hw, str):
+                  hw = [hw]
+              if not isinstance(hw, list) or not hw:
+                  print(f"::error file={t}::cog '{cog}' hardware_requirement must be a non-empty list/string")
+                  fail += 1; continue
+              bad = [d for d in hw if d not in KNOWN]
+              if bad:
+                  print(f"::error file={t}::cog '{cog}' unknown device(s) {bad}; allowed: {sorted(KNOWN)}")
+                  fail += 1
+          if fail:
+              print(f"::error::{fail} hardware_requirement issue(s)"); sys.exit(1)
+          print("::notice::all cogs declare a valid hardware_requirement")
+          PY
+
   adr-required:
     name: Require ADR for new cog
     if: github.event_name == 'pull_request'

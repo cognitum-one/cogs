@@ -5,7 +5,23 @@ version = "0.1.0"
 category = "network"
 description = "Reach the seed from anywhere via a private Tailscale network (WireGuard). Userspace mode — no root, no kernel routing."
 binary = "cog-tailscale-arm"
-hardware_requirement = "pi-zero-2w"
+# Seed-only: the v0 appliance runs Tailscale as a native system service
+# (tailscale.com/install.sh + `tailscale up`, see v0-appliance/FLASHING.md), so
+# the rootless userspace-mode cog is not built for aarch64.
+hardware_requirement = ["pi-zero-2w"]
+
+# Upstream Tailscale binaries bundled alongside the cog (handled by
+# publish-extra.sh during a deliberate `publish-cog` run — NOT the routine
+# batch build). Bump `version` to roll the fleet onto a new Tailscale release.
+#
+# The binaries deployed at gs://cognitum-apps/cogs/arm/tailscale/0.1.0/
+# (tailscaled 34971946 / tailscale 29257464 bytes) are 1.98.1 (per seed ADR-100;
+# sizes match its ~33/28 MB), which Tailscale has since pruned from its stable
+# channel (the URL now 404s). Pinned to 1.98.8 — the current 1.98.x stable, a
+# safe forward patch in the same line. NOTE: the stale src/main.rs constant
+# still reads "1.78.1" (an unused placeholder); the pin here is authoritative.
+[upstream]
+tailscale_version = "1.98.8"
 
 [config]
 

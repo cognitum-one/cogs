@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Baseline learning + combined z-score alerting for unauthorized presence"
 binary = "cog-intrusion-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

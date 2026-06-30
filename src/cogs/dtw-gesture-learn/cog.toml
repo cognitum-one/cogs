@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Dynamic Time Warping gesture recognition — record templates and match new signals with confidence scoring"
 binary = "cog-dtw-gesture-learn-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

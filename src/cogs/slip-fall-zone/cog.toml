@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "industrial"
 description = "Pre-fall risk detector. Fires when motion-variance drop, splash audio, and optional cautious-gait CSI all signal elevated slip risk."
 binary = "cog-slip-fall-zone-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

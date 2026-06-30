@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Track plant growth rate, day/night cycles, and rolling 24-hour statistics"
 binary = "cog-plant-growth-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "AQI from PM2.5/CO2 proxy using EPA breakpoint formulas with Welford online statistics"
 binary = "cog-air-quality-index-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

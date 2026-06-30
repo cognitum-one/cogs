@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Multi-signal smoke and fire detector. Fuses acoustic crackle, thermal drift proxy, and optional ruview CSI plume signature. Not a UL-listed replacement for code-required smoke alarms."
 binary = "cog-smoke-fire-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Sleep stage classification (deep, REM, light, wake) from movement and breathing patterns"
 binary = "cog-dream-stage-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

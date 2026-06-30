@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "signal"
 description = "Downsample old data to save memory while keeping recent data at full resolution"
 binary = "cog-temporal-compress-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

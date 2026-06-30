@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Detect repeating temporal symmetry patterns via multi-lag autocorrelation analysis"
 binary = "cog-time-crystal-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

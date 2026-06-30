@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Movement-based zone lighting control with auto-off timeout as people move between rooms"
 binary = "cog-lighting-zones-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

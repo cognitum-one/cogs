@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Count people by signal disruption intensity with online linear regression calibration"
 binary = "cog-elevator-count-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

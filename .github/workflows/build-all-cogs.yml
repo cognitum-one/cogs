@@ -1,0 +1,126 @@
+name: Build All Cogs
+
+# Umbrella batch build: cross-compiles EVERY cog under src/cogs/ for every arch
+# its cog.toml `hardware_requirement` declares (scripts/cog-targets.py), and
+# (when publish=true) uploads each stripped binary to
+# gs://cognitum-apps/cogs/{arm,arm64}/. The CI replacement for the local
+# scripts/build-all-arm.sh + build-all-arm64.sh hand-runs.
+#
+# Default (workflow_dispatch, publish=false) is a build-only smoke check across
+# the whole catalog. publish=true (or a cogs-v* tag) uploads to GCS. The
+# install catalog (app-registry.json) lives in cognitum-one/seed — refresh it
+# from the run summary's sha256 manifest artifact.
+#
+# Secret required for publish: GCP_COGNITUM_APPS_SA (objectAdmin on
+# gs://cognitum-apps).
+
+on:
+  workflow_dispatch:
+    inputs:
+      cogs:
+        description: 'Space-separated cog subset (blank = all cogs)'
+        required: false
+        default: ''
+      publish:
+        description: 'Upload binaries to gs://cognitum-apps (else build-only)'
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - 'cogs-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: Resolve build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.gen.outputs.include }}
+      count: ${{ steps.gen.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate matrix from hardware_requirement
+        id: gen
+        run: |
+          set -euo pipefail
+          MATRIX=$(python3 scripts/cog-targets.py --matrix ${{ inputs.cogs }})
+          INCLUDE=$(echo "$MATRIX" | jq -c '.include')
+          echo "include=$INCLUDE" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$INCLUDE" | jq 'length')" >> "$GITHUB_OUTPUT"
+          echo "Build jobs: $(echo "$INCLUDE" | jq 'length')"
+
+  build:
+    name: ${{ matrix.cog }} (${{ matrix.arch }})
+    needs: matrix
+    if: needs.matrix.outputs.count != '0'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.triple }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/cogs/${{ matrix.cog }}/target
+          key: buildall-${{ matrix.cog }}-${{ matrix.arch }}-${{ hashFiles(format('src/cogs/{0}/Cargo.toml', matrix.cog)) }}
+          restore-keys: |
+            buildall-${{ matrix.cog }}-${{ matrix.arch }}-
+
+      - name: Install cross toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ${{ matrix.apt }}
+
+      - name: Cross-compile cog-${{ matrix.cog }} (${{ matrix.arch }})
+        env:
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          cargo build --release --target ${{ matrix.triple }}
+          BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
+          ${{ matrix.strip }} "$BIN"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp "$BIN" "$GITHUB_WORKSPACE/out/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
+          sha=$(sha256sum "$GITHUB_WORKSPACE/out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" | awk '{print $1}')
+          echo "| \`cog-${{ matrix.cog }}-${{ matrix.suffix }}\` | \`$sha\` | $(stat -c%s "$BIN") |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Authenticate to Google Cloud
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_COGNITUM_APPS_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+
+      - name: Upload to gs://cognitum-apps/cogs/${{ matrix.gcs }}/
+        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+        run: |
+          set -euo pipefail
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" \
+            "gs://cognitum-apps/cogs/${{ matrix.gcs }}/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
+
+      - name: Upload binary as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cog-${{ matrix.cog }}-${{ matrix.suffix }}
+          path: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+          retention-days: 7
+          if-no-files-found: error

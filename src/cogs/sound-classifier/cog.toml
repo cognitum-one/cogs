@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "research"
 description = "Classify sounds like glass break, alarm, or baby cry from signal modulation patterns"
 binary = "cog-sound-classifier-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

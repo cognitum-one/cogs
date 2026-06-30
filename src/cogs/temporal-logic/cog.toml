@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "LTL-like temporal logic monitoring to enforce safety rules on live event streams"
 binary = "cog-temporal-logic-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

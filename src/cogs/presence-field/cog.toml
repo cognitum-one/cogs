@@ -5,6 +5,7 @@ version = "0.1.1"
 category = "presence"
 description = "Multi-node WiFi-CSI presence via field-model residual (ADR-151). Learns an empty-room baseline per node, then detects a person as the residual after projecting out environmental modes, maxed across nodes. Consumes raw CSI from the seed csi-relay (ADR-104 P2) on its fan-out port and publishes a presence file that vitals cogs read."
 binary = "cog-presence-field-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 # seed#213: consumes the raw CSI feed (0xC5110001). Declared for precision —
 # the relay should not also fan vitals/feature packets at this cog.
 csi_packet_types = ["raw"]

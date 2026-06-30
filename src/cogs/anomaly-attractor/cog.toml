@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Strange attractor analysis via delay embedding, Lyapunov exponent estimation, and chaos detection"
 binary = "cog-anomaly-attractor-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

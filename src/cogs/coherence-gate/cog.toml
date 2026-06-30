@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "signal"
 description = "Filter signals by channel-pair coherence, only passing clean data above threshold with SNR estimation"
 binary = "cog-coherence-gate-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

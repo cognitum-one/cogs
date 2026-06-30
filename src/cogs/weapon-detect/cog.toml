@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Detect concealed metal objects on a person via signal absorption pattern analysis"
 binary = "cog-weapon-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

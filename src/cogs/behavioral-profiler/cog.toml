@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "security"
 description = "Online k-means codebook of normal signal patterns with anomaly flagging at >2.5 sigma"
 binary = "cog-behavioral-profiler-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

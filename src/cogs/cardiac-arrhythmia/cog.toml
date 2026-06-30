@@ -5,6 +5,7 @@ version = "1.2.1"
 category = "health"
 description = "HRV analysis using RMSSD and pNN50 from bandpass-filtered heart rate signal for arrhythmia detection"
 binary = "cog-cardiac-arrhythmia-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

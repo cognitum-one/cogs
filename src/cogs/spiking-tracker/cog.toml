@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Brain-inspired leaky integrate-and-fire spiking neural network for movement detection"
 binary = "cog-spiking-tracker-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

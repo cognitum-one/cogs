@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Presence detection via z-score on CSI RSSI with debounce filtering"
 binary = "cog-presence-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

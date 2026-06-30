@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "building"
 description = "Persistent low-amplitude hiss + periodic drip acoustic detector with multi-minute persistence gate. Two-stage likely → confirmed."
 binary = "cog-water-leak-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

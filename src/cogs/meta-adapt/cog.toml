@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "ai"
 description = "Self-tuning cog that auto-adjusts thresholds via golden section search optimization"
 binary = "cog-meta-adapt-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

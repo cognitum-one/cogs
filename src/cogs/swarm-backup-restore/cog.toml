@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Replicate local vector store to peer seed with lag tracking and failure recovery"
 binary = "cog-swarm-backup-restore-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

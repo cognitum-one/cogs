@@ -5,6 +5,7 @@ version = "1.2.1"
 category = "health"
 description = "Detect breathing cessation during sleep via variance spike analysis and CUSUM drift detection"
 binary = "cog-sleep-apnea-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

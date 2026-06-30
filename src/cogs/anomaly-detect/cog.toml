@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "health"
 description = "Welford online statistics + CUSUM drift detection on sensor streams"
 binary = "cog-anomaly-detect-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

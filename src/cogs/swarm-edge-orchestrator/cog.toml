@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "swarm"
 description = "Manage ESP32 sensor nodes via UDP CSI and serial proxy"
 binary = "cog-swarm-edge-orchestrator-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 

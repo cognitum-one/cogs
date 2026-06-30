@@ -5,6 +5,7 @@ version = "1.0.0"
 category = "retail"
 description = "Count entries/exits using directional detection with hourly traffic and conversion ratio reporting"
 binary = "cog-customer-flow-arm"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 
 [config]
 
