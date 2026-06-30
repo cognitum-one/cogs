@@ -9,6 +9,7 @@ in chronological order; status reflects current adoption.
 | #   | Title                                              | Status   |
 | --- | -------------------------------------------------- | -------- |
 | 001 | [Cogs as plugins](ADR-001-cogs-as-plugins-architecture.md) | Accepted |
+| 020 | [Cog build & publish pipeline (dual-arch, hardware-gated)](ADR-020-cog-build-publish-pipeline.md) | Accepted |
 
 ## New practical capability cogs (2026-04 wave)
 
