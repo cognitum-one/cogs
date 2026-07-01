@@ -1,0 +1,24 @@
+[package]
+name = "cog-cloud-inference"
+version = "0.1.0"
+edition = "2021"
+description = "Cloud inference provider cog — forwards OpenAI-compat /v1/chat/completions to the metered meta-llm gateway (ADR-090 §e, ADR-095)"
+license = "MIT"
+
+[[bin]]
+name = "cog-cloud-inference"
+path = "src/main.rs"
+
+[dependencies]
+# HTTP server (loopback only, agent-proxied per ADR-095).
+axum = { version = "0.7", default-features = false, features = ["http1", "json", "tokio"] }
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net"] }
+# Outbound client to the cloud gateway. rustls-tls (ring) NOT native-tls: ring
+# cross-compiles to armhf/aarch64 without cmake/openssl (same reason the seed
+# firmware picks ring — CLAUDE.md). No default features to drop the openssl path.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+# Constant-time compare for the per-cog bearer token.
+subtle = "2.5"

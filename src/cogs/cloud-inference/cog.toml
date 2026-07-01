@@ -1,0 +1,66 @@
+[cog]
+id = "cloud-inference"
+name = "Cloud Inference (Tier-3 metered)"
+version = "0.1.0"
+category = "ai"
+description = "Forwards OpenAI-compat /v1/chat/completions to the metered meta-llm gateway (cognitum-auto). Standalone provider cog per ADR-090 §e — the seed reaches Tier-3 cloud inference through this cog."
+binary = "cog-cloud-inference"
+hardware_requirement = ["pi-zero-2w", "v0-appliance"]
+
+# Thin HTTP forwarder — no model in RAM. Small envelope.
+[resources]
+ram_mb = 32
+cpu_pct = 20
+
+[config.bind_port]
+type = "integer"
+label = "HTTP bind port (loopback only — agent proxies)"
+description = "Cog binds 127.0.0.1:<this>; agent forwards /api/v1/cogs/cloud-inference/* to here."
+default = 8040
+min = 8001
+max = 9999
+cli_arg = "--port"
+
+[config.inference_base_url]
+type = "string"
+label = "Inference gateway base URL"
+description = "The meta-llm completions gateway. Default is the apicompletions Cloud Run service (NOT api.cognitum.one — that fronts a different service as of 2026-07). For hub-mediated mode, point at the paired v0 hub instead."
+default = "https://apicompletions-63rzcdswba-uc.a.run.app"
+cli_arg = "--inference-base-url"
+
+[config.timeout_secs]
+type = "integer"
+label = "Upstream request timeout"
+description = "Max seconds to wait for a cloud completion before returning 504."
+default = 60
+min = 5
+max = 300
+unit = "seconds"
+cli_arg = "--timeout-secs"
+
+# The `cog_` bearer is NEVER a cli_arg or a registry field — it is a secret.
+# The agent/operator provides it via the env var COG_CLOUD_INFERENCE_KEY
+# (a cog env asset under /var/lib/cognitum/, per ADR-090 §e). Absent ⇒ the cog
+# returns 503 (Tier-3 unavailable) and the agent falls back to the local
+# sparse-LLM.
+
+# ADR-095 §1 — agent proxies /api/v1/cogs/cloud-inference/<endpoint> to the
+# loopback bind port with the per-cog bearer token.
+[api]
+bind_loopback_only = true
+endpoints = [
+  { path = "/info",                 methods = ["GET"],  auth = "open" },
+  { path = "/health",               methods = ["GET"],  auth = "open" },
+  { path = "/v1/chat/completions",  methods = ["POST"], auth = "paired" },
+  { path = "/oai_chat",             methods = ["POST"], auth = "paired" },
+]
+
+[mcp]
+tools = [
+  { name = "seed.cog.cloud-inference.info", endpoint = "/info", description = "Cloud inference cog status + endpoint + key presence" },
+]
+
+[console]
+allowed_commands = ["--help", "--info"]
+max_runtime_secs = 15
+output_limit_bytes = 32768
