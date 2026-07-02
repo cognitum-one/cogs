@@ -54,7 +54,7 @@ cargo run --release
 All API endpoints (except `/health` and `/metrics`) require authentication via Bearer token:
 
 ```bash
-curl -H "Authorization: Bearer sk_your_api_key" \
+curl -H "Authorization: Bearer $COGNITUM_API_KEY" \
   http://localhost:8080/api/v1/simulations
 ```
 
