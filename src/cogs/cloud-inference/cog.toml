@@ -46,7 +46,15 @@ cli_arg = "--timeout-secs"
 
 # ADR-095 §1 — agent proxies /api/v1/cogs/cloud-inference/<endpoint> to the
 # loopback bind port with the per-cog bearer token.
+#
+# `bind_port` MUST be repeated here even though [config.bind_port] already
+# carries it: the seed agent copies `api.bind_port` out of the registry entry to
+# synthesize the installed cog's cog.toml, and without it `read_cog_bind_port`
+# returns None and /api/v1/cogs/cloud-inference/* 404s while the cog sits there
+# happily listening. Verified on cognitum-8b40 2026-07-17 — the first publish
+# omitted it and Tier-3 dispatch 404'd. Keep in sync with [config.bind_port].
 [api]
+bind_port = 8040
 bind_loopback_only = true
 endpoints = [
   { path = "/info",                 methods = ["GET"],  auth = "open" },
