@@ -42,6 +42,16 @@ const COG_VERSION: &str = env!("CARGO_PKG_VERSION");
 const AUTO_MODEL: &str = "cognitum-auto";
 const DEFAULT_MAX_TOKENS: u64 = 512;
 const KEY_ENV: &str = "COG_CLOUD_INFERENCE_KEY";
+/// ADR-106 §2 / ADR-258 §5 R-b — cap down to the key's held tier instead of
+/// 403-ing. Rationale at [`build_forward_body`].
+const FALLBACK_POLICY: &str = "best_effort";
+/// The completions plane. **Updated 2026-07-17**: `api.cognitum.one` now routes
+/// `/v1/*` to the meta-llm `apicompletions` service (verified: bad key → `401
+/// invalid_api_key`, identical to the raw URL; unknown paths → `404`, no longer
+/// a catalog `200`). The raw `apicompletions-…run.app` URL was a stopgap while
+/// that mapping was pending. v0's hub flipped to this same value in ADR-258
+/// §1/§2 (hardware-verified on dev4) — both egress points now agree.
+const DEFAULT_INFERENCE_BASE_URL: &str = "https://api.cognitum.one";
 
 #[derive(Parser, Debug)]
 #[command(name = COG_ID, version = COG_VERSION)]
@@ -50,9 +60,9 @@ struct Args {
     #[arg(long, default_value_t = 8040)]
     port: u16,
 
-    /// Inference gateway base URL (the meta-llm apicompletions service, or a
-    /// paired v0 hub for hub-mediated mode).
-    #[arg(long = "inference-base-url", default_value = "https://apicompletions-63rzcdswba-uc.a.run.app")]
+    /// Inference gateway base URL — the completions plane, or a paired v0 hub
+    /// for hub-mediated mode. See [`DEFAULT_INFERENCE_BASE_URL`].
+    #[arg(long = "inference-base-url", default_value = DEFAULT_INFERENCE_BASE_URL)]
     inference_base_url: String,
 
     /// Upstream request timeout (seconds).
@@ -95,19 +105,35 @@ fn check_authorization(state: &AppState, headers: &HeaderMap) -> bool {
 }
 
 /// Force `model: cognitum-auto` (the gateway routes, ADR-090 §4), bound
-/// `max_tokens`, and disable streaming (v1). Returns the body to forward.
+/// `max_tokens`, disable streaming (v1), and default the tier-overflow policy
+/// to `best_effort` (ADR-106 §2 / ADR-258 §5 R-b). Returns the body to forward.
+///
+/// On `fallback_policy`: meta-llm's `resolveTier` clamps `cognitum-auto` to the
+/// key's `highestHeldTier`; when the router wants a tier the key lacks, the
+/// policy decides — `fail_fast` (meta-llm's DEFAULT) returns
+/// `403 tier_scope_insufficient`, while `best_effort` serves the held tier and
+/// stamps `cap_degraded`. ~97% of fleet owner keys are `completions:low`-only,
+/// so inheriting the default would 403 exactly the prompts the router judged
+/// hard — a cohort-wide failure on the requests users care most about. The v0
+/// hub makes the identical choice in `llm::prepare_cloud_body`, so both egress
+/// points stay byte-identical. A caller-supplied policy still wins (`entry`).
 fn build_forward_body(mut body: Value) -> Value {
     if let Some(obj) = body.as_object_mut() {
         obj.insert("model".to_string(), Value::String(AUTO_MODEL.to_string()));
         obj.entry("max_tokens").or_insert_with(|| json!(DEFAULT_MAX_TOKENS));
         obj.insert("stream".to_string(), Value::Bool(false));
+        obj.entry("fallback_policy")
+            .or_insert_with(|| json!(FALLBACK_POLICY));
     }
     body
 }
 
 /// Does an upstream 2xx body actually look like an OpenAI chat completion? A
-/// mis-pointed `inference_base_url` (e.g. api.cognitum.one, which 200s a
-/// catalog for any path) must fail safe as 502, not pass through as success.
+/// mis-pointed `inference_base_url` must fail safe as 502, not pass through as
+/// success. (The original motivating case — `api.cognitum.one` 200-ing a
+/// storefront catalog for any path — was fixed upstream on 2026-07-17 and that
+/// domain is now the default; the guard stays as defense-in-depth against any
+/// future mis-mapping, which is exactly the class of bug it exists for.)
 fn is_completion_body(v: &Value) -> bool {
     v.get("choices").map(|c| c.is_array()).unwrap_or(false)
 }
@@ -295,6 +321,33 @@ mod tests {
         // A caller-set max_tokens is respected.
         let out2 = build_forward_body(json!({ "messages": [], "max_tokens": 64 }));
         assert_eq!(out2["max_tokens"], 64);
+    }
+
+    /// ADR-106 §2 / ADR-258 §5 R-b. Without this the cog inherits meta-llm's
+    /// `fail_fast` default and 403s every prompt the router judges hard for the
+    /// ~97% of owner keys that are `completions:low`-only.
+    #[test]
+    fn forward_body_defaults_fallback_policy_to_best_effort() {
+        let out = build_forward_body(json!({ "messages": [] }));
+
+        assert_eq!(out["fallback_policy"], FALLBACK_POLICY);
+        assert_eq!(out["fallback_policy"], "best_effort");
+    }
+
+    #[test]
+    fn forward_body_lets_an_explicit_fallback_policy_win() {
+        // A caller that deliberately wants a hard failure keeps it.
+        let out = build_forward_body(json!({ "messages": [], "fallback_policy": "fail_fast" }));
+
+        assert_eq!(out["fallback_policy"], "fail_fast");
+    }
+
+    /// Both egress points (this cog and the v0 hub's `llm::prepare_cloud_body`)
+    /// must normalize identically — a seed's answer shouldn't depend on whether
+    /// it went standalone or through its hub.
+    #[test]
+    fn default_inference_base_url_is_the_completions_plane() {
+        assert_eq!(DEFAULT_INFERENCE_BASE_URL, "https://api.cognitum.one");
     }
 
     #[test]

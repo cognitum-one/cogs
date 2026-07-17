@@ -24,8 +24,8 @@ cli_arg = "--port"
 [config.inference_base_url]
 type = "string"
 label = "Inference gateway base URL"
-description = "The meta-llm completions gateway. Default is the apicompletions Cloud Run service (NOT api.cognitum.one — that fronts a different service as of 2026-07). For hub-mediated mode, point at the paired v0 hub instead."
-default = "https://apicompletions-63rzcdswba-uc.a.run.app"
+description = "The Cognitum completions plane. Default is api.cognitum.one, which routes /v1/* to the meta-llm apicompletions service (mapping live since 2026-07-17; the raw Cloud Run URL was a stopgap before that). For hub-mediated mode, point at the paired v0 hub instead."
+default = "https://api.cognitum.one"
 cli_arg = "--inference-base-url"
 
 [config.timeout_secs]

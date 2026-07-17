@@ -36,8 +36,9 @@ identical:
 ## Config
 
 - `--port` (default `8040`, loopback only)
-- `--inference-base-url` (default the `apicompletions` Cloud Run gateway — **not**
-  `api.cognitum.one`, which currently fronts a different service)
+- `--inference-base-url` (default `https://api.cognitum.one` — the completions
+  plane; it routes `/v1/*` to meta-llm's `apicompletions` service as of
+  2026-07-17. Point it at a paired v0 hub for hub-mediated mode.)
 - `--timeout-secs` (default `60`)
 - **`COG_CLOUD_INFERENCE_KEY`** (env, **secret**) — the `cog_` gateway bearer.
   Never a cli-arg or registry field. Absent ⇒ completions return `503` and the
