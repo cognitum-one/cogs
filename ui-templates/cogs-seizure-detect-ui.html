@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seizure Detection</title>
+<style>
+/* Cognitum design system (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG Application design system
+   Tokens lifted verbatim from seed.cognitum.one/store.
+   Full multi-section app shell + rich widget components.
+   (Inlined into each standalone .html at build time.)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code',Consolas,monospace;
+  --bg:#0a0e1a;--bg2:#111627;--card:#171d30;--card-h:#1e2540;--border:#252d45;
+  --t1:#e0e4f0;--t2:#8890a8;--t3:#505872;
+  --cyan:#4ecdc4;--cyan-d:rgba(78,205,196,0.15);
+  --green:#6bcb77;--green-d:rgba(107,203,119,0.15);
+  --amber:#d4a574;--amber-d:rgba(212,165,116,0.15);
+  --red:#e06060;--red-d:rgba(224,96,96,0.15);
+  --purple:#a78bfa;--purple-d:rgba(167,139,250,0.15);
+  --pink:#f472b6;--pink-d:rgba(244,114,182,0.15);
+  --blue:#60a5fa;--blue-d:rgba(96,165,250,0.15);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.15);
+  --gray:#94a3b8;--gray-d:rgba(148,163,184,0.15);
+  --r:10px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);line-height:1.6;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+
+/* ---- Top bar: shows the COG's own name ---- */
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(17,22,39,0.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;backdrop-filter:blur(16px)}
+.app-brand{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.app-mark{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.app-id{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.app-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sub{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.app-sub .dot{color:var(--t3)}
+.top-right{display:flex;align-items:center;gap:10px}
+.uplink{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:var(--green-d);border:1px solid rgba(107,203,119,0.3);padding:5px 11px;border-radius:6px;font-weight:600}
+.uplink .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,0.6);animation:pulse 2s infinite}
+.power{font-size:11px;color:var(--t2);font-family:var(--mono)}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.45}100%{opacity:1}}
+
+/* ---- App nav tabs ---- */
+.tabbar{position:sticky;top:58px;z-index:90;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.tab{padding:13px 20px;font-size:13px;font-weight:600;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:var(--font);white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:.18s}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab .tcount{font-size:10px;background:var(--bg2);color:var(--t2);padding:1px 6px;border-radius:9px}
+.tab.active .tcount{background:var(--cyan-d);color:var(--cyan)}
+
+/* ---- Layout ---- */
+.main{max-width:1320px;margin:0 auto;padding:22px 28px 90px}
+.view{display:none;animation:fade .25s}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 14px;flex-wrap:wrap;gap:8px}
+.section-head:first-child{margin-top:6px}
+.section-title{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.section-title .ico{font-size:17px}
+.section-sub{font-size:12px;color:var(--t3)}
+
+/* ---- Grids ---- */
+.grid{display:grid;gap:16px;margin-bottom:6px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}
+.g-1-2{grid-template-columns:1fr 2fr}
+.span2{grid-column:span 2}
+
+/* ---- Panels ---- */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;min-width:0}
+.panel.flush{padding:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.panel-title{font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.panel-title .ico{font-size:14px}
+.panel-tools{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
+.legend{display:flex;gap:13px;font-size:11px;color:var(--t2);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+canvas{display:block;width:100%}
+
+/* ---- KPI tiles ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:6px}
+.kpis.six{grid-template-columns:repeat(6,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan));opacity:.75}
+.kpi-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi-value small{font-size:12px;color:var(--t2);font-weight:500}
+.kpi-spark{margin-top:8px}
+.kpi-sub{font-size:11px;color:var(--t2);margin-top:3px;display:flex;align-items:center;gap:5px}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--t3)}
+
+/* ---- Badges / pills ---- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.badge-cat{text-transform:uppercase;letter-spacing:.5px}
+.badge-ver{background:var(--bg2);color:var(--t2);border:1px solid var(--border);font-family:var(--mono)}
+.badge-size{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+.badge-diff{text-transform:uppercase;letter-spacing:.5px}
+.diff-easy{background:var(--green-d);color:var(--green)}
+.diff-medium{background:var(--amber-d);color:var(--amber)}
+.diff-hard{background:var(--red-d);color:var(--red)}
+.badge-live{background:var(--green-d);color:var(--green);border:1px solid rgba(107,203,119,.3)}
+.badge-live .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,.6);animation:pulse 2s infinite;margin-right:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600}
+.pill .status-dot{width:6px;height:6px;border-radius:50%}
+.pill-ok{background:var(--green-d);color:var(--green)}
+.pill-warn{background:var(--amber-d);color:var(--amber)}
+.pill-err{background:var(--red-d);color:var(--red)}
+.pill-info{background:var(--blue-d);color:var(--blue)}
+.pill-mute{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+
+/* ---- Category color coding (store) ---- */
+.cat-health{background:var(--green-d);color:var(--green)}
+.cat-security{background:var(--red-d);color:var(--red)}
+.cat-building{background:var(--blue-d);color:var(--blue)}
+.cat-retail{background:var(--orange-d);color:var(--orange)}
+.cat-industrial{background:var(--amber-d);color:var(--amber)}
+.cat-research{background:var(--purple-d);color:var(--purple)}
+.cat-signal{background:var(--cyan-d);color:var(--cyan)}
+.cat-ai{background:var(--pink-d);color:var(--pink)}
+.cat-developer{background:var(--gray-d);color:var(--gray)}
+.cat-swarm{background:var(--blue-d);color:var(--blue)}
+.icon-health{background:var(--green-d)}.icon-security{background:var(--red-d)}
+.icon-building{background:var(--blue-d)}.icon-retail{background:var(--orange-d)}
+.icon-industrial{background:var(--amber-d)}.icon-research{background:var(--purple-d)}
+.icon-signal{background:var(--cyan-d)}.icon-ai{background:var(--pink-d)}
+.icon-developer{background:var(--gray-d)}.icon-swarm{background:var(--blue-d)}
+
+/* ---- Buttons ---- */
+.btn{padding:8px 15px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--cyan);color:#0a0e1a}
+.btn-primary:hover{background:#3dbdb5;transform:scale(1.02)}
+.btn-primary:active{transform:scale(.98)}
+.btn-installed{background:var(--green-d);color:var(--green)}
+.btn-installed:hover{background:var(--red-d);color:var(--red)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--cyan);border-color:var(--cyan)}
+.btn-danger{background:var(--red-d);color:var(--red)}
+.btn-danger:hover{background:rgba(224,96,96,.3)}
+.btn-sm{padding:5px 11px;font-size:11px}
+
+/* ---- Alert banner ---- */
+.banner{display:none;align-items:center;gap:13px;border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;animation:fade .3s}
+.banner.show{display:flex}
+.banner.alert{background:var(--red-d);border:1px solid var(--red);color:var(--red)}
+.banner.warn{background:var(--amber-d);border:1px solid var(--amber);color:var(--amber)}
+.banner.ok{background:var(--green-d);border:1px solid var(--green);color:var(--green)}
+.banner .b-icon{font-size:21px}.banner .b-title{font-weight:700;color:#fff}
+.banner .b-sub{color:var(--t2);font-size:12px}.banner .spacer{flex:1}
+
+/* ---- Stat lists ---- */
+.statline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.statline:last-child{border-bottom:none}
+.statline .k{color:var(--t2)}
+.statline .v{font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.bar{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--accent,var(--cyan));transition:width .6s ease}
+.mini-stat{text-align:center;padding:6px 4px}
+.mini-stat .mv{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.mini-stat .ml{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ---- Event feed ---- */
+.feed{display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
+.feed-row{display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(37,45,69,.5);font-size:12px;animation:fade .25s}
+.feed-time{font-family:var(--mono);font-size:10px;color:var(--t3);flex-shrink:0;width:58px;padding-top:1px}
+.feed-tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:600;background:var(--cyan-d);color:var(--cyan)}
+.feed-tag.ok{background:var(--green-d);color:var(--green)}
+.feed-tag.warn{background:var(--amber-d);color:var(--amber)}
+.feed-tag.err{background:var(--red-d);color:var(--red)}
+.feed-tag.info{background:var(--blue-d);color:var(--blue)}
+.feed-msg{color:var(--t2);flex:1;min-width:0}.feed-msg b{color:var(--t1)}
+
+/* ---- Data table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:10px;padding:9px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(37,45,69,.5);color:var(--t2)}
+.tbl td b{color:var(--t1)}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl .mono{font-family:var(--mono);font-size:11px}
+.tbl-wrap{max-height:380px;overflow-y:auto}
+
+/* ---- Event tags ---- */
+.event-tags{display:flex;flex-wrap:wrap;gap:6px}
+.event-tag{background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--cyan)}
+
+/* ---- Detail rows ---- */
+.detail-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--t3);min-width:110px;font-weight:500}
+.detail-value{color:var(--t1)}
+.detail-value.mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+
+/* ---- Node / chip grid ---- */
+.node-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.node{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;transition:.2s}
+.node.lead{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan-d)}
+.node.down{opacity:.45;border-style:dashed}
+.node-id{font-family:var(--mono);font-size:11px;color:var(--t1);font-weight:600}
+.node-role{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.node-stat{font-size:11px;margin-top:6px;font-family:var(--mono)}
+
+/* ---- Config controls ---- */
+.cfg-group{margin-bottom:18px}
+.cfg-label{display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px}
+.cfg-hint{font-size:11px;color:var(--t3);margin-top:4px}
+.cfg-input,.cfg-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none}
+.cfg-input:focus,.cfg-select:focus{border-color:var(--cyan)}
+.cfg-range-wrap{display:flex;align-items:center;gap:12px}
+.cfg-range{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--cyan);cursor:pointer}
+.cfg-range-val{font-size:12px;color:var(--cyan);font-family:var(--mono);min-width:54px;text-align:right}
+.cfg-toggle{position:relative;width:42px;height:23px;display:inline-block;flex-shrink:0}
+.cfg-toggle input{opacity:0;width:0;height:0}
+.cfg-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:.2s}
+.cfg-toggle .slider::before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s}
+.cfg-toggle input:checked+.slider{background:var(--cyan)}
+.cfg-toggle input:checked+.slider::before{transform:translateX(19px)}
+.cfg-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(37,45,69,.5)}
+.cfg-toggle-row:last-child{border-bottom:none}
+.cfg-toggle-row .lbl{font-size:13px;color:var(--t1)}
+.cfg-toggle-row .sub{font-size:11px;color:var(--t3)}
+
+/* ---- Footer ---- */
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3);flex-wrap:wrap;gap:10px}
+.foot .mono{font-family:var(--mono)}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+
+/* ---- Responsive ---- */
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.kpis,.kpis.six{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){.g2,.g3,.g-2-1,.g-1-2,.g4{grid-template-columns:1fr}.span2{grid-column:auto}.kpis,.kpis.six{grid-template-columns:repeat(2,1fr)}.main{padding:16px}}
+@media(max-width:520px){.kpis,.kpis.six{grid-template-columns:1fr}.top-bar{padding:0 12px}.tabbar{padding:0 10px}}
+
+</style>
+<style>:root{--accent:var(--green)}</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="app-brand">
+    <div class="app-mark icon-health">&#9889;</div>
+    <div class="app-id">
+      <div class="app-name">Seizure Detection</div>
+      <div class="app-sub"><span class="badge badge-cat cat-health">Health</span><span class="dot">·</span>v1.0.0<span class="dot">·</span>ESP32-S3</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="badge badge-live"><span class="status-dot"></span>LIVE</span>
+    <span class="uplink"><span class="status-dot"></span> Seed online</span>
+    <span class="power">CSI motion</span>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <button class="tab active" data-tab="overview">&#128202; Overview</button>
+  <button class="tab" data-tab="monitor">&#128137; Live Monitor</button>
+  <button class="tab" data-tab="analytics">&#128200; Analytics</button>
+  <button class="tab" data-tab="events">&#128276; Event Log <span class="tcount" id="evcount">0</span></button>
+  <button class="tab" data-tab="config">&#9881; Configuration</button>
+</nav>
+
+<main class="main">
+
+  <div class="banner alert" id="banner">
+    <span class="b-icon">&#9889;</span>
+    <div><div class="b-title">Tonic-clonic seizure detected</div>
+      <div class="b-sub" id="banner-sub">Rhythmic involuntary motion — emergency alert dispatched</div></div>
+    <span class="spacer"></span>
+    <button class="btn btn-danger" onclick="document.getElementById('banner').classList.remove('show')">Acknowledge</button>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="view active" data-view="overview">
+    <div class="kpis six">
+      <div class="kpi"><div class="kpi-label">Patient State</div><div class="kpi-value" id="k-state" style="font-size:21px;color:var(--green)">Calm</div><div class="kpi-sub" id="k-state-sub">stable</div></div>
+      <div class="kpi"><div class="kpi-label">Motion Rhythm</div><div class="kpi-value"><span id="k-hz">0.4</span><small> Hz</small></div><canvas class="kpi-spark" id="sp-hz"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Seizure Risk</div><div class="kpi-value"><span id="k-risk">4</span><small> %</small></div><canvas class="kpi-spark" id="sp-risk"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Episodes Today</div><div class="kpi-value" id="k-ep">0</div><div class="kpi-sub">0 false positives</div></div>
+      <div class="kpi"><div class="kpi-label">Monitoring</div><div class="kpi-value" id="k-up" style="font-size:19px">14h 02m</div><div class="kpi-sub">uptime</div></div>
+      <div class="kpi"><div class="kpi-label">Sensitivity</div><div class="kpi-value" style="font-size:19px">High</div><div class="kpi-sub">2.5 Hz band</div></div>
+    </div>
+
+    <div class="grid g-2-1">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128202;</span> CSI Motion Energy</div>
+          <div class="legend"><span><i style="background:var(--cyan)"></i>amplitude</span><span><i style="background:var(--red)"></i>rhythmic band</span></div></div>
+        <canvas id="ov-motion"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128137;</span> Risk Index</div></div>
+        <canvas id="ov-gauge"></canvas>
+        <div class="statline"><span class="k">Rhythmicity</span><span class="v" id="s-rhythm">0.12</span></div>
+        <div class="statline"><span class="k">Limb symmetry</span><span class="v" id="s-sym">0.31</span></div>
+        <div class="statline"><span class="k">Episode duration</span><span class="v" id="s-dur">—</span></div>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Event Mix (24h)</div></div><canvas id="ov-donut"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128241;</span> Vitals Snapshot</div></div>
+        <div class="grid g2" style="gap:8px">
+          <div class="mini-stat"><div class="mv" id="m-hr">72</div><div class="ml">heart bpm</div></div>
+          <div class="mini-stat"><div class="mv" id="m-rr">15</div><div class="ml">resp /min</div></div>
+          <div class="mini-stat"><div class="mv" id="m-spo">98</div><div class="ml">est. SpO₂</div></div>
+          <div class="mini-stat"><div class="mv" id="m-mov">Low</div><div class="ml">movement</div></div>
+        </div>
+        <canvas id="ov-vitals" style="margin-top:8px"></canvas>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128274;</span> System Status</div></div>
+        <div class="statline"><span class="k">Detector</span><span class="v" style="color:var(--green)">Armed</span></div>
+        <div class="statline"><span class="k">CSI link</span><span class="v" style="color:var(--green)">Stable</span></div>
+        <div class="statline"><span class="k">Sample rate</span><span class="v">100 Hz</span></div>
+        <div class="statline"><span class="k">Alert channel</span><span class="v">Caregiver + 911</span></div>
+        <div class="statline"><span class="k">Model</span><span class="v">rhythm-net v3</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE MONITOR ===================== -->
+  <section class="view" data-view="monitor">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127939;</span> Real-time Motion Waveform</div><span class="panel-tools">100 Hz</span></div><canvas id="mo-wave"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#9201;</span> Rhythmicity</div></div><canvas id="mo-rhythm"></canvas>
+        <div class="statline"><span class="k">Dominant frequency</span><span class="v"><span id="mo-domhz">0.4</span> Hz</span></div>
+        <div class="statline"><span class="k">Band power (2.5–5 Hz)</span><span class="v" id="mo-bandp">0.08</span></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128225;</span> Frequency Spectrum</div><span class="panel-tools">0–8 Hz</span></div><canvas id="mo-spec"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129106;</span> Limb Symmetry</div></div><canvas id="mo-sym"></canvas>
+        <div class="statline"><span class="k">Left / right correlation</span><span class="v" id="mo-corr">0.30</span></div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Motion Intensity Heatmap</div><span class="panel-tools">limb × time</span></div><canvas id="mo-heat"></canvas>
+      <div class="legend" style="margin-top:8px"><span>rows: left-arm · right-arm · left-leg · right-leg · torso</span></div></div>
+  </section>
+
+  <!-- ===================== ANALYTICS ===================== -->
+  <section class="view" data-view="analytics">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Avg Episode</div><div class="kpi-value">38<small> s</small></div><div class="kpi-sub">last 30 days</div></div>
+      <div class="kpi"><div class="kpi-label">Peak Risk (30d)</div><div class="kpi-value">94<small> %</small></div><div class="kpi-sub">on day 12</div></div>
+      <div class="kpi"><div class="kpi-label">False Positives</div><div class="kpi-value">2</div><div class="kpi-sub">0.4% rate</div></div>
+      <div class="kpi"><div class="kpi-label">Detection Latency</div><div class="kpi-value">1.8<small> s</small></div><div class="kpi-sub">median</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128197;</span> Episodes per Day</div><span class="panel-tools">14 days</span></div><canvas id="an-days"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Episode Duration Distribution</div></div><canvas id="an-dur"></canvas></div>
+    </div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Risk by Hour × Day</div><span class="panel-tools">7×24</span></div><canvas id="an-heat"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Episode Severity</div></div><canvas id="an-sev"></canvas>
+        <div class="statline"><span class="k">Tonic-clonic</span><span class="v">71%</span></div>
+        <div class="statline"><span class="k">Myoclonic</span><span class="v">22%</span></div>
+        <div class="statline"><span class="k">Indeterminate</span><span class="v">7%</span></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== EVENT LOG ===================== -->
+  <section class="view" data-view="events">
+    <div class="grid g-2-1">
+      <div class="panel flush">
+        <div class="panel-head" style="padding:16px 18px 0"><div class="panel-title"><span class="ico">&#128203;</span> Event Log</div>
+          <div class="panel-tools"><span class="pill pill-mute">All</span></div></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Event</th><th>Severity</th><th>Detail</th></tr></thead><tbody id="log"></tbody></table></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Live Stream</div><span class="panel-tools">tail</span></div><div class="feed" id="feed"></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURATION ===================== -->
+  <section class="view" data-view="config">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127899;</span> Detection Tuning</div></div>
+        <div class="cfg-group"><label class="cfg-label">Sensitivity</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="1" max="100" value="82" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="cfg-range-val">82%</span></div>
+          <div class="cfg-hint">Higher sensitivity detects subtler rhythmic motion (more false positives).</div></div>
+        <div class="cfg-group"><label class="cfg-label">Rhythmic band threshold</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="15" max="60" value="25" oninput="this.nextElementSibling.textContent=(this.value/10).toFixed(1)+' Hz'"><span class="cfg-range-val">2.5 Hz</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Minimum episode duration</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="3" max="30" value="8" oninput="this.nextElementSibling.textContent=this.value+' s'"><span class="cfg-range-val">8 s</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">CSI sample rate</label>
+          <select class="cfg-select"><option>100 Hz (recommended)</option><option>50 Hz</option><option>200 Hz</option></select></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Alerts & Routing</div></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Emergency dispatch (911)</div><div class="sub">Auto-call on confirmed tonic-clonic</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Caregiver SMS</div><div class="sub">+1 (555) 014-8829</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Record raw CSI on event</div><div class="sub">30 s pre/post buffer</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Night mode</div><div class="sub">Suppress non-critical alerts 22:00–07:00</div></div><label class="cfg-toggle"><input type="checkbox"><span class="slider"></span></label></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-primary">Save changes</button><button class="btn btn-ghost">Reset</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><span class="ico">&#128203;</span> Cog Details</div><button class="btn btn-installed btn-sm">&#10003; Installed</button></div>
+      <div class="grid g2" style="gap:0 28px">
+        <div>
+          <div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">Detects tonic-clonic seizures through analysis of rhythmic involuntary motion patterns in CSI data. Triggers immediate alerts.</span></div>
+          <div class="detail-row"><span class="detail-label">Events</span><span class="detail-value"><div class="event-tags"><span class="event-tag">seizure_detected</span><span class="event-tag">seizure_ended</span><span class="event-tag">alert</span></div></span></div>
+        </div>
+        <div>
+          <div class="detail-row"><span class="detail-label">Hardware</span><span class="detail-value">ESP32-S3</span></div>
+          <div class="detail-row"><span class="detail-label">Input</span><span class="detail-value">CSI motion</span></div>
+          <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">v1.0.0 · 20 KB · Hard</span></div>
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value mono"><a href="#">cognitum-one/cogs/src/cogs/seizure-detect</a></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Running on <b style="color:var(--t2)">Cognitum Seed</b> · cognitum-esp32s3-v0.6.3</span>
+    <span class="mono">seizure-detect@1.0.0</span>
+  </footer>
+</main>
+
+<script>
+/* Cognitum dashboard runtime (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG application runtime
+   Dependency-free canvas widgets + app shell helpers.
+   Simulated live telemetry so each app runs offline.
+   ============================================================ */
+(function (global) {
+  'use strict';
+  const C = getComputedStyle(document.documentElement);
+  const css = (n, f) => (C.getPropertyValue(n).trim() || f);
+  const COL = {
+    cyan: css('--cyan', '#4ecdc4'), green: css('--green', '#6bcb77'),
+    amber: css('--amber', '#d4a574'), red: css('--red', '#e06060'),
+    purple: css('--purple', '#a78bfa'), pink: css('--pink', '#f472b6'),
+    blue: css('--blue', '#60a5fa'), orange: css('--orange', '#fb923c'),
+    gray: css('--gray', '#94a3b8'), t1: css('--t1', '#e0e4f0'),
+    t2: css('--t2', '#8890a8'), t3: css('--t3', '#505872'),
+    border: css('--border', '#252d45'), bg2: css('--bg2', '#111627'),
+    card: css('--card', '#171d30')
+  };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const pad = n => String(n).padStart(2, '0');
+  function now() {
+    try { return new Date().toTimeString().slice(0, 8); }
+    catch (e) { return '00:00:00'; }
+  }
+  function withAlpha(hex, a) {
+    if (typeof hex !== 'string') return 'rgba(78,205,196,' + a + ')';
+    hex = hex.trim();
+    if (hex[0] === '#') {
+      const m = hex.slice(1);
+      const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(78,205,196,' + a + ')';
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    const nums = hex.match(/[\d.]+/g);
+    if (nums && nums.length >= 3) return `rgba(${nums[0]},${nums[1]},${nums[2]},${a})`;
+    return hex;
+  }
+  function fit(canvas, h) {
+    const dpr = global.devicePixelRatio || 1;
+    const w = canvas.clientWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 600;
+    canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h };
+  }
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.abs(h) / 2); if (h <= 0) h = 0.6;
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /* ---- Rolling multi-series line / area chart ---- */
+  function LineChart(canvas, opts) {
+    opts = opts || {};
+    const series = opts.series || [{ color: COL.cyan }];
+    const N = opts.points || 90, h = opts.height || 220;
+    const ymin = opts.min != null ? opts.min : 0, ymax = opts.max != null ? opts.max : 1;
+    const mid = ymin + (ymax - ymin) * 0.5, sa = (ymax - ymin) * 0.16;
+    const data = series.map((s, si) => Array.from({ length: N },
+      (_, i) => mid + Math.sin(i / 7 + si * 1.6) * sa + (Math.random() - 0.5) * sa));
+    function push(vals) {
+      if (!Array.isArray(vals)) vals = [vals];
+      vals.forEach((v, i) => { if (data[i]) { data[i].push(v); if (data[i].length > N) data[i].shift(); } });
+      draw();
+    }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = withAlpha(COL.border, 0.6); ctx.lineWidth = 1;
+      for (let g = 0; g <= 4; g++) { const y = (h - 8) * g / 4 + 4; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      const sx = w / (N - 1), span = (ymax - ymin) || 1;
+      const Y = v => (h - 8) - ((clamp(v, ymin, ymax) - ymin) / span) * (h - 16);
+      series.forEach((s, si) => {
+        const d = data[si], c = s.color || COL.cyan;
+        if (s.fill !== false) {
+          const grd = ctx.createLinearGradient(0, 0, 0, h);
+          grd.addColorStop(0, withAlpha(c, 0.28)); grd.addColorStop(1, withAlpha(c, 0));
+          ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v)));
+          ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+        }
+        ctx.beginPath(); ctx.lineWidth = s.width || 2; ctx.strokeStyle = c; ctx.lineJoin = 'round';
+        d.forEach((v, i) => { const x = i * sx, y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.stroke();
+        if (s.dot !== false) {
+          const lx = (d.length - 1) * sx, ly = Y(d[d.length - 1]);
+          ctx.beginPath(); ctx.arc(lx, ly, 3, 0, 7); ctx.fillStyle = c; ctx.fill();
+          ctx.beginPath(); ctx.arc(lx, ly, 6, 0, 7); ctx.strokeStyle = withAlpha(c, 0.4); ctx.stroke();
+        }
+      });
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw, data };
+  }
+
+  /* ---- Bars (spectrum / histogram / categorical) ---- */
+  function Bars(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, n = opts.bars || 24, col = opts.color || COL.cyan;
+    let vals = Array.from({ length: n }, () => rand(0.15, 0.85));
+    const labels = opts.labels || null;
+    function set(v) { vals = Array.isArray(v) ? v : [v]; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const padb = labels ? 18 : 4, bw = w / vals.length, gap = Math.min(5, bw * 0.18);
+      vals.forEach((v, i) => {
+        const bh = clamp(v, 0, 1) * (h - padb - 6), x = i * bw + gap / 2, y = (h - padb) - bh;
+        const c = typeof col === 'function' ? col(v, i) : col;
+        const grd = ctx.createLinearGradient(0, y, 0, h - padb);
+        grd.addColorStop(0, c); grd.addColorStop(1, withAlpha(c, 0.25));
+        ctx.fillStyle = grd; ctx.beginPath(); rr(ctx, x, y, bw - gap, bh, Math.min(3, (bw - gap) / 2)); ctx.fill();
+      });
+      if (labels) {
+        ctx.fillStyle = COL.t3; ctx.font = '9px ' + css('--mono', 'monospace'); ctx.textAlign = 'center';
+        const step = Math.ceil(labels.length / 16);
+        labels.forEach((l, i) => { if (i % step === 0) ctx.fillText(l, i * bw + bw / 2, h - 4); });
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get vals() { return vals; } };
+  }
+
+  /* ---- Radial gauge ---- */
+  function Gauge(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, max = opts.max || 100;
+    let val = opts.value || 0;
+    const col = opts.color || COL.cyan, unit = opts.unit || '';
+    function set(v) { val = v; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h * 0.9, r = Math.min(w / 2 - 14, h * 0.8);
+      ctx.lineWidth = 13; ctx.lineCap = 'round';
+      ctx.strokeStyle = COL.bg2; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI); ctx.stroke();
+      const frac = clamp(val / max, 0, 1), c = typeof col === 'function' ? col(val) : col;
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + frac * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '700 30px ' + css('--font', 'sans-serif');
+      ctx.fillText(Math.round(val * 10) / 10 + '', cx, cy - 6);
+      ctx.fillStyle = COL.t2; ctx.font = '11px ' + css('--font', 'sans-serif'); ctx.fillText(unit, cx, cy + 12);
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get value() { return val; } };
+  }
+
+  /* ---- Donut / ring ---- */
+  function Donut(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180;
+    let segs = opts.segments || [];
+    const centerLabel = opts.centerLabel || '';
+    function set(s) { segs = s; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 10, ir = r * 0.62;
+      const total = segs.reduce((a, s) => a + (s.value || 0), 0) || 1;
+      let a0 = -Math.PI / 2;
+      segs.forEach(s => {
+        const a1 = a0 + (s.value / total) * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a0, a1); ctx.closePath();
+        ctx.fillStyle = s.color || COL.cyan; ctx.fill(); a0 = a1;
+      });
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath(); ctx.arc(cx, cy, ir, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      const big = centerLabel || total;
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 22px ' + css('--font', 'sans-serif');
+      ctx.fillText(big + '', cx, cy + 2);
+      if (opts.centerSub) { ctx.fillStyle = COL.t3; ctx.font = '10px ' + css('--font', 'sans-serif'); ctx.fillText(opts.centerSub, cx, cy + 18); }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw };
+  }
+
+  /* ---- Heatmap (rows x cols, values 0..1) ---- */
+  function Heatmap(canvas, opts) {
+    opts = opts || {};
+    const rows = opts.rows || 7, cols = opts.cols || 24, h = opts.height || 150;
+    const base = opts.color || COL.cyan;
+    let grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => rand(0, 1)));
+    function set(g) { grid = g; draw(); }
+    function poke(r, c, v) { if (grid[r]) grid[r][c] = v; }
+    function shift(col) { grid.forEach(row => { row.shift(); row.push(0); }); if (col) { /* caller fills last col */ } draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const gap = 2, cw = (w - (cols - 1) * gap) / cols, ch = (h - (rows - 1) * gap) / rows;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = clamp(grid[r][c], 0, 1);
+        ctx.fillStyle = v < 0.04 ? COL.bg2 : withAlpha(base, 0.12 + v * 0.88);
+        ctx.beginPath(); rr(ctx, c * (cw + gap), r * (ch + gap), cw, ch, 2); ctx.fill();
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, poke, shift, draw, get grid() { return grid; } };
+  }
+
+  /* ---- Sparkline ---- */
+  function Sparkline(canvas, opts) {
+    opts = opts || {};
+    const N = opts.points || 40, h = opts.height || 34, c = opts.color || COL.cyan;
+    let d = Array.from({ length: N }, () => rand(0.3, 0.7));
+    function push(v) { d.push(v); if (d.length > N) d.shift(); draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const sx = w / (N - 1), Y = v => (h - 3) - clamp(v, 0, 1) * (h - 6);
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, withAlpha(c, 0.3)); grd.addColorStop(1, withAlpha(c, 0));
+      ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v))); ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      d.forEach((v, i) => { i ? ctx.lineTo(i * sx, Y(v)) : ctx.moveTo(i * sx, Y(v)); }); ctx.stroke();
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw };
+  }
+
+  /* ---- Rolling event feed ---- */
+  function Feed(el, opts) {
+    opts = opts || {}; const max = opts.max || 50;
+    function add(tag, kind, msg) {
+      if (!el) return;
+      const row = document.createElement('div'); row.className = 'feed-row';
+      row.innerHTML = `<span class="feed-time">${now()}</span><span class="feed-tag ${kind || ''}">${tag}</span><span class="feed-msg">${msg}</span>`;
+      el.insertBefore(row, el.firstChild);
+      while (el.children.length > max) el.removeChild(el.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Event log table (newest on top) ---- */
+  function LogTable(tbody, opts) {
+    opts = opts || {}; const max = opts.max || 80;
+    function add(cells, kind) {
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono">${now()}</td>` + cells.map(c => `<td>${c}</td>`).join('');
+      tbody.insertBefore(tr, tbody.firstChild);
+      while (tbody.children.length > max) tbody.removeChild(tbody.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Tab controller: .tab[data-tab] -> .view[data-view] ---- */
+  function tabs() {
+    const tbtns = document.querySelectorAll('.tab');
+    tbtns.forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-tab');
+      tbtns.forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === id));
+      global.dispatchEvent(new Event('resize'));
+    }));
+  }
+
+  function loop(fn, ms) { fn(); return setInterval(fn, ms || 1000); }
+
+  global.Cog = { LineChart, Bars, Gauge, Donut, Heatmap, Sparkline, Feed, LogTable, tabs, loop, rand, clamp, pick, pad, now, COL, withAlpha };
+})(window);
+
+</script>
+<script>
+(function(){
+  Cog.tabs();
+  const motion = Cog.LineChart(document.getElementById('ov-motion'),{height:240,points:100,series:[{color:Cog.COL.cyan},{color:Cog.COL.red,fill:false,width:1.5}]});
+  const gauge = Cog.Gauge(document.getElementById('ov-gauge'),{height:160,max:100,unit:'risk index',color:v=>v>60?Cog.COL.red:v>30?Cog.COL.amber:Cog.COL.green});
+  const donut = Cog.Donut(document.getElementById('ov-donut'),{height:170,centerSub:'events',segments:[]});
+  const ovVit = Cog.Sparkline(document.getElementById('ov-vitals'),{height:46,color:Cog.COL.green});
+  const spHz = Cog.Sparkline(document.getElementById('sp-hz'),{height:30,color:Cog.COL.cyan});
+  const spRisk = Cog.Sparkline(document.getElementById('sp-risk'),{height:30,color:Cog.COL.amber});
+  const wave = Cog.LineChart(document.getElementById('mo-wave'),{height:240,points:120,min:-1,max:1,series:[{color:Cog.COL.cyan,fill:false}]});
+  const moRhythm = Cog.Gauge(document.getElementById('mo-rhythm'),{height:150,max:6,unit:'Hz dominant',color:v=>v>2.5?Cog.COL.red:Cog.COL.green});
+  const spec = Cog.Bars(document.getElementById('mo-spec'),{height:200,bars:32,labels:['0','','','','2','','','','4','','','','6','','','8'],color:(v,i)=> (i>=10&&i<=22&&v>0.5)?Cog.COL.red:Cog.COL.cyan});
+  const sym = Cog.LineChart(document.getElementById('mo-sym'),{height:160,points:80,series:[{color:Cog.COL.green},{color:Cog.COL.purple,fill:false,width:1.5}]});
+  const heat = Cog.Heatmap(document.getElementById('mo-heat'),{rows:5,cols:40,height:150,color:Cog.COL.green});
+  const anDays = Cog.Bars(document.getElementById('an-days'),{height:200,bars:14,color:Cog.COL.green,labels:Array.from({length:14},(_,i)=>i%2?'':String(i+1))});
+  anDays.set(Array.from({length:14},()=>Cog.rand(0,0.5)).map((v,i)=>i===11?0.95:v));
+  const anDur = Cog.Bars(document.getElementById('an-dur'),{height:200,bars:10,color:Cog.COL.cyan,labels:['10','','30','','50','','70','','90','110']});
+  anDur.set([0.2,0.55,0.9,0.7,0.4,0.25,0.15,0.1,0.05,0.03]);
+  const anHeat = Cog.Heatmap(document.getElementById('an-heat'),{rows:7,cols:24,height:180,color:Cog.COL.green});
+  Cog.Donut(document.getElementById('an-sev'),{height:150,centerLabel:'30d',centerSub:'episodes',segments:[{label:'tonic-clonic',value:71,color:Cog.COL.red},{label:'myoclonic',value:22,color:Cog.COL.amber},{label:'indeterminate',value:7,color:Cog.COL.gray}]});
+  const feed = Cog.Feed(document.getElementById('feed'));
+  const log = Cog.LogTable(document.getElementById('log'));
+  feed.add('boot','ok','Detector armed · sensitivity <b>High</b>');
+  log.add(['<b>boot</b>','<span class="pill pill-ok">ok</span>','Detector armed · model rhythm-net v3']);
+
+  let seizing=false,t=0,risk=4,episode=0,episodes=0,evCount=1;
+  const evDonut={alert:0,seizure_detected:0,seizure_ended:0};
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  function refreshDonut(){donut.set([
+    {label:'alert',value:evDonut.alert+1,color:Cog.COL.red},
+    {label:'detected',value:evDonut.seizure_detected+1,color:Cog.COL.amber},
+    {label:'ended',value:evDonut.seizure_ended+1,color:Cog.COL.green}]);}
+  refreshDonut();
+
+  Cog.loop(function(){
+    t++;
+    if(!seizing && Math.random()<0.012){seizing=true;episode=0;episodes++;evCount++;evDonut.seizure_detected++;
+      feed.add('seizure_detected','err','Rhythmic motion onset — <b>tonic-clonic</b>');
+      log.add(['<b>seizure_detected</b>','<span class="pill pill-err">critical</span>','Tonic-clonic onset, rhythmic band locked']);
+      document.getElementById('banner').classList.add('show');
+      evDonut.alert++;
+      log.add(['<b>alert</b>','<span class="pill pill-err">critical</span>','Emergency dispatch + caregiver SMS sent']);}
+    if(seizing){episode++;if(episode>14 && Math.random()<0.2){seizing=false;evCount++;evDonut.seizure_ended++;
+      feed.add('seizure_ended','ok','Episode ended · duration <b>'+episode+'s</b>');
+      log.add(['<b>seizure_ended</b>','<span class="pill pill-ok">resolved</span>','Episode ended after '+episode+'s']);
+      document.getElementById('banner').classList.remove('show');episode=0;}}
+    set('evcount',evCount); set('k-ep',episodes); refreshDonut();
+
+    const hz = seizing?Cog.rand(2.8,4.2):Cog.rand(0.2,0.9);
+    const amp = seizing?Cog.rand(0.55,0.95):Cog.rand(0.08,0.3);
+    const band = seizing?Cog.rand(0.5,0.9):Cog.rand(0.02,0.18);
+    motion.push([amp,band]);
+    wave.push(Math.sin(t*hz*0.5)*(seizing?Cog.rand(0.7,0.95):Cog.rand(0.05,0.2)));
+    risk = seizing?Cog.clamp(risk+Cog.rand(8,22),0,99):Cog.clamp(risk-Cog.rand(2,9),2,99);
+    gauge.set(risk); moRhythm.set(hz);
+    spHz.push(hz/6); spRisk.push(risk/100); ovVit.push(Cog.rand(0.4,0.6));
+    sym.push([seizing?Cog.rand(0.7,0.95):Cog.rand(0.3,0.5), seizing?Cog.rand(0.65,0.9):Cog.rand(0.25,0.45)]);
+
+    const sp=Array.from({length:32},(_,i)=>{const peak=(i>=12&&i<=18&&seizing)?Cog.rand(0.6,1):0;return Cog.clamp(peak+Math.exp(-i/9)*Cog.rand(0.1,0.4)+Cog.rand(0,0.1),0,1);});
+    spec.set(sp);
+    heat.grid.forEach(r=>{r.shift();r.push(seizing?Cog.rand(0.5,1):Cog.rand(0,0.25));}); heat.draw();
+    if(t%6===0){anHeat.grid.forEach(r=>{r.shift();r.push(Cog.rand(0,0.4));}); anHeat.draw();}
+
+    set('k-hz',hz.toFixed(1)); set('k-risk',Math.round(risk));
+    set('mo-domhz',hz.toFixed(1)); set('mo-bandp',band.toFixed(2));
+    set('s-rhythm',(seizing?Cog.rand(0.7,0.95):Cog.rand(0.05,0.25)).toFixed(2));
+    set('s-sym',(seizing?Cog.rand(0.75,0.97):Cog.rand(0.2,0.45)).toFixed(2));
+    set('mo-corr',(seizing?Cog.rand(0.75,0.95):Cog.rand(0.25,0.45)).toFixed(2));
+    set('m-hr',seizing?Math.round(Cog.rand(110,140)):Math.round(Cog.rand(64,78)));
+    set('m-rr',seizing?Math.round(Cog.rand(22,30)):Math.round(Cog.rand(13,17)));
+    set('m-spo',seizing?Math.round(Cog.rand(88,94)):Math.round(Cog.rand(96,99)));
+
+    const stEl=document.getElementById('k-state');
+    if(seizing){stEl.textContent='Seizure';stEl.style.color='var(--red)';set('k-state-sub','active · '+episode+'s');set('s-dur',episode+'s');set('m-mov','Violent');
+      document.getElementById('banner-sub').textContent='Rhythmic involuntary motion at '+hz.toFixed(1)+' Hz — emergency alert dispatched';}
+    else{stEl.textContent='Calm';stEl.style.color='var(--green)';set('k-state-sub','stable');set('s-dur','—');set('m-mov','Low');}
+  },1000);
+})();
+</script>
+</body>
+</html>
