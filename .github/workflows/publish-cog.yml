@@ -55,11 +55,38 @@ jobs:
           fi
           MATRIX=$(python3 scripts/cog-targets.py --matrix "$COG")
           echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
+
+          # VERSION DISAGREEMENT IS AN ERROR, NOT A PREFERENCE.
+          #
+          # This step read cog.toml's version and published under it. Cargo.toml's version is
+          # the one COMPILED INTO THE BINARY (CARGO_PKG_VERSION) and reported by --version, and
+          # the two disagree for 85 of 109 cogs — anomaly-detect says 1.0.0 in cog.toml and
+          # 1.2.0 in Cargo.toml.
+          #
+          # That produced a signed release record stating a version the artifact does not have.
+          # The signature is still valid over the bytes, which is exactly what makes it
+          # dangerous: it cryptographically attests a document containing a false claim about
+          # the thing it attests to. A stale version in provenance is worse than no version,
+          # because a consumer has no way to tell it is stale.
+          #
+          # So: refuse. There is no safe automatic choice here — picking Cargo.toml would
+          # silently republish 85 cogs under new numbers, and picking cog.toml is the bug.
+          # Someone has to say which is right. `cog_version` remains available as the explicit
+          # override for the case where a human HAS decided.
+          CARGO_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
+          COGTOML_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
           V='${{ inputs.cog_version }}'
           if [ -z "$V" ]; then
-            V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
+            if [ "$CARGO_V" != "$COGTOML_V" ]; then
+              echo "::error::version disagreement for $COG — cog.toml says $COGTOML_V, Cargo.toml says $CARGO_V."
+              echo "::error::Cargo.toml's value is what the binary reports. Refusing to sign provenance stating a version the artifact does not have."
+              echo "::error::Reconcile the two files, or re-run with the cog_version input to state the intended version explicitly."
+              exit 1
+            fi
+            V="$COGTOML_V"
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "version sources: cog.toml=$COGTOML_V Cargo.toml=$CARGO_V -> publishing $V"
           echo "Publishing $COG v$V for: $(echo "$MATRIX" | jq -r '.include[].arch' | tr '\n' ' ')"
 
   publish:
