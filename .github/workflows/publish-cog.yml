@@ -186,13 +186,34 @@ jobs:
           cargo audit --json > "$GITHUB_WORKSPACE/out/vuln-scan.json" || true
           test -s "$GITHUB_WORKSPACE/out/vuln-scan.json"
           echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/vuln-scan.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          python3 - <<'EOF'
+
+          # THE VERDICT IS READ FROM THE SCAN, NOT ASSUMED.
+          #
+          # The policy-decision record hardcoded `"verdict": "pass"` for A5. Combined with the
+          # `|| true` above — which is correct, a scan that finds something must still emit its
+          # evidence — that meant a cog with real advisories would have been published with a
+          # SIGNED document asserting its vulnerability scan passed. The digest recorded the
+          # findings faithfully while the verdict beside it contradicted them, and a verdict
+          # that cannot say "fail" is not a verdict.
+          #
+          # Advisories fail the publish. Warnings (unmaintained, yanked) are reported and do
+          # not, because they are not vulnerabilities and failing on them would train people
+          # to route around this gate — which is how a security gate stops being believed.
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
           import json, os, sys
           d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/vuln-scan.json'))
-          n = len(d.get('vulnerabilities', {}).get('list', []))
-          print(f'advisories: {n}')
-          if n:
-              print('::warning::%d advisory hit(s) — recorded in the scan digest for review' % n)
+          adv = d.get('vulnerabilities', {}).get('list') or []
+          warn = {k: len(v) for k, v in (d.get('warnings') or {}).items() if v}
+          print(f'advisories={len(adv)}')
+          print(f'verdict={"fail" if adv else "pass"}')
+          sys.stderr.write(f'advisories: {len(adv)}   warnings: {warn or "none"}\n')
+          for a in adv:
+              i = a.get('advisory', {})
+              sys.stderr.write(f"::error::{i.get('id')} in {i.get('package')}: {i.get('title')}\n")
+          if adv:
+              sys.stderr.write('::error::refusing to publish — see the advisories above. '
+                               'The scan evidence is still written; fix or vendor-patch the dependency.\n')
+              sys.exit(1)
           EOF
 
       - name: SBOM (gate A4)
@@ -363,7 +384,7 @@ jobs:
             "controls": [
               { "id": "A3", "name": "dependency-lock",   "verdict": "pass", "evidence": "${{ steps.lock.outputs.digest }}" },
               { "id": "A4", "name": "sbom",              "verdict": "pass", "evidence": "${{ steps.sbom.outputs.digest }}" },
-              { "id": "A5", "name": "vulnerability-scan","verdict": "pass", "evidence": "${{ steps.vuln.outputs.digest }}" },
+              { "id": "A5", "name": "vulnerability-scan","verdict": "${{ steps.vuln.outputs.verdict }}", "advisories": ${{ steps.vuln.outputs.advisories }}, "evidence": "${{ steps.vuln.outputs.digest }}" },
               { "id": "A6", "name": "isolation",         "verdict": "pass", "evidence": "${{ steps.isolation.outputs.digest }}" },
               { "id": "A7", "name": "signature",         "verdict": "pass", "evidence": "${{ steps.sign.outputs.signature }}" },
               { "id": "A2", "name": "provenance",        "verdict": "pass", "evidence": "${{ steps.prov.outputs.digest }}" }
