@@ -27,6 +27,11 @@ on:
 
 permissions:
   contents: read
+  # Keyless signing: the workflow's own OIDC identity is the signer. No private key is
+  # stored, generated or held anywhere — Fulcio issues a short-lived certificate bound to
+  # this repository and workflow, and Rekor records the signature in a public transparency
+  # log. That is what makes the signature verifiable by anyone without trusting us.
+  id-token: write
 
 jobs:
   matrix:
@@ -83,7 +88,10 @@ jobs:
         working-directory: src/cogs/${{ matrix.cog }}
         run: |
           set -euo pipefail
-          cargo build --release --target ${{ matrix.triple }}
+          # --locked: build from the committed Cargo.lock or FAIL. Without it cargo resolves
+          # dependencies fresh on every run, so two builds of one commit can differ and no
+          # signature over the output means anything — reproducibility precedes provenance.
+          cargo build --locked --release --target ${{ matrix.triple }}
           BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
           ${{ matrix.strip }} "$BIN"
           mkdir -p "$GITHUB_WORKSPACE/out"
@@ -125,6 +133,95 @@ jobs:
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # ── Release evidence (ADR-113 §1, gates A3-A7) ──────────────────────────
+      # Each step below produces a DIGEST that goes into the release record. A release
+      # missing any of them is refused by verify-cog-releases.mjs in cognitum-one/website,
+      # and that refusal is the gate working rather than a bug to route around.
+
+      - name: Dependency lock digest (gate A3 — reproducibility)
+        id: lock
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          test -f Cargo.lock || { echo "::error::no Cargo.lock — build is not reproducible"; exit 1; }
+          echo "digest=sha256:$(sha256sum Cargo.lock | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Vulnerability scan (gate A5)
+        id: vuln
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          cargo install cargo-audit --locked --quiet 2>/dev/null || cargo install cargo-audit --quiet
+          # `|| true` on the SCAN, never on the digest: a advisory-DB hit must be recorded and
+          # reviewed, not silently pass, but a scan that finds nothing must still emit evidence.
+          cargo audit --json > "$GITHUB_WORKSPACE/out/vuln-scan.json" || true
+          test -s "$GITHUB_WORKSPACE/out/vuln-scan.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/vuln-scan.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          python3 - <<'EOF'
+          import json, os, sys
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/vuln-scan.json'))
+          n = len(d.get('vulnerabilities', {}).get('list', []))
+          print(f'advisories: {n}')
+          if n:
+              print('::warning::%d advisory hit(s) — recorded in the scan digest for review' % n)
+          EOF
+
+      - name: SBOM (gate A4)
+        id: sbom
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sh -s -- -b "$RUNNER_TEMP/bin" >/dev/null
+          "$RUNNER_TEMP/bin/syft" scan "dir:src/cogs/${{ matrix.cog }}" \
+            -o cyclonedx-json="$GITHUB_WORKSPACE/out/sbom.cdx.json" -q
+          test -s "$GITHUB_WORKSPACE/out/sbom.cdx.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/sbom.cdx.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Sign the binary — cosign keyless (gate A7)
+        id: sign
+        env:
+          BIN: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 \
+            -o "$RUNNER_TEMP/cosign" && chmod +x "$RUNNER_TEMP/cosign"
+          # --yes accepts the transparency-log entry. The signature and certificate are written
+          # beside the artifact; both travel to GCS and both are needed to verify.
+          COSIGN_EXPERIMENTAL=1 "$RUNNER_TEMP/cosign" sign-blob --yes \
+            --output-signature "$BIN.sig" --output-certificate "$BIN.pem" "$BIN"
+          echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "signature=sha256:$(sha256sum "$BIN.sig" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Emit machine-readable release evidence
+        run: |
+          set -euo pipefail
+          cat > "$GITHUB_WORKSPACE/out/release-evidence.json" <<EOF
+          {
+            "cogId": "${{ matrix.cog }}",
+            "version": "${{ needs.matrix.outputs.version }}",
+            "arch": "${{ matrix.arch }}",
+            "sourceCommit": "${{ github.sha }}",
+            "runtimeContractVersion": "cognitum.cog.v1",
+            "artifactDigest": "${{ steps.sign.outputs.binary }}",
+            "signatureDigest": "${{ steps.sign.outputs.signature }}",
+            "dependencyLockDigest": "${{ steps.lock.outputs.digest }}",
+            "sbomDigest": "${{ steps.sbom.outputs.digest }}",
+            "vulnerabilityScanDigest": "${{ steps.vuln.outputs.digest }}",
+            "signatureAlgorithm": "ecdsa-p256",
+            "signingIdentity": "keyless:github-oidc:${{ github.repository }}",
+            "builderIdentity": "github-actions://${{ github.repository }}",
+            "buildWorkflow": "${{ github.workflow_ref }}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "isolationEvidenceDigest": null,
+            "isolationPassed": false
+          }
+          EOF
+          echo "--- release evidence ---"; cat "$GITHUB_WORKSPACE/out/release-evidence.json"
+          # isolationPassed is FALSE and isolationEvidenceDigest NULL, deliberately. No
+          # isolation test exists yet, and ADR-113 §12 forbids marking a release available
+          # without that evidence. Emitting `true` here would fabricate the one gate this
+          # pipeline cannot yet satisfy, so the record says plainly that it is unmet.
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -144,4 +241,17 @@ jobs:
             gcloud storage cp -r out/extra/* \
               "gs://cognitum-apps/cogs/${{ matrix.gcs }}/" || true
           fi
+          # DIGEST-ADDRESSED copy. The path above is mutable — the next publish overwrites it,
+          # so an immutable releaseDigest cannot reference it (ADR-113 §1). This copy is keyed
+          # by the artifact's own digest and is therefore append-only in practice: the same
+          # bytes always land at the same path, and different bytes never collide.
+          DIGEST="${{ steps.sign.outputs.binary }}"; DIGEST="${DIGEST#sha256:}"
+          BASE="gs://cognitum-apps/cogs/by-digest/${DIGEST}"
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "$BASE/artifact"
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sig" "$BASE/artifact.sig"
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.pem" "$BASE/artifact.pem"
+          gcloud storage cp "out/sbom.cdx.json" "$BASE/sbom.cdx.json"
+          gcloud storage cp "out/vuln-scan.json" "$BASE/vuln-scan.json"
+          gcloud storage cp "out/release-evidence.json" "$BASE/release-evidence.json"
+          echo "Digest-addressed: $BASE/"
           echo "Uploaded cog-${{ matrix.cog }}-${{ matrix.suffix }} to gs://cognitum-apps/cogs/${{ matrix.gcs }}/"
