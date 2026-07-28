@@ -1,0 +1,19 @@
+[package]
+name = "cog-runner"
+version = "0.1.0"
+edition = "2021"
+description = "Enforces each cog's declared [console] limits at spawn time, and emits the evidence"
+
+[[bin]]
+name = "cog-runner"
+path = "src/main.rs"
+
+[lib]
+name = "cog_runner"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+sha2 = "0.10"
