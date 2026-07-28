@@ -4,7 +4,12 @@
 # Rust
 /target/
 **/target/
-src/cogs/*/Cargo.lock
+# src/cogs/*/Cargo.lock was ignored here. Removed deliberately: every cog is a BINARY crate
+# ([[bin]] in its Cargo.toml), and Cargo's own guidance is to commit lockfiles for binaries
+# and omit them for libraries. Without a committed lock, `cargo build` re-resolves serde and
+# friends on every run, so two builds of one commit can differ — and a signature over a build
+# nobody can reproduce attests to an artifact that cannot be re-derived. The root Cargo.lock
+# was already tracked; these are the same case.
 **/*.rs.bk
 *.pdb
 
