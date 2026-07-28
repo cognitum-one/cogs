@@ -183,14 +183,37 @@ jobs:
           BIN: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
         run: |
           set -euo pipefail
-          curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 \
-            -o "$RUNNER_TEMP/cosign" && chmod +x "$RUNNER_TEMP/cosign"
-          # --yes accepts the transparency-log entry. The signature and certificate are written
-          # beside the artifact; both travel to GCS and both are needed to verify.
-          COSIGN_EXPERIMENTAL=1 "$RUNNER_TEMP/cosign" sign-blob --yes \
-            --output-signature "$BIN.sig" --output-certificate "$BIN.pem" "$BIN"
+          # PINNED, not `releases/latest`. A floating tool version broke this step the first
+          # time it ran for real (cosign v3 removed --output-signature in favour of --bundle),
+          # but the deeper problem is that a pipeline whose whole claim is REPRODUCIBLE builds
+          # cannot fetch a signing tool that changes underneath it. The checksum is verified
+          # because pinning a version you do not check is only a naming convention.
+          COSIGN_VERSION=v3.1.2
+          COSIGN_SHA256=f7622ed3cf22e55e1ae6377c080979ff77a22da9981c11df222a2e444991e7cf
+          curl -sSfL "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
+            -o "$RUNNER_TEMP/cosign"
+          echo "${COSIGN_SHA256}  $RUNNER_TEMP/cosign" | sha256sum -c - \
+            || { echo "::error::cosign checksum mismatch — refusing to sign with an unverified tool"; exit 1; }
+          chmod +x "$RUNNER_TEMP/cosign"
+
+          # --yes accepts the transparency-log entry. cosign v3 writes a single Sigstore bundle
+          # carrying the signature, the Fulcio certificate and the Rekor inclusion proof.
+          "$RUNNER_TEMP/cosign" sign-blob --yes --bundle "$BIN.sigstore.json" "$BIN"
+
+          # VERIFY WHAT WE JUST SIGNED, and bind it to THIS workflow. A sign step that never
+          # verifies proves only that cosign exited 0 — it does not establish that the bundle
+          # validates, nor that the identity in the certificate is the one we expect. Pinning
+          # the identity to this repo+workflow is the part that makes the signature mean
+          # "cognitum-one/cogs built this" rather than merely "somebody signed something".
+          "$RUNNER_TEMP/cosign" verify-blob --bundle "$BIN.sigstore.json" \
+            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$BIN" \
+            || { echo "::error::the signature we just produced does not verify"; exit 1; }
+
           echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          echo "signature=sha256:$(sha256sum "$BIN.sig" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "signature=sha256:$(sha256sum "$BIN.sigstore.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "cosignVersion=${COSIGN_VERSION}" >> "$GITHUB_OUTPUT"
 
       # ── Isolation (gate A6) ─────────────────────────────────────────────────
       # Runs the cog under the limits its OWN cog.toml declares, and records what held. This
@@ -282,6 +305,9 @@ jobs:
             "sbomDigest": "${{ steps.sbom.outputs.digest }}",
             "vulnerabilityScanDigest": "${{ steps.vuln.outputs.digest }}",
             "signatureAlgorithm": "ecdsa-p256",
+            "signatureFormat": "sigstore-bundle",
+            "signingToolVersion": "cosign@${{ steps.sign.outputs.cosignVersion }}",
+            "signatureVerified": true,
             "signingIdentity": "keyless:github-oidc:${{ github.repository }}",
             "builderIdentity": "github-actions://${{ github.repository }}",
             "buildWorkflow": "${{ github.workflow_ref }}",
@@ -291,6 +317,12 @@ jobs:
           }
           EOF
           echo "--- release evidence ---"; cat "$GITHUB_WORKSPACE/out/release-evidence.json"
+          # `signatureVerified: true` is not a constant either, for the same reason. The sign
+          # step runs `cosign verify-blob` against the bundle it just produced and exits
+          # non-zero if it does not validate or the certificate identity is not this workflow.
+          # A failed step fails the job, so this file is only ever written after a verification
+          # that actually passed — the field cannot be reached any other way.
+          #
           # isolationPassed now comes from an actual enforced run (the step above), not from a
           # constant. The step exits non-zero unless the allowlist REFUSED a disallowed command
           # and every permitted command held its runtime and output limits — so this field can
@@ -327,8 +359,10 @@ jobs:
           DIGEST="${{ steps.sign.outputs.binary }}"; DIGEST="${DIGEST#sha256:}"
           BASE="gs://cognitum-apps/cogs/by-digest/${DIGEST}"
           gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "$BASE/artifact"
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sig" "$BASE/artifact.sig"
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.pem" "$BASE/artifact.pem"
+          # One Sigstore bundle replaces the old .sig/.pem pair — it carries the signature, the
+          # Fulcio certificate and the Rekor inclusion proof together, so a verifier needs one
+          # object rather than three that can be separated from each other.
+          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" "$BASE/artifact.sigstore.json"
           gcloud storage cp "out/sbom.cdx.json" "$BASE/sbom.cdx.json"
           gcloud storage cp "out/vuln-scan.json" "$BASE/vuln-scan.json"
           gcloud storage cp "out/release-evidence.json" "$BASE/release-evidence.json"
