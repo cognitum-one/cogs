@@ -32,6 +32,8 @@ permissions:
   # this repository and workflow, and Rekor records the signature in a public transparency
   # log. That is what makes the signature verifiable by anyone without trusting us.
   id-token: write
+  # SLSA build provenance is written to GitHub's attestation store by the provenance step.
+  attestations: write
 
 jobs:
   matrix:
@@ -289,6 +291,72 @@ jobs:
           echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/isolation-runs.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "passed=true" >> "$GITHUB_OUTPUT"
 
+      # ── Provenance (gate A2) ────────────────────────────────────────────────
+      # SLSA build provenance, signed by the same keyless OIDC identity. The signature says
+      # these bytes were signed by this workflow; provenance says HOW they were produced —
+      # which source, which builder, which inputs. A release can be validly signed and still
+      # have come from an unknown build, so ADR-113 §1 requires both.
+      #
+      # Produced by GitHub's own attestor rather than hand-rolled: the predicate is generated
+      # from the runner's authenticated view of the build, not from values this step could
+      # simply assert about itself.
+      - name: SLSA build provenance (gate A2)
+        id: provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+
+      - name: Provenance digest
+        id: prov
+        run: |
+          set -euo pipefail
+          BUNDLE='${{ steps.provenance.outputs.bundle-path }}'
+          test -s "$BUNDLE" || { echo "::error::attestor produced no provenance bundle"; exit 1; }
+          cp "$BUNDLE" "$GITHUB_WORKSPACE/out/provenance.sigstore.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/provenance.sigstore.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      # ── Policy decision (gate A8) ───────────────────────────────────────────
+      # The registry requires a policyDecisionDigest: a record of WHICH controls were evaluated
+      # and what each returned, bound to this artifact. Without it "all gates passed" is an
+      # assertion with nothing behind it, and a reviewer cannot tell a gate that passed from a
+      # gate that never ran — the failure mode that had `isolationPassed` hardcoded to false
+      # for months while looking like a considered verdict.
+      #
+      # Every value here is read from a prior step's OUTPUT. A step that failed never sets one,
+      # and a failed step fails the job, so this record cannot describe a gate that did not run.
+      - name: Policy decision record (gate A8)
+        id: policy
+        run: |
+          set -euo pipefail
+          cat > "$GITHUB_WORKSPACE/out/policy-decision.json" <<EOF
+          {
+            "subject": "${{ steps.sign.outputs.binary }}",
+            "evaluatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "policyVersion": "adr-113-rev-15-gates-a1-a8",
+            "controls": [
+              { "id": "A3", "name": "dependency-lock",   "verdict": "pass", "evidence": "${{ steps.lock.outputs.digest }}" },
+              { "id": "A4", "name": "sbom",              "verdict": "pass", "evidence": "${{ steps.sbom.outputs.digest }}" },
+              { "id": "A5", "name": "vulnerability-scan","verdict": "pass", "evidence": "${{ steps.vuln.outputs.digest }}" },
+              { "id": "A6", "name": "isolation",         "verdict": "pass", "evidence": "${{ steps.isolation.outputs.digest }}" },
+              { "id": "A7", "name": "signature",         "verdict": "pass", "evidence": "${{ steps.sign.outputs.signature }}" },
+              { "id": "A2", "name": "provenance",        "verdict": "pass", "evidence": "${{ steps.prov.outputs.digest }}" }
+            ]
+          }
+          EOF
+          # A control with an empty evidence digest means its step did not run or produced
+          # nothing. Recording "pass" beside a blank digest would be the exact fabrication the
+          # registry exists to prevent, so refuse rather than emit it.
+          python3 - <<'PYEOF'
+          import json, os, sys
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/policy-decision.json'))
+          bad = [c['id'] for c in d['controls'] if not c['evidence'].startswith('sha256:')]
+          if bad:
+              print(f"::error::controls {bad} claim pass with no evidence digest")
+              sys.exit(1)
+          print(f"policy: {len(d['controls'])} controls, all with evidence")
+          PYEOF
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/policy-decision.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
       - name: Emit machine-readable release evidence
         run: |
           set -euo pipefail
@@ -312,6 +380,8 @@ jobs:
             "builderIdentity": "github-actions://${{ github.repository }}",
             "buildWorkflow": "${{ github.workflow_ref }}",
             "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "provenanceDigest": "${{ steps.prov.outputs.digest }}",
+            "policyDecisionDigest": "${{ steps.policy.outputs.digest }}",
             "isolationEvidenceDigest": "${{ steps.isolation.outputs.digest }}",
             "isolationPassed": ${{ steps.isolation.outputs.passed }}
           }
@@ -365,6 +435,8 @@ jobs:
           gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" "$BASE/artifact.sigstore.json"
           gcloud storage cp "out/sbom.cdx.json" "$BASE/sbom.cdx.json"
           gcloud storage cp "out/vuln-scan.json" "$BASE/vuln-scan.json"
+          gcloud storage cp "out/provenance.sigstore.json" "$BASE/provenance.sigstore.json"
+          gcloud storage cp "out/policy-decision.json" "$BASE/policy-decision.json"
           gcloud storage cp "out/release-evidence.json" "$BASE/release-evidence.json"
           echo "Digest-addressed: $BASE/"
           echo "Uploaded cog-${{ matrix.cog }}-${{ matrix.suffix }} to gs://cognitum-apps/cogs/${{ matrix.gcs }}/"
