@@ -192,6 +192,80 @@ jobs:
           echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "signature=sha256:$(sha256sum "$BIN.sig" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
+      # ── Isolation (gate A6) ─────────────────────────────────────────────────
+      # Runs the cog under the limits its OWN cog.toml declares, and records what held. This
+      # is the gate that had never been satisfiable: all 109 cogs declared allowed_commands,
+      # max_runtime_secs and output_limit_bytes, and nothing enforced any of it (see #60), so
+      # there was nothing to gather evidence about.
+      #
+      # EXPECT THIS TO FAIL FOR MOST COGS TODAY, and that is the gate working. 107 cogs list
+      # `--help` in allowed_commands and exactly ONE implements it (#62); the rest ignore the
+      # flag, fall through to their normal run loop, and get killed at their own deadline. A
+      # cog that hangs on a command it advertises is not releasable, so the step refuses. Fix
+      # the cog — do not relax this check to route around it.
+      #
+      # HOST-ARCH build, deliberately. The published artifact is cross-compiled for armhf or
+      # aarch64 and cannot execute on the runner, so the isolation run uses a native build of
+      # the SAME source at the SAME commit. That is a real limitation and it is recorded in the
+      # evidence as `runOnTarget: false` rather than glossed: this proves the limits bind for
+      # this code, not that they bind on the device.
+      - name: Isolation evidence — enforce the declared [console] limits
+        id: isolation
+        env:
+          COG: ${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          # Built from its own directory, NOT `-p cog-runner`: the repo root is a [package],
+          # not a [workspace], so a package spec matches nothing. Verified — `-p` errors with
+          # "did not match any packages".
+          ( cd crates/cog-runner && cargo build --locked --release )
+          export RUNNER="$GITHUB_WORKSPACE/crates/cog-runner/target/release/cog-runner"
+
+          # Native build of the cog under test — the cross-compiled artifact cannot run here.
+          ( cd "src/cogs/$COG" && cargo build --locked --release )
+          export NATIVE="src/cogs/$COG/target/release/cog-$COG"
+
+          # Every allowed_command is exercised. A policy is only shown to bind if the thing it
+          # permits actually runs and the thing it forbids actually does not.
+          python3 - > "$GITHUB_WORKSPACE/out/isolation-runs.json" <<'PYEOF'
+          import json, subprocess, tomllib, os, sys
+          cog = os.environ['COG']; runner = os.environ['RUNNER']; native = os.environ['NATIVE']
+          policy = tomllib.load(open(f'src/cogs/{cog}/cog.toml','rb'))['console']
+          runs = []
+          for cmd in policy['allowed_commands']:
+              p = subprocess.run([runner,'--cog-toml',f'src/cogs/{cog}/cog.toml','--binary',native,
+                                  '--command',cmd,'--cog-id',cog], capture_output=True, text=True)
+              runs.append({'command': cmd, 'exit': p.returncode,
+                           'evidence': json.loads(p.stdout) if p.stdout.strip().startswith('{') else None})
+          # NEGATIVE CONTROL. A run where everything is permitted proves nothing about a gate;
+          # the refusal is what shows the allowlist binds at all.
+          denied = subprocess.run([runner,'--cog-toml',f'src/cogs/{cog}/cog.toml','--binary',native,
+                                   '--command','--definitely-not-allowed','--cog-id',cog],
+                                  capture_output=True, text=True)
+          runs.append({'command':'--definitely-not-allowed','exit':denied.returncode,
+                       'refused': denied.returncode == 4, 'evidence': None})
+          json.dump({'cogId': cog, 'runOnTarget': False, 'policy': policy, 'runs': runs}, sys.stdout, indent=2)
+          PYEOF
+
+          # A file that exists is not evidence. The control must have REFUSED, and every
+          # permitted command must have held its limits, or this is not isolation evidence.
+          python3 - <<'PYEOF'
+          import json, sys, os
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/isolation-runs.json'))
+          control = [r for r in d['runs'] if r['command'] == '--definitely-not-allowed']
+          if not control or not control[0].get('refused'):
+              print('::error::allowlist did not refuse a disallowed command — not isolation evidence')
+              sys.exit(1)
+          for r in d['runs']:
+              ev = r.get('evidence')
+              if ev and not (ev['within_runtime_limit'] and ev['within_output_limit']):
+                  print(f"::error::{r['command']} breached its declared limits")
+                  sys.exit(1)
+          print('isolation: every allowed command held its limits; the control was refused')
+          PYEOF
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/isolation-runs.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
       - name: Emit machine-readable release evidence
         run: |
           set -euo pipefail
@@ -212,15 +286,20 @@ jobs:
             "builderIdentity": "github-actions://${{ github.repository }}",
             "buildWorkflow": "${{ github.workflow_ref }}",
             "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "isolationEvidenceDigest": null,
-            "isolationPassed": false
+            "isolationEvidenceDigest": "${{ steps.isolation.outputs.digest }}",
+            "isolationPassed": ${{ steps.isolation.outputs.passed }}
           }
           EOF
           echo "--- release evidence ---"; cat "$GITHUB_WORKSPACE/out/release-evidence.json"
-          # isolationPassed is FALSE and isolationEvidenceDigest NULL, deliberately. No
-          # isolation test exists yet, and ADR-113 §12 forbids marking a release available
-          # without that evidence. Emitting `true` here would fabricate the one gate this
-          # pipeline cannot yet satisfy, so the record says plainly that it is unmet.
+          # isolationPassed now comes from an actual enforced run (the step above), not from a
+          # constant. The step exits non-zero unless the allowlist REFUSED a disallowed command
+          # and every permitted command held its runtime and output limits — so this field can
+          # only be true when a run demonstrated it, and the record is otherwise never written.
+          #
+          # `runOnTarget: false` travels inside the evidence: the limits are proven against a
+          # native build of the same source, not against the cross-compiled artifact on real
+          # hardware. A reviewer should read this as "the policy binds for this code", not "the
+          # policy binds on a Seed".
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
