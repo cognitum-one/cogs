@@ -405,15 +405,59 @@ jobs:
           PYEOF
           echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/policy-decision.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
+      # ── Contract conformance (ADR-113 §8) ───────────────────────────────────
+      # This document is NOT a cognitum.cog-build-evidence.v1 — it is missing required
+      # fields — and it says so in its own body rather than leaving a consumer to discover
+      # that by failing validation. `kind` is therefore "…v1-partial", never "…v1".
+      #
+      # The missing list is COMPUTED from the cog's own manifest, not hardcoded. A frozen
+      # list would keep asserting these fields are absent after someone adds them, which is
+      # the same class of stale-claim bug as the version disagreement: a document confidently
+      # describing a world that has moved on. When cog.toml grows a [contract] block the list
+      # shrinks by itself, and `conformant` flips to true when nothing is left.
+      - name: Contract conformance (ADR-113 §8)
+        id: conform
+        env:
+          COG: ${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF' >> "$GITHUB_OUTPUT"
+          import json, os, tomllib
+          cog = os.environ['COG']
+          m = tomllib.load(open(f'src/cogs/{cog}/cog.toml', 'rb'))
+          contract = m.get('contract', {})
+          # The four v1-required fields no cog declares today. Read from [contract] because
+          # that is where they belong per ADR-113 §8; absent means absent, never defaulted.
+          required = ['packaging', 'deploymentDriver', 'tenancyMode', 'artifactRef']
+          missing = [f for f in required if not contract.get(f)]
+          out = {
+              'schema': 'cognitum.cog-build-evidence.v1',
+              'conformant': not missing,
+              'missingRequired': missing,
+          }
+          if missing:
+              out['reason'] = 'cog.toml declares no [contract] entry for these; see cognitum-one/cogs#64'
+          print('json=' + json.dumps(out))
+          PYEOF
+          echo "conformance: $(grep '^json=' "$GITHUB_OUTPUT" | tail -1)"
+
       - name: Emit machine-readable release evidence
         run: |
           set -euo pipefail
           cat > "$GITHUB_WORKSPACE/out/release-evidence.json" <<EOF
           {
+            "kind": "cognitum.cog-build-evidence.v1-partial",
             "cogId": "${{ matrix.cog }}",
             "version": "${{ needs.matrix.outputs.version }}",
             "arch": "${{ matrix.arch }}",
             "sourceCommit": "${{ github.sha }}",
+            "releaseDigest": "${{ steps.sign.outputs.binary }}",
+            "builder": {
+              "identity": "github-actions://${{ github.repository }}",
+              "workflow": "${{ github.workflow_ref }}",
+              "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            },
+            "conformsTo": ${{ steps.conform.outputs.json }},
             "runtimeContractVersion": "cognitum.cog.v1",
             "artifactDigest": "${{ steps.sign.outputs.binary }}",
             "signatureDigest": "${{ steps.sign.outputs.signature }}",
