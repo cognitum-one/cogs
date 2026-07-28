@@ -6,7 +6,15 @@ version = 4
 name = "cog-presence-field"
 version = "0.1.1"
 dependencies = [
+ "cog-sensor-sources",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cog-sensor-sources"
+version = "0.1.1"
+dependencies = [
  "serde_json",
 ]
 
