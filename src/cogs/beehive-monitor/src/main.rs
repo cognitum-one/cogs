@@ -74,6 +74,9 @@ fn parse_arg<T: std::str::FromStr>(args: &[String], flag: &str) -> Option<T> {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    // #62: `--help` is in this cog's own [console].allowed_commands. Handled before any
+    // work so it prints and exits instead of falling through to the sensor loop.
+    cog_sensor_sources::handle_help(&args, env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), include_str!("../cog.toml"));
     let once = args.iter().any(|a| a == "--once");
     let interval: u64 = parse_arg(&args, "--interval").unwrap_or(10);
     let chaos_z_thr: f64 = parse_arg(&args, "--chaos-z").unwrap_or(1.5);

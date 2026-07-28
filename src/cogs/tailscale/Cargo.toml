@@ -10,6 +10,7 @@ name = "cog-tailscale"
 path = "src/main.rs"
 
 [dependencies]
+cog-sensor-sources = { path = "../../../crates/cog-sensor-sources" }
 # No tokio — keep the cog single-threaded + small. tailscaled does the heavy lifting.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

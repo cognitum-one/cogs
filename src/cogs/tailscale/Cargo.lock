@@ -111,9 +111,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e4de3bc4ea267985becf712dc6d9eed8b04c953b3fcfb339ebc87acd9804901"
 
 [[package]]
+name = "cog-sensor-sources"
+version = "0.1.1"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "cog-tailscale"
 version = "0.1.0"
 dependencies = [
+ "cog-sensor-sources",
  "env_logger",
  "hex",
  "log",
