@@ -169,15 +169,21 @@ jobs:
           read_exact() {
             local uri="$1"
             local output="$2"
-            [[ "$uri" =~ ^gs://cognitum-20260110-cog-release-stg/.+#[1-9][0-9]*$ ]]
+            local expected_bucket="$3"
+            [[ "$uri" =~ ^gs://${expected_bucket}/.+#[1-9][0-9]*$ ]]
             timeout --signal=TERM --kill-after=5s 120s \
               gcloud storage cp "$uri" "$output"
           }
-          read_exact "$RELEASE_URI" out/withdrawal/signed-release.json
-          read_exact "$VALIDITY_URI" out/withdrawal/signed-release-validity.json
-          read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json
-          read_exact "$POLICY_DECISION_URI" out/withdrawal/policy-decision.json
-          read_exact "$SIGSTORE_BUNDLE_URI" out/withdrawal/artifact.sigstore.json
+          read_exact "$RELEASE_URI" out/withdrawal/signed-release.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$VALIDITY_URI" out/withdrawal/signed-release-validity.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json \
+            cognitum-20260110-cog-trust-stg
+          read_exact "$POLICY_DECISION_URI" out/withdrawal/policy-decision.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$SIGSTORE_BUNDLE_URI" out/withdrawal/artifact.sigstore.json \
+            cognitum-20260110-cog-release-stg
           test -f config/cog-trust-bootstrap.json
           cp config/cog-trust-bootstrap.json out/withdrawal/cog-trust-bootstrap.json
 

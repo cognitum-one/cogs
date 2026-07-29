@@ -1878,6 +1878,8 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             "cog-withdrawal-publisher-stg@cognitum-20260110",
             "cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519",
             "cognitum-20260110-cog-withdrawal-stg",
+            'read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json \\\n'
+            "            cognitum-20260110-cog-trust-stg",
             "verify-admitted-release",
             "key.get(\"purpose\") != \"withdrawal\"",
             "policy_decision_uri",
@@ -2012,6 +2014,13 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "withdraw-cog-staging.yml",
                 'key.get("purpose") != "withdrawal"',
                 'key.get("purpose") != "release"',
+            ),
+            "withdrawal-registry-reuses-release-bucket": (
+                "withdraw-cog-staging.yml",
+                'read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json \\\n'
+                "            cognitum-20260110-cog-trust-stg",
+                'read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json \\\n'
+                "            cognitum-20260110-cog-release-stg",
             ),
             "mutable-evidence-upload": (
                 "publish-cog-staging.yml",
