@@ -122,10 +122,10 @@ null static website digest.
 
 All GitHub Actions are pinned to reviewed commit SHAs. The reusable
 organization security workflow executes from immutable merged caller commit
-`da48ff88c36bb7f00676d0dede6c07dbd0c1428b`. Its reviewed internal policy
-anchor is `75c052e43ef18da1d813befbfcbe3c7e70ed309b`; the caller commit is an
-ancestor of merged organization main commit
-`452fe4b831c5e8c0f74246a5fa8640e21cc32d43`.
+`0288b22e56b262eb5a9bf190abf626f635ff887f`. Its reviewed internal policy
+anchor is `e52c58eabb6081ef52440cb2243bcdd644132eaf`; both commits are ancestors
+of merged organization main commit
+`15633aba16ad3d9ce546665e3cc010ade0fead2a`.
 Every repository checkout disables persisted workflow credentials. CI has
 explicit read-only contents permission, so untrusted pull-request build code
 cannot inherit a write-capable repository token.

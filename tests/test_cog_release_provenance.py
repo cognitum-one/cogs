@@ -800,7 +800,7 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             if token not in production:
                 problems.append(f"production: missing pinned tool contract {token}")
         if (
-            "security-scan.yml@da48ff88c36bb7f00676d0dede6c07dbd0c1428b"
+            "security-scan.yml@0288b22e56b262eb5a9bf190abf626f635ff887f"
             not in workflows["security.yml"]
         ):
             problems.append("security: final merged org caller pin differs")
