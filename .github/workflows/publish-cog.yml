@@ -21,12 +21,19 @@ on:
         description: 'Cog id (directory under src/cogs/, e.g. tailscale)'
         required: true
       cog_version:
-        description: 'Optional assertion; must equal cog.toml [cog].version'
+        description: 'Optional intended version; must equal Cargo.toml package.version'
         required: false
         default: ''
 
 permissions:
   contents: read
+  # Keyless signing: the workflow's own OIDC identity is the signer. No private key is
+  # stored, generated or held anywhere — Fulcio issues a short-lived certificate bound to
+  # this repository and workflow, and Rekor records the signature in a public transparency
+  # log. That is what makes the signature verifiable by anyone without trusting us.
+  id-token: write
+  # SLSA build provenance is written to GitHub's attestation store by the provenance step.
+  attestations: write
 
 jobs:
   matrix:
@@ -56,13 +63,43 @@ jobs:
           python3 scripts/cog_integrations_cli.py validate "src/cogs/$COG/cog.toml"
           MATRIX=$(python3 scripts/cog-targets.py --matrix "$COG")
           echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
-          V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
-          ASSERTED="$ASSERTED_VERSION"
-          if [ -n "$ASSERTED" ] && [ "$ASSERTED" != "$V" ]; then
-            echo "::error::cog_version assertion '$ASSERTED' does not match cog.toml '$V'"
-            exit 1
+          # VERSION DISAGREEMENT IS AN ERROR, NOT A PREFERENCE.
+          #
+          # This step read cog.toml's version and published under it. Cargo.toml's version is
+          # the one COMPILED INTO THE BINARY (CARGO_PKG_VERSION) and reported by --version, and
+          # the two disagree for 85 of 109 cogs — anomaly-detect says 1.0.0 in cog.toml and
+          # 1.2.0 in Cargo.toml.
+          #
+          # That produced a signed release record stating a version the artifact does not have.
+          # The signature is still valid over the bytes, which is exactly what makes it
+          # dangerous: it cryptographically attests a document containing a false claim about
+          # the thing it attests to. A stale version in provenance is worse than no version,
+          # because a consumer has no way to tell it is stale.
+          #
+          # So: refuse. There is no safe automatic choice here — picking Cargo.toml would
+          # silently republish 85 cogs under new numbers, and picking cog.toml is the bug.
+          # Someone has to say which is right. `cog_version` remains available as an explicit
+          # assertion after a human has decided, but it must still equal the version compiled
+          # into the binary.
+          CARGO_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
+          COGTOML_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
+          V="$ASSERTED_VERSION"
+          if [ -n "$V" ]; then
+            if [ "$V" != "$CARGO_V" ]; then
+              echo "::error::cog_version '$V' does not match the binary's Cargo.toml version '$CARGO_V'."
+              exit 1
+            fi
+          else
+            if [ "$CARGO_V" != "$COGTOML_V" ]; then
+              echo "::error::version disagreement for $COG — cog.toml says $COGTOML_V, Cargo.toml says $CARGO_V."
+              echo "::error::Cargo.toml's value is what the binary reports. Refusing to sign provenance stating a version the artifact does not have."
+              echo "::error::Reconcile the two files, or re-run with cog_version equal to Cargo.toml after explicit review."
+              exit 1
+            fi
+            V="$COGTOML_V"
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "version sources: cog.toml=$COGTOML_V Cargo.toml=$CARGO_V -> publishing $V"
           echo "Publishing $COG v$V for: $(echo "$MATRIX" | jq -r '.include[].arch' | tr '\n' ' ')"
 
   publish:
@@ -73,6 +110,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +135,10 @@ jobs:
         working-directory: src/cogs/${{ matrix.cog }}
         run: |
           set -euo pipefail
-          cargo build --release --target ${{ matrix.triple }}
+          # --locked: build from the committed Cargo.lock or FAIL. Without it cargo resolves
+          # dependencies fresh on every run, so two builds of one commit can differ and no
+          # signature over the output means anything — reproducibility precedes provenance.
+          cargo build --locked --release --target ${{ matrix.triple }}
           BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
           ${{ matrix.strip }} "$BIN"
           mkdir -p "$GITHUB_WORKSPACE/out"
@@ -195,6 +236,341 @@ jobs:
           [ -n "$WIF_PROVIDER" ] || { echo "::error::missing GCP_COGS_PROD_WIF_PROVIDER"; exit 1; }
           [ -n "$PUBLISH_SA" ] || { echo "::error::missing GCP_COGS_PROD_PUBLISH_SA"; exit 1; }
 
+      # ── Release evidence (ADR-113 §1, gates A3-A7) ──────────────────────────
+      # Each step below produces a DIGEST that goes into the release record. A release
+      # missing any of them is refused by verify-cog-releases.mjs in cognitum-one/website,
+      # and that refusal is the gate working rather than a bug to route around.
+
+      - name: Dependency lock digest (gate A3 — reproducibility)
+        id: lock
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          test -f Cargo.lock || { echo "::error::no Cargo.lock — build is not reproducible"; exit 1; }
+          echo "digest=sha256:$(sha256sum Cargo.lock | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Vulnerability scan (gate A5)
+        id: vuln
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          cargo install cargo-audit --locked --quiet 2>/dev/null || cargo install cargo-audit --quiet
+          # `|| true` on the SCAN, never on the digest: a advisory-DB hit must be recorded and
+          # reviewed, not silently pass, but a scan that finds nothing must still emit evidence.
+          cargo audit --json > "$GITHUB_WORKSPACE/out/vuln-scan.json" || true
+          test -s "$GITHUB_WORKSPACE/out/vuln-scan.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/vuln-scan.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+          # THE VERDICT IS READ FROM THE SCAN, NOT ASSUMED.
+          #
+          # The policy-decision record hardcoded `"verdict": "pass"` for A5. Combined with the
+          # `|| true` above — which is correct, a scan that finds something must still emit its
+          # evidence — that meant a cog with real advisories would have been published with a
+          # SIGNED document asserting its vulnerability scan passed. The digest recorded the
+          # findings faithfully while the verdict beside it contradicted them, and a verdict
+          # that cannot say "fail" is not a verdict.
+          #
+          # Advisories fail the publish. Warnings (unmaintained, yanked) are reported and do
+          # not, because they are not vulnerabilities and failing on them would train people
+          # to route around this gate — which is how a security gate stops being believed.
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os, sys
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/vuln-scan.json'))
+          adv = d.get('vulnerabilities', {}).get('list') or []
+          warn = {k: len(v) for k, v in (d.get('warnings') or {}).items() if v}
+          print(f'advisories={len(adv)}')
+          print(f'verdict={"fail" if adv else "pass"}')
+          sys.stderr.write(f'advisories: {len(adv)}   warnings: {warn or "none"}\n')
+          for a in adv:
+              i = a.get('advisory', {})
+              sys.stderr.write(f"::error::{i.get('id')} in {i.get('package')}: {i.get('title')}\n")
+          if adv:
+              sys.stderr.write('::error::refusing to publish — see the advisories above. '
+                               'The scan evidence is still written; fix or vendor-patch the dependency.\n')
+              sys.exit(1)
+          EOF
+
+      - name: SBOM (gate A4)
+        id: sbom
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sh -s -- -b "$RUNNER_TEMP/bin" >/dev/null
+          "$RUNNER_TEMP/bin/syft" scan "dir:src/cogs/${{ matrix.cog }}" \
+            -o cyclonedx-json="$GITHUB_WORKSPACE/out/sbom.cdx.json" -q
+          test -s "$GITHUB_WORKSPACE/out/sbom.cdx.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/sbom.cdx.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Sign the binary — cosign keyless (gate A7)
+        id: sign
+        env:
+          BIN: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+        run: |
+          set -euo pipefail
+          # PINNED, not `releases/latest`. A floating tool version broke this step the first
+          # time it ran for real (cosign v3 removed --output-signature in favour of --bundle),
+          # but the deeper problem is that a pipeline whose whole claim is REPRODUCIBLE builds
+          # cannot fetch a signing tool that changes underneath it. The checksum is verified
+          # because pinning a version you do not check is only a naming convention.
+          COSIGN_VERSION=v3.1.2
+          COSIGN_SHA256=f7622ed3cf22e55e1ae6377c080979ff77a22da9981c11df222a2e444991e7cf
+          curl -sSfL "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
+            -o "$RUNNER_TEMP/cosign"
+          echo "${COSIGN_SHA256}  $RUNNER_TEMP/cosign" | sha256sum -c - \
+            || { echo "::error::cosign checksum mismatch — refusing to sign with an unverified tool"; exit 1; }
+          chmod +x "$RUNNER_TEMP/cosign"
+
+          # --yes accepts the transparency-log entry. cosign v3 writes a single Sigstore bundle
+          # carrying the signature, the Fulcio certificate and the Rekor inclusion proof.
+          "$RUNNER_TEMP/cosign" sign-blob --yes --bundle "$BIN.sigstore.json" "$BIN"
+
+          # VERIFY WHAT WE JUST SIGNED, and bind it to THIS workflow. A sign step that never
+          # verifies proves only that cosign exited 0 — it does not establish that the bundle
+          # validates, nor that the identity in the certificate is the one we expect. Pinning
+          # the identity to this repo+workflow is the part that makes the signature mean
+          # "cognitum-one/cogs built this" rather than merely "somebody signed something".
+          "$RUNNER_TEMP/cosign" verify-blob --bundle "$BIN.sigstore.json" \
+            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$BIN" \
+            || { echo "::error::the signature we just produced does not verify"; exit 1; }
+
+          {
+            echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')"
+            echo "signature=sha256:$(sha256sum "$BIN.sigstore.json" | awk '{print $1}')"
+            echo "cosignVersion=${COSIGN_VERSION}"
+          } >> "$GITHUB_OUTPUT"
+
+      # ── Isolation (gate A6) ─────────────────────────────────────────────────
+      # Runs the cog under the limits its OWN cog.toml declares, and records what held. This
+      # is the gate that had never been satisfiable: all 109 cogs declared allowed_commands,
+      # max_runtime_secs and output_limit_bytes, and nothing enforced any of it (see #60), so
+      # there was nothing to gather evidence about.
+      #
+      # EXPECT THIS TO FAIL FOR MOST COGS TODAY, and that is the gate working. 107 cogs list
+      # `--help` in allowed_commands and exactly ONE implements it (#62); the rest ignore the
+      # flag, fall through to their normal run loop, and get killed at their own deadline. A
+      # cog that hangs on a command it advertises is not releasable, so the step refuses. Fix
+      # the cog — do not relax this check to route around it.
+      #
+      # HOST-ARCH build, deliberately. The published artifact is cross-compiled for armhf or
+      # aarch64 and cannot execute on the runner, so the isolation run uses a native build of
+      # the SAME source at the SAME commit. That is a real limitation and it is recorded in the
+      # evidence as `runOnTarget: false` rather than glossed: this proves the limits bind for
+      # this code, not that they bind on the device.
+      - name: Isolation evidence — enforce the declared [console] limits
+        id: isolation
+        env:
+          COG: ${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          # Built from its own directory, NOT `-p cog-runner`: the repo root is a [package],
+          # not a [workspace], so a package spec matches nothing. Verified — `-p` errors with
+          # "did not match any packages".
+          ( cd crates/cog-runner && cargo build --locked --release )
+          export RUNNER="$GITHUB_WORKSPACE/crates/cog-runner/target/release/cog-runner"
+
+          # Native build of the cog under test — the cross-compiled artifact cannot run here.
+          ( cd "src/cogs/$COG" && cargo build --locked --release )
+          export NATIVE="src/cogs/$COG/target/release/cog-$COG"
+
+          # Every allowed_command is exercised. A policy is only shown to bind if the thing it
+          # permits actually runs and the thing it forbids actually does not.
+          python3 - > "$GITHUB_WORKSPACE/out/isolation-runs.json" <<'PYEOF'
+          import json, subprocess, tomllib, os, sys
+          cog = os.environ['COG']; runner = os.environ['RUNNER']; native = os.environ['NATIVE']
+          policy = tomllib.load(open(f'src/cogs/{cog}/cog.toml','rb'))['console']
+          runs = []
+          for cmd in policy['allowed_commands']:
+              p = subprocess.run([runner,'--cog-toml',f'src/cogs/{cog}/cog.toml','--binary',native,
+                                  '--command',cmd,'--cog-id',cog], capture_output=True, text=True)
+              runs.append({'command': cmd, 'exit': p.returncode,
+                           'evidence': json.loads(p.stdout) if p.stdout.strip().startswith('{') else None})
+          # NEGATIVE CONTROL. A run where everything is permitted proves nothing about a gate;
+          # the refusal is what shows the allowlist binds at all.
+          denied = subprocess.run([runner,'--cog-toml',f'src/cogs/{cog}/cog.toml','--binary',native,
+                                   '--command','--definitely-not-allowed','--cog-id',cog],
+                                  capture_output=True, text=True)
+          runs.append({'command':'--definitely-not-allowed','exit':denied.returncode,
+                       'refused': denied.returncode == 4, 'evidence': None})
+          json.dump({'cogId': cog, 'runOnTarget': False, 'policy': policy, 'runs': runs}, sys.stdout, indent=2)
+          PYEOF
+
+          # A file that exists is not evidence. The control must have REFUSED, and every
+          # permitted command must have held its limits, or this is not isolation evidence.
+          python3 - <<'PYEOF'
+          import json, sys, os
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/isolation-runs.json'))
+          control = [r for r in d['runs'] if r['command'] == '--definitely-not-allowed']
+          if not control or not control[0].get('refused'):
+              print('::error::allowlist did not refuse a disallowed command — not isolation evidence')
+              sys.exit(1)
+          for r in d['runs']:
+              ev = r.get('evidence')
+              if ev and not (ev['within_runtime_limit'] and ev['within_output_limit']):
+                  print(f"::error::{r['command']} breached its declared limits")
+                  sys.exit(1)
+          print('isolation: every allowed command held its limits; the control was refused')
+          PYEOF
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/isolation-runs.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
+      # ── Provenance (gate A2) ────────────────────────────────────────────────
+      # SLSA build provenance, signed by the same keyless OIDC identity. The signature says
+      # these bytes were signed by this workflow; provenance says HOW they were produced —
+      # which source, which builder, which inputs. A release can be validly signed and still
+      # have come from an unknown build, so ADR-113 §1 requires both.
+      #
+      # Produced by GitHub's own attestor rather than hand-rolled: the predicate is generated
+      # from the runner's authenticated view of the build, not from values this step could
+      # simply assert about itself.
+      - name: SLSA build provenance (gate A2)
+        id: provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+
+      - name: Provenance digest
+        id: prov
+        run: |
+          set -euo pipefail
+          BUNDLE='${{ steps.provenance.outputs.bundle-path }}'
+          test -s "$BUNDLE" || { echo "::error::attestor produced no provenance bundle"; exit 1; }
+          cp "$BUNDLE" "$GITHUB_WORKSPACE/out/provenance.sigstore.json"
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/provenance.sigstore.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      # ── Policy decision (gate A8) ───────────────────────────────────────────
+      # The registry requires a policyDecisionDigest: a record of WHICH controls were evaluated
+      # and what each returned, bound to this artifact. Without it "all gates passed" is an
+      # assertion with nothing behind it, and a reviewer cannot tell a gate that passed from a
+      # gate that never ran — the failure mode that had `isolationPassed` hardcoded to false
+      # for months while looking like a considered verdict.
+      #
+      # Every value here is read from a prior step's OUTPUT. A step that failed never sets one,
+      # and a failed step fails the job, so this record cannot describe a gate that did not run.
+      - name: Policy decision record (gate A8)
+        id: policy
+        run: |
+          set -euo pipefail
+          cat > "$GITHUB_WORKSPACE/out/policy-decision.json" <<EOF
+          {
+            "subject": "${{ steps.sign.outputs.binary }}",
+            "evaluatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "policyVersion": "adr-113-rev-15-gates-a1-a8",
+            "controls": [
+              { "id": "A3", "name": "dependency-lock",   "verdict": "pass", "evidence": "${{ steps.lock.outputs.digest }}" },
+              { "id": "A4", "name": "sbom",              "verdict": "pass", "evidence": "${{ steps.sbom.outputs.digest }}" },
+              { "id": "A5", "name": "vulnerability-scan","verdict": "${{ steps.vuln.outputs.verdict }}", "advisories": ${{ steps.vuln.outputs.advisories }}, "evidence": "${{ steps.vuln.outputs.digest }}" },
+              { "id": "A6", "name": "isolation",         "verdict": "pass", "evidence": "${{ steps.isolation.outputs.digest }}" },
+              { "id": "A7", "name": "signature",         "verdict": "pass", "evidence": "${{ steps.sign.outputs.signature }}" },
+              { "id": "A2", "name": "provenance",        "verdict": "pass", "evidence": "${{ steps.prov.outputs.digest }}" }
+            ]
+          }
+          EOF
+          # A control with an empty evidence digest means its step did not run or produced
+          # nothing. Recording "pass" beside a blank digest would be the exact fabrication the
+          # registry exists to prevent, so refuse rather than emit it.
+          python3 - <<'PYEOF'
+          import json, os, sys
+          d = json.load(open(os.environ['GITHUB_WORKSPACE'] + '/out/policy-decision.json'))
+          bad = [c['id'] for c in d['controls'] if not c['evidence'].startswith('sha256:')]
+          if bad:
+              print(f"::error::controls {bad} claim pass with no evidence digest")
+              sys.exit(1)
+          print(f"policy: {len(d['controls'])} controls, all with evidence")
+          PYEOF
+          echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/policy-decision.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      # ── Contract conformance (ADR-113 §8) ───────────────────────────────────
+      # This document is NOT a cognitum.cog-build-evidence.v1 — it is missing required
+      # fields — and it says so in its own body rather than leaving a consumer to discover
+      # that by failing validation. `kind` is therefore "…v1-partial", never "…v1".
+      #
+      # The missing list is COMPUTED from the cog's own manifest, not hardcoded. A frozen
+      # list would keep asserting these fields are absent after someone adds them, which is
+      # the same class of stale-claim bug as the version disagreement: a document confidently
+      # describing a world that has moved on. When cog.toml grows a [contract] block the list
+      # shrinks by itself, and `conformant` flips to true when nothing is left.
+      - name: Contract conformance (ADR-113 §8)
+        id: conform
+        env:
+          COG: ${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF' >> "$GITHUB_OUTPUT"
+          import json, os, tomllib
+          cog = os.environ['COG']
+          m = tomllib.load(open(f'src/cogs/{cog}/cog.toml', 'rb'))
+          contract = m.get('contract', {})
+          # The four v1-required fields no cog declares today. Read from [contract] because
+          # that is where they belong per ADR-113 §8; absent means absent, never defaulted.
+          required = ['packaging', 'deploymentDriver', 'tenancyMode', 'artifactRef']
+          missing = [f for f in required if not contract.get(f)]
+          out = {
+              'schema': 'cognitum.cog-build-evidence.v1',
+              'conformant': not missing,
+              'missingRequired': missing,
+          }
+          if missing:
+              out['reason'] = 'cog.toml declares no [contract] entry for these; see cognitum-one/cogs#64'
+          print('json=' + json.dumps(out))
+          PYEOF
+          echo "conformance: $(grep '^json=' "$GITHUB_OUTPUT" | tail -1)"
+
+      - name: Emit machine-readable release evidence
+        run: |
+          set -euo pipefail
+          cat > "$GITHUB_WORKSPACE/out/release-evidence.json" <<EOF
+          {
+            "kind": "cognitum.cog-build-evidence.v1-partial",
+            "cogId": "${{ matrix.cog }}",
+            "version": "${{ needs.matrix.outputs.version }}",
+            "arch": "${{ matrix.arch }}",
+            "sourceCommit": "${{ github.sha }}",
+            "releaseDigest": "${{ steps.sign.outputs.binary }}",
+            "builder": {
+              "identity": "github-actions://${{ github.repository }}",
+              "workflow": "${{ github.workflow_ref }}",
+              "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            },
+            "conformsTo": ${{ steps.conform.outputs.json }},
+            "runtimeContractVersion": "cognitum.cog.v1",
+            "artifactDigest": "${{ steps.sign.outputs.binary }}",
+            "signatureDigest": "${{ steps.sign.outputs.signature }}",
+            "dependencyLockDigest": "${{ steps.lock.outputs.digest }}",
+            "sbomDigest": "${{ steps.sbom.outputs.digest }}",
+            "vulnerabilityScanDigest": "${{ steps.vuln.outputs.digest }}",
+            "signatureAlgorithm": "ecdsa-p256",
+            "signatureFormat": "sigstore-bundle",
+            "signingToolVersion": "cosign@${{ steps.sign.outputs.cosignVersion }}",
+            "signatureVerified": true,
+            "signingIdentity": "keyless:github-oidc:${{ github.repository }}",
+            "builderIdentity": "github-actions://${{ github.repository }}",
+            "buildWorkflow": "${{ github.workflow_ref }}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "provenanceDigest": "${{ steps.prov.outputs.digest }}",
+            "policyDecisionDigest": "${{ steps.policy.outputs.digest }}",
+            "isolationEvidenceDigest": "${{ steps.isolation.outputs.digest }}",
+            "isolationPassed": ${{ steps.isolation.outputs.passed }}
+          }
+          EOF
+          echo "--- release evidence ---"; cat "$GITHUB_WORKSPACE/out/release-evidence.json"
+          # `signatureVerified: true` is not a constant either, for the same reason. The sign
+          # step runs `cosign verify-blob` against the bundle it just produced and exits
+          # non-zero if it does not validate or the certificate identity is not this workflow.
+          # A failed step fails the job, so this file is only ever written after a verification
+          # that actually passed — the field cannot be reached any other way.
+          #
+          # isolationPassed now comes from an actual enforced run (the step above), not from a
+          # constant. The step exits non-zero unless the allowlist REFUSED a disallowed command
+          # and every permitted command held its runtime and output limits — so this field can
+          # only be true when a run demonstrated it, and the record is otherwise never written.
+          #
+          # `runOnTarget: false` travels inside the evidence: the limits are proven against a
+          # native build of the same source, not against the cross-compiled artifact on real
+          # hardware. A reviewer should read this as "the policy binds for this code", not "the
+          # policy binds on a Seed".
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -235,4 +611,18 @@ jobs:
               upload_immutable "$asset" "assets"
             done < <(find out/extra -type f -print0 | sort -z)
           fi
+          for evidence in \
+            "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" \
+            out/sbom.cdx.json \
+            out/vuln-scan.json \
+            out/provenance.sigstore.json \
+            out/policy-decision.json \
+            out/release-evidence.json \
+            out/isolation-runs.json; do
+            test -s "$evidence" || {
+              echo "::error::required evidence is missing or empty: $evidence"
+              exit 1
+            }
+            upload_immutable "$evidence" "evidence"
+          done
           echo "Legacy mutable aliases were not written."

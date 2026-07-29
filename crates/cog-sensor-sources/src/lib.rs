@@ -472,3 +472,153 @@ mod tests {
         assert!(frame.vitals.is_none());
     }
 }
+
+// ── `--help` ────────────────────────────────────────────────────────────────────────────────
+//
+// 107 of 109 cogs list `--help` in their `cog.toml` `[console].allowed_commands`, and before
+// this exactly ONE implemented it (see #62). The other 106 parse argv for `--once`/`--interval`
+// and ignore anything else, so `--help` fell through to the normal sensor loop and the process
+// ran until the runner killed it at its declared `max_runtime_secs`. The console advertised a
+// help command on every one of those cogs and every one appeared to hang for 15 seconds.
+//
+// It also made gate A6 unsatisfiable for them: `cog-runner` fails a cog when a command in its
+// own allowlist breaches its own declared limits, so a cog that hangs on `--help` cannot
+// produce isolation evidence and therefore cannot be released.
+//
+// WHY THE TEXT IS DERIVED FROM `cog.toml` RATHER THAN WRITTEN OUT. The cogs do not share one
+// flag set — 67 take exactly `--once`/`--interval`, and the rest add `--threshold`, `--peers`,
+// `--source`, `--window-ms`, `--udp-port` or `--top-k`. A single hardcoded usage string would
+// be wrong for those, and a usage message that omits flags the program accepts is still a
+// false statement about the program. Reading the manifest makes the help text true by
+// construction and keeps it true when the manifest changes: what it prints IS what the console
+// is permitted to invoke.
+
+/// Extract `[console].allowed_commands` from a raw `cog.toml`.
+///
+/// Scoped to the `[console]` table deliberately — an `allowed_commands` key under some other
+/// section is a different key, and reading it here would print commands the console cannot
+/// actually run. Returns empty when the section or key is absent, and the caller says so
+/// plainly rather than inventing a command list.
+fn console_allowed_commands(cog_toml: &str) -> Vec<String> {
+    let mut in_console = false;
+    let mut collecting = false;
+    let mut out = Vec::new();
+
+    for line in cog_toml.lines() {
+        let t = line.trim();
+        if t.starts_with('[') && !collecting {
+            // A new table header ends the previous one. `[console]` exactly — not
+            // `[console.something]`, which is a different table.
+            in_console = t == "[console]";
+            continue;
+        }
+        if in_console && !collecting && t.starts_with("allowed_commands") {
+            collecting = true;
+            // Fall through so a single-line `allowed_commands = ["a", "b"]` is read from
+            // this same line rather than only from continuation lines.
+        }
+        if collecting {
+            let mut chars = t.chars().peekable();
+            let mut cur: Option<String> = None;
+            while let Some(c) = chars.next() {
+                match (c, &mut cur) {
+                    ('"', None) => cur = Some(String::new()),
+                    ('"', Some(s)) => { out.push(std::mem::take(s)); cur = None; }
+                    ('\\', Some(s)) => { if let Some(n) = chars.next() { s.push(n); } }
+                    (c, Some(s)) => s.push(c),
+                    _ => {}
+                }
+            }
+            if t.contains(']') { break; }
+        }
+    }
+    out
+}
+
+/// The text `--help` prints.
+pub fn help_text(bin_name: &str, version: &str, cog_toml: &str) -> String {
+    let mut s = format!("{bin_name} {version}\n\n");
+    let cmds = console_allowed_commands(cog_toml);
+    if cmds.is_empty() {
+        // Fail honest: no manifest commands found, so make no claim about what is accepted.
+        s.push_str("This cog declares no console commands in its cog.toml.\n");
+        return s;
+    }
+    s.push_str("Commands the Cognitum console may invoke (cog.toml [console].allowed_commands):\n\n");
+    for c in &cmds {
+        s.push_str(&format!("  {bin_name} {c}\n"));
+    }
+    s.push_str("\nRun with no arguments to stream continuously.\n");
+    s
+}
+
+/// Handle `--help` before the cog does any work, and exit 0.
+///
+/// Called at the top of `main`, so help never starts a sensor loop, opens a socket, or touches
+/// the network — exactly the behaviour whose absence made these cogs hang.
+pub fn handle_help(args: &[String], bin_name: &str, version: &str, cog_toml: &str) {
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print!("{}", help_text(bin_name, version, cog_toml));
+        std::process::exit(0);
+    }
+}
+
+#[cfg(test)]
+mod help_tests {
+    use super::*;
+
+    const MANIFEST: &str = r#"
+[cog]
+id = "demo"
+version = "1.0.0"
+
+[console]
+allowed_commands = ["--help", "--once", "--once --threshold 1.5"]
+max_runtime_secs = 15
+output_limit_bytes = 65536
+"#;
+
+    #[test]
+    fn reads_commands_from_the_console_table() {
+        assert_eq!(
+            console_allowed_commands(MANIFEST),
+            vec!["--help", "--once", "--once --threshold 1.5"]
+        );
+    }
+
+    #[test]
+    fn reads_a_multiline_array() {
+        let m = "[console]\nallowed_commands = [\n  \"--help\",\n  \"--once\",\n]\n";
+        assert_eq!(console_allowed_commands(m), vec!["--help", "--once"]);
+    }
+
+    #[test]
+    fn ignores_allowed_commands_outside_the_console_table() {
+        // The failure this prevents: printing another section's list as if the console could
+        // invoke it, which would advertise commands that are not actually permitted.
+        let m = "[sandbox]\nallowed_commands = [\"--dangerous\"]\n\n[cog]\nid = \"x\"\n";
+        assert!(console_allowed_commands(m).is_empty());
+    }
+
+    #[test]
+    fn stops_at_the_end_of_the_array() {
+        // Without the `]` break, later quoted values in the file (a description, a tag) would
+        // be swept up and printed as if they were runnable commands.
+        let m = "[console]\nallowed_commands = [\"--once\"]\nnote = \"not-a-command\"\n";
+        assert_eq!(console_allowed_commands(m), vec!["--once"]);
+    }
+
+    #[test]
+    fn help_text_lists_every_permitted_command() {
+        let t = help_text("cog-demo", "1.0.0", MANIFEST);
+        assert!(t.contains("cog-demo --once --threshold 1.5"), "got:\n{t}");
+        assert!(t.starts_with("cog-demo 1.0.0"));
+    }
+
+    #[test]
+    fn help_text_claims_nothing_when_the_manifest_declares_nothing() {
+        let t = help_text("cog-demo", "1.0.0", "[cog]\nid = \"demo\"\n");
+        assert!(t.contains("declares no console commands"), "got:\n{t}");
+        assert!(!t.contains("may invoke"));
+    }
+}

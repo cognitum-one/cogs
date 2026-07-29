@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structural Vibration</title>
+<style>
+/* Cognitum design system (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG Application design system
+   Tokens lifted verbatim from seed.cognitum.one/store.
+   Full multi-section app shell + rich widget components.
+   (Inlined into each standalone .html at build time.)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code',Consolas,monospace;
+  --bg:#0a0e1a;--bg2:#111627;--card:#171d30;--card-h:#1e2540;--border:#252d45;
+  --t1:#e0e4f0;--t2:#8890a8;--t3:#505872;
+  --cyan:#4ecdc4;--cyan-d:rgba(78,205,196,0.15);
+  --green:#6bcb77;--green-d:rgba(107,203,119,0.15);
+  --amber:#d4a574;--amber-d:rgba(212,165,116,0.15);
+  --red:#e06060;--red-d:rgba(224,96,96,0.15);
+  --purple:#a78bfa;--purple-d:rgba(167,139,250,0.15);
+  --pink:#f472b6;--pink-d:rgba(244,114,182,0.15);
+  --blue:#60a5fa;--blue-d:rgba(96,165,250,0.15);
+  --orange:#fb923c;--orange-d:rgba(251,146,60,0.15);
+  --gray:#94a3b8;--gray-d:rgba(148,163,184,0.15);
+  --r:10px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);line-height:1.6;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+
+/* ---- Top bar: shows the COG's own name ---- */
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(17,22,39,0.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:58px;backdrop-filter:blur(16px)}
+.app-brand{display:inline-flex;align-items:center;gap:12px;min-width:0}
+.app-mark{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.app-id{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.app-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-sub{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.app-sub .dot{color:var(--t3)}
+.top-right{display:flex;align-items:center;gap:10px}
+.uplink{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);background:var(--green-d);border:1px solid rgba(107,203,119,0.3);padding:5px 11px;border-radius:6px;font-weight:600}
+.uplink .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,0.6);animation:pulse 2s infinite}
+.power{font-size:11px;color:var(--t2);font-family:var(--mono)}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.45}100%{opacity:1}}
+
+/* ---- App nav tabs ---- */
+.tabbar{position:sticky;top:58px;z-index:90;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.tab{padding:13px 20px;font-size:13px;font-weight:600;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:var(--font);white-space:nowrap;display:inline-flex;align-items:center;gap:7px;transition:.18s}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab .tcount{font-size:10px;background:var(--bg2);color:var(--t2);padding:1px 6px;border-radius:9px}
+.tab.active .tcount{background:var(--cyan-d);color:var(--cyan)}
+
+/* ---- Layout ---- */
+.main{max-width:1320px;margin:0 auto;padding:22px 28px 90px}
+.view{display:none;animation:fade .25s}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 14px;flex-wrap:wrap;gap:8px}
+.section-head:first-child{margin-top:6px}
+.section-title{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px}
+.section-title .ico{font-size:17px}
+.section-sub{font-size:12px;color:var(--t3)}
+
+/* ---- Grids ---- */
+.grid{display:grid;gap:16px;margin-bottom:6px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}
+.g-1-2{grid-template-columns:1fr 2fr}
+.span2{grid-column:span 2}
+
+/* ---- Panels ---- */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;min-width:0}
+.panel.flush{padding:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.panel-title{font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.panel-title .ico{font-size:14px}
+.panel-tools{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
+.legend{display:flex;gap:13px;font-size:11px;color:var(--t2);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+canvas{display:block;width:100%}
+
+/* ---- KPI tiles ---- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:6px}
+.kpis.six{grid-template-columns:repeat(6,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan));opacity:.75}
+.kpi-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:26px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi-value small{font-size:12px;color:var(--t2);font-weight:500}
+.kpi-spark{margin-top:8px}
+.kpi-sub{font-size:11px;color:var(--t2);margin-top:3px;display:flex;align-items:center;gap:5px}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--t3)}
+
+/* ---- Badges / pills ---- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.badge-cat{text-transform:uppercase;letter-spacing:.5px}
+.badge-ver{background:var(--bg2);color:var(--t2);border:1px solid var(--border);font-family:var(--mono)}
+.badge-size{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+.badge-diff{text-transform:uppercase;letter-spacing:.5px}
+.diff-easy{background:var(--green-d);color:var(--green)}
+.diff-medium{background:var(--amber-d);color:var(--amber)}
+.diff-hard{background:var(--red-d);color:var(--red)}
+.badge-live{background:var(--green-d);color:var(--green);border:1px solid rgba(107,203,119,.3)}
+.badge-live .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(107,203,119,.6);animation:pulse 2s infinite;margin-right:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600}
+.pill .status-dot{width:6px;height:6px;border-radius:50%}
+.pill-ok{background:var(--green-d);color:var(--green)}
+.pill-warn{background:var(--amber-d);color:var(--amber)}
+.pill-err{background:var(--red-d);color:var(--red)}
+.pill-info{background:var(--blue-d);color:var(--blue)}
+.pill-mute{background:var(--bg2);color:var(--t3);border:1px solid var(--border)}
+
+/* ---- Category color coding (store) ---- */
+.cat-health{background:var(--green-d);color:var(--green)}
+.cat-security{background:var(--red-d);color:var(--red)}
+.cat-building{background:var(--blue-d);color:var(--blue)}
+.cat-retail{background:var(--orange-d);color:var(--orange)}
+.cat-industrial{background:var(--amber-d);color:var(--amber)}
+.cat-research{background:var(--purple-d);color:var(--purple)}
+.cat-signal{background:var(--cyan-d);color:var(--cyan)}
+.cat-ai{background:var(--pink-d);color:var(--pink)}
+.cat-developer{background:var(--gray-d);color:var(--gray)}
+.cat-swarm{background:var(--blue-d);color:var(--blue)}
+.icon-health{background:var(--green-d)}.icon-security{background:var(--red-d)}
+.icon-building{background:var(--blue-d)}.icon-retail{background:var(--orange-d)}
+.icon-industrial{background:var(--amber-d)}.icon-research{background:var(--purple-d)}
+.icon-signal{background:var(--cyan-d)}.icon-ai{background:var(--pink-d)}
+.icon-developer{background:var(--gray-d)}.icon-swarm{background:var(--blue-d)}
+
+/* ---- Buttons ---- */
+.btn{padding:8px 15px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;font-family:var(--font);display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--cyan);color:#0a0e1a}
+.btn-primary:hover{background:#3dbdb5;transform:scale(1.02)}
+.btn-primary:active{transform:scale(.98)}
+.btn-installed{background:var(--green-d);color:var(--green)}
+.btn-installed:hover{background:var(--red-d);color:var(--red)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--cyan);border-color:var(--cyan)}
+.btn-danger{background:var(--red-d);color:var(--red)}
+.btn-danger:hover{background:rgba(224,96,96,.3)}
+.btn-sm{padding:5px 11px;font-size:11px}
+
+/* ---- Alert banner ---- */
+.banner{display:none;align-items:center;gap:13px;border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;animation:fade .3s}
+.banner.show{display:flex}
+.banner.alert{background:var(--red-d);border:1px solid var(--red);color:var(--red)}
+.banner.warn{background:var(--amber-d);border:1px solid var(--amber);color:var(--amber)}
+.banner.ok{background:var(--green-d);border:1px solid var(--green);color:var(--green)}
+.banner .b-icon{font-size:21px}.banner .b-title{font-weight:700;color:#fff}
+.banner .b-sub{color:var(--t2);font-size:12px}.banner .spacer{flex:1}
+
+/* ---- Stat lists ---- */
+.statline{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.statline:last-child{border-bottom:none}
+.statline .k{color:var(--t2)}
+.statline .v{font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.bar{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--accent,var(--cyan));transition:width .6s ease}
+.mini-stat{text-align:center;padding:6px 4px}
+.mini-stat .mv{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.mini-stat .ml{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ---- Event feed ---- */
+.feed{display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
+.feed-row{display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(37,45,69,.5);font-size:12px;animation:fade .25s}
+.feed-time{font-family:var(--mono);font-size:10px;color:var(--t3);flex-shrink:0;width:58px;padding-top:1px}
+.feed-tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:600;background:var(--cyan-d);color:var(--cyan)}
+.feed-tag.ok{background:var(--green-d);color:var(--green)}
+.feed-tag.warn{background:var(--amber-d);color:var(--amber)}
+.feed-tag.err{background:var(--red-d);color:var(--red)}
+.feed-tag.info{background:var(--blue-d);color:var(--blue)}
+.feed-msg{color:var(--t2);flex:1;min-width:0}.feed-msg b{color:var(--t1)}
+
+/* ---- Data table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:10px;padding:9px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(37,45,69,.5);color:var(--t2)}
+.tbl td b{color:var(--t1)}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl .mono{font-family:var(--mono);font-size:11px}
+.tbl-wrap{max-height:380px;overflow-y:auto}
+
+/* ---- Event tags ---- */
+.event-tags{display:flex;flex-wrap:wrap;gap:6px}
+.event-tag{background:var(--bg2);border:1px solid var(--border);padding:3px 9px;border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--cyan)}
+
+/* ---- Detail rows ---- */
+.detail-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(37,45,69,.5);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--t3);min-width:110px;font-weight:500}
+.detail-value{color:var(--t1)}
+.detail-value.mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+
+/* ---- Node / chip grid ---- */
+.node-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.node{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;transition:.2s}
+.node.lead{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan-d)}
+.node.down{opacity:.45;border-style:dashed}
+.node-id{font-family:var(--mono);font-size:11px;color:var(--t1);font-weight:600}
+.node-role{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.node-stat{font-size:11px;margin-top:6px;font-family:var(--mono)}
+
+/* ---- Config controls ---- */
+.cfg-group{margin-bottom:18px}
+.cfg-label{display:block;font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px}
+.cfg-hint{font-size:11px;color:var(--t3);margin-top:4px}
+.cfg-input,.cfg-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none}
+.cfg-input:focus,.cfg-select:focus{border-color:var(--cyan)}
+.cfg-range-wrap{display:flex;align-items:center;gap:12px}
+.cfg-range{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--cyan);cursor:pointer}
+.cfg-range-val{font-size:12px;color:var(--cyan);font-family:var(--mono);min-width:54px;text-align:right}
+.cfg-toggle{position:relative;width:42px;height:23px;display:inline-block;flex-shrink:0}
+.cfg-toggle input{opacity:0;width:0;height:0}
+.cfg-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:.2s}
+.cfg-toggle .slider::before{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s}
+.cfg-toggle input:checked+.slider{background:var(--cyan)}
+.cfg-toggle input:checked+.slider::before{transform:translateX(19px)}
+.cfg-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(37,45,69,.5)}
+.cfg-toggle-row:last-child{border-bottom:none}
+.cfg-toggle-row .lbl{font-size:13px;color:var(--t1)}
+.cfg-toggle-row .sub{font-size:11px;color:var(--t3)}
+
+/* ---- Footer ---- */
+.foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3);flex-wrap:wrap;gap:10px}
+.foot .mono{font-family:var(--mono)}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+
+/* ---- Responsive ---- */
+@media(max-width:1080px){.g4{grid-template-columns:repeat(2,1fr)}.kpis,.kpis.six{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){.g2,.g3,.g-2-1,.g-1-2,.g4{grid-template-columns:1fr}.span2{grid-column:auto}.kpis,.kpis.six{grid-template-columns:repeat(2,1fr)}.main{padding:16px}}
+@media(max-width:520px){.kpis,.kpis.six{grid-template-columns:1fr}.top-bar{padding:0 12px}.tabbar{padding:0 10px}}
+
+</style>
+<style>:root{--accent:var(--amber)}</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="app-brand">
+    <div class="app-mark icon-industrial">&#127959;</div>
+    <div class="app-id">
+      <div class="app-name">Structural Vibration</div>
+      <div class="app-sub"><span class="badge badge-cat cat-industrial">Industrial</span><span class="dot">·</span>v0.7.0<span class="dot">·</span>ESP32-S3</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span class="badge badge-live"><span class="status-dot"></span>LIVE</span>
+    <span class="uplink"><span class="status-dot"></span> Seed online</span>
+    <span class="power">CSI phase</span>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <button class="tab active" data-tab="overview">&#128202; Overview</button>
+  <button class="tab" data-tab="monitor">&#127959; Live Monitor</button>
+  <button class="tab" data-tab="analytics">&#128200; Analytics</button>
+  <button class="tab" data-tab="events">&#128276; Event Log <span class="tcount" id="evcount">0</span></button>
+  <button class="tab" data-tab="config">&#9881; Configuration</button>
+</nav>
+
+<main class="main">
+
+  <div class="banner warn" id="banner">
+    <span class="b-icon">&#9888;</span>
+    <div><div class="b-title">Resonance alert</div>
+      <div class="b-sub" id="banner-sub">Sustained mechanical resonance locked near a structural mode — inspect equipment</div></div>
+    <span class="spacer"></span>
+    <button class="btn btn-danger" onclick="document.getElementById('banner').classList.remove('show')">Acknowledge</button>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section class="view active" data-view="overview">
+    <div class="kpis six">
+      <div class="kpi"><div class="kpi-label">Structure State</div><div class="kpi-value" id="k-state" style="font-size:21px;color:var(--green)">Stable</div><div class="kpi-sub" id="k-state-sub">zone A · normal</div></div>
+      <div class="kpi"><div class="kpi-label">Peak Magnitude</div><div class="kpi-value"><span id="k-mag">0.6</span><small> mm/s</small></div><canvas class="kpi-spark" id="sp-mag"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Dominant Freq</div><div class="kpi-value"><span id="k-freq">12</span><small> Hz</small></div><canvas class="kpi-spark" id="sp-freq"></canvas></div>
+      <div class="kpi"><div class="kpi-label">Resonance</div><div class="kpi-value" id="k-res" style="font-size:21px;color:var(--green)">Clear</div><div class="kpi-sub" id="k-res-sub">no lock</div></div>
+      <div class="kpi"><div class="kpi-label">Events Today</div><div class="kpi-value" id="k-ev">0</div><div class="kpi-sub" id="k-ev-sub">0 alerts</div></div>
+      <div class="kpi"><div class="kpi-label">ISO Zone</div><div class="kpi-value" style="font-size:21px" id="k-iso">A</div><div class="kpi-sub">10816 class</div></div>
+    </div>
+
+    <div class="grid g-2-1">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128202;</span> Vibration Waveform</div>
+          <div class="legend"><span><i style="background:var(--amber)"></i>velocity</span><span><i style="background:var(--red)"></i>envelope</span></div></div>
+        <canvas id="ov-wave"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title"><span class="ico">&#128137;</span> Magnitude (ISO 10816)</div></div>
+        <canvas id="ov-gauge"></canvas>
+        <div class="statline"><span class="k">Zone A (good)</span><span class="v">≤ 2.8 mm/s</span></div>
+        <div class="statline"><span class="k">Zone C (alarm)</span><span class="v">≤ 7.1 mm/s</span></div>
+        <div class="statline"><span class="k">RMS velocity</span><span class="v" id="s-rms">0.6 mm/s</span></div>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Event Mix (24h)</div></div><canvas id="ov-donut"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Per-Axis RMS</div><span class="panel-tools">X · Y · Z</span></div><canvas id="ov-axis"></canvas>
+        <div class="legend" style="margin-top:8px"><span>green ≤ 2.8 · amber ≤ 7.1 · red &gt; 7.1 mm/s</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128274;</span> Sensor Status</div></div>
+        <div class="statline"><span class="k">Detector</span><span class="v" style="color:var(--green)">Armed</span></div>
+        <div class="statline"><span class="k">CSI phase link</span><span class="v" style="color:var(--green)">Locked</span></div>
+        <div class="statline"><span class="k">Sample rate</span><span class="v">512 Hz</span></div>
+        <div class="statline"><span class="k">FFT window</span><span class="v">1024 pt</span></div>
+        <div class="statline"><span class="k">Model</span><span class="v">phase-mode v1</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE MONITOR ===================== -->
+  <section class="view" data-view="monitor">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#12336;</span> Real-time Waveform</div><span class="panel-tools">512 Hz</span></div><canvas id="mo-wave"></canvas>
+        <div class="statline"><span class="k">Crest factor</span><span class="v" id="mo-crest">1.4</span></div>
+        <div class="statline"><span class="k">Peak velocity</span><span class="v"><span id="mo-peak">0.8</span> mm/s</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#9201;</span> Magnitude</div></div><canvas id="mo-gauge"></canvas>
+        <div class="statline"><span class="k">Dominant frequency</span><span class="v"><span id="mo-domhz">12</span> Hz</span></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128225;</span> Frequency Spectrum</div><span class="panel-tools">0–60 Hz</span></div><canvas id="mo-spec"></canvas>
+        <div class="statline"><span class="k">Resonance peak</span><span class="v" id="mo-peakhz">—</span></div></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Per-Axis Velocity</div></div><canvas id="mo-axis"></canvas>
+        <div class="legend" style="margin-top:8px"><span>X (horizontal) · Y (lateral) · Z (vertical)</span></div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Spectrogram</div><span class="panel-tools">freq × time</span></div><canvas id="mo-heat"></canvas>
+      <div class="legend" style="margin-top:8px"><span>rows: 60 Hz (top) → 0 Hz (bottom) · brighter = more energy</span></div></div>
+  </section>
+
+  <!-- ===================== ANALYTICS ===================== -->
+  <section class="view" data-view="analytics">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Peak (30d)</div><div class="kpi-value">9.4<small> mm/s</small></div><div class="kpi-sub">zone D · day 8</div></div>
+      <div class="kpi"><div class="kpi-label">Resonance Alerts</div><div class="kpi-value" id="an-alerts">7</div><div class="kpi-sub">last 30 days</div></div>
+      <div class="kpi"><div class="kpi-label">Dominant Mode</div><div class="kpi-value">23.5<small> Hz</small></div><div class="kpi-sub">1st bending</div></div>
+      <div class="kpi"><div class="kpi-label">Uptime</div><div class="kpi-value">99.8<small> %</small></div><div class="kpi-sub">monitoring</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128197;</span> Peak Magnitude per Day</div><span class="panel-tools">14 days</span></div><canvas id="an-days"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128208;</span> Frequency Distribution</div></div><canvas id="an-freq"></canvas></div>
+    </div>
+    <div class="grid g-2-1">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127777;</span> Vibration by Hour × Day</div><span class="panel-tools">7×24</span></div><canvas id="an-heat"></canvas></div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#129513;</span> Event Severity</div></div><canvas id="an-sev"></canvas>
+        <div class="statline"><span class="k">Vibration detected</span><span class="v">64%</span></div>
+        <div class="statline"><span class="k">Resonance alert</span><span class="v">27%</span></div>
+        <div class="statline"><span class="k">Seismic</span><span class="v">9%</span></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== EVENT LOG ===================== -->
+  <section class="view" data-view="events">
+    <div class="grid g-2-1">
+      <div class="panel flush">
+        <div class="panel-head" style="padding:16px 18px 0"><div class="panel-title"><span class="ico">&#128203;</span> Event Log</div>
+          <div class="panel-tools"><span class="pill pill-mute">All</span></div></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Event</th><th>Severity</th><th>Detail</th></tr></thead><tbody id="log"></tbody></table></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Live Stream</div><span class="panel-tools">tail</span></div><div class="feed" id="feed"></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURATION ===================== -->
+  <section class="view" data-view="config">
+    <div class="grid g2">
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#127899;</span> Detection Tuning</div></div>
+        <div class="cfg-group"><label class="cfg-label">Magnitude threshold</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="10" max="100" value="28" oninput="this.nextElementSibling.textContent=(this.value/10).toFixed(1)+' mm/s'"><span class="cfg-range-val">2.8 mm/s</span></div>
+          <div class="cfg-hint">Trip point for vibration_detected (ISO 10816 zone A/B boundary).</div></div>
+        <div class="cfg-group"><label class="cfg-label">Resonance Q threshold</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="5" max="40" value="18" oninput="this.nextElementSibling.textContent='Q '+this.value"><span class="cfg-range-val">Q 18</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">Min event duration</label>
+          <div class="cfg-range-wrap"><input class="cfg-range" type="range" min="1" max="20" value="4" oninput="this.nextElementSibling.textContent=this.value+' s'"><span class="cfg-range-val">4 s</span></div></div>
+        <div class="cfg-group"><label class="cfg-label">FFT window size</label>
+          <select class="cfg-select"><option>1024 pt (recommended)</option><option>512 pt</option><option>2048 pt</option></select></div>
+      </div>
+      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="ico">&#128276;</span> Alerts & Routing</div></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Resonance alert</div><div class="sub">Notify on sustained modal lock</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Seismic detection</div><div class="sub">Flag low-freq broadband events</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Record waveform on event</div><div class="sub">10 s pre/post buffer</div></div><label class="cfg-toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+        <div class="cfg-toggle-row"><div><div class="lbl">Maintenance ticket</div><div class="sub">Open work order on zone C/D</div></div><label class="cfg-toggle"><input type="checkbox"><span class="slider"></span></label></div>
+        <div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-primary">Save changes</button><button class="btn btn-ghost">Reset</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><span class="ico">&#128203;</span> Cog Details</div><button class="btn btn-installed btn-sm">&#10003; Installed</button></div>
+      <div class="grid g2" style="gap:0 28px">
+        <div>
+          <div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">Detects structural vibrations including seismic activity and mechanical resonance using CSI phase variance analysis.</span></div>
+          <div class="detail-row"><span class="detail-label">Events</span><span class="detail-value"><div class="event-tags"><span class="event-tag">vibration_detected</span><span class="event-tag">resonance_alert</span><span class="event-tag">magnitude</span><span class="event-tag">frequency</span></div></span></div>
+        </div>
+        <div>
+          <div class="detail-row"><span class="detail-label">Hardware</span><span class="detail-value">ESP32-S3</span></div>
+          <div class="detail-row"><span class="detail-label">Input</span><span class="detail-value">CSI phase</span></div>
+          <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">v0.7.0 · 26 KB · Hard</span></div>
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value mono"><a href="#">cognitum-one/cogs/src/cogs/structural-vibration</a></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Running on <b style="color:var(--t2)">Cognitum Seed</b> · cognitum-esp32s3-v0.6.3</span>
+    <span class="mono">structural-vibration@0.7.0</span>
+  </footer>
+</main>
+
+<script>
+/* Cognitum dashboard runtime (inlined — self-contained) */
+/* ============================================================
+   Cognitum One — COG application runtime
+   Dependency-free canvas widgets + app shell helpers.
+   Simulated live telemetry so each app runs offline.
+   ============================================================ */
+(function (global) {
+  'use strict';
+  const C = getComputedStyle(document.documentElement);
+  const css = (n, f) => (C.getPropertyValue(n).trim() || f);
+  const COL = {
+    cyan: css('--cyan', '#4ecdc4'), green: css('--green', '#6bcb77'),
+    amber: css('--amber', '#d4a574'), red: css('--red', '#e06060'),
+    purple: css('--purple', '#a78bfa'), pink: css('--pink', '#f472b6'),
+    blue: css('--blue', '#60a5fa'), orange: css('--orange', '#fb923c'),
+    gray: css('--gray', '#94a3b8'), t1: css('--t1', '#e0e4f0'),
+    t2: css('--t2', '#8890a8'), t3: css('--t3', '#505872'),
+    border: css('--border', '#252d45'), bg2: css('--bg2', '#111627'),
+    card: css('--card', '#171d30')
+  };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const pad = n => String(n).padStart(2, '0');
+  function now() {
+    try { return new Date().toTimeString().slice(0, 8); }
+    catch (e) { return '00:00:00'; }
+  }
+  function withAlpha(hex, a) {
+    if (typeof hex !== 'string') return 'rgba(78,205,196,' + a + ')';
+    hex = hex.trim();
+    if (hex[0] === '#') {
+      const m = hex.slice(1);
+      const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(78,205,196,' + a + ')';
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    const nums = hex.match(/[\d.]+/g);
+    if (nums && nums.length >= 3) return `rgba(${nums[0]},${nums[1]},${nums[2]},${a})`;
+    return hex;
+  }
+  function fit(canvas, h) {
+    const dpr = global.devicePixelRatio || 1;
+    const w = canvas.clientWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 600;
+    canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h };
+  }
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.abs(h) / 2); if (h <= 0) h = 0.6;
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /* ---- Rolling multi-series line / area chart ---- */
+  function LineChart(canvas, opts) {
+    opts = opts || {};
+    const series = opts.series || [{ color: COL.cyan }];
+    const N = opts.points || 90, h = opts.height || 220;
+    const ymin = opts.min != null ? opts.min : 0, ymax = opts.max != null ? opts.max : 1;
+    const mid = ymin + (ymax - ymin) * 0.5, sa = (ymax - ymin) * 0.16;
+    const data = series.map((s, si) => Array.from({ length: N },
+      (_, i) => mid + Math.sin(i / 7 + si * 1.6) * sa + (Math.random() - 0.5) * sa));
+    function push(vals) {
+      if (!Array.isArray(vals)) vals = [vals];
+      vals.forEach((v, i) => { if (data[i]) { data[i].push(v); if (data[i].length > N) data[i].shift(); } });
+      draw();
+    }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = withAlpha(COL.border, 0.6); ctx.lineWidth = 1;
+      for (let g = 0; g <= 4; g++) { const y = (h - 8) * g / 4 + 4; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      const sx = w / (N - 1), span = (ymax - ymin) || 1;
+      const Y = v => (h - 8) - ((clamp(v, ymin, ymax) - ymin) / span) * (h - 16);
+      series.forEach((s, si) => {
+        const d = data[si], c = s.color || COL.cyan;
+        if (s.fill !== false) {
+          const grd = ctx.createLinearGradient(0, 0, 0, h);
+          grd.addColorStop(0, withAlpha(c, 0.28)); grd.addColorStop(1, withAlpha(c, 0));
+          ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v)));
+          ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+        }
+        ctx.beginPath(); ctx.lineWidth = s.width || 2; ctx.strokeStyle = c; ctx.lineJoin = 'round';
+        d.forEach((v, i) => { const x = i * sx, y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+        ctx.stroke();
+        if (s.dot !== false) {
+          const lx = (d.length - 1) * sx, ly = Y(d[d.length - 1]);
+          ctx.beginPath(); ctx.arc(lx, ly, 3, 0, 7); ctx.fillStyle = c; ctx.fill();
+          ctx.beginPath(); ctx.arc(lx, ly, 6, 0, 7); ctx.strokeStyle = withAlpha(c, 0.4); ctx.stroke();
+        }
+      });
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw, data };
+  }
+
+  /* ---- Bars (spectrum / histogram / categorical) ---- */
+  function Bars(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, n = opts.bars || 24, col = opts.color || COL.cyan;
+    let vals = Array.from({ length: n }, () => rand(0.15, 0.85));
+    const labels = opts.labels || null;
+    function set(v) { vals = Array.isArray(v) ? v : [v]; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const padb = labels ? 18 : 4, bw = w / vals.length, gap = Math.min(5, bw * 0.18);
+      vals.forEach((v, i) => {
+        const bh = clamp(v, 0, 1) * (h - padb - 6), x = i * bw + gap / 2, y = (h - padb) - bh;
+        const c = typeof col === 'function' ? col(v, i) : col;
+        const grd = ctx.createLinearGradient(0, y, 0, h - padb);
+        grd.addColorStop(0, c); grd.addColorStop(1, withAlpha(c, 0.25));
+        ctx.fillStyle = grd; ctx.beginPath(); rr(ctx, x, y, bw - gap, bh, Math.min(3, (bw - gap) / 2)); ctx.fill();
+      });
+      if (labels) {
+        ctx.fillStyle = COL.t3; ctx.font = '9px ' + css('--mono', 'monospace'); ctx.textAlign = 'center';
+        const step = Math.ceil(labels.length / 16);
+        labels.forEach((l, i) => { if (i % step === 0) ctx.fillText(l, i * bw + bw / 2, h - 4); });
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get vals() { return vals; } };
+  }
+
+  /* ---- Radial gauge ---- */
+  function Gauge(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180, max = opts.max || 100;
+    let val = opts.value || 0;
+    const col = opts.color || COL.cyan, unit = opts.unit || '';
+    function set(v) { val = v; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h * 0.9, r = Math.min(w / 2 - 14, h * 0.8);
+      ctx.lineWidth = 13; ctx.lineCap = 'round';
+      ctx.strokeStyle = COL.bg2; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI); ctx.stroke();
+      const frac = clamp(val / max, 0, 1), c = typeof col === 'function' ? col(val) : col;
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + frac * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '700 30px ' + css('--font', 'sans-serif');
+      ctx.fillText(Math.round(val * 10) / 10 + '', cx, cy - 6);
+      ctx.fillStyle = COL.t2; ctx.font = '11px ' + css('--font', 'sans-serif'); ctx.fillText(unit, cx, cy + 12);
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw, get value() { return val; } };
+  }
+
+  /* ---- Donut / ring ---- */
+  function Donut(canvas, opts) {
+    opts = opts || {};
+    const h = opts.height || 180;
+    let segs = opts.segments || [];
+    const centerLabel = opts.centerLabel || '';
+    function set(s) { segs = s; draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 10, ir = r * 0.62;
+      const total = segs.reduce((a, s) => a + (s.value || 0), 0) || 1;
+      let a0 = -Math.PI / 2;
+      segs.forEach(s => {
+        const a1 = a0 + (s.value / total) * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a0, a1); ctx.closePath();
+        ctx.fillStyle = s.color || COL.cyan; ctx.fill(); a0 = a1;
+      });
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath(); ctx.arc(cx, cy, ir, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      const big = centerLabel || total;
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 22px ' + css('--font', 'sans-serif');
+      ctx.fillText(big + '', cx, cy + 2);
+      if (opts.centerSub) { ctx.fillStyle = COL.t3; ctx.font = '10px ' + css('--font', 'sans-serif'); ctx.fillText(opts.centerSub, cx, cy + 18); }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, draw };
+  }
+
+  /* ---- Heatmap (rows x cols, values 0..1) ---- */
+  function Heatmap(canvas, opts) {
+    opts = opts || {};
+    const rows = opts.rows || 7, cols = opts.cols || 24, h = opts.height || 150;
+    const base = opts.color || COL.cyan;
+    let grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => rand(0, 1)));
+    function set(g) { grid = g; draw(); }
+    function poke(r, c, v) { if (grid[r]) grid[r][c] = v; }
+    function shift(col) { grid.forEach(row => { row.shift(); row.push(0); }); if (col) { /* caller fills last col */ } draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const gap = 2, cw = (w - (cols - 1) * gap) / cols, ch = (h - (rows - 1) * gap) / rows;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = clamp(grid[r][c], 0, 1);
+        ctx.fillStyle = v < 0.04 ? COL.bg2 : withAlpha(base, 0.12 + v * 0.88);
+        ctx.beginPath(); rr(ctx, c * (cw + gap), r * (ch + gap), cw, ch, 2); ctx.fill();
+      }
+    }
+    global.addEventListener('resize', draw); draw();
+    return { set, poke, shift, draw, get grid() { return grid; } };
+  }
+
+  /* ---- Sparkline ---- */
+  function Sparkline(canvas, opts) {
+    opts = opts || {};
+    const N = opts.points || 40, h = opts.height || 34, c = opts.color || COL.cyan;
+    let d = Array.from({ length: N }, () => rand(0.3, 0.7));
+    function push(v) { d.push(v); if (d.length > N) d.shift(); draw(); }
+    function draw() {
+      const { ctx, w } = fit(canvas, h);
+      ctx.clearRect(0, 0, w, h);
+      const sx = w / (N - 1), Y = v => (h - 3) - clamp(v, 0, 1) * (h - 6);
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, withAlpha(c, 0.3)); grd.addColorStop(1, withAlpha(c, 0));
+      ctx.beginPath(); ctx.moveTo(0, h); d.forEach((v, i) => ctx.lineTo(i * sx, Y(v))); ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      d.forEach((v, i) => { i ? ctx.lineTo(i * sx, Y(v)) : ctx.moveTo(i * sx, Y(v)); }); ctx.stroke();
+    }
+    global.addEventListener('resize', draw); draw();
+    return { push, draw };
+  }
+
+  /* ---- Rolling event feed ---- */
+  function Feed(el, opts) {
+    opts = opts || {}; const max = opts.max || 50;
+    function add(tag, kind, msg) {
+      if (!el) return;
+      const row = document.createElement('div'); row.className = 'feed-row';
+      row.innerHTML = `<span class="feed-time">${now()}</span><span class="feed-tag ${kind || ''}">${tag}</span><span class="feed-msg">${msg}</span>`;
+      el.insertBefore(row, el.firstChild);
+      while (el.children.length > max) el.removeChild(el.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Event log table (newest on top) ---- */
+  function LogTable(tbody, opts) {
+    opts = opts || {}; const max = opts.max || 80;
+    function add(cells, kind) {
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="mono">${now()}</td>` + cells.map(c => `<td>${c}</td>`).join('');
+      tbody.insertBefore(tr, tbody.firstChild);
+      while (tbody.children.length > max) tbody.removeChild(tbody.lastChild);
+    }
+    return { add };
+  }
+
+  /* ---- Tab controller: .tab[data-tab] -> .view[data-view] ---- */
+  function tabs() {
+    const tbtns = document.querySelectorAll('.tab');
+    tbtns.forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-tab');
+      tbtns.forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === id));
+      global.dispatchEvent(new Event('resize'));
+    }));
+  }
+
+  function loop(fn, ms) { fn(); return setInterval(fn, ms || 1000); }
+
+  global.Cog = { LineChart, Bars, Gauge, Donut, Heatmap, Sparkline, Feed, LogTable, tabs, loop, rand, clamp, pick, pad, now, COL, withAlpha };
+})(window);
+
+</script>
+<script>
+(function(){
+  Cog.tabs();
+  const magColor = v => v>7.1?Cog.COL.red : v>2.8?Cog.COL.amber : Cog.COL.green;
+  const wave = Cog.LineChart(document.getElementById('ov-wave'),{height:240,points:100,min:-1,max:1,series:[{color:Cog.COL.amber},{color:Cog.COL.red,fill:false,width:1.5,dot:false}]});
+  const gauge = Cog.Gauge(document.getElementById('ov-gauge'),{height:160,max:11,unit:'mm/s RMS',color:magColor});
+  const donut = Cog.Donut(document.getElementById('ov-donut'),{height:170,centerSub:'events',segments:[]});
+  const axis = Cog.Bars(document.getElementById('ov-axis'),{height:160,bars:3,color:(v)=>magColor(v*11),labels:['X','Y','Z']});
+  const spMag = Cog.Sparkline(document.getElementById('sp-mag'),{height:30,color:Cog.COL.amber});
+  const spFreq = Cog.Sparkline(document.getElementById('sp-freq'),{height:30,color:Cog.COL.cyan});
+  const moWave = Cog.LineChart(document.getElementById('mo-wave'),{height:220,points:120,min:-1,max:1,series:[{color:Cog.COL.amber,dot:false}]});
+  const moGauge = Cog.Gauge(document.getElementById('mo-gauge'),{height:170,max:11,unit:'mm/s',color:magColor});
+  const spec = Cog.Bars(document.getElementById('mo-spec'),{height:200,bars:48,labels:['0','','','','','','12','','','','','','24','','','','','','36','','','','','','48','','','','','','60'],color:(v,i)=> v>0.7?Cog.COL.red : Cog.COL.amber});
+  const moAxis = Cog.Bars(document.getElementById('mo-axis'),{height:160,bars:3,color:(v)=>magColor(v*11),labels:['X','Y','Z']});
+  const heat = Cog.Heatmap(document.getElementById('mo-heat'),{rows:12,cols:48,height:190,color:Cog.COL.amber});
+  const anDays = Cog.Bars(document.getElementById('an-days'),{height:200,bars:14,color:(v)=>magColor(v*11),labels:Array.from({length:14},(_,i)=>i%2?'':String(i+1))});
+  anDays.set(Array.from({length:14},()=>Cog.rand(0.1,0.35)).map((v,i)=>i===7?0.85:v));
+  const anFreq = Cog.Bars(document.getElementById('an-freq'),{height:200,bars:12,color:Cog.COL.cyan,labels:['5','','15','','25','','35','','45','','55','']});
+  anFreq.set([0.2,0.4,0.7,0.55,0.95,0.6,0.35,0.5,0.25,0.18,0.1,0.06]);
+  const anHeat = Cog.Heatmap(document.getElementById('an-heat'),{rows:7,cols:24,height:180,color:Cog.COL.amber});
+  Cog.Donut(document.getElementById('an-sev'),{height:150,centerLabel:'30d',centerSub:'events',segments:[{label:'vibration',value:64,color:Cog.COL.amber},{label:'resonance',value:27,color:Cog.COL.red},{label:'seismic',value:9,color:Cog.COL.purple}]});
+  const feed = Cog.Feed(document.getElementById('feed'));
+  const log = Cog.LogTable(document.getElementById('log'));
+  feed.add('boot','ok','Detector armed · CSI phase locked · 512 Hz');
+  log.add(['<b>magnitude</b>','<span class="pill pill-ok">ok</span>','Baseline 0.6 mm/s, zone A nominal']);
+
+  let t=0,phase='stable',phaseT=0,mag=0.6,resHz=0,events=0,alerts=0,evCount=1;
+  // phases: stable -> vibrating -> resonance -> stable
+  const evDonut={vibration_detected:0,resonance_alert:0,seismic:0};
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  function refreshDonut(){donut.set([
+    {label:'vibration',value:evDonut.vibration_detected+1,color:Cog.COL.amber},
+    {label:'resonance',value:evDonut.resonance_alert+1,color:Cog.COL.red},
+    {label:'seismic',value:evDonut.seismic+1,color:Cog.COL.purple}]);}
+  refreshDonut();
+
+  Cog.loop(function(){
+    t++; phaseT++;
+    if(phase==='stable' && Math.random()<0.07){
+      phase='vibrating'; phaseT=0; events++; evCount++; evDonut.vibration_detected++;
+      resHz = Cog.rand(18,30);
+      const seismic = Math.random()<0.25;
+      if(seismic){evDonut.seismic++;
+        feed.add('vibration_detected','warn','Broadband low-freq event — <b>possible seismic</b>');
+        log.add(['<b>vibration_detected</b>','<span class="pill pill-warn">warn</span>','Low-freq broadband energy rising, zone B']);}
+      else{
+        feed.add('vibration_detected','warn','Vibration onset near <b>'+resHz.toFixed(1)+' Hz</b>');
+        log.add(['<b>vibration_detected</b>','<span class="pill pill-warn">warn</span>','Magnitude climbing, narrowband '+resHz.toFixed(1)+' Hz']);}
+    }
+    if(phase==='vibrating'){
+      if(phaseT>3 && Math.random()<0.35){
+        phase='resonance'; phaseT=0; alerts++; evCount++; evDonut.resonance_alert++;
+        feed.add('resonance_alert','err','Modal lock at <b>'+resHz.toFixed(1)+' Hz</b> — Q rising');
+        log.add(['<b>resonance_alert</b>','<span class="pill pill-err">critical</span>','Sustained resonance, peak '+resHz.toFixed(1)+' Hz']);
+        feed.add('frequency','info','Dominant frequency settled at <b>'+resHz.toFixed(1)+' Hz</b>');
+        log.add(['<b>frequency</b>','<span class="pill pill-info">info</span>','FFT peak locked '+resHz.toFixed(1)+' Hz']);
+        document.getElementById('banner-sub').textContent='Sustained mechanical resonance locked near '+resHz.toFixed(1)+' Hz — inspect equipment';
+        document.getElementById('banner').classList.add('show');
+      } else if(phaseT>5 && Math.random()<0.3){
+        phase='stable'; phaseT=0;
+        feed.add('magnitude','ok','Vibration subsided · returned to baseline');
+        log.add(['<b>magnitude</b>','<span class="pill pill-ok">resolved</span>','Magnitude back under threshold, zone A']);
+      }
+    }
+    if(phase==='resonance' && phaseT>6 && Math.random()<0.28){
+      phase='stable'; phaseT=0;
+      feed.add('magnitude','ok','Resonance damped · structure stable');
+      log.add(['<b>magnitude</b>','<span class="pill pill-ok">resolved</span>','Modal energy decayed, alert cleared']);
+      document.getElementById('banner').classList.remove('show');
+    }
+
+    const resonating = phase==='resonance';
+    const active = phase!=='stable';
+    // magnitude target
+    const target = resonating?Cog.rand(6.5,9.5) : active?Cog.rand(2.5,5) : Cog.rand(0.3,1.2);
+    mag = mag + (target-mag)*0.4;
+    gauge.set(mag); moGauge.set(mag);
+    spMag.push(Cog.clamp(mag/11,0,1)); spFreq.push(Cog.clamp(resHz/60,0,1));
+
+    // waveform: sharper / larger when resonating
+    const amp = resonating?Cog.rand(0.75,0.98) : active?Cog.rand(0.35,0.6) : Cog.rand(0.05,0.18);
+    const hz = active?resHz:Cog.rand(8,14);
+    const v = Math.sin(t*hz*0.18)*amp + (Math.random()-0.5)*0.08;
+    wave.push([v, amp]); moWave.push(v);
+
+    // spectrum: sharp peak grows at resHz bin when resonating
+    const peakBin = Math.round(resHz/60*48);
+    const sp = Array.from({length:48},(_,i)=>{
+      const dist = Math.abs(i-peakBin);
+      const peak = active ? Math.exp(-(dist*dist)/(resonating?1.2:6)) * (resonating?Cog.rand(0.85,1):Cog.rand(0.4,0.6)) : 0;
+      return Cog.clamp(peak + Math.exp(-i/14)*Cog.rand(0.05,0.18) + Cog.rand(0,0.05),0,1);
+    });
+    spec.set(sp);
+
+    // per-axis bars (Z usually dominant for vertical machinery)
+    const ax = [mag*Cog.rand(0.5,0.8), mag*Cog.rand(0.4,0.7), mag*Cog.rand(0.8,1)].map(x=>Cog.clamp(x/11,0,1));
+    axis.set(ax); moAxis.set(ax);
+
+    // spectrogram: top rows = high freq; energy band at peakBin
+    const peakRow = 11 - Math.round(resHz/60*11);
+    heat.grid.forEach((r,ri)=>{r.shift(); r.push( active ? Cog.clamp(Math.exp(-Math.abs(ri-peakRow))*(resonating?Cog.rand(0.8,1):Cog.rand(0.4,0.7))+Cog.rand(0,0.1),0,1) : Cog.rand(0,0.18));}); heat.draw();
+    if(t%6===0){anHeat.grid.forEach(r=>{r.shift();r.push(Cog.rand(0,0.5));}); anHeat.draw();}
+
+    refreshDonut();
+    set('evcount',evCount); set('k-ev',events); set('k-ev-sub',alerts+' alerts');
+    set('an-alerts',7+alerts);
+    set('k-mag',mag.toFixed(1)); set('k-freq',active?resHz.toFixed(0):'—');
+    set('mo-domhz',active?resHz.toFixed(1):'—'); set('mo-peak',(mag*Cog.rand(1.3,1.6)).toFixed(1));
+    set('mo-peakhz', resonating?resHz.toFixed(1)+' Hz':'—');
+    set('mo-crest',(active?Cog.rand(1.8,3.2):Cog.rand(1.2,1.6)).toFixed(1));
+    set('s-rms',mag.toFixed(1)+' mm/s');
+
+    // ISO zone
+    const zone = mag>7.1?'D' : mag>4.5?'C' : mag>2.8?'B' : 'A';
+    set('k-iso',zone);
+
+    const stEl=document.getElementById('k-state'), resEl=document.getElementById('k-res');
+    if(resonating){stEl.textContent='Resonance';stEl.style.color='var(--red)';set('k-state-sub','zone '+zone+' · locked '+resHz.toFixed(0)+' Hz');
+      resEl.textContent='Locked';resEl.style.color='var(--red)';set('k-res-sub','Q rising @ '+resHz.toFixed(0)+' Hz');}
+    else if(active){stEl.textContent='Vibrating';stEl.style.color='var(--amber)';set('k-state-sub','zone '+zone+' · '+resHz.toFixed(0)+' Hz');
+      resEl.textContent='Watch';resEl.style.color='var(--amber)';set('k-res-sub','narrowband forming');}
+    else{stEl.textContent='Stable';stEl.style.color='var(--green)';set('k-state-sub','zone A · normal');
+      resEl.textContent='Clear';resEl.style.color='var(--green)';set('k-res-sub','no lock');}
+  },1000);
+})();
+</script>
+</body>
+</html>
