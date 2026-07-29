@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from cog_integrations import ManifestValidationError, load_canonical_manifest
 from cog_isolation import evidence_passed
 from cog_release_provenance_lib import (
     BUILT_AT,
@@ -53,6 +54,69 @@ def prepare(args: argparse.Namespace) -> None:
         raise ReleaseError(
             "isolation evidence did not prove limits and negative control"
         )
+    try:
+        integration_manifest = load_canonical_manifest(args.integration_manifest)
+    except (AttributeError, ManifestValidationError) as error:
+        raise ReleaseError(
+            "one exact canonical runtime integration manifest is required"
+        ) from error
+    runtime_integrations = policy["runtimeIntegrations"]
+    if integration_manifest != runtime_integrations["manifest"]:
+        raise ReleaseError(
+            "runtime integration sidecar does not equal the ratified policy manifest"
+        )
+    if (
+        integration_manifest["cog"]["id"] != policy["cogId"]
+        or integration_manifest["cog"]["version"] != version
+    ):
+        raise ReleaseError(
+            "runtime integration sidecar identity does not match the release"
+        )
+    integration_digest = digest_file(args.integration_manifest)
+    if integration_digest != runtime_integrations["manifestDigest"]:
+        raise ReleaseError(
+            "runtime integration sidecar digest does not match ratified policy"
+        )
+    expected_manifest_name = (
+        f"cog-{policy['cogId']}-integrations-v1-sha256-"
+        f"{integration_digest.removeprefix('sha256:')}.json"
+    )
+    if args.integration_manifest.name != expected_manifest_name:
+        raise ReleaseError(
+            "runtime integration sidecar filename is not content-addressed exactly"
+        )
+
+    website = integration_manifest["integrations"]["website"]
+    requires_static_bundle = (
+        website["enabled"] is True and website["artifact"]["kind"] == "static-build"
+    )
+    static_bundle = getattr(args, "static_website_bundle", None)
+    if requires_static_bundle:
+        if (
+            static_bundle is None
+            or static_bundle.is_symlink()
+            or not static_bundle.is_file()
+        ):
+            raise ReleaseError(
+                "enabled static website requires one exact regular bundle file"
+            )
+        static_bundle_digest = digest_file(static_bundle)
+        if static_bundle_digest != runtime_integrations["staticWebsiteBundleDigest"]:
+            raise ReleaseError(
+                "static website bundle digest does not match ratified policy"
+            )
+        expected_bundle_name = (
+            f"cog-{policy['cogId']}-website-v1-sha256-"
+            f"{static_bundle_digest.removeprefix('sha256:')}.tar.gz"
+        )
+        if static_bundle.name != expected_bundle_name:
+            raise ReleaseError(
+                "static website bundle filename is not content-addressed exactly"
+            )
+    elif static_bundle is not None:
+        raise ReleaseError(
+            "static website bundle must be omitted when no static website is enabled"
+        )
 
     digests = {
         "artifact": digest_file(args.artifact),
@@ -62,6 +126,7 @@ def prepare(args: argparse.Namespace) -> None:
         "vulnerability": digest_file(args.vulnerability_scan),
         "provenance": digest_file(args.provenance),
         "isolation": digest_file(args.isolation),
+        "integrations": integration_digest,
     }
     controls = [
         ("A3", "dependency-lock", "lock"),
@@ -70,7 +135,11 @@ def prepare(args: argparse.Namespace) -> None:
         ("A6", "isolation", "isolation"),
         ("A7", "sigstore-signature", "signature"),
         ("A2", "slsa-provenance", "provenance"),
+        ("I1", "runtime-integrations", "integrations"),
     ]
+    if requires_static_bundle:
+        digests["website"] = static_bundle_digest
+        controls.append(("I2", "static-website-bundle", "website"))
     policy_decision = {
         "subject": digests["artifact"],
         "evaluatedAt": built_at,
@@ -109,6 +178,7 @@ def prepare(args: argparse.Namespace) -> None:
         "stateSchemaVersion": policy["stateSchemaVersion"],
         "rollbackCompatibility": policy["rollbackCompatibility"],
         "networkPolicy": policy["networkPolicy"],
+        "runtimeIntegrations": runtime_integrations,
         "provenance": {
             "signatureAlgorithm": "ed25519",
             "signingKeyId": key_id,
@@ -139,6 +209,7 @@ def prepare(args: argparse.Namespace) -> None:
         "sourceCommit": source_commit,
         "releaseDigest": digests["artifact"],
         "runtimeContractVersion": policy["runtimeContractVersion"],
+        "runtimeIntegrations": runtime_integrations,
         "artifactDigest": digests["artifact"],
         "signatureDigest": digests["signature"],
         "dependencyLockDigest": digests["lock"],

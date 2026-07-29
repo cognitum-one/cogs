@@ -1,0 +1,16 @@
+{
+  "keys": {
+    "fixture-ed25519-2026-07": {
+      "algorithm": "ed25519",
+      "buildWorkflows": [
+        "cognitum-one/cogs/.github/workflows/publish-cog-staging.yml@refs/heads/fixture"
+      ],
+      "builderIdentities": [
+        "github-actions://cognitum-one/cogs"
+      ],
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAfHX0IeNzv23eoGfyQtr0vYpIVvsM3a25DvADzNV5Rgc=\n-----END PUBLIC KEY-----\n",
+      "status": "active"
+    }
+  },
+  "schema": "cognitum.cog.release-trust.v1"
+}

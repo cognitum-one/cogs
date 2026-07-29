@@ -36,6 +36,7 @@ EVIDENCE_BINDINGS = {
     "releaseDigest": ("releaseDigest",),
     "artifactDigest": ("releaseDigest",),
     "runtimeContractVersion": ("runtimeContractVersion",),
+    "runtimeIntegrations": ("runtimeIntegrations",),
     "builderIdentity": ("provenance", "builderIdentity"),
     "buildWorkflow": ("provenance", "buildWorkflow"),
     "builtAt": ("provenance", "builtAt"),
@@ -184,6 +185,7 @@ def parser() -> argparse.ArgumentParser:
     for name in (
         "policy",
         "artifact",
+        "integration-manifest",
         "sigstore-bundle",
         "dependency-lock",
         "sbom",
@@ -193,6 +195,7 @@ def parser() -> argparse.ArgumentParser:
         "output-dir",
     ):
         prepare_parser.add_argument(f"--{name}", required=True, type=Path)
+    prepare_parser.add_argument("--static-website-bundle", type=Path)
     for name in (
         "arch",
         "version",

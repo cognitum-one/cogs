@@ -1117,7 +1117,7 @@ export class Cognitum {
     let rd = 0, rs1 = 0, rs2OrImm = 0;
     let aluOp: AluOp | undefined;
     let direction: Direction | undefined;
-    let instructionLength = 1;
+    let instructionLength: number;
 
     // Decode based on opcode category
     if (opcode <= 0x04) {

@@ -1,0 +1,84 @@
+{
+  "artifactRef": {
+    "binaryDigest": "sha256:09d61ce87be1ea8f33787bafb3b658e853bafab06286a2d73e62213990139fae",
+    "binaryName": "cog-anomaly-detect-arm64",
+    "kind": "edge-binary",
+    "targetHardware": [
+      "v0-appliance"
+    ]
+  },
+  "blueprintDigest": "sha256:1e54d94bb09b9f3e08cd7bc27e3d56a5a36e899e18a4e3963ca080e8842e6a69",
+  "blueprintId": "anomaly-detect",
+  "cogId": "anomaly-detect",
+  "deploymentDriver": "edge-dispatch",
+  "lifecycle": "available",
+  "networkPolicy": {
+    "egressAllowlist": [
+      "127.0.0.1"
+    ],
+    "egressPolicy": "allowlist"
+  },
+  "packaging": "edge-cli-binary",
+  "provenance": {
+    "buildWorkflow": "cognitum-one/cogs/.github/workflows/publish-cog-staging.yml@refs/heads/fixture",
+    "builderIdentity": "github-actions://cognitum-one/cogs",
+    "builtAt": "2026-07-29T12:00:00Z",
+    "dependencyLockDigest": "sha256:ab496cef3aae51b9ed669a06a30a7d765ece11f0b2db04d71877cb809a823ebf",
+    "detachedSignature": {
+      "algorithm": "ed25519",
+      "keyId": "fixture-ed25519-2026-07",
+      "payloadDigest": "sha256:06c9f3bfb8f93519d406ac50d9936a1530a9caf364ddef02c9c8cf881a55f942",
+      "schema": "cognitum.cog.release-provenance.v1",
+      "signature": "LibM0A70b50HRv0M5yt3KOwaIi1qiuJeQbxd0djnaz6ZKE1ydoFXB60zbosyhq96dBnK9g2Ehkf8Ka9aOErUAg"
+    },
+    "provenanceDigest": "sha256:74eb380eb8917e3f39dc4248af80637814d7621038413f0477554cd087b3a085",
+    "sbomDigest": "sha256:e3a851f1fa2cdc51abe1e2b9403fe108efeb7547bd9c1878fcbf4750ace837ed",
+    "signatureAlgorithm": "ed25519",
+    "signingKeyId": "fixture-ed25519-2026-07"
+  },
+  "releaseDigest": "sha256:09d61ce87be1ea8f33787bafb3b658e853bafab06286a2d73e62213990139fae",
+  "residency": {
+    "allowedRegions": [
+      "on-device"
+    ],
+    "dataResidency": "on-device"
+  },
+  "rollbackCompatibility": {
+    "compatibleWith": [],
+    "migrationsReversible": true
+  },
+  "runtimeContractVersion": "cognitum.cog.v1",
+  "runtimeIntegrations": {
+    "manifest": {
+      "cog": {
+        "id": "anomaly-detect",
+        "version": "1.2.0"
+      },
+      "integrations": {
+        "tailscale": {
+          "enabled": false
+        },
+        "webMcp": {
+          "enabled": false
+        },
+        "website": {
+          "enabled": false
+        }
+      },
+      "schemaVersion": "cognitum.cog.integrations.v1"
+    },
+    "manifestDigest": "sha256:bf9d66ef9a79481c6353e1095bcb0365115aba52e1204474b2477294d42ba260",
+    "staticWebsiteBundleDigest": null
+  },
+  "securityAttestation": {
+    "isolationEvidenceDigest": "sha256:83de50f67f64863c93a164e9fef386bac4d2da40bf08fdd38fa9b0ae6654dfd9",
+    "isolationPassed": true,
+    "policyDecisionDigest": "sha256:2ddec0424f456c1ae9ed92695bf245d234c26a7a805339e641b064115bf03301",
+    "vulnerabilityScanDigest": "sha256:842d790b12faaf7002dac2ea0ed179402004a2ded718ee88eee641b1177c1a7a"
+  },
+  "sourceCommit": "1111111111111111111111111111111111111111",
+  "statePolicy": "none",
+  "stateSchemaVersion": "1",
+  "tenancyMode": "single-tenant-device",
+  "version": "1.2.0"
+}

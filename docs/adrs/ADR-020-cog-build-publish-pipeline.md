@@ -104,3 +104,8 @@ replaces two security-sensitive publish implications for new releases:
 
 The original decision and historical paths above remain recorded. Existing
 objects and ADR-018's edge Tailscale Cog are not deleted or silently changed.
+
+ADR-154 later added a staging-only Ed25519 release statement. ADR-155 binds the
+exact runtime-integration manifest and conditional static website bundle into
+that signature, and freezes the older production upload paths until a
+production signing authority is separately ratified.

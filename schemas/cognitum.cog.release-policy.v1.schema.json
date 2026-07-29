@@ -18,6 +18,7 @@
     "stateSchemaVersion",
     "rollbackCompatibility",
     "networkPolicy",
+    "runtimeIntegrations",
     "residency",
     "lifecycle",
     "ratifiedBy"
@@ -113,6 +114,9 @@
         }
       }
     },
+    "runtimeIntegrations": {
+      "$ref": "#/$defs/runtimeIntegrations"
+    },
     "residency": {
       "type": "object",
       "additionalProperties": false,
@@ -185,6 +189,93 @@
           "$ref": "#/$defs/nonEmptyStrings"
         }
       }
+    },
+    "runtimeIntegrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest",
+        "manifestDigest",
+        "staticWebsiteBundleDigest"
+      ],
+      "properties": {
+        "manifest": {
+          "$ref": "https://cognitum.one/schemas/cog-integrations.v1.schema.json"
+        },
+        "manifestDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "staticWebsiteBundleDigest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "manifest": {
+                "properties": {
+                  "integrations": {
+                    "properties": {
+                      "website": {
+                        "properties": {
+                          "enabled": {
+                            "const": true
+                          },
+                          "artifact": {
+                            "properties": {
+                              "kind": {
+                                "const": "static-build"
+                              }
+                            },
+                            "required": [
+                              "kind"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "enabled",
+                          "artifact"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "website"
+                    ]
+                  }
+                },
+                "required": [
+                  "integrations"
+                ]
+              }
+            },
+            "required": [
+              "manifest"
+            ]
+          },
+          "then": {
+            "properties": {
+              "staticWebsiteBundleDigest": {
+                "$ref": "#/$defs/digest"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "staticWebsiteBundleDigest": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

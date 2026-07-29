@@ -33,6 +33,28 @@
       "127.0.0.1"
     ]
   },
+  "runtimeIntegrations": {
+    "manifest": {
+      "schemaVersion": "cognitum.cog.integrations.v1",
+      "cog": {
+        "id": "anomaly-detect",
+        "version": "1.2.0"
+      },
+      "integrations": {
+        "website": {
+          "enabled": false
+        },
+        "tailscale": {
+          "enabled": false
+        },
+        "webMcp": {
+          "enabled": false
+        }
+      }
+    },
+    "manifestDigest": "sha256:bf9d66ef9a79481c6353e1095bcb0365115aba52e1204474b2477294d42ba260",
+    "staticWebsiteBundleDigest": null
+  },
   "residency": {
     "allowedRegions": [
       "on-device"
