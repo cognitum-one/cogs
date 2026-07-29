@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-policy.v1.schema.json",
+  "title": "Cog release operator policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "cogId",
+    "blueprintId",
+    "blueprintDigest",
+    "runtimeContractVersion",
+    "packaging",
+    "deploymentDriver",
+    "artifacts",
+    "tenancyMode",
+    "statePolicy",
+    "stateSchemaVersion",
+    "rollbackCompatibility",
+    "networkPolicy",
+    "residency",
+    "lifecycle",
+    "ratifiedBy"
+  ],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.release-policy.v1"
+    },
+    "cogId": {
+      "$ref": "#/$defs/cogId"
+    },
+    "blueprintId": {
+      "$ref": "#/$defs/cogId"
+    },
+    "blueprintDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "runtimeContractVersion": {
+      "const": "cognitum.cog.v1"
+    },
+    "packaging": {
+      "const": "edge-cli-binary"
+    },
+    "deploymentDriver": {
+      "const": "edge-dispatch"
+    },
+    "artifacts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "armhf": {
+          "$ref": "#/$defs/artifact"
+        },
+        "aarch64": {
+          "$ref": "#/$defs/artifact"
+        }
+      }
+    },
+    "tenancyMode": {
+      "const": "single-tenant-device"
+    },
+    "statePolicy": {
+      "enum": [
+        "none",
+        "ephemeral",
+        "persistent"
+      ]
+    },
+    "stateSchemaVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rollbackCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compatibleWith",
+        "migrationsReversible"
+      ],
+      "properties": {
+        "compatibleWith": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+          }
+        },
+        "migrationsReversible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "egressPolicy",
+        "egressAllowlist"
+      ],
+      "properties": {
+        "egressPolicy": {
+          "enum": [
+            "deny-all",
+            "allowlist"
+          ]
+        },
+        "egressAllowlist": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "residency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowedRegions",
+        "dataResidency"
+      ],
+      "properties": {
+        "allowedRegions": {
+          "$ref": "#/$defs/nonEmptyStrings"
+        },
+        "dataResidency": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "lifecycle": {
+      "const": "available"
+    },
+    "ratifiedBy": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "$defs": {
+    "cogId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "strings": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "nonEmptyStrings": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/strings"
+        },
+        {
+          "minItems": 1
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binaryName",
+        "targetHardware"
+      ],
+      "properties": {
+        "binaryName": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "targetHardware": {
+          "$ref": "#/$defs/nonEmptyStrings"
+        }
+      }
+    }
+  }
+}

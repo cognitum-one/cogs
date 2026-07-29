@@ -1,0 +1,399 @@
+#!/usr/bin/env python3
+"""Build and verify website-compatible detached Cog release signatures."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+PROVENANCE_SCHEMA = "cognitum.cog.release-provenance.v1"
+TRUST_SCHEMA = "cognitum.cog.release-trust.v1"
+POLICY_SCHEMA = "cognitum.cog.release-policy.v1"
+MAX_JSON_BYTES = 256 * 1024
+MAX_CANONICAL_BYTES = 64 * 1024
+MAX_VALUES = 2_048
+MAX_DEPTH = 12
+DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
+KEY_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+COG_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$")
+COMMIT = re.compile(r"^[a-f0-9]{40,64}$")
+BUILT_AT = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+FIXED_DECLARATIONS = {
+    "runtimeContractVersion": "cognitum.cog.v1",
+    "packaging": "edge-cli-binary",
+    "deploymentDriver": "edge-dispatch",
+    "tenancyMode": "single-tenant-device",
+}
+
+
+class ReleaseError(ValueError):
+    """A release input is unsafe, ambiguous, or incompatible."""
+
+
+def exact_keys(value: dict[str, Any], allowed: set[str], label: str) -> None:
+    unknown = set(value) - allowed
+    missing = allowed - set(value)
+    if unknown or missing:
+        raise ReleaseError(
+            f"{label} fields differ: missing={sorted(missing)}, unknown={sorted(unknown)}"
+        )
+
+
+def require_object(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ReleaseError(f"{label} must be an object")
+    return value
+
+
+def require_ascii(value: Any, label: str, maximum: int = 512) -> str:
+    if not isinstance(value, str) or not 1 <= len(value) <= maximum:
+        raise ReleaseError(f"{label} must be a non-empty bounded string")
+    if any(ord(character) < 0x20 or ord(character) > 0x7E for character in value):
+        raise ReleaseError(f"{label} must contain printable ASCII only")
+    return value
+
+
+def require_match(value: Any, pattern: re.Pattern[str], label: str) -> str:
+    text = require_ascii(value, label)
+    if not pattern.fullmatch(text):
+        raise ReleaseError(f"{label} is malformed")
+    return text
+
+
+def require_digest(value: Any, label: str) -> str:
+    return require_match(value, DIGEST, label)
+
+
+def require_strings(
+    value: Any, label: str, maximum: int = 32, minimum: int = 1
+) -> list[str]:
+    if not isinstance(value, list) or not minimum <= len(value) <= maximum:
+        raise ReleaseError(f"{label} must contain {minimum}-{maximum} strings")
+    strings = [require_ascii(item, f"{label} entry") for item in value]
+    if len(set(strings)) != len(strings):
+        raise ReleaseError(f"{label} must not contain duplicates")
+    return strings
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    if not path.is_file() or path.stat().st_size > MAX_JSON_BYTES:
+        raise ReleaseError(f"{path} is missing or too large")
+    try:
+        return require_object(json.loads(path.read_text(encoding="utf-8")), str(path))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ReleaseError(f"{path} is not valid UTF-8 JSON") from error
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(value, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def digest_file(path: Path) -> str:
+    if not path.is_file():
+        raise ReleaseError(f"evidence file does not exist: {path}")
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _canonical_check(value: Any, state: dict[str, int], depth: int = 0) -> None:
+    state["values"] += 1
+    if state["values"] > MAX_VALUES or depth > MAX_DEPTH:
+        raise ReleaseError("release exceeds canonicalization limits")
+    if value is None or isinstance(value, bool):
+        return
+    if isinstance(value, str):
+        require_ascii(value, "canonical release string", 8_192)
+        return
+    if isinstance(value, list):
+        if len(value) > 256:
+            raise ReleaseError("canonical release array is too large")
+        for item in value:
+            _canonical_check(item, state, depth + 1)
+        return
+    if isinstance(value, dict):
+        if len(value) > 256:
+            raise ReleaseError("canonical release object is too large")
+        for key, item in value.items():
+            require_ascii(key, "canonical release field", 128)
+            _canonical_check(item, state, depth + 1)
+        return
+    raise ReleaseError(f"unsupported canonical release value: {type(value).__name__}")
+
+
+def canonical_payload(release: dict[str, Any]) -> bytes:
+    provenance = require_object(release.get("provenance"), "release.provenance").copy()
+    provenance.pop("detachedSignature", None)
+    unsigned = dict(release)
+    unsigned.pop("seededAt", None)
+    unsigned["provenance"] = provenance
+    statement = {"schema": PROVENANCE_SCHEMA, "release": unsigned}
+    _canonical_check(statement, {"values": 0})
+    encoded = json.dumps(
+        statement,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    if len(encoded) > MAX_CANONICAL_BYTES:
+        raise ReleaseError("canonical release statement is too large")
+    return encoded
+
+
+def payload_digest(release: dict[str, Any]) -> str:
+    return f"sha256:{hashlib.sha256(canonical_payload(release)).hexdigest()}"
+
+
+def validate_policy(value: dict[str, Any]) -> dict[str, Any]:
+    exact_keys(
+        value,
+        {
+            "schema",
+            "cogId",
+            "blueprintId",
+            "blueprintDigest",
+            "runtimeContractVersion",
+            "packaging",
+            "deploymentDriver",
+            "artifacts",
+            "tenancyMode",
+            "statePolicy",
+            "stateSchemaVersion",
+            "rollbackCompatibility",
+            "networkPolicy",
+            "residency",
+            "lifecycle",
+            "ratifiedBy",
+        },
+        "release policy",
+    )
+    if value["schema"] != POLICY_SCHEMA:
+        raise ReleaseError("unsupported release policy schema")
+    cog_id = require_match(value["cogId"], COG_ID, "policy.cogId")
+    if require_match(value["blueprintId"], COG_ID, "policy.blueprintId") != cog_id:
+        raise ReleaseError("policy blueprintId must equal cogId")
+    require_digest(value["blueprintDigest"], "policy.blueprintDigest")
+    for field in (
+        "runtimeContractVersion",
+        "packaging",
+        "deploymentDriver",
+        "tenancyMode",
+        "statePolicy",
+        "stateSchemaVersion",
+        "ratifiedBy",
+    ):
+        require_ascii(value[field], f"policy.{field}", 128)
+    for field, expected in FIXED_DECLARATIONS.items():
+        if value[field] != expected:
+            raise ReleaseError(f"policy.{field} must be {expected}")
+    if value["statePolicy"] not in {"none", "ephemeral", "persistent"}:
+        raise ReleaseError("policy.statePolicy is unsupported")
+    if value["lifecycle"] != "available":
+        raise ReleaseError("release policy lifecycle must be available")
+    artifacts = require_object(value["artifacts"], "policy.artifacts")
+    if not artifacts or set(artifacts) - {"armhf", "aarch64"}:
+        raise ReleaseError("policy artifacts must declare only armhf and/or aarch64")
+    for arch, raw in artifacts.items():
+        artifact = require_object(raw, f"policy.artifacts.{arch}")
+        exact_keys(
+            artifact, {"binaryName", "targetHardware"}, f"policy.artifacts.{arch}"
+        )
+        require_match(
+            artifact["binaryName"], SAFE_NAME, f"policy artifact {arch} binaryName"
+        )
+        require_strings(
+            artifact["targetHardware"], f"policy artifact {arch} targetHardware", 8
+        )
+    rollback = require_object(
+        value["rollbackCompatibility"], "policy.rollbackCompatibility"
+    )
+    exact_keys(rollback, {"compatibleWith", "migrationsReversible"}, "rollback policy")
+    if not isinstance(rollback["compatibleWith"], list):
+        raise ReleaseError("rollback compatibleWith must be a list")
+    for version in rollback["compatibleWith"]:
+        require_match(version, VERSION, "rollback compatible version")
+    if not isinstance(rollback["migrationsReversible"], bool):
+        raise ReleaseError("migrationsReversible must be boolean")
+    network = require_object(value["networkPolicy"], "policy.networkPolicy")
+    exact_keys(network, {"egressPolicy", "egressAllowlist"}, "network policy")
+    if network["egressPolicy"] not in {"deny-all", "allowlist"}:
+        raise ReleaseError("network egressPolicy is unsupported")
+    allowlist = require_strings(
+        network["egressAllowlist"], "network egressAllowlist", minimum=0
+    )
+    if network["egressPolicy"] == "deny-all" and allowlist:
+        raise ReleaseError("deny-all cannot have an egress allowlist")
+    residency = require_object(value["residency"], "policy.residency")
+    exact_keys(residency, {"allowedRegions", "dataResidency"}, "residency")
+    require_strings(residency["allowedRegions"], "residency allowedRegions", 32)
+    require_ascii(residency["dataResidency"], "residency dataResidency")
+    return value
+
+
+def validate_release(value: dict[str, Any], signed: bool) -> dict[str, Any]:
+    exact_keys(
+        value,
+        {
+            "cogId",
+            "blueprintId",
+            "blueprintDigest",
+            "version",
+            "releaseDigest",
+            "sourceCommit",
+            "runtimeContractVersion",
+            "packaging",
+            "deploymentDriver",
+            "artifactRef",
+            "tenancyMode",
+            "statePolicy",
+            "stateSchemaVersion",
+            "rollbackCompatibility",
+            "networkPolicy",
+            "provenance",
+            "securityAttestation",
+            "residency",
+            "lifecycle",
+        },
+        "release",
+    )
+    cog_id = require_match(value["cogId"], COG_ID, "release.cogId")
+    if require_match(value["blueprintId"], COG_ID, "release.blueprintId") != cog_id:
+        raise ReleaseError("release blueprintId must equal cogId")
+    require_digest(value["blueprintDigest"], "release.blueprintDigest")
+    require_match(value["version"], VERSION, "release.version")
+    require_digest(value["releaseDigest"], "release.releaseDigest")
+    require_match(value["sourceCommit"], COMMIT, "release.sourceCommit")
+    for field in (
+        "runtimeContractVersion",
+        "packaging",
+        "deploymentDriver",
+        "tenancyMode",
+        "statePolicy",
+        "stateSchemaVersion",
+    ):
+        require_ascii(value[field], f"release.{field}", 128)
+    for field, expected in FIXED_DECLARATIONS.items():
+        if value[field] != expected:
+            raise ReleaseError(f"release.{field} must be {expected}")
+    if value["statePolicy"] not in {"none", "ephemeral", "persistent"}:
+        raise ReleaseError("release.statePolicy is unsupported")
+    if value["lifecycle"] != "available":
+        raise ReleaseError("release lifecycle must be available")
+    rollback = require_object(value["rollbackCompatibility"], "rollbackCompatibility")
+    exact_keys(
+        rollback, {"compatibleWith", "migrationsReversible"}, "rollbackCompatibility"
+    )
+    if not isinstance(rollback["compatibleWith"], list) or not isinstance(
+        rollback["migrationsReversible"], bool
+    ):
+        raise ReleaseError("release rollbackCompatibility is malformed")
+    for compatible in rollback["compatibleWith"]:
+        require_match(compatible, VERSION, "rollback compatible version")
+    network = require_object(value["networkPolicy"], "networkPolicy")
+    exact_keys(network, {"egressPolicy", "egressAllowlist"}, "networkPolicy")
+    if network["egressPolicy"] not in {"deny-all", "allowlist"}:
+        raise ReleaseError("release network egressPolicy is unsupported")
+    allowlist = require_strings(
+        network["egressAllowlist"], "release egressAllowlist", minimum=0
+    )
+    if network["egressPolicy"] == "deny-all" and allowlist:
+        raise ReleaseError("release deny-all policy cannot have an allowlist")
+    residency = require_object(value["residency"], "residency")
+    exact_keys(residency, {"allowedRegions", "dataResidency"}, "residency")
+    require_strings(residency["allowedRegions"], "release allowedRegions")
+    require_ascii(residency["dataResidency"], "release dataResidency")
+    artifact = require_object(value["artifactRef"], "release.artifactRef")
+    exact_keys(
+        artifact,
+        {"kind", "binaryDigest", "binaryName", "targetHardware"},
+        "artifactRef",
+    )
+    if artifact["kind"] != "edge-binary":
+        raise ReleaseError("release artifact kind must be edge-binary")
+    binary_digest = require_digest(artifact["binaryDigest"], "artifactRef.binaryDigest")
+    if binary_digest != value["releaseDigest"]:
+        raise ReleaseError("artifactRef binaryDigest must equal releaseDigest")
+    require_match(artifact["binaryName"], SAFE_NAME, "artifactRef.binaryName")
+    require_strings(artifact["targetHardware"], "artifactRef.targetHardware", 8)
+    provenance = require_object(value["provenance"], "release.provenance")
+    provenance_keys = {
+        "signatureAlgorithm",
+        "signingKeyId",
+        "builderIdentity",
+        "buildWorkflow",
+        "dependencyLockDigest",
+        "sbomDigest",
+        "provenanceDigest",
+        "builtAt",
+    }
+    if signed:
+        provenance_keys.add("detachedSignature")
+    exact_keys(provenance, provenance_keys, "release.provenance")
+    if provenance["signatureAlgorithm"] != "ed25519":
+        raise ReleaseError("release signatureAlgorithm must be ed25519")
+    require_match(provenance["signingKeyId"], KEY_ID, "release signingKeyId")
+    require_ascii(provenance["builderIdentity"], "release builderIdentity")
+    require_ascii(provenance["buildWorkflow"], "release buildWorkflow")
+    require_match(provenance["builtAt"], BUILT_AT, "release builtAt")
+    for field in ("dependencyLockDigest", "sbomDigest", "provenanceDigest"):
+        require_digest(provenance[field], f"release provenance {field}")
+    security = require_object(value["securityAttestation"], "securityAttestation")
+    exact_keys(
+        security,
+        {
+            "vulnerabilityScanDigest",
+            "policyDecisionDigest",
+            "isolationEvidenceDigest",
+            "isolationPassed",
+        },
+        "securityAttestation",
+    )
+    for field in (
+        "vulnerabilityScanDigest",
+        "policyDecisionDigest",
+        "isolationEvidenceDigest",
+    ):
+        require_digest(security[field], f"securityAttestation.{field}")
+    if security["isolationPassed"] is not True:
+        raise ReleaseError("release isolationPassed must be true")
+    if signed:
+        envelope = require_object(provenance["detachedSignature"], "detachedSignature")
+        exact_keys(
+            envelope,
+            {"schema", "algorithm", "keyId", "payloadDigest", "signature"},
+            "detachedSignature",
+        )
+        if (
+            envelope["schema"] != PROVENANCE_SCHEMA
+            or envelope["algorithm"] != "ed25519"
+        ):
+            raise ReleaseError("detached signature schema or algorithm is unsupported")
+        if envelope["keyId"] != provenance["signingKeyId"]:
+            raise ReleaseError("detached signature key id is not bound to provenance")
+        require_digest(envelope["payloadDigest"], "detachedSignature.payloadDigest")
+        signature = require_ascii(
+            envelope["signature"], "detachedSignature.signature", 86
+        )
+        if len(signature) != 86 or not re.fullmatch(r"[A-Za-z0-9_-]{86}", signature):
+            raise ReleaseError(
+                "detached signature must be canonical unpadded base64url"
+            )
+        if envelope["payloadDigest"] != payload_digest(value):
+            raise ReleaseError(
+                "detached signature payload digest does not match release"
+            )
+    canonical_payload(value)
+    return value

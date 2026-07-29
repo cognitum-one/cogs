@@ -1,0 +1,29 @@
+[cog]
+id = "fixture-privileged-mcp"
+version = "1.0.0"
+
+[integrations.web_mcp]
+enabled = true
+transport = "streamable-http"
+protocol_version = "2025-11-25"
+endpoint_path = "/mcp"
+allowed_tools = ["cog.status", "cog.deploy.release"]
+scopes = ["cog.read"]
+exposure = "private"
+ingress = "internal"
+
+[integrations.web_mcp.health_check]
+path = "/mcp/healthz"
+interval_seconds = 30
+timeout_seconds = 5
+
+[integrations.web_mcp.auth]
+mode = "tenant-token"
+audience = "cog-web-mcp"
+
+[integrations.web_mcp.cors]
+allowed_origins = ["https://dashboard.cognitum.one"]
+
+[integrations.web_mcp.rate_limit]
+requests_per_minute = 60
+burst = 10

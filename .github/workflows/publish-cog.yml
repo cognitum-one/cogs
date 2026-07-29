@@ -2,17 +2,17 @@ name: Publish Cog
 
 # Per-cog manual-dispatch publish: cross-compiles ONE cog for every arch its
 # cog.toml `hardware_requirement` declares (armhf for pi-zero-2w, aarch64 for
-# v0-appliance — see scripts/cog-targets.py), uploads the stripped binary to
-# gs://cognitum-apps/cogs/{arm,arm64}/, and prints the sha256s for the
-# app-registry.json bump.
+# v0-appliance — see scripts/cog-targets.py), emits the normalized optional
+# integration contract, and uploads create-only content-addressed objects.
 #
 # This repo OWNS cog source + build + publish. The install catalog
 # (app-registry.json) lives in cognitum-one/seed — update it by hand from the
 # sha256 table in this run's summary (minimal topology, no cross-repo token).
-# See docs/adrs/ADR-018-tailscale-cog.md / ADR-101-cog-publish-pipeline.md.
+# See docs/adrs/ADR-020-cog-build-publish-pipeline.md and ADR-153.
 #
-# Secret required: GCP_COGNITUM_APPS_SA (SA JSON with objectAdmin on
-# gs://cognitum-apps).
+# The cogs-production environment must define GCP_COGS_PROD_WIF_PROVIDER and
+# GCP_COGS_PROD_PUBLISH_SA. The dedicated identity needs create-only access to
+# gs://cognitum-apps/cogs/releases/, not objectAdmin and never a JSON key.
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ on:
         description: 'Cog id (directory under src/cogs/, e.g. tailscale)'
         required: true
       cog_version:
-        description: 'Cog version override (blank = cog.toml [cog].version)'
+        description: 'Optional intended version; must equal Cargo.toml package.version'
         required: false
         default: ''
 
@@ -46,16 +46,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate cog + resolve arches
         id: gen
+        env:
+          COG_INPUT: ${{ inputs.cog }}
+          ASSERTED_VERSION: ${{ inputs.cog_version }}
         run: |
           set -euo pipefail
-          COG='${{ inputs.cog }}'
+          COG="$COG_INPUT"
+          if [[ ! "$COG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "::error::invalid cog id"
+            exit 1
+          fi
           if [ ! -f "src/cogs/$COG/cog.toml" ]; then
             echo "::error::no such cog: src/cogs/$COG/cog.toml does not exist"
             exit 1
           fi
+          python3 scripts/cog_integrations_cli.py validate "src/cogs/$COG/cog.toml"
           MATRIX=$(python3 scripts/cog-targets.py --matrix "$COG")
           echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
-
           # VERSION DISAGREEMENT IS AN ERROR, NOT A PREFERENCE.
           #
           # This step read cog.toml's version and published under it. Cargo.toml's version is
@@ -71,16 +78,22 @@ jobs:
           #
           # So: refuse. There is no safe automatic choice here — picking Cargo.toml would
           # silently republish 85 cogs under new numbers, and picking cog.toml is the bug.
-          # Someone has to say which is right. `cog_version` remains available as the explicit
-          # override for the case where a human HAS decided.
+          # Someone has to say which is right. `cog_version` remains available as an explicit
+          # assertion after a human has decided, but it must still equal the version compiled
+          # into the binary.
           CARGO_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
           COGTOML_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
-          V='${{ inputs.cog_version }}'
-          if [ -z "$V" ]; then
+          V="$ASSERTED_VERSION"
+          if [ -n "$V" ]; then
+            if [ "$V" != "$CARGO_V" ]; then
+              echo "::error::cog_version '$V' does not match the binary's Cargo.toml version '$CARGO_V'."
+              exit 1
+            fi
+          else
             if [ "$CARGO_V" != "$COGTOML_V" ]; then
               echo "::error::version disagreement for $COG — cog.toml says $COGTOML_V, Cargo.toml says $CARGO_V."
               echo "::error::Cargo.toml's value is what the binary reports. Refusing to sign provenance stating a version the artifact does not have."
-              echo "::error::Reconcile the two files, or re-run with the cog_version input to state the intended version explicitly."
+              echo "::error::Reconcile the two files, or re-run with cog_version equal to Cargo.toml after explicit review."
               exit 1
             fi
             V="$COGTOML_V"
@@ -93,6 +106,11 @@ jobs:
     name: ${{ matrix.cog }} (${{ matrix.arch }})
     needs: matrix
     runs-on: ubuntu-latest
+    environment: cogs-production
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -145,6 +163,54 @@ jobs:
             echo "no publish-extra.sh for ${{ matrix.cog }} — binary-only cog"
           fi
 
+      - name: Emit content-addressed integration manifest
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_integrations_cli.py emit \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --out-dir out/integrations
+
+      - name: Inspect locked website profile
+        id: website
+        run: |
+          set -euo pipefail
+          PROFILE=$(python3 scripts/cog_website_bundle.py inspect \
+            "src/cogs/${{ matrix.cog }}/cog.toml")
+          echo "enabled=$(echo "$PROFILE" | jq -r '.enabled')" >> "$GITHUB_OUTPUT"
+          echo "kind=$(echo "$PROFILE" | jq -r '.kind')" >> "$GITHUB_OUTPUT"
+
+      - name: Require locked website build inputs
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          test -f "src/cogs/${{ matrix.cog }}/package.json"
+          test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
+
+      - uses: actions/setup-node@v4
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/cogs/${{ matrix.cog }}/package-lock.json
+
+      - name: Run vite-production-v1
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -x node_modules/.bin/vite
+          node_modules/.bin/vite build
+
+      - name: Package deterministic website bundle
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_website_bundle.py package \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --cog-dir "src/cogs/${{ matrix.cog }}" \
+            --out-dir out/website
+
       - name: Compute sha256s
         id: sha
         run: |
@@ -154,13 +220,21 @@ jobs:
             echo ""
             echo "| asset | sha256 | bytes |"
             echo "|---|---|---|"
-            for f in out/*; do
-              [ -f "$f" ] || continue
+            while IFS= read -r -d '' f; do
               s=$(sha256sum "$f" | awk '{print $1}')
               b=$(stat -c%s "$f")
-              echo "| \`$(basename "$f")\` | \`$s\` | $b |"
-            done
+              echo "| \`${f#out/}\` | \`$s\` | $b |"
+            done < <(find out -type f ! -name '*.sha256' -print0 | sort -z)
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require production WIF configuration
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
+          PUBLISH_SA: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
+        run: |
+          set -euo pipefail
+          [ -n "$WIF_PROVIDER" ] || { echo "::error::missing GCP_COGS_PROD_WIF_PROVIDER"; exit 1; }
+          [ -n "$PUBLISH_SA" ] || { echo "::error::missing GCP_COGS_PROD_PUBLISH_SA"; exit 1; }
 
       # ── Release evidence (ADR-113 §1, gates A3-A7) ──────────────────────────
       # Each step below produces a DIGEST that goes into the release record. A release
@@ -261,9 +335,11 @@ jobs:
             "$BIN" \
             || { echo "::error::the signature we just produced does not verify"; exit 1; }
 
-          echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          echo "signature=sha256:$(sha256sum "$BIN.sigstore.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          echo "cosignVersion=${COSIGN_VERSION}" >> "$GITHUB_OUTPUT"
+          {
+            echo "binary=sha256:$(sha256sum "$BIN" | awk '{print $1}')"
+            echo "signature=sha256:$(sha256sum "$BIN.sigstore.json" | awk '{print $1}')"
+            echo "cosignVersion=${COSIGN_VERSION}"
+          } >> "$GITHUB_OUTPUT"
 
       # ── Isolation (gate A6) ─────────────────────────────────────────────────
       # Runs the cog under the limits its OWN cog.toml declares, and records what held. This
@@ -498,37 +574,55 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_COGNITUM_APPS_SA }}
+          workload_identity_provider: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Upload to gs://cognitum-apps/cogs/${{ matrix.gcs }}/
+      - name: Upload immutable release objects
         run: |
           set -euo pipefail
-          # Main cog binary lands at the catalog root for its arch.
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" \
-            "gs://cognitum-apps/cogs/${{ matrix.gcs }}/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
-          # Any extra assets staged under out/extra/<path> mirror into the
-          # cog's versioned prefix (publish-extra.sh decides the layout).
-          if [ -d out/extra ]; then
-            gcloud storage cp -r out/extra/* \
-              "gs://cognitum-apps/cogs/${{ matrix.gcs }}/" || true
+          ROOT="gs://cognitum-apps/cogs/releases/${{ matrix.cog }}/${{ needs.matrix.outputs.version }}/${{ matrix.arch }}"
+          upload_immutable() {
+            local source="$1"
+            local category="$2"
+            local digest destination
+            digest=$(sha256sum "$source" | awk '{print $1}')
+            destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
+            gcloud storage cp --if-generation-match=0 "$source" "$destination"
+            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
+          }
+          {
+            echo ""
+            echo "| immutable object | GCS URI |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "binary"
+          while IFS= read -r -d '' manifest; do
+            upload_immutable "$manifest" "integrations"
+          done < <(find out/integrations -type f -print0 | sort -z)
+          if [ -d out/website ]; then
+            while IFS= read -r -d '' website; do
+              upload_immutable "$website" "website"
+            done < <(find out/website -type f -print0 | sort -z)
           fi
-          # DIGEST-ADDRESSED copy. The path above is mutable — the next publish overwrites it,
-          # so an immutable releaseDigest cannot reference it (ADR-113 §1). This copy is keyed
-          # by the artifact's own digest and is therefore append-only in practice: the same
-          # bytes always land at the same path, and different bytes never collide.
-          DIGEST="${{ steps.sign.outputs.binary }}"; DIGEST="${DIGEST#sha256:}"
-          BASE="gs://cognitum-apps/cogs/by-digest/${DIGEST}"
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "$BASE/artifact"
-          # One Sigstore bundle replaces the old .sig/.pem pair — it carries the signature, the
-          # Fulcio certificate and the Rekor inclusion proof together, so a verifier needs one
-          # object rather than three that can be separated from each other.
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" "$BASE/artifact.sigstore.json"
-          gcloud storage cp "out/sbom.cdx.json" "$BASE/sbom.cdx.json"
-          gcloud storage cp "out/vuln-scan.json" "$BASE/vuln-scan.json"
-          gcloud storage cp "out/provenance.sigstore.json" "$BASE/provenance.sigstore.json"
-          gcloud storage cp "out/policy-decision.json" "$BASE/policy-decision.json"
-          gcloud storage cp "out/release-evidence.json" "$BASE/release-evidence.json"
-          echo "Digest-addressed: $BASE/"
-          echo "Uploaded cog-${{ matrix.cog }}-${{ matrix.suffix }} to gs://cognitum-apps/cogs/${{ matrix.gcs }}/"
+          if [ -d out/extra ]; then
+            while IFS= read -r -d '' asset; do
+              upload_immutable "$asset" "assets"
+            done < <(find out/extra -type f -print0 | sort -z)
+          fi
+          for evidence in \
+            "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" \
+            out/sbom.cdx.json \
+            out/vuln-scan.json \
+            out/provenance.sigstore.json \
+            out/policy-decision.json \
+            out/release-evidence.json \
+            out/isolation-runs.json; do
+            test -s "$evidence" || {
+              echo "::error::required evidence is missing or empty: $evidence"
+              exit 1
+            }
+            upload_immutable "$evidence" "evidence"
+          done
+          echo "Legacy mutable aliases were not written."

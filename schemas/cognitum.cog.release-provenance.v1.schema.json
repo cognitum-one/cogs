@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-provenance.v1.schema.json",
+  "title": "Cog release detached signature v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "algorithm",
+    "keyId",
+    "payloadDigest",
+    "signature"
+  ],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.release-provenance.v1"
+    },
+    "algorithm": {
+      "const": "ed25519"
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "payloadDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+}

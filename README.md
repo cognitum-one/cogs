@@ -25,21 +25,29 @@ See **[docs/adrs/](docs/adrs/)** for the cog-as-plugin architecture
 Each cog declares `hardware_requirement` in `cog.toml` — the source of truth for
 which device(s), and thus which arch(es), it builds for:
 
-| device | arch | GCS prefix |
+| device | arch | Binary suffix |
 |---|---|---|
-| `pi-zero-2w` | armhf (`armv7-unknown-linux-gnueabihf`) | `gs://cognitum-apps/cogs/arm/` |
-| `v0-appliance` | aarch64 (`aarch64-unknown-linux-gnu`) | `gs://cognitum-apps/cogs/arm64/` |
+| `pi-zero-2w` | armhf (`armv7-unknown-linux-gnueabihf`) | `-arm` |
+| `v0-appliance` | aarch64 (`aarch64-unknown-linux-gnu`) | `-aarch64` |
 
 CI is the source of published binaries:
 
 - **`.github/workflows/publish-cog.yml`** — manual dispatch, one cog → builds its
-  declared arches, uploads to GCS, prints the sha256s for the seed registry.
+  declared arches, emits the optional-integration sidecar, and publishes
+  immutable production objects after the `cogs-production` environment gate.
+- **`.github/workflows/publish-cog-staging.yml`** — manual-only isolated proof
+  to the staging prefix through the `cogs-staging` environment.
 - **`.github/workflows/build-all-cogs.yml`** — umbrella batch over the whole
   catalog (build-only smoke check, or `publish=true` / a `cogs-v*` tag to upload).
 
 The install catalog (`app-registry.json`) lives in **cognitum-one/seed**; bump it
-by hand from a publish run's sha256 summary. Requires the `GCP_COGNITUM_APPS_SA`
-repo secret (`objectAdmin` on `gs://cognitum-apps`).
+by hand from a publish run's immutable URI + sha256 summary. ADR-153 publication
+uses environment-scoped Workload Identity Federation and create-only access;
+service-account JSON keys and mutable aliases are not accepted.
+
+An enabled static website uses the locked `vite-production-v1` profile and is
+published as a deterministic content-addressed bundle. A declared OCI website
+must already be pinned by digest; these workflows do not push images.
 
 ## RuView
 

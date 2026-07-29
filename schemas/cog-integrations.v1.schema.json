@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitum.one/schemas/cog-integrations.v1.schema.json",
+  "title": "Cognitum Cog Runtime Integrations v1",
+  "description": "Canonical release projection of optional website, Tailscale attachment, and web MCP interfaces.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "cog",
+    "integrations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "cognitum.cog.integrations.v1"
+    },
+    "cog": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "required": [
+        "website",
+        "tailscale",
+        "webMcp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "website": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/disabled"
+            },
+            {
+              "$ref": "cog-integrations.website.v1.schema.json"
+            }
+          ]
+        },
+        "tailscale": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/disabled"
+            },
+            {
+              "$ref": "cog-integrations.tailscale.v1.schema.json"
+            }
+          ]
+        },
+        "webMcp": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/disabled"
+            },
+            {
+              "$ref": "cog-integrations.web-mcp.v1.schema.json"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "disabled": {
+      "type": "object",
+      "required": [
+        "enabled"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "integrations": {
+            "anyOf": [
+              {
+                "properties": {
+                  "website": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      },
+                      "ingress": {
+                        "const": "tailscale"
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "ingress"
+                    ]
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "webMcp": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      },
+                      "ingress": {
+                        "const": "tailscale"
+                      }
+                    },
+                    "required": [
+                      "enabled",
+                      "ingress"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "integrations": {
+            "properties": {
+              "tailscale": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "enabled"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

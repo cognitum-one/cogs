@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitum.one/schemas/cog-integrations.website.v1.schema.json",
+  "title": "Enabled Cog website integration",
+  "type": "object",
+  "required": [
+    "enabled",
+    "artifact",
+    "port",
+    "basePath",
+    "healthCheck",
+    "auth",
+    "exposure",
+    "ingress"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "const": true
+    },
+    "artifact": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "buildProfile",
+            "outputDirectory"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "static-build"
+            },
+            "buildProfile": {
+              "const": "vite-production-v1"
+            },
+            "outputDirectory": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?/)[^\\\\]+$",
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "image"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "oci-image"
+            },
+            "image": {
+              "type": "string",
+              "pattern": "^[^\\s@]+(?:/[^\\s@]+)*@sha256:[a-f0-9]{64}$"
+            }
+          }
+        }
+      ]
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "basePath": {
+      "type": "string",
+      "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$",
+      "maxLength": 256
+    },
+    "healthCheck": {
+      "$ref": "#/$defs/healthCheck"
+    },
+    "auth": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "mode",
+            "audience"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "tenant-session"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "mode",
+            "issuer",
+            "audience"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "oidc"
+            },
+            "issuer": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "none"
+            }
+          }
+        }
+      ]
+    },
+    "exposure": {
+      "enum": [
+        "private",
+        "public"
+      ]
+    },
+    "ingress": {
+      "enum": [
+        "internal",
+        "tailscale",
+        "public"
+      ]
+    },
+    "publicAccessApproval": {
+      "$ref": "#/$defs/approval"
+    }
+  },
+  "$defs": {
+    "healthCheck": {
+      "type": "object",
+      "required": [
+        "path",
+        "intervalSeconds",
+        "timeoutSeconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$",
+          "maxLength": 256
+        },
+        "intervalSeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 300
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "approved",
+        "approvalRef"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approved": {
+          "const": true
+        },
+        "approvalRef": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,255}$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "exposure": {
+            "const": "private"
+          }
+        },
+        "required": [
+          "exposure"
+        ]
+      },
+      "then": {
+        "properties": {
+          "ingress": {
+            "enum": [
+              "internal",
+              "tailscale"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "exposure": {
+                "const": "public"
+              }
+            },
+            "required": [
+              "exposure"
+            ]
+          },
+          {
+            "properties": {
+              "auth": {
+                "properties": {
+                  "mode": {
+                    "const": "none"
+                  }
+                },
+                "required": [
+                  "mode"
+                ]
+              }
+            },
+            "required": [
+              "auth"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "publicAccessApproval"
+        ],
+        "properties": {
+          "exposure": {
+            "const": "public"
+          },
+          "ingress": {
+            "const": "public"
+          }
+        }
+      }
+    }
+  ]
+}
