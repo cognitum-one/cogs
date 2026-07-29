@@ -390,9 +390,9 @@ def check() -> None:
     registry, by_path = _load_schemas()
     release_paths = sorted(SCHEMA_DIR.glob("cognitum.cog.release-*.schema.json"))
     integration_paths = sorted(SCHEMA_DIR.glob("cog-integrations*.schema.json"))
-    if len(release_paths) != 4 or len(integration_paths) != 4:
+    if len(release_paths) != 6 or len(integration_paths) != 4:
         raise SchemaCheckError(
-            "expected exactly four release and four integration schemas"
+            "expected exactly six release and four integration schemas"
         )
 
     for path, schema in by_path.items():
@@ -416,7 +416,7 @@ def check() -> None:
             ROOT / "tests/fixtures/cog-release/signed-release.json",
         ),
         (
-            "https://schemas.cognitum.one/cognitum.cog.release-trust.v1.schema.json",
+            "https://schemas.cognitum.one/cognitum.cog.release-trust.v2.schema.json",
             ROOT / "tests/fixtures/cog-release/release-trust-registry.json",
         ),
     )
@@ -439,7 +439,7 @@ def check() -> None:
     validate_release(release, signed=True)
     verify(argparse.Namespace(release=fixtures[1][1], registry=fixtures[2][1]))
     print(
-        "validated 8 local schemas, all references, ratified policy, "
+        "validated 10 local schemas, all references, ratified policy, "
         "and public signed fixtures"
     )
 

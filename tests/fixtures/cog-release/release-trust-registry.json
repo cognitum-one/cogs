@@ -8,9 +8,24 @@
       "builderIdentities": [
         "github-actions://cognitum-one/cogs"
       ],
+      "github": {
+        "ownerId": "256911919",
+        "repositoryId": "1211713542",
+        "workflowIds": [
+          "322710413"
+        ]
+      },
+      "kmsAlgorithm": "EC_SIGN_ED25519",
+      "kmsKeyVersion": "projects/cognitum-staging/locations/us-central1/keyRings/cog-release/cryptoKeys/cog-release-signing/cryptoKeyVersions/1",
+      "protectionLevel": "software",
+      "publicKeyFingerprint": "sha256:d9c5e8425df4663c8ae91f1403d660379788b28dee89b1c199eb1cd73de445a2",
       "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAfHX0IeNzv23eoGfyQtr0vYpIVvsM3a25DvADzNV5Rgc=\n-----END PUBLIC KEY-----\n",
+      "purposes": [
+        "release",
+        "withdrawal"
+      ],
       "status": "active"
     }
   },
-  "schema": "cognitum.cog.release-trust.v1"
+  "schema": "cognitum.cog.release-trust.v2"
 }

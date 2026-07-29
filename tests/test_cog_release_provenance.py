@@ -18,7 +18,15 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from cog_release_provenance import finalize, registry, verify  # noqa: E402
+from cog_release_provenance import (  # noqa: E402
+    admission,
+    finalize,
+    finalize_withdrawal,
+    prepare_withdrawal,
+    registry,
+    verify,
+    verify_withdrawal,
+)
 from cog_release_builder import prepare  # noqa: E402
 from cog_integrations import (  # noqa: E402
     MAX_MANIFEST_BYTES,
@@ -29,11 +37,15 @@ from cog_integrations import (  # noqa: E402
     normalize_manifest,
 )
 from cog_release_provenance_lib import (  # noqa: E402
+    EVIDENCE_LOCATIONS_SCHEMA,
     ReleaseError,
     canonical_payload,
+    canonical_withdrawal_payload,
     payload_digest,
+    validate_evidence_locations,
     validate_release,
     validate_policy,
+    withdrawal_payload_digest,
 )
 import cog_release_schema_check as schema_gate  # noqa: E402
 
@@ -46,6 +58,13 @@ WORKFLOW = (
     "@refs/heads/codex/cog-optional-web-tailscale-mcp"
 )
 KEY_ID = "gcp-kms:cogs-staging-release-2026-01"
+KMS_KEY_VERSION = (
+    "projects/cognitum-20260110/locations/us-central1/keyRings/"
+    "cog-release-stg/cryptoKeys/release-ed25519/cryptoKeyVersions/1"
+)
+GITHUB_OWNER_ID = "256911919"
+GITHUB_REPOSITORY_ID = "1211713542"
+GITHUB_WORKFLOW_ID = "322710413"
 
 
 def run(*command: str) -> None:
@@ -168,15 +187,21 @@ class CogReleaseProvenanceTests(unittest.TestCase):
             base64.b64encode(self.signature_bin.read_bytes()).decode()
         )
         self.registry = self.output / "release-trust-registry.json"
-        registry(
-            argparse.Namespace(
-                public_key=self.public_key,
-                key_id=KEY_ID,
-                builder_identity=BUILDER,
-                build_workflow=WORKFLOW,
-                output=self.registry,
-            )
+        self.registry_args = argparse.Namespace(
+            public_key=self.public_key,
+            key_id=KEY_ID,
+            kms_key_version=KMS_KEY_VERSION,
+            kms_algorithm="EC_SIGN_ED25519",
+            protection_level="SOFTWARE",
+            purpose=["release", "withdrawal"],
+            builder_identity=BUILDER,
+            build_workflow=WORKFLOW,
+            github_owner_id=GITHUB_OWNER_ID,
+            github_repository_id=GITHUB_REPOSITORY_ID,
+            github_workflow_id=[GITHUB_WORKFLOW_ID],
+            output=self.registry,
         )
+        registry(self.registry_args)
         self.evidence = self.output / "release-evidence.json"
         self.release = self.output / "signed-release.json"
         finalize(
@@ -205,6 +230,245 @@ class CogReleaseProvenanceTests(unittest.TestCase):
         )
         self.assertNotIn("PRIVATE KEY", self.evidence.read_text())
         self.assertNotIn("PRIVATE KEY", self.registry.read_text())
+
+    def test_trust_v2_binds_kms_fingerprint_purpose_and_numeric_github_ids(
+        self,
+    ) -> None:
+        trust = json.loads(self.registry.read_text())
+        key = trust["keys"][KEY_ID]
+        self.assertEqual(trust["schema"], "cognitum.cog.release-trust.v2")
+        self.assertEqual(key["kmsAlgorithm"], "EC_SIGN_ED25519")
+        self.assertEqual(key["kmsKeyVersion"], KMS_KEY_VERSION)
+        self.assertEqual(key["protectionLevel"], "software")
+        self.assertEqual(key["purposes"], ["release", "withdrawal"])
+        self.assertEqual(
+            key["github"],
+            {
+                "ownerId": GITHUB_OWNER_ID,
+                "repositoryId": GITHUB_REPOSITORY_ID,
+                "workflowIds": [GITHUB_WORKFLOW_ID],
+            },
+        )
+        self.assertRegex(key["publicKeyFingerprint"], r"^sha256:[a-f0-9]{64}$")
+
+        for name, mutation in (
+            ("hsm", {"protectionLevel": "hsm"}),
+            ("fingerprint", {"publicKeyFingerprint": "sha256:" + "0" * 64}),
+            (
+                "repository-name",
+                {
+                    "github": {
+                        **key["github"],
+                        "repositoryId": "cognitum-one/cogs",
+                    }
+                },
+            ),
+            ("wrong-purpose", {"purposes": ["withdrawal"]}),
+        ):
+            with self.subTest(name=name):
+                mutated = copy.deepcopy(trust)
+                mutated["keys"][KEY_ID].update(mutation)
+                path = self.output / f"bad-trust-{name}.json"
+                path.write_text(json.dumps(mutated))
+                with self.assertRaises(ReleaseError):
+                    verify(argparse.Namespace(release=self.release, registry=path))
+
+    def test_signed_withdrawal_round_trip_and_tampering_fail_closed(self) -> None:
+        withdrawal_dir = self.directory / "withdrawal"
+        prepare_withdrawal(
+            argparse.Namespace(
+                release=self.release,
+                registry=self.registry,
+                action="withdrawn",
+                reason_code="security.policy",
+                issued_at="2026-07-29T20:00:00Z",
+                key_id=KEY_ID,
+                issuer_identity=BUILDER,
+                issuer_workflow=WORKFLOW,
+                github_owner_id=GITHUB_OWNER_ID,
+                github_repository_id=GITHUB_REPOSITORY_ID,
+                github_workflow_id=GITHUB_WORKFLOW_ID,
+                output_dir=withdrawal_dir,
+            )
+        )
+        withdrawal_signature = withdrawal_dir / "withdrawal-signature.bin"
+        withdrawal_signature_b64 = withdrawal_dir / "withdrawal-signature.b64"
+        run(
+            "openssl",
+            "pkeyutl",
+            "-sign",
+            "-inkey",
+            str(self.private_key),
+            "-rawin",
+            "-in",
+            str(withdrawal_dir / "withdrawal-statement.json"),
+            "-out",
+            str(withdrawal_signature),
+        )
+        withdrawal_signature_b64.write_text(
+            base64.b64encode(withdrawal_signature.read_bytes()).decode()
+        )
+        evidence = withdrawal_dir / "release-withdrawal.json"
+        signed = withdrawal_dir / "signed-withdrawal.json"
+        finalize_withdrawal(
+            argparse.Namespace(
+                release=self.release,
+                registry=self.registry,
+                unsigned_withdrawal=withdrawal_dir / "unsigned-withdrawal.json",
+                signature_file=withdrawal_signature_b64,
+                key_id=KEY_ID,
+                output=evidence,
+                signed_withdrawal_output=signed,
+            )
+        )
+        verify_withdrawal(
+            argparse.Namespace(
+                release=self.release,
+                withdrawal=signed,
+                registry=self.registry,
+            )
+        )
+        record = json.loads(signed.read_text())
+        wrapper = json.loads(evidence.read_text())
+        self.assertEqual(
+            canonical_withdrawal_payload(record),
+            (withdrawal_dir / "withdrawal-statement.json").read_bytes(),
+        )
+        self.assertEqual(
+            record["detachedSignature"]["payloadDigest"],
+            withdrawal_payload_digest(record),
+        )
+        self.assertEqual(wrapper["withdrawalRecord"], record)
+        self.assertEqual(
+            wrapper["withdrawalSignature"], record["detachedSignature"]
+        )
+        node = subprocess.run(
+            [
+                "node",
+                "-e",
+                """
+const crypto=require('crypto');
+const fs=require('fs');
+const withdrawal=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
+const trust=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+const envelope=withdrawal.detachedSignature;
+const key=trust.keys[envelope.keyId].publicKeyPem;
+delete withdrawal.detachedSignature;
+delete withdrawal.seededAt;
+function c(v) {
+  if (v===null || typeof v==='boolean' || typeof v==='string' || Number.isSafeInteger(v))
+    return JSON.stringify(v);
+  if (Array.isArray(v)) return '['+v.map(c).join(',')+']';
+  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+c(v[k])).join(',')+'}';
+}
+const payload=Buffer.from(c({
+  schema:'cognitum.cog.release-withdrawal.v1',
+  withdrawal,
+}));
+if (!crypto.verify(null,payload,key,Buffer.from(envelope.signature,'base64url')))
+  process.exit(2);
+process.stdout.write(payload);
+""",
+                str(signed),
+                str(self.registry),
+            ],
+            check=True,
+            capture_output=True,
+        )
+        self.assertEqual(canonical_withdrawal_payload(record), node.stdout)
+
+        tampered = copy.deepcopy(record)
+        tampered["reasonCode"] = "different.reason"
+        tampered_path = withdrawal_dir / "tampered-withdrawal.json"
+        tampered_path.write_text(json.dumps(tampered))
+        with self.assertRaises(ReleaseError):
+            verify_withdrawal(
+                argparse.Namespace(
+                    release=self.release,
+                    withdrawal=tampered_path,
+                    registry=self.registry,
+                )
+            )
+
+        trust = json.loads(self.registry.read_text())
+        trust["keys"][KEY_ID]["purposes"] = ["release"]
+        release_only = withdrawal_dir / "release-only-trust.json"
+        release_only.write_text(json.dumps(trust))
+        with self.assertRaises(ReleaseError):
+            verify_withdrawal(
+                argparse.Namespace(
+                    release=self.release,
+                    withdrawal=signed,
+                    registry=release_only,
+                )
+            )
+
+    def test_protected_generation_bound_evidence_admission(self) -> None:
+        bucket = "cognitum-20260110-cog-release-stg"
+        content = "a" * 64
+        output = self.output / "release-evidence-locations.json"
+        args = argparse.Namespace(
+            bucket_name=bucket,
+            retention_period_seconds=2_592_000,
+            retention_policy_locked="false",
+            kind="release",
+            uri=(
+                f"gs://{bucket}/staging/cogs/releases/anomaly-detect/1.2.0/"
+                f"aarch64/evidence/sha256/{content}/release-evidence.json"
+            ),
+            generation="1785355200123456",
+            content_digest=f"sha256:{content}",
+            output=output,
+        )
+        admission(args)
+        value = json.loads(output.read_text())
+        self.assertEqual(value["schema"], EVIDENCE_LOCATIONS_SCHEMA)
+        validate_evidence_locations(value)
+
+        for name, mutation in (
+            (
+                "legacy-public-bucket",
+                {
+                    "bucket": {
+                        **value["bucket"],
+                        "name": "cognitum-apps",
+                        "resource": (
+                            "//storage.googleapis.com/projects/_/buckets/"
+                            "cognitum-apps"
+                        ),
+                    }
+                },
+            ),
+            (
+                "mutable-generation",
+                {"objects": [{**value["objects"][0], "generation": "0"}]},
+            ),
+            (
+                "wrong-content-digest",
+                {
+                    "objects": [
+                        {
+                            **value["objects"][0],
+                            "contentDigest": "sha256:" + "b" * 64,
+                        }
+                    ]
+                },
+            ),
+            (
+                "unprotected",
+                {
+                    "bucket": {
+                        **value["bucket"],
+                        "publicAccessPrevention": "inherited",
+                    }
+                },
+            ),
+        ):
+            with self.subTest(name=name):
+                changed = copy.deepcopy(value)
+                changed.update(mutation)
+                with self.assertRaises(ReleaseError):
+                    validate_evidence_locations(changed)
 
     def test_release_binds_exact_runtime_integration_bytes_and_evidence(self) -> None:
         release = json.loads(self.release.read_text())
@@ -451,7 +715,7 @@ process.stdout.write(payload);
         )
         self.assertEqual(
             hashlib.sha256(trust_path.read_bytes()).hexdigest(),
-            "3ba71e669b41fc29579261469a166c1ddd92015fb54e68c0b43c375a550bbc1e",
+            "7403d9b47e9f132e657a9a5fe51fe3833a512d15b763deffb37b0e4d79f5090a",
         )
 
     def test_tampering_or_workflow_substitution_fails_closed(self) -> None:
@@ -578,15 +842,10 @@ process.stdout.write(payload);
             str(rsa_public),
         )
         with self.assertRaises(ReleaseError):
-            registry(
-                argparse.Namespace(
-                    public_key=rsa_public,
-                    key_id=KEY_ID,
-                    builder_identity=BUILDER,
-                    build_workflow=WORKFLOW,
-                    output=self.output / "rsa-registry.json",
-                )
-            )
+            args = argparse.Namespace(**vars(self.registry_args))
+            args.public_key = rsa_public
+            args.output = self.output / "rsa-registry.json"
+            registry(args)
 
         build_evidence = json.loads((self.output / "build-evidence.json").read_text())
         build_evidence["dependencyLockDigest"] = "sha256:" + "0" * 64
@@ -605,12 +864,14 @@ process.stdout.write(payload);
 
     def test_schemas_and_stage_only_workflow_contract(self) -> None:
         schemas = sorted(ROOT.glob("schemas/cognitum.cog.release-*.schema.json"))
-        self.assertEqual(len(schemas), 4)
+        self.assertEqual(len(schemas), 6)
         encoded = json.dumps([json.loads(path.read_text()) for path in schemas])
         self.assertIn("cognitum.cog.release-provenance.v1", encoded)
         self.assertIn("Complete signed Cog release record v1", encoded)
         self.assertIn("runtimeIntegrations", encoded)
-        self.assertIn("cognitum.cog.release-trust.v1", encoded)
+        self.assertIn("cognitum.cog.release-trust.v2", encoded)
+        self.assertIn("cognitum.cog.release-withdrawal.v1", encoded)
+        self.assertIn("cognitum.cog.release-evidence-locations.v1", encoded)
         self.assertIn("ed25519", encoded)
         staging = (ROOT / ".github/workflows/publish-cog-staging.yml").read_text()
         production = (ROOT / ".github/workflows/publish-cog.yml").read_text()
@@ -630,7 +891,7 @@ process.stdout.write(payload);
             text=True,
         )
         self.assertEqual(checked.returncode, 0, checked.stderr)
-        self.assertIn("validated 8 local schemas", checked.stdout)
+        self.assertIn("validated 10 local schemas", checked.stdout)
 
 
 class CogReleaseSchemaGateTests(unittest.TestCase):
@@ -767,9 +1028,23 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             'PREPARE+=(--static-website-bundle "${{ steps.website_bundle.outputs.bundle }}")',
             'upload_immutable "${{ steps.integrations.outputs.manifest }}"',
             'upload_immutable "${{ steps.integrations.outputs.checksum }}"',
+            "cognitum.cog.release-trust.v2",
+            "--kms-key-version",
+            "--protection-level SOFTWARE",
+            "--purpose withdrawal",
+            '--github-owner-id "${{ github.repository_owner_id }}"',
+            '--github-repository-id "${{ github.repository_id }}"',
+            "--github-workflow-id 322710413",
+            "cognitum-20260110-cog-release-stg",
+            "--if-generation-match=0",
+            "--print-created-message",
+            "release-evidence-locations.json",
+            "--retention-policy-locked",
         ):
             if token not in staging:
                 problems.append(f"staging: missing exact sidecar binding {token}")
+        if "gs://cognitum-apps" in staging:
+            problems.append("staging: legacy public evidence bucket remains")
         if "Refuse unsigned production publication (ADR-155 freeze)" not in production:
             problems.append("production: freeze gate missing")
         if (
@@ -850,6 +1125,21 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "publish-cog-staging.yml",
                 'if [ "$CARGO_VERSION" != "$MANIFEST_VERSION" ]; then',
                 "if false; then",
+            ),
+            "trust-v1-downgrade": (
+                "publish-cog-staging.yml",
+                "cognitum.cog.release-trust.v2",
+                "cognitum.cog.release-trust.v1",
+            ),
+            "legacy-public-bucket": (
+                "publish-cog-staging.yml",
+                "cognitum-20260110-cog-release-stg",
+                "cognitum-apps",
+            ),
+            "mutable-evidence-upload": (
+                "publish-cog-staging.yml",
+                "--if-generation-match=0",
+                "--if-generation-match=1",
             ),
             "production-unfrozen": (
                 "publish-cog.yml",

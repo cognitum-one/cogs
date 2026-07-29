@@ -251,7 +251,9 @@ class CogIntegrationManifestTests(unittest.TestCase):
         self.assertNotIn("GCP_COGNITUM_APPS_SA", combined)
         self.assertIn("id-token: write", combined)
         self.assertIn("--if-generation-match=0", combined)
-        self.assertIn("gs://cognitum-apps/staging/cogs/releases/", staging)
+        self.assertIn("cognitum-20260110-cog-release-stg", staging)
+        self.assertNotIn("gs://cognitum-apps/staging/cogs/releases/", staging)
+        self.assertIn("release-evidence-locations.json", staging)
         self.assertNotIn("\n  push:", staging)
         self.assertIn("environment: cogs-staging", staging)
         self.assertIn(
