@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   changed-cogs:
     name: Detect changed cogs
@@ -13,9 +16,10 @@ jobs:
       cogs: ${{ steps.detect.outputs.cogs }}
       shared: ${{ steps.detect.outputs.shared }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Detect which cogs changed
         id: detect
@@ -30,7 +34,7 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only "$BASE" HEAD)
           echo "Changed files:"
-          echo "$CHANGED_FILES" | sed 's/^/  /'
+          printf '  %s\n' "$CHANGED_FILES"
 
           # Cogs that changed
           COGS=$(echo "$CHANGED_FILES" | awk -F/ '/^src\/cogs\// { print $3 }' | sort -u | tr '\n' ' ')
@@ -41,7 +45,8 @@ jobs:
           SHARED=$(echo "$CHANGED_FILES" | grep -E '^(crates/cog-sensor-sources|Cargo\.toml|Cargo\.lock)' | head -c 1 || true)
 
           if [ -n "$SHARED" ]; then
-            COGS=$(ls -d src/cogs/*/ | xargs -n1 basename | tr '\n' ' ')
+            COGS=$(find src/cogs -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+              | sort | tr '\n' ' ')
             echo "Shared crate or root Cargo changed → checking ALL cogs"
           fi
 
@@ -67,13 +72,15 @@ jobs:
       matrix:
         cog: ${{ fromJSON(needs.changed-cogs.outputs.cogs) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
 
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/registry
@@ -97,8 +104,10 @@ jobs:
     if: needs.changed-cogs.outputs.shared == 'yes'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
       - name: cargo check (cog-sensor-sources)
         working-directory: crates/cog-sensor-sources
         run: cargo check --release --all-targets
@@ -110,7 +119,9 @@ jobs:
     name: Validate cog.toml + Cargo.toml consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - name: Check every cog has cog.toml + Cargo.toml + src/main.rs
         shell: bash
         run: |
@@ -146,7 +157,7 @@ jobs:
             echo "::error::$fail manifest issues found"
             exit 1
           fi
-          echo "::notice::all $(ls -d src/cogs/*/ | wc -l) cogs have valid manifests"
+          echo "::notice::all $(find src/cogs -mindepth 1 -maxdepth 1 -type d -printf '.\n' | wc -l) cogs have valid manifests"
 
       - name: Validate hardware_requirement (device → build-arch gating)
         shell: bash
@@ -184,7 +195,9 @@ jobs:
     name: Validate optional runtime integration manifests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - name: Validate and normalize every cog.toml
         run: python3 scripts/cog_integrations_cli.py validate --all
       - name: Run integration manifest security tests
@@ -207,37 +220,30 @@ jobs:
     name: Validate release provenance and isolation gates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
       - name: Run detached-signature and isolation security tests
         run: |
           python3 -m unittest \
             tests/test_cog_isolation.py \
             tests/test_cog_release_provenance.py -v
-      - name: Parse release schemas and validate ratified policies
+      - name: Resolve release schemas and validate public fixtures locally
+        run: python3 scripts/cog_release_schema_check.py
+      - name: Require committed locks for every ratified policy
         run: |
           python3 - <<'PY'
-          import json
-          import sys
           from pathlib import Path
 
-          sys.path.insert(0, "scripts")
-          from cog_release_provenance_lib import validate_policy
-
-          schemas = sorted(Path("schemas").glob("cognitum.cog.release-*.schema.json"))
-          if len(schemas) != 3:
-              raise SystemExit(f"expected 3 release schemas, found {len(schemas)}")
-          for schema in schemas:
-              json.loads(schema.read_text())
           policies = sorted(Path("src/cogs").glob("*/release-policy.json"))
           if not policies:
               raise SystemExit("no ratified release policies")
           for policy in policies:
-              validate_policy(json.loads(policy.read_text()))
               lockfile = policy.parent / "Cargo.lock"
               if not lockfile.is_file():
                   raise SystemExit(f"{policy.parent.name}: ratified release has no Cargo.lock")
-          print(f"validated {len(schemas)} schemas and {len(policies)} release policies")
+          print(f"validated committed locks for {len(policies)} ratified policies")
           PY
       - name: Verify anomaly-detect resolves only from its committed lock
         run: cargo check --locked --manifest-path src/cogs/anomaly-detect/Cargo.toml
@@ -254,9 +260,10 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Check new cog has docs/adrs/ADR-*.md
         shell: bash
         run: |
@@ -271,7 +278,8 @@ jobs:
           fail=0
           for cog in $NEW_COGS; do
             # Look for any ADR mentioning the cog id
-            if ! ls docs/adrs/ADR-*${cog}*.md 2>/dev/null | head -1 | grep -q .; then
+            if ! find docs/adrs -maxdepth 1 -type f -name "ADR-*${cog}*.md" \
+              -print -quit | grep -q .; then
               echo "::error::new cog '$cog' is missing an ADR in docs/adrs/"
               fail=$((fail+1))
             fi
@@ -284,7 +292,9 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - name: Reject TODO sha256 in [[assets]] without a bring-up marker
         shell: bash
         run: |

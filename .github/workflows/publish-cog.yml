@@ -1,18 +1,15 @@
 name: Publish Cog
 
-# Per-cog manual-dispatch publish: cross-compiles ONE cog for every arch its
+# Per-cog manual-dispatch release-candidate validation: cross-compiles ONE cog for every arch its
 # cog.toml `hardware_requirement` declares (armhf for pi-zero-2w, aarch64 for
 # v0-appliance — see scripts/cog-targets.py), emits the normalized optional
-# integration contract, and uploads create-only content-addressed objects.
+# integration contract, and exercises the pre-cloud evidence gates.
 #
-# This repo OWNS cog source + build + publish. The install catalog
-# (app-registry.json) lives in cognitum-one/seed — update it by hand from the
-# sha256 table in this run's summary (minimal topology, no cross-repo token).
-# See docs/adrs/ADR-020-cog-build-publish-pipeline.md and ADR-153.
-#
-# The cogs-production environment must define GCP_COGS_PROD_WIF_PROVIDER and
-# GCP_COGS_PROD_PUBLISH_SA. The dedicated identity needs create-only access to
-# gs://cognitum-apps/cogs/releases/, not objectAdmin and never a JSON key.
+# ADR-155 deliberately ends this job with a refusal. It has no production
+# environment, GCP variables, GCP authentication, or GCS upload step. The
+# pre-cloud validation still writes GitHub/Sigstore keyless attestations; those
+# records grant no GCP or production publication authority. Production stays
+# frozen until a separate Ed25519 authority decision.
 
 on:
   workflow_dispatch:
@@ -20,10 +17,6 @@ on:
       cog:
         description: 'Cog id (directory under src/cogs/, e.g. tailscale)'
         required: true
-      cog_version:
-        description: 'Optional intended version; must equal Cargo.toml package.version'
-        required: false
-        default: ''
 
 permissions:
   contents: read
@@ -43,12 +36,13 @@ jobs:
       include: ${{ steps.gen.outputs.include }}
       version: ${{ steps.gen.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - name: Validate cog + resolve arches
         id: gen
         env:
           COG_INPUT: ${{ inputs.cog }}
-          ASSERTED_VERSION: ${{ inputs.cog_version }}
         run: |
           set -euo pipefail
           COG="$COG_INPUT"
@@ -66,9 +60,9 @@ jobs:
           # VERSION DISAGREEMENT IS AN ERROR, NOT A PREFERENCE.
           #
           # This step read cog.toml's version and published under it. Cargo.toml's version is
-          # the one COMPILED INTO THE BINARY (CARGO_PKG_VERSION) and reported by --version, and
-          # the two disagree for 85 of 109 cogs — anomaly-detect says 1.0.0 in cog.toml and
-          # 1.2.0 in Cargo.toml.
+          # the one COMPILED INTO THE BINARY (CARGO_PKG_VERSION) and reported by
+          # --version. The catalog still contains divergent pairs; this release
+          # path does not hard-code or silently reconcile their changing count.
           #
           # That produced a signed release record stating a version the artifact does not have.
           # The signature is still valid over the bytes, which is exactly what makes it
@@ -76,37 +70,26 @@ jobs:
           # the thing it attests to. A stale version in provenance is worse than no version,
           # because a consumer has no way to tell it is stale.
           #
-          # So: refuse. There is no safe automatic choice here — picking Cargo.toml would
-          # silently republish 85 cogs under new numbers, and picking cog.toml is the bug.
-          # Someone has to say which is right. `cog_version` remains available as an explicit
-          # assertion after a human has decided, but it must still equal the version compiled
-          # into the binary.
-          CARGO_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
-          COGTOML_V=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
-          V="$ASSERTED_VERSION"
-          if [ -n "$V" ]; then
-            if [ "$V" != "$CARGO_V" ]; then
-              echo "::error::cog_version '$V' does not match the binary's Cargo.toml version '$CARGO_V'."
-              exit 1
-            fi
-          else
-            if [ "$CARGO_V" != "$COGTOML_V" ]; then
-              echo "::error::version disagreement for $COG — cog.toml says $COGTOML_V, Cargo.toml says $CARGO_V."
-              echo "::error::Cargo.toml's value is what the binary reports. Refusing to sign provenance stating a version the artifact does not have."
-              echo "::error::Reconcile the two files, or re-run with cog_version equal to Cargo.toml after explicit review."
-              exit 1
-            fi
-            V="$COGTOML_V"
+          # So: refuse. There is no safe automatic or manual override here —
+          # picking Cargo.toml could silently republish divergent cogs under new
+          # numbers, while picking cog.toml could preserve a false claim.
+          # Reconcile both tracked manifests in reviewed source first.
+          CARGO_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
+          MANIFEST_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
+          if [ "$CARGO_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::version disagreement for $COG — cog.toml says $MANIFEST_VERSION, Cargo.toml says $CARGO_VERSION."
+            echo "::error::refusing to build provenance until both tracked manifests agree"
+            exit 1
           fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "version sources: cog.toml=$COGTOML_V Cargo.toml=$CARGO_V -> publishing $V"
-          echo "Publishing $COG v$V for: $(echo "$MATRIX" | jq -r '.include[].arch' | tr '\n' ' ')"
+          VERSION="$CARGO_VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version sources agree: cog.toml=$MANIFEST_VERSION Cargo.toml=$CARGO_VERSION"
+          echo "Validating $COG v$VERSION for: $(echo "$MATRIX" | jq -r '.include[].arch' | tr '\n' ' ')"
 
   publish:
     name: ${{ matrix.cog }} (${{ matrix.arch }})
     needs: matrix
     runs-on: ubuntu-latest
-    environment: cogs-production
     permissions:
       contents: read
       id-token: write
@@ -116,9 +99,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
         with:
           targets: ${{ matrix.triple }}
 
@@ -164,11 +149,41 @@ jobs:
           fi
 
       - name: Emit content-addressed integration manifest
+        id: integrations
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_integrations_cli.py emit \
+          RESULT=$(python3 scripts/cog_integrations_cli.py emit \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
-            --out-dir out/integrations
+            --out-dir out/integrations)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/integrations").resolve()
+          manifest = Path(result["manifestPath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {manifest, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("integration emitter must resolve exactly one manifest and one checksum")
+          measured = hashlib.sha256(manifest.read_bytes()).hexdigest()
+          if result["digest"] != f"sha256:{measured}":
+              raise SystemExit("integration emitter digest does not match exact manifest bytes")
+          expected_name = f"cog-{os.environ['COG_ID']}-integrations-v1-sha256-{measured}.json"
+          if manifest.name != expected_name or checksum.name != f"{expected_name}.sha256":
+              raise SystemExit("integration manifest/checksum filename is not exactly content-addressed")
+          if checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n":
+              raise SystemExit("integration checksum does not bind the exact manifest")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"manifest={manifest.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Inspect locked website profile
         id: website
@@ -186,7 +201,7 @@ jobs:
           test -f "src/cogs/${{ matrix.cog }}/package.json"
           test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
         with:
           node-version: '22'
@@ -203,13 +218,43 @@ jobs:
           node_modules/.bin/vite build
 
       - name: Package deterministic website bundle
+        id: website_bundle
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_website_bundle.py package \
+          RESULT=$(python3 scripts/cog_website_bundle.py package \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
             --cog-dir "src/cogs/${{ matrix.cog }}" \
-            --out-dir out/website
+            --out-dir out/website)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/website").resolve()
+          bundle = Path(result["bundlePath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {bundle, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("website packager must resolve exactly one bundle and one checksum")
+          measured = hashlib.sha256(bundle.read_bytes()).hexdigest()
+          if result["digest"] != f"sha256:{measured}":
+              raise SystemExit("website bundle digest does not match exact bytes")
+          expected_name = f"cog-{os.environ['COG_ID']}-website-v1-sha256-{measured}.tar.gz"
+          if bundle.name != expected_name or checksum.name != f"{expected_name}.sha256":
+              raise SystemExit("website bundle/checksum filename is not exactly content-addressed")
+          if checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n":
+              raise SystemExit("website checksum does not bind the exact bundle")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"bundle={bundle.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Compute sha256s
         id: sha
@@ -227,15 +272,6 @@ jobs:
             done < <(find out -type f ! -name '*.sha256' -print0 | sort -z)
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Require production WIF configuration
-        env:
-          WIF_PROVIDER: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
-          PUBLISH_SA: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
-        run: |
-          set -euo pipefail
-          [ -n "$WIF_PROVIDER" ] || { echo "::error::missing GCP_COGS_PROD_WIF_PROVIDER"; exit 1; }
-          [ -n "$PUBLISH_SA" ] || { echo "::error::missing GCP_COGS_PROD_PUBLISH_SA"; exit 1; }
-
       # ── Release evidence (ADR-113 §1, gates A3-A7) ──────────────────────────
       # Each step below produces a DIGEST that goes into the release record. A release
       # missing any of them is refused by verify-cog-releases.mjs in cognitum-one/website,
@@ -251,10 +287,12 @@ jobs:
 
       - name: Vulnerability scan (gate A5)
         id: vuln
+        env:
+          CARGO_AUDIT_VERSION: '0.22.2'
         working-directory: src/cogs/${{ matrix.cog }}
         run: |
           set -euo pipefail
-          cargo install cargo-audit --locked --quiet 2>/dev/null || cargo install cargo-audit --quiet
+          cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked --quiet
           # `|| true` on the SCAN, never on the digest: a advisory-DB hit must be recorded and
           # reviewed, not silently pass, but a scan that finds nothing must still emit evidence.
           cargo audit --json > "$GITHUB_WORKSPACE/out/vuln-scan.json" || true
@@ -292,11 +330,18 @@ jobs:
 
       - name: SBOM (gate A4)
         id: sbom
+        env:
+          SYFT_VERSION: '1.44.0'
+          SYFT_SHA256: '0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a'
         run: |
           set -euo pipefail
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-            | sh -s -- -b "$RUNNER_TEMP/bin" >/dev/null
-          "$RUNNER_TEMP/bin/syft" scan "dir:src/cogs/${{ matrix.cog }}" \
+          archive="$RUNNER_TEMP/syft.tar.gz"
+          curl -fsSL \
+            "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz" \
+            -o "$archive"
+          echo "$SYFT_SHA256  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" syft
+          "$RUNNER_TEMP/syft" scan "dir:src/cogs/${{ matrix.cog }}" \
             -o cyclonedx-json="$GITHUB_WORKSPACE/out/sbom.cdx.json" -q
           test -s "$GITHUB_WORKSPACE/out/sbom.cdx.json"
           echo "digest=sha256:$(sha256sum "$GITHUB_WORKSPACE/out/sbom.cdx.json" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
@@ -426,7 +471,7 @@ jobs:
       # simply assert about itself.
       - name: SLSA build provenance (gate A2)
         id: provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@78e6cbd37d0ac1a40113c04f2037dacf1ea3f12e
         with:
           subject-path: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
 
@@ -571,58 +616,7 @@ jobs:
           # hardware. A reviewer should read this as "the policy binds for this code", not "the
           # policy binds on a Seed".
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
-          service_account: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Upload immutable release objects
+      - name: Refuse unsigned production publication (ADR-155 freeze)
         run: |
-          set -euo pipefail
-          ROOT="gs://cognitum-apps/cogs/releases/${{ matrix.cog }}/${{ needs.matrix.outputs.version }}/${{ matrix.arch }}"
-          upload_immutable() {
-            local source="$1"
-            local category="$2"
-            local digest destination
-            digest=$(sha256sum "$source" | awk '{print $1}')
-            destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
-            gcloud storage cp --if-generation-match=0 "$source" "$destination"
-            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
-          }
-          {
-            echo ""
-            echo "| immutable object | GCS URI |"
-            echo "|---|---|"
-          } >> "$GITHUB_STEP_SUMMARY"
-          upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "binary"
-          while IFS= read -r -d '' manifest; do
-            upload_immutable "$manifest" "integrations"
-          done < <(find out/integrations -type f -print0 | sort -z)
-          if [ -d out/website ]; then
-            while IFS= read -r -d '' website; do
-              upload_immutable "$website" "website"
-            done < <(find out/website -type f -print0 | sort -z)
-          fi
-          if [ -d out/extra ]; then
-            while IFS= read -r -d '' asset; do
-              upload_immutable "$asset" "assets"
-            done < <(find out/extra -type f -print0 | sort -z)
-          fi
-          for evidence in \
-            "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}.sigstore.json" \
-            out/sbom.cdx.json \
-            out/vuln-scan.json \
-            out/provenance.sigstore.json \
-            out/policy-decision.json \
-            out/release-evidence.json \
-            out/isolation-runs.json; do
-            test -s "$evidence" || {
-              echo "::error::required evidence is missing or empty: $evidence"
-              exit 1
-            }
-            upload_immutable "$evidence" "evidence"
-          done
-          echo "Legacy mutable aliases were not written."
+          echo "::error::production Cog publication is frozen until a separately ratified Ed25519 signing authority is implemented"
+          exit 1

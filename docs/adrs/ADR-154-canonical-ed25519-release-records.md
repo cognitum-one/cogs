@@ -77,8 +77,9 @@ Only `anomaly-detect` is initially ratified. Its policy exactly matches the
 website declaration and immutable blueprint digest. Other Cogs remain
 unreleasable until their policy, version, and lockfile are reviewed.
 
-The stage workflow refuses a `Cargo.toml`/`cog.toml` version disagreement
-unless the manual dispatch carries an explicit semantic-version override.
+The stage workflow refuses every `Cargo.toml`/`cog.toml` version disagreement.
+There is no dispatch override: both tracked manifests must be reconciled in
+reviewed source before the signing environment can be reached.
 `anomaly-detect` reconciles both manifests at the compiled `1.2.0`, opts its
 generated `Cargo.lock` back into source control, and builds with `--locked`.
 The remaining catalog does not receive fabricated locks or automatic version
@@ -243,6 +244,15 @@ performed by the publisher.
   because downstream reconstruction can change signed identity by omission.
 - **Enable production signing in the same change** — rejected until isolated
   GCP staging and website ingestion evidence exist.
+
+## Later decision: ADR-155
+
+ADR-155 makes `runtimeIntegrations` a required part of the signed statement:
+the exact normalized ADR-153 manifest, its canonical-byte digest, and a static
+website bundle digest that is required only for `static-build`. The canonical
+serializer now admits bounded JavaScript-safe integers needed by the manifest
+while continuing to reject floats and unsafe integers. Production publication
+remains frozen.
 
 ## Primary references
 

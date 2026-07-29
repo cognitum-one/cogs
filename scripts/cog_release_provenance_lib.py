@@ -9,6 +9,12 @@ import re
 from pathlib import Path
 from typing import Any
 
+from cog_integrations import (
+    ManifestValidationError,
+    canonical_bytes as canonical_integration_bytes,
+    validate_normalized_manifest,
+)
+
 PROVENANCE_SCHEMA = "cognitum.cog.release-provenance.v1"
 TRUST_SCHEMA = "cognitum.cog.release-trust.v1"
 POLICY_SCHEMA = "cognitum.cog.release-policy.v1"
@@ -114,6 +120,12 @@ def _canonical_check(value: Any, state: dict[str, int], depth: int = 0) -> None:
         raise ReleaseError("release exceeds canonicalization limits")
     if value is None or isinstance(value, bool):
         return
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and -(2**53 - 1) <= value <= 2**53 - 1
+    ):
+        return
     if isinstance(value, str):
         require_ascii(value, "canonical release string", 8_192)
         return
@@ -157,6 +169,58 @@ def payload_digest(release: dict[str, Any]) -> str:
     return f"sha256:{hashlib.sha256(canonical_payload(release)).hexdigest()}"
 
 
+def validate_runtime_integrations(
+    value: Any,
+    *,
+    cog_id: str | None = None,
+    version: str | None = None,
+) -> dict[str, Any]:
+    runtime = require_object(value, "runtimeIntegrations")
+    exact_keys(
+        runtime,
+        {"manifest", "manifestDigest", "staticWebsiteBundleDigest"},
+        "runtimeIntegrations",
+    )
+    try:
+        manifest = validate_normalized_manifest(
+            runtime["manifest"], Path("<runtimeIntegrations.manifest>")
+        )
+    except ManifestValidationError as error:
+        detail = "; ".join(str(issue) for issue in error.issues)
+        raise ReleaseError(
+            f"runtime integration manifest is invalid: {detail}"
+        ) from error
+    manifest_digest = require_digest(
+        runtime["manifestDigest"], "runtimeIntegrations.manifestDigest"
+    )
+    measured_digest = (
+        f"sha256:{hashlib.sha256(canonical_integration_bytes(manifest)).hexdigest()}"
+    )
+    if manifest_digest != measured_digest:
+        raise ReleaseError(
+            "runtime integration manifestDigest does not match the exact normalized manifest"
+        )
+    if cog_id is not None and manifest["cog"]["id"] != cog_id:
+        raise ReleaseError("runtime integration manifest cog id does not match release")
+    if version is not None and manifest["cog"]["version"] != version:
+        raise ReleaseError(
+            "runtime integration manifest version does not match release"
+        )
+
+    website = manifest["integrations"]["website"]
+    requires_bundle = (
+        website["enabled"] is True and website["artifact"]["kind"] == "static-build"
+    )
+    bundle_digest = runtime["staticWebsiteBundleDigest"]
+    if requires_bundle:
+        require_digest(bundle_digest, "runtimeIntegrations.staticWebsiteBundleDigest")
+    elif bundle_digest is not None:
+        raise ReleaseError(
+            "staticWebsiteBundleDigest must be null unless a static website is enabled"
+        )
+    return runtime
+
+
 def validate_policy(value: dict[str, Any]) -> dict[str, Any]:
     exact_keys(
         value,
@@ -174,6 +238,7 @@ def validate_policy(value: dict[str, Any]) -> dict[str, Any]:
             "stateSchemaVersion",
             "rollbackCompatibility",
             "networkPolicy",
+            "runtimeIntegrations",
             "residency",
             "lifecycle",
             "ratifiedBy",
@@ -185,6 +250,7 @@ def validate_policy(value: dict[str, Any]) -> dict[str, Any]:
     cog_id = require_match(value["cogId"], COG_ID, "policy.cogId")
     if require_match(value["blueprintId"], COG_ID, "policy.blueprintId") != cog_id:
         raise ReleaseError("policy blueprintId must equal cogId")
+    validate_runtime_integrations(value["runtimeIntegrations"], cog_id=cog_id)
     require_digest(value["blueprintDigest"], "policy.blueprintDigest")
     for field in (
         "runtimeContractVersion",
@@ -262,6 +328,7 @@ def validate_release(value: dict[str, Any], signed: bool) -> dict[str, Any]:
             "stateSchemaVersion",
             "rollbackCompatibility",
             "networkPolicy",
+            "runtimeIntegrations",
             "provenance",
             "securityAttestation",
             "residency",
@@ -273,7 +340,7 @@ def validate_release(value: dict[str, Any], signed: bool) -> dict[str, Any]:
     if require_match(value["blueprintId"], COG_ID, "release.blueprintId") != cog_id:
         raise ReleaseError("release blueprintId must equal cogId")
     require_digest(value["blueprintDigest"], "release.blueprintDigest")
-    require_match(value["version"], VERSION, "release.version")
+    release_version = require_match(value["version"], VERSION, "release.version")
     require_digest(value["releaseDigest"], "release.releaseDigest")
     require_match(value["sourceCommit"], COMMIT, "release.sourceCommit")
     for field in (
@@ -292,6 +359,9 @@ def validate_release(value: dict[str, Any], signed: bool) -> dict[str, Any]:
         raise ReleaseError("release.statePolicy is unsupported")
     if value["lifecycle"] != "available":
         raise ReleaseError("release lifecycle must be available")
+    validate_runtime_integrations(
+        value["runtimeIntegrations"], cog_id=cog_id, version=release_version
+    )
     rollback = require_object(value["rollbackCompatibility"], "rollbackCompatibility")
     exact_keys(
         rollback, {"compatibleWith", "migrationsReversible"}, "rollbackCompatibility"

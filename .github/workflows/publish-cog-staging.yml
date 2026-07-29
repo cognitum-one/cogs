@@ -11,10 +11,6 @@ on:
       cog:
         description: 'Cog id (directory under src/cogs/)'
         required: true
-      cog_version:
-        description: 'Explicit version when cog.toml and Cargo.toml disagree'
-        required: false
-        default: ''
 
 permissions:
   contents: read
@@ -29,12 +25,13 @@ jobs:
       include: ${{ steps.gen.outputs.include }}
       version: ${{ steps.gen.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - name: Validate cog and resolve arches
         id: gen
         env:
           COG_INPUT: ${{ inputs.cog }}
-          VERSION_INPUT: ${{ inputs.cog_version }}
         run: |
           set -euo pipefail
           COG="$COG_INPUT"
@@ -55,15 +52,12 @@ jobs:
           echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
           CARGO_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
           MANIFEST_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
-          VERSION="$VERSION_INPUT"
-          if [ -z "$VERSION" ]; then
-            if [ "$CARGO_VERSION" != "$MANIFEST_VERSION" ]; then
-              echo "::error::version disagreement: Cargo.toml=$CARGO_VERSION cog.toml=$MANIFEST_VERSION"
-              echo "::error::reconcile both manifests or supply the explicit cog_version input"
-              exit 1
-            fi
-            VERSION="$CARGO_VERSION"
+          if [ "$CARGO_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::version disagreement: Cargo.toml=$CARGO_VERSION cog.toml=$MANIFEST_VERSION"
+            echo "::error::reconcile both manifests before a signed staging release"
+            exit 1
           fi
+          VERSION="$CARGO_VERSION"
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]] \
             || { echo "::error::invalid semantic version"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -82,9 +76,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
         with:
           targets: ${{ matrix.triple }}
 
@@ -124,11 +120,45 @@ jobs:
           fi
 
       - name: Emit content-addressed integration manifest
+        id: integrations
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_integrations_cli.py emit \
+          RESULT=$(python3 scripts/cog_integrations_cli.py emit \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
-            --out-dir out/integrations
+            --out-dir out/integrations)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/integrations").resolve()
+          manifest = Path(result["manifestPath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {manifest, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("integration emitter must resolve exactly one manifest and one checksum")
+          measured = hashlib.sha256(manifest.read_bytes()).hexdigest()
+          if result["digest"] != f"sha256:{measured}":
+              raise SystemExit("integration emitter digest does not match exact manifest bytes")
+          expected_name = (
+              f"cog-{os.environ['COG_ID']}-integrations-v1-sha256-{measured}.json"
+          )
+          if manifest.name != expected_name:
+              raise SystemExit("integration manifest filename is not exactly content-addressed")
+          if checksum.name != f"{expected_name}.sha256":
+              raise SystemExit("integration checksum filename is not exact")
+          if checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n":
+              raise SystemExit("integration checksum does not bind the exact manifest")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"manifest={manifest.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Inspect locked website profile
         id: website
@@ -146,7 +176,7 @@ jobs:
           test -f "src/cogs/${{ matrix.cog }}/package.json"
           test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
         with:
           node-version: '22'
@@ -163,13 +193,43 @@ jobs:
           node_modules/.bin/vite build
 
       - name: Package deterministic website bundle
+        id: website_bundle
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_website_bundle.py package \
+          RESULT=$(python3 scripts/cog_website_bundle.py package \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
             --cog-dir "src/cogs/${{ matrix.cog }}" \
-            --out-dir out/website
+            --out-dir out/website)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/website").resolve()
+          bundle = Path(result["bundlePath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {bundle, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("website packager must resolve exactly one bundle and one checksum")
+          measured = hashlib.sha256(bundle.read_bytes()).hexdigest()
+          if result["digest"] != f"sha256:{measured}":
+              raise SystemExit("website bundle digest does not match exact bytes")
+          expected_name = f"cog-{os.environ['COG_ID']}-website-v1-sha256-{measured}.tar.gz"
+          if bundle.name != expected_name or checksum.name != f"{expected_name}.sha256":
+              raise SystemExit("website bundle/checksum filename is not exactly content-addressed")
+          if checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n":
+              raise SystemExit("website checksum does not bind the exact bundle")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"bundle={bundle.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Pin one release build timestamp
         run: echo "COG_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
@@ -237,7 +297,7 @@ jobs:
 
       - name: SLSA build provenance
         id: provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@78e6cbd37d0ac1a40113c04f2037dacf1ea3f12e
         with:
           subject-path: out/cog-${{ matrix.cog }}-${{ matrix.gcs }}
 
@@ -283,33 +343,40 @@ jobs:
       - name: Build the exact unsigned website release statement
         run: |
           set -euo pipefail
-          python3 scripts/cog_release_provenance.py prepare \
-            --policy "src/cogs/${{ matrix.cog }}/release-policy.json" \
-            --arch "${{ matrix.arch }}" \
-            --version "${{ needs.matrix.outputs.version }}" \
-            --source-commit "${{ github.sha }}" \
-            --artifact "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}" \
-            --sigstore-bundle "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}.sigstore.json" \
-            --dependency-lock "src/cogs/${{ matrix.cog }}/Cargo.lock" \
-            --sbom out/sbom.cdx.json \
-            --vulnerability-scan out/vuln-scan.json \
-            --provenance out/provenance.sigstore.json \
-            --isolation out/isolation-runs.json \
-            --key-id "${{ steps.kms.outputs.key_id }}" \
-            --builder-identity "github-actions://${{ github.repository }}" \
-            --build-workflow "${{ github.workflow_ref }}" \
-            --built-at "$COG_BUILT_AT" \
-            --repository "${{ github.repository }}" \
-            --sigstore-tool-version "cosign@v3.1.2" \
+          PREPARE=(
+            python3 scripts/cog_release_provenance.py prepare
+            --policy "src/cogs/${{ matrix.cog }}/release-policy.json"
+            --arch "${{ matrix.arch }}"
+            --version "${{ needs.matrix.outputs.version }}"
+            --source-commit "${{ github.sha }}"
+            --artifact "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}"
+            --integration-manifest "${{ steps.integrations.outputs.manifest }}"
+            --sigstore-bundle "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}.sigstore.json"
+            --dependency-lock "src/cogs/${{ matrix.cog }}/Cargo.lock"
+            --sbom out/sbom.cdx.json
+            --vulnerability-scan out/vuln-scan.json
+            --provenance out/provenance.sigstore.json
+            --isolation out/isolation-runs.json
+            --key-id "${{ steps.kms.outputs.key_id }}"
+            --builder-identity "github-actions://${{ github.repository }}"
+            --build-workflow "${{ github.workflow_ref }}"
+            --built-at "$COG_BUILT_AT"
+            --repository "${{ github.repository }}"
+            --sigstore-tool-version "cosign@v3.1.2"
             --output-dir out/release
+          )
+          if [ "${{ steps.website.outputs.kind }}" = "static-build" ]; then
+            PREPARE+=(--static-website-bundle "${{ steps.website_bundle.outputs.bundle }}")
+          fi
+          "${PREPARE[@]}"
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           workload_identity_provider: ${{ vars.GCP_COGS_STAGING_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_COGS_STAGING_PUBLISH_SA }}
 
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
 
       - name: Sign raw canonical release bytes with KMS Ed25519
         run: |
@@ -376,13 +443,11 @@ jobs:
             echo "|---|---|"
           } >> "$GITHUB_STEP_SUMMARY"
           upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}" "binary"
-          while IFS= read -r -d '' manifest; do
-            upload_immutable "$manifest" "integrations"
-          done < <(find out/integrations -type f -print0 | sort -z)
-          if [ -d out/website ]; then
-            while IFS= read -r -d '' website; do
-              upload_immutable "$website" "website"
-            done < <(find out/website -type f -print0 | sort -z)
+          upload_immutable "${{ steps.integrations.outputs.manifest }}" "integrations"
+          upload_immutable "${{ steps.integrations.outputs.checksum }}" "integrations"
+          if [ "${{ steps.website.outputs.kind }}" = "static-build" ]; then
+            upload_immutable "${{ steps.website_bundle.outputs.bundle }}" "website"
+            upload_immutable "${{ steps.website_bundle.outputs.checksum }}" "website"
           fi
           if [ -d out/extra ]; then
             while IFS= read -r -d '' asset; do

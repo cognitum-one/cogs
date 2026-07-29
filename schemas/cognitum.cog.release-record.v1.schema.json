@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-record.v1.schema.json",
+  "title": "Complete signed Cog release record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cogId",
+    "blueprintId",
+    "blueprintDigest",
+    "version",
+    "releaseDigest",
+    "sourceCommit",
+    "runtimeContractVersion",
+    "packaging",
+    "deploymentDriver",
+    "artifactRef",
+    "tenancyMode",
+    "statePolicy",
+    "stateSchemaVersion",
+    "rollbackCompatibility",
+    "networkPolicy",
+    "runtimeIntegrations",
+    "provenance",
+    "securityAttestation",
+    "residency",
+    "lifecycle"
+  ],
+  "properties": {
+    "cogId": {
+      "$ref": "#/$defs/cogId"
+    },
+    "blueprintId": {
+      "$ref": "#/$defs/cogId"
+    },
+    "blueprintDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "releaseDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "sourceCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40,64}$"
+    },
+    "runtimeContractVersion": {
+      "const": "cognitum.cog.v1"
+    },
+    "packaging": {
+      "const": "edge-cli-binary"
+    },
+    "deploymentDriver": {
+      "const": "edge-dispatch"
+    },
+    "artifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "binaryDigest",
+        "binaryName",
+        "targetHardware"
+      ],
+      "properties": {
+        "kind": {
+          "const": "edge-binary"
+        },
+        "binaryDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "binaryName": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "targetHardware": {
+          "$ref": "#/$defs/nonEmptyStrings"
+        }
+      }
+    },
+    "tenancyMode": {
+      "const": "single-tenant-device"
+    },
+    "statePolicy": {
+      "enum": [
+        "none",
+        "ephemeral",
+        "persistent"
+      ]
+    },
+    "stateSchemaVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rollbackCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compatibleWith",
+        "migrationsReversible"
+      ],
+      "properties": {
+        "compatibleWith": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/version"
+          }
+        },
+        "migrationsReversible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "egressPolicy",
+        "egressAllowlist"
+      ],
+      "properties": {
+        "egressPolicy": {
+          "enum": [
+            "deny-all",
+            "allowlist"
+          ]
+        },
+        "egressAllowlist": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "runtimeIntegrations": {
+      "$ref": "https://schemas.cognitum.one/cognitum.cog.release-policy.v1.schema.json#/$defs/runtimeIntegrations"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signatureAlgorithm",
+        "signingKeyId",
+        "builderIdentity",
+        "buildWorkflow",
+        "dependencyLockDigest",
+        "sbomDigest",
+        "provenanceDigest",
+        "builtAt",
+        "detachedSignature"
+      ],
+      "properties": {
+        "signatureAlgorithm": {
+          "const": "ed25519"
+        },
+        "signingKeyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "builderIdentity": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "buildWorkflow": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "dependencyLockDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "sbomDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "provenanceDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "builtAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ$"
+        },
+        "detachedSignature": {
+          "$ref": "https://schemas.cognitum.one/cognitum.cog.release-provenance.v1.schema.json"
+        }
+      }
+    },
+    "securityAttestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vulnerabilityScanDigest",
+        "policyDecisionDigest",
+        "isolationEvidenceDigest",
+        "isolationPassed"
+      ],
+      "properties": {
+        "vulnerabilityScanDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policyDecisionDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "isolationEvidenceDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "isolationPassed": {
+          "const": true
+        }
+      }
+    },
+    "residency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowedRegions",
+        "dataResidency"
+      ],
+      "properties": {
+        "allowedRegions": {
+          "$ref": "#/$defs/nonEmptyStrings"
+        },
+        "dataResidency": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "lifecycle": {
+      "const": "available"
+    }
+  },
+  "$defs": {
+    "cogId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "strings": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "nonEmptyStrings": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/strings"
+        },
+        {
+          "minItems": 1
+        }
+      ]
+    }
+  }
+}

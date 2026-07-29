@@ -1,17 +1,13 @@
 name: Build All Cogs
 
 # Umbrella batch build: cross-compiles EVERY cog under src/cogs/ for every arch
-# its cog.toml `hardware_requirement` declares (scripts/cog-targets.py), and
-# (when publish=true) emits each normalized integration sidecar and uploads
-# create-only, versioned, content-addressed release objects.
+# its cog.toml `hardware_requirement` declares (scripts/cog-targets.py) and
+# emits each normalized integration sidecar for validation.
 #
 # Default (workflow_dispatch, publish=false) is a build-only smoke check across
-# the whole catalog. publish=true (or a cogs-v* tag) uploads to GCS. The
-# install catalog (app-registry.json) lives in cognitum-one/seed — refresh it
-# from the run summary's sha256 manifest artifact.
-#
-# The cogs-production environment owns the dedicated WIF provider and
-# create-only publisher identity. No service-account JSON key is accepted.
+# the whole catalog. The legacy publish=true request fails closed under
+# ADR-155. This workflow has no production environment, cloud identity, or
+# upload step.
 
 on:
   workflow_dispatch:
@@ -21,13 +17,10 @@ on:
         required: false
         default: ''
       publish:
-        description: 'Upload binaries to gs://cognitum-apps (else build-only)'
+        description: 'Legacy production request; fails closed under ADR-155'
         type: boolean
         required: false
         default: false
-  push:
-    tags:
-      - 'cogs-v*'
 
 permissions:
   contents: read
@@ -40,7 +33,9 @@ jobs:
       include: ${{ steps.gen.outputs.include }}
       count: ${{ steps.gen.outputs.count }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - name: Generate matrix from hardware_requirement
         id: gen
         env:
@@ -70,14 +65,16 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
         with:
           targets: ${{ matrix.triple }}
 
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/registry
@@ -100,7 +97,7 @@ jobs:
         working-directory: src/cogs/${{ matrix.cog }}
         run: |
           set -euo pipefail
-          cargo build --release --target ${{ matrix.triple }}
+          cargo build --locked --release --target ${{ matrix.triple }}
           BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
           ${{ matrix.strip }} "$BIN"
           mkdir -p "$GITHUB_WORKSPACE/out"
@@ -109,11 +106,42 @@ jobs:
           echo "| \`cog-${{ matrix.cog }}-${{ matrix.suffix }}\` | \`$sha\` | $(stat -c%s "$BIN") |" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Emit content-addressed integration manifest
+        id: integrations
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_integrations_cli.py emit \
+          RESULT=$(python3 scripts/cog_integrations_cli.py emit \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
-            --out-dir out/integrations
+            --out-dir out/integrations)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/integrations").resolve()
+          manifest = Path(result["manifestPath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {manifest, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("integration emitter must resolve exactly one manifest and one checksum")
+          measured = hashlib.sha256(manifest.read_bytes()).hexdigest()
+          expected_name = f"cog-{os.environ['COG_ID']}-integrations-v1-sha256-{measured}.json"
+          if (
+              result["digest"] != f"sha256:{measured}"
+              or manifest.name != expected_name
+              or checksum.name != f"{expected_name}.sha256"
+              or checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n"
+          ):
+              raise SystemExit("integration sidecars do not bind the exact canonical manifest")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"manifest={manifest.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Inspect locked website profile
         id: website
@@ -131,7 +159,7 @@ jobs:
           test -f "src/cogs/${{ matrix.cog }}/package.json"
           test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
         with:
           node-version: '22'
@@ -148,16 +176,47 @@ jobs:
           node_modules/.bin/vite build
 
       - name: Package deterministic website bundle
+        id: website_bundle
         if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        env:
+          COG_ID: ${{ matrix.cog }}
         run: |
           set -euo pipefail
-          python3 scripts/cog_website_bundle.py package \
+          RESULT=$(python3 scripts/cog_website_bundle.py package \
             "src/cogs/${{ matrix.cog }}/cog.toml" \
             --cog-dir "src/cogs/${{ matrix.cog }}" \
-            --out-dir out/website
+            --out-dir out/website)
+          export RESULT
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          result = json.loads(os.environ["RESULT"])
+          root = Path("out/website").resolve()
+          bundle = Path(result["bundlePath"]).resolve()
+          checksum = Path(result["checksumPath"]).resolve()
+          expected = {bundle, checksum}
+          actual = set(root.iterdir()) if root.is_dir() else set()
+          if actual != expected or any(path.is_symlink() or not path.is_file() for path in expected):
+              raise SystemExit("website packager must resolve exactly one bundle and one checksum")
+          measured = hashlib.sha256(bundle.read_bytes()).hexdigest()
+          expected_name = f"cog-{os.environ['COG_ID']}-website-v1-sha256-{measured}.tar.gz"
+          if (
+              result["digest"] != f"sha256:{measured}"
+              or bundle.name != expected_name
+              or checksum.name != f"{expected_name}.sha256"
+              or checksum.read_text(encoding="utf-8") != f"{measured}  {expected_name}\n"
+          ):
+              raise SystemExit("website sidecars do not bind the exact deterministic bundle")
+          workspace = Path.cwd().resolve()
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"bundle={bundle.relative_to(workspace).as_posix()}", file=output)
+              print(f"checksum={checksum.relative_to(workspace).as_posix()}", file=output)
+              print(f"digest=sha256:{measured}", file=output)
+          PY
 
       - name: Upload release bundle as workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: cog-${{ matrix.cog }}-${{ matrix.version }}-${{ matrix.arch }}
           path: out/
@@ -165,69 +224,19 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish ${{ matrix.cog }} (${{ matrix.arch }})
+    name: Production publication is frozen
     needs: [matrix, build]
-    if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+    if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
-    environment: cogs-production
     permissions:
       contents: read
-      id-token: write
     strategy:
       fail-fast: false
       max-parallel: 20
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     steps:
-      - name: Download validated release bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: cog-${{ matrix.cog }}-${{ matrix.version }}-${{ matrix.arch }}
-          path: out
-
-      - name: Require production WIF configuration
-        env:
-          WIF_PROVIDER: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
-          PUBLISH_SA: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
+      - name: Refuse unsigned batch publication (ADR-155 freeze)
         run: |
-          set -euo pipefail
-          [ -n "$WIF_PROVIDER" ] || { echo "::error::missing GCP_COGS_PROD_WIF_PROVIDER"; exit 1; }
-          [ -n "$PUBLISH_SA" ] || { echo "::error::missing GCP_COGS_PROD_PUBLISH_SA"; exit 1; }
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
-          service_account: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
-
-      - uses: google-github-actions/setup-gcloud@v2
-
-      - name: Upload immutable release objects
-        run: |
-          set -euo pipefail
-          ROOT="gs://cognitum-apps/cogs/releases/${{ matrix.cog }}/${{ matrix.version }}/${{ matrix.arch }}"
-          upload_immutable() {
-            local source="$1"
-            local category="$2"
-            local digest destination
-            digest=$(sha256sum "$source" | awk '{print $1}')
-            destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
-            gcloud storage cp --if-generation-match=0 "$source" "$destination"
-            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
-          }
-          {
-            echo "### ${{ matrix.cog }} ${{ matrix.version }} ${{ matrix.arch }}"
-            echo ""
-            echo "| immutable object | GCS URI |"
-            echo "|---|---|"
-          } >> "$GITHUB_STEP_SUMMARY"
-          upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "binary"
-          while IFS= read -r -d '' manifest; do
-            upload_immutable "$manifest" "integrations"
-          done < <(find out/integrations -type f -print0 | sort -z)
-          if [ -d out/website ]; then
-            while IFS= read -r -d '' website; do
-              upload_immutable "$website" "website"
-            done < <(find out/website -type f -print0 | sort -z)
-          fi
-          echo "Legacy mutable aliases were not written."
+          echo "::error::batch production publication is frozen until a separately ratified Ed25519 signing authority is implemented"
+          exit 1

@@ -65,12 +65,15 @@ firmware does not build cogs — it installs the binaries this repo publishes.
 - **Publish via CI, not by hand:**
   - `gh workflow run publish-cog-staging.yml -f cog=<id>` — manual isolated
     staging proof through the `cogs-staging` environment.
-  - `gh workflow run publish-cog.yml -f cog=<id>` — production-environment
-    gated build + create-only upload under the immutable ADR-153 release path.
-  - `build-all-cogs.yml` — umbrella batch (`-f publish=false` = build-only smoke;
-    `publish=true` or a `cogs-v*` tag = production-environment gated upload).
+  - `publish-cog.yml` may build and validate, but ADR-155 freezes production
+    authentication/upload until a separate Ed25519 production-authority ADR.
+  - `build-all-cogs.yml` is an umbrella build-only smoke. Its legacy
+    `publish=true`/tag path fails closed under the same ADR-155 freeze.
 - Every build emits a canonical, content-addressed optional-integration sidecar.
   Missing website, Tailscale attachment, and web MCP tables mean disabled.
+- A release-eligible policy binds the exact normalized sidecar, its digest,
+  and the conditionally required static website bundle digest into the
+  Ed25519-signed `runtimeIntegrations` record.
 - Static websites build only through `vite-production-v1` and publish as a
   deterministic bundle; OCI websites are digest references, not image pushes.
 - Publishing is WIF-only. Never add a service-account JSON key fallback or

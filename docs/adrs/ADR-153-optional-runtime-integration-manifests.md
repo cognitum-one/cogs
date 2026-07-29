@@ -237,3 +237,12 @@ WIF identity, emits a public-only trust-registry artifact, and grants no new
 deployment or integration reconciliation authority. Production signing
 remains out of scope until the staging release and website-ingestion evidence
 is reviewed.
+
+## Later decision: ADR-155
+
+ADR-155 closes the remaining substitution gap by placing the exact normalized
+manifest, its canonical-byte digest, and the conditionally required static
+website bundle digest inside operator policy and the Ed25519-signed release.
+Staging passes exact emitter outputs into the builder. Production and batch
+publication fail closed until a separately ratified production signing
+authority exists.

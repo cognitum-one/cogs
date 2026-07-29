@@ -1,4 +1,5 @@
 """Security and determinism tests for optional Cog runtime integrations."""
+
 from __future__ import annotations
 
 import copy
@@ -58,7 +59,9 @@ class CogIntegrationManifestTests(unittest.TestCase):
         self.assertNotIn("secretManagerRef", json.dumps(tailscale))
         self.assertEqual(mcp["transport"], "streamable-http")
         self.assertEqual(mcp["protocolVersion"], "2025-11-25")
-        self.assertEqual(mcp["auth"]["resourceMetadataUrl"].split("/")[2], "mcp.example.com")
+        self.assertEqual(
+            mcp["auth"]["resourceMetadataUrl"].split("/")[2], "mcp.example.com"
+        )
 
     def test_emission_is_canonical_and_content_addressed(self) -> None:
         source = FIXTURES / "valid" / "all-enabled.toml"
@@ -68,7 +71,9 @@ class CogIntegrationManifestTests(unittest.TestCase):
             self.assertEqual(first_digest, second_digest)
             self.assertEqual(first_path.name, second_path.name)
             self.assertEqual(first_path.read_bytes(), second_path.read_bytes())
-            self.assertEqual(hashlib.sha256(first_path.read_bytes()).hexdigest(), first_digest)
+            self.assertEqual(
+                hashlib.sha256(first_path.read_bytes()).hexdigest(), first_digest
+            )
             self.assertIn(first_digest, first_path.name)
             self.assertEqual(first_sum.read_text(), second_sum.read_text())
             parsed = json.loads(first_path.read_text())
@@ -85,23 +90,32 @@ class CogIntegrationManifestTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 with self.assertRaises(ManifestValidationError) as raised:
                     load_manifest(FIXTURES / relative)
-                self.assertIn(expected, {issue.code for issue in raised.exception.issues})
+                self.assertIn(
+                    expected, {issue.code for issue in raised.exception.issues}
+                )
 
     def test_oci_tags_and_mutable_references_are_rejected(self) -> None:
         data = fixture_data("valid/all-enabled.toml")
         artifact = data["integrations"]["website"]["artifact"]
         artifact.clear()
-        artifact.update({"kind": "oci-image", "image": "us-docker.pkg.dev/example/cog:latest"})
+        artifact.update(
+            {"kind": "oci-image", "image": "us-docker.pkg.dev/example/cog:latest"}
+        )
         with self.assertRaises(ManifestValidationError) as raised:
             normalize_manifest(data)
-        self.assertIn("immutable-image-required", {issue.code for issue in raised.exception.issues})
+        self.assertIn(
+            "immutable-image-required",
+            {issue.code for issue in raised.exception.issues},
+        )
 
     def test_legacy_sse_requires_explicit_acknowledgement(self) -> None:
         data = fixture_data("valid/all-enabled.toml")
         data["integrations"]["web_mcp"]["transport"] = "legacy-sse"
         with self.assertRaises(ManifestValidationError) as raised:
             normalize_manifest(data)
-        self.assertIn("legacy-ack-required", {issue.code for issue in raised.exception.issues})
+        self.assertIn(
+            "legacy-ack-required", {issue.code for issue in raised.exception.issues}
+        )
         data["integrations"]["web_mcp"]["legacy_sse_acknowledged"] = True
         self.assertEqual(
             normalize_manifest(data)["integrations"]["webMcp"]["legacySseAcknowledged"],
@@ -113,7 +127,9 @@ class CogIntegrationManifestTests(unittest.TestCase):
         data["integrations"]["tailscale"] = {"enabled": False}
         with self.assertRaises(ManifestValidationError) as raised:
             normalize_manifest(data)
-        self.assertIn("tailscale-required", {issue.code for issue in raised.exception.issues})
+        self.assertIn(
+            "tailscale-required", {issue.code for issue in raised.exception.issues}
+        )
 
     def test_catalog_manifests_all_validate_with_default_off(self) -> None:
         paths = sorted((ROOT / "src" / "cogs").glob("*/cog.toml"))
@@ -121,17 +137,21 @@ class CogIntegrationManifestTests(unittest.TestCase):
         for path in paths:
             with self.subTest(cog=path.parent.name):
                 integrations = load_manifest(path)["integrations"]
-                self.assertTrue(all(value == {"enabled": False} for value in integrations.values()))
+                self.assertTrue(
+                    all(value == {"enabled": False} for value in integrations.values())
+                )
 
     def test_json_schema_is_valid_json_and_pins_security_constants(self) -> None:
         paths = sorted((ROOT / "schemas").glob("cog-integrations*.schema.json"))
         schemas = [json.loads(path.read_text()) for path in paths]
         encoded = json.dumps(schemas, sort_keys=True)
         self.assertEqual(len(schemas), 4)
-        self.assertTrue(all(
-            schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-            for schema in schemas
-        ))
+        self.assertTrue(
+            all(
+                schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+                for schema in schemas
+            )
+        )
         self.assertIn("2025-11-25", encoded)
         self.assertIn("vite-production-v1", encoded)
         self.assertIn("tailscale-oauth-client", encoded)
@@ -151,9 +171,12 @@ class CogIntegrationManifestTests(unittest.TestCase):
         self.assertIn("valid integration manifests: 109", checked.stdout)
         with tempfile.TemporaryDirectory() as output:
             emitted = subprocess.run(
-                command + [
-                    "emit", str(FIXTURES / "valid" / "all-enabled.toml"),
-                    "--out-dir", output,
+                command
+                + [
+                    "emit",
+                    str(FIXTURES / "valid" / "all-enabled.toml"),
+                    "--out-dir",
+                    output,
                 ],
                 cwd=ROOT,
                 check=False,
@@ -188,7 +211,9 @@ class CogIntegrationManifestTests(unittest.TestCase):
 
     def test_locked_website_profile_packages_deterministically(self) -> None:
         manifest = FIXTURES / "valid" / "all-enabled.toml"
-        self.assertEqual(inspect_profile(manifest)["buildProfile"], "vite-production-v1")
+        self.assertEqual(
+            inspect_profile(manifest)["buildProfile"], "vite-production-v1"
+        )
         with tempfile.TemporaryDirectory() as workspace:
             cog_dir = Path(workspace) / "cog"
             output = cog_dir / "web" / "dist"
@@ -216,12 +241,8 @@ class CogIntegrationManifestTests(unittest.TestCase):
                 package_website(manifest, cog_dir, Path(workspace) / "out")
 
     def test_publish_workflows_are_wif_only_and_create_only(self) -> None:
-        production = (
-            ROOT / ".github" / "workflows" / "publish-cog.yml"
-        ).read_text()
-        batch = (
-            ROOT / ".github" / "workflows" / "build-all-cogs.yml"
-        ).read_text()
+        production = (ROOT / ".github" / "workflows" / "publish-cog.yml").read_text()
+        batch = (ROOT / ".github" / "workflows" / "build-all-cogs.yml").read_text()
         staging = (
             ROOT / ".github" / "workflows" / "publish-cog-staging.yml"
         ).read_text()
@@ -230,11 +251,16 @@ class CogIntegrationManifestTests(unittest.TestCase):
         self.assertNotIn("GCP_COGNITUM_APPS_SA", combined)
         self.assertIn("id-token: write", combined)
         self.assertIn("--if-generation-match=0", combined)
-        self.assertIn("gs://cognitum-apps/cogs/releases/", combined)
         self.assertIn("gs://cognitum-apps/staging/cogs/releases/", staging)
         self.assertNotIn("\n  push:", staging)
         self.assertIn("environment: cogs-staging", staging)
-        self.assertIn("environment: cogs-production", combined)
+        self.assertIn(
+            "Refuse unsigned production publication (ADR-155 freeze)", production
+        )
+        self.assertIn("Refuse unsigned batch publication (ADR-155 freeze)", batch)
+        self.assertNotIn("environment: cogs-production", production + batch)
+        self.assertNotIn("GCP_COGS_PROD_", production + batch)
+        self.assertNotIn("gs://cognitum-apps/cogs/releases/", production + batch)
 
 
 if __name__ == "__main__":
