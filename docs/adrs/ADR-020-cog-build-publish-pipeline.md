@@ -90,3 +90,17 @@ deliberate, not a side effect of a routine catalog rebuild.
   fail. The cog is pinned to **1.98.8** (current 1.98.x stable, a safe forward
   patch). The stale `src/main.rs` `TAILSCALE_VERSION = "1.78.1"` is an unused
   placeholder; `cog.toml [upstream]` is authoritative.
+
+## Later decision: ADR-153 (2026-07-29)
+
+ADR-153 retains this ADR's source/build ownership and hardware matrix, but
+replaces two security-sensitive publish implications for new releases:
+
+- long-lived `GCP_COGNITUM_APPS_SA` JSON-key authentication is superseded by
+  environment-separated Workload Identity Federation;
+- mutable `cogs/{arm,arm64}/` binary uploads are superseded by versioned,
+  create-only, content-addressed release objects that include a canonical
+  optional-integration manifest.
+
+The original decision and historical paths above remain recorded. Existing
+objects and ADR-018's edge Tailscale Cog are not deleted or silently changed.

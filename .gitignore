@@ -5,6 +5,9 @@
 /target/
 **/target/
 src/cogs/*/Cargo.lock
+# Release-ratified Cogs opt back in one at a time. Their publisher uses
+# `cargo build --locked`; without the committed lock, that gate cannot pass.
+!src/cogs/anomaly-detect/Cargo.lock
 **/*.rs.bk
 *.pdb
 
@@ -32,3 +35,6 @@ cog-*-arm
 cog-*-arm-fix*
 cog-*-aarch64
 out/
+
+# Ephemeral credential files emitted by google-github-actions/auth.
+gha-creds-*.json

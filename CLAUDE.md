@@ -63,10 +63,18 @@ firmware does not build cogs — it installs the binaries this repo publishes.
   arch (e.g. `tailscale` is `["pi-zero-2w"]` — v0 runs Tailscale natively).
 - `scripts/cog-targets.py` maps `hardware_requirement` → build arches.
 - **Publish via CI, not by hand:**
-  - `gh workflow run publish-cog.yml -f cog=<id>` — build + upload one cog to
-    `gs://cognitum-apps/cogs/{arm,arm64}/`, prints sha256s.
+  - `gh workflow run publish-cog-staging.yml -f cog=<id>` — manual isolated
+    staging proof through the `cogs-staging` environment.
+  - `gh workflow run publish-cog.yml -f cog=<id>` — production-environment
+    gated build + create-only upload under the immutable ADR-153 release path.
   - `build-all-cogs.yml` — umbrella batch (`-f publish=false` = build-only smoke;
-    `publish=true` or a `cogs-v*` tag = upload).
+    `publish=true` or a `cogs-v*` tag = production-environment gated upload).
+- Every build emits a canonical, content-addressed optional-integration sidecar.
+  Missing website, Tailscale attachment, and web MCP tables mean disabled.
+- Static websites build only through `vite-production-v1` and publish as a
+  deterministic bundle; OCI websites are digest references, not image pushes.
+- Publishing is WIF-only. Never add a service-account JSON key fallback or
+  write legacy mutable aliases.
 - The install catalog `app-registry.json` lives in **cognitum-one/seed** — bump
   it by hand from a publish run's sha256 summary.
 - `scripts/build-all-arm*.sh` are offline/dev helpers only.

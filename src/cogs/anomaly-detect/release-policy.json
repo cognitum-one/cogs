@@ -1,0 +1,44 @@
+{
+  "schema": "cognitum.cog.release-policy.v1",
+  "cogId": "anomaly-detect",
+  "blueprintId": "anomaly-detect",
+  "blueprintDigest": "sha256:1e54d94bb09b9f3e08cd7bc27e3d56a5a36e899e18a4e3963ca080e8842e6a69",
+  "runtimeContractVersion": "cognitum.cog.v1",
+  "packaging": "edge-cli-binary",
+  "deploymentDriver": "edge-dispatch",
+  "artifacts": {
+    "armhf": {
+      "binaryName": "cog-anomaly-detect-arm",
+      "targetHardware": [
+        "pi-zero-2w"
+      ]
+    },
+    "aarch64": {
+      "binaryName": "cog-anomaly-detect-arm64",
+      "targetHardware": [
+        "v0-appliance"
+      ]
+    }
+  },
+  "tenancyMode": "single-tenant-device",
+  "statePolicy": "none",
+  "stateSchemaVersion": "1",
+  "rollbackCompatibility": {
+    "compatibleWith": [],
+    "migrationsReversible": true
+  },
+  "networkPolicy": {
+    "egressPolicy": "allowlist",
+    "egressAllowlist": [
+      "127.0.0.1"
+    ]
+  },
+  "residency": {
+    "allowedRegions": [
+      "on-device"
+    ],
+    "dataResidency": "on-device"
+  },
+  "lifecycle": "available",
+  "ratifiedBy": "operator-decision:2026-07-29"
+}

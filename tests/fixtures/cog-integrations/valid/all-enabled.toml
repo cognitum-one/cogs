@@ -1,0 +1,58 @@
+[cog]
+id = "fixture-enabled"
+version = "2.3.4"
+
+[integrations.website]
+enabled = true
+port = 8080
+base_path = "/"
+exposure = "private"
+ingress = "tailscale"
+
+[integrations.website.artifact]
+kind = "static-build"
+build_profile = "vite-production-v1"
+output_directory = "web/dist"
+
+[integrations.website.health_check]
+path = "/healthz"
+interval_seconds = 30
+timeout_seconds = 5
+
+[integrations.website.auth]
+mode = "tenant-session"
+audience = "cog-website"
+
+[integrations.tailscale]
+enabled = true
+tailnet = "example.ts.net"
+hostname = "fixture-cog"
+tags = ["tag:cog", "tag:staging"]
+ephemeral = true
+key_expiry_seconds = 3600
+credential_binding = "tailscale-oauth-client"
+
+[integrations.web_mcp]
+enabled = true
+endpoint_path = "/mcp"
+allowed_tools = ["cog.status", "cog.query"]
+scopes = ["cog.read"]
+exposure = "private"
+ingress = "tailscale"
+
+[integrations.web_mcp.health_check]
+path = "/mcp/healthz"
+interval_seconds = 30
+timeout_seconds = 5
+
+[integrations.web_mcp.auth]
+mode = "oauth2"
+resource_metadata_url = "https://mcp.example.com/.well-known/oauth-protected-resource"
+audience = "cog-web-mcp"
+
+[integrations.web_mcp.cors]
+allowed_origins = ["https://dashboard.cognitum.one"]
+
+[integrations.web_mcp.rate_limit]
+requests_per_minute = 60
+burst = 10

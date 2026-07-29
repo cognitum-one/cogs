@@ -20,11 +20,13 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
 
 COGS_DIR = Path(__file__).resolve().parent.parent / "src" / "cogs"
+COG_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 DEVICE_ARCH = {
     "pi-zero-2w": "armhf",
@@ -56,13 +58,19 @@ ARCHES = {
 }
 
 
-def arches_for(cog: str) -> list[str]:
-    """Arch names a cog builds for, ordered armhf then aarch64."""
+def manifest_for(cog: str) -> dict:
+    if not COG_ID_RE.fullmatch(cog):
+        raise SystemExit(f"error: invalid cog id '{cog}'")
     toml_path = COGS_DIR / cog / "cog.toml"
     if not toml_path.is_file():
         raise SystemExit(f"error: no cog.toml for '{cog}' ({toml_path})")
     with toml_path.open("rb") as f:
-        data = tomllib.load(f)
+        return tomllib.load(f)
+
+
+def arches_for(cog: str) -> list[str]:
+    """Arch names a cog builds for, ordered armhf then aarch64."""
+    data = manifest_for(cog)
     hw = data.get("cog", {}).get("hardware_requirement")
     if isinstance(hw, str):
         hw = [hw]
@@ -89,10 +97,14 @@ def all_cogs() -> list[str]:
 def build_matrix(cogs: list[str]) -> dict:
     include = []
     for cog in cogs:
+        version = manifest_for(cog).get("cog", {}).get("version")
+        if not isinstance(version, str) or not version:
+            raise SystemExit(f"error: cog '{cog}' is missing [cog].version")
         for arch in arches_for(cog):
             a = ARCHES[arch]
             include.append({
                 "cog": cog,
+                "version": version,
                 "arch": arch,
                 "triple": a["triple"],
                 "suffix": a["suffix"],

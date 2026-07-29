@@ -1,7 +1,7 @@
 [cog]
 id = "anomaly-detect"
 name = "Anomaly Detection"
-version = "1.0.0"
+version = "1.2.0"
 category = "health"
 description = "Welford online statistics + CUSUM drift detection on sensor streams"
 binary = "cog-anomaly-detect-arm"

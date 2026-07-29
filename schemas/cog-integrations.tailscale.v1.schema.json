@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitum.one/schemas/cog-integrations.tailscale.v1.schema.json",
+  "title": "Enabled Cog Tailscale attachment",
+  "description": "Logical OAuth-client binding only; no credentials or Secret Manager resource names.",
+  "type": "object",
+  "required": [
+    "enabled",
+    "tailnet",
+    "hostname",
+    "tags",
+    "ephemeral",
+    "keyExpirySeconds",
+    "credentialBinding"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "const": true
+    },
+    "tailnet": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]{1,252}[A-Za-z0-9]$"
+    },
+    "hostname": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^tag:[a-z0-9][a-z0-9-]{0,62}$"
+      }
+    },
+    "ephemeral": {
+      "const": true
+    },
+    "keyExpirySeconds": {
+      "type": "integer",
+      "minimum": 300,
+      "maximum": 86400
+    },
+    "credentialBinding": {
+      "const": "tailscale-oauth-client"
+    }
+  }
+}

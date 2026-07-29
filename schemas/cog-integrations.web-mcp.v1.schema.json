@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitum.one/schemas/cog-integrations.web-mcp.v1.schema.json",
+  "title": "Enabled Cog web MCP integration",
+  "type": "object",
+  "required": [
+    "enabled",
+    "transport",
+    "protocolVersion",
+    "endpointPath",
+    "healthCheck",
+    "auth",
+    "allowedTools",
+    "scopes",
+    "cors",
+    "rateLimit",
+    "exposure",
+    "ingress"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "const": true
+    },
+    "transport": {
+      "enum": [
+        "streamable-http",
+        "legacy-sse"
+      ]
+    },
+    "protocolVersion": {
+      "const": "2025-11-25"
+    },
+    "legacySseAcknowledged": {
+      "type": "boolean"
+    },
+    "endpointPath": {
+      "type": "string",
+      "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$",
+      "maxLength": 256
+    },
+    "healthCheck": {
+      "$ref": "#/$defs/healthCheck"
+    },
+    "auth": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "mode",
+            "resourceMetadataUrl",
+            "audience"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "oauth2"
+            },
+            "resourceMetadataUrl": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "mode",
+            "audience"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "tenant-token"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        }
+      ]
+    },
+    "allowedTools": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+      }
+    },
+    "scopes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+      }
+    },
+    "cors": {
+      "type": "object",
+      "required": [
+        "allowedOrigins"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "allowedOrigins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://[^/?#]+$"
+          }
+        }
+      }
+    },
+    "rateLimit": {
+      "type": "object",
+      "required": [
+        "requestsPerMinute",
+        "burst"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "requestsPerMinute": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "burst": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "exposure": {
+      "enum": [
+        "private",
+        "public"
+      ]
+    },
+    "ingress": {
+      "enum": [
+        "internal",
+        "tailscale",
+        "public"
+      ]
+    },
+    "publicAccessApproval": {
+      "$ref": "#/$defs/approval"
+    }
+  },
+  "$defs": {
+    "healthCheck": {
+      "type": "object",
+      "required": [
+        "path",
+        "intervalSeconds",
+        "timeoutSeconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$",
+          "maxLength": 256
+        },
+        "intervalSeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 300
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "approved",
+        "approvalRef"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approved": {
+          "const": true
+        },
+        "approvalRef": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,255}$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "transport": {
+            "const": "legacy-sse"
+          }
+        },
+        "required": [
+          "transport"
+        ]
+      },
+      "then": {
+        "required": [
+          "legacySseAcknowledged"
+        ],
+        "properties": {
+          "legacySseAcknowledged": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "exposure": {
+            "const": "private"
+          }
+        },
+        "required": [
+          "exposure"
+        ]
+      },
+      "then": {
+        "properties": {
+          "ingress": {
+            "enum": [
+              "internal",
+              "tailscale"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "exposure": {
+            "const": "public"
+          }
+        },
+        "required": [
+          "exposure"
+        ]
+      },
+      "then": {
+        "required": [
+          "publicAccessApproval"
+        ],
+        "properties": {
+          "ingress": {
+            "const": "public"
+          },
+          "auth": {
+            "properties": {
+              "mode": {
+                "const": "oauth2"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

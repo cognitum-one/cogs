@@ -1,0 +1,405 @@
+name: Publish Cog to Staging
+
+# Isolated E2E lane for ADR-153. This workflow has no push/tag trigger and the
+# cogs-staging environment must require the dedicated staging WIF identity.
+# The provider should pin repository_id=1211713542, owner_id=256911919,
+# workflow_ref for this exact file, workflow_dispatch, and the approved branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cog:
+        description: 'Cog id (directory under src/cogs/)'
+        required: true
+      cog_version:
+        description: 'Explicit version when cog.toml and Cargo.toml disagree'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  matrix:
+    name: Resolve staging build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.gen.outputs.include }}
+      version: ${{ steps.gen.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate cog and resolve arches
+        id: gen
+        env:
+          COG_INPUT: ${{ inputs.cog }}
+          VERSION_INPUT: ${{ inputs.cog_version }}
+        run: |
+          set -euo pipefail
+          COG="$COG_INPUT"
+          if [[ ! "$COG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo "::error::invalid cog id"
+            exit 1
+          fi
+          if [ ! -f "src/cogs/$COG/cog.toml" ]; then
+            echo "::error::no such cog: src/cogs/$COG/cog.toml does not exist"
+            exit 1
+          fi
+          test -f "src/cogs/$COG/release-policy.json" \
+            || { echo "::error::no ratified release-policy.json for $COG"; exit 1; }
+          test -f "src/cogs/$COG/Cargo.lock" \
+            || { echo "::error::no committed per-Cog Cargo.lock for $COG"; exit 1; }
+          python3 scripts/cog_integrations_cli.py validate "src/cogs/$COG/cog.toml"
+          MATRIX=$(python3 scripts/cog-targets.py --matrix "$COG")
+          echo "include=$(echo "$MATRIX" | jq -c '.include')" >> "$GITHUB_OUTPUT"
+          CARGO_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/Cargo.toml','rb'))['package']['version'])")
+          MANIFEST_VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('src/cogs/$COG/cog.toml','rb'))['cog']['version'])")
+          VERSION="$VERSION_INPUT"
+          if [ -z "$VERSION" ]; then
+            if [ "$CARGO_VERSION" != "$MANIFEST_VERSION" ]; then
+              echo "::error::version disagreement: Cargo.toml=$CARGO_VERSION cog.toml=$MANIFEST_VERSION"
+              echo "::error::reconcile both manifests or supply the explicit cog_version input"
+              exit 1
+            fi
+            VERSION="$CARGO_VERSION"
+          fi
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]] \
+            || { echo "::error::invalid semantic version"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  publish-staging:
+    name: Staging ${{ matrix.cog }} (${{ matrix.arch }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    environment: cogs-staging
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.triple }}
+
+      - name: Install cross toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ${{ matrix.apt }}
+
+      - name: Cross-compile cog-${{ matrix.cog }} (${{ matrix.arch }})
+        env:
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --target ${{ matrix.triple }}
+          BIN="target/${{ matrix.triple }}/release/cog-${{ matrix.cog }}"
+          ${{ matrix.strip }} "$BIN"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp "$BIN" "$GITHUB_WORKSPACE/out/cog-${{ matrix.cog }}-${{ matrix.gcs }}"
+          file "$BIN"
+
+      - name: Stage deliberate cog-specific assets
+        env:
+          ARCH: ${{ matrix.arch }}
+          TRIPLE: ${{ matrix.triple }}
+          SUFFIX: ${{ matrix.suffix }}
+          GCS: ${{ matrix.gcs }}
+          COG_VERSION: ${{ needs.matrix.outputs.version }}
+          OUT_DIR: ${{ github.workspace }}/out
+        run: |
+          set -euo pipefail
+          EXTRA="src/cogs/${{ matrix.cog }}/publish-extra.sh"
+          if [ -f "$EXTRA" ]; then
+            bash "$EXTRA"
+          fi
+
+      - name: Emit content-addressed integration manifest
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_integrations_cli.py emit \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --out-dir out/integrations
+
+      - name: Inspect locked website profile
+        id: website
+        run: |
+          set -euo pipefail
+          PROFILE=$(python3 scripts/cog_website_bundle.py inspect \
+            "src/cogs/${{ matrix.cog }}/cog.toml")
+          echo "enabled=$(echo "$PROFILE" | jq -r '.enabled')" >> "$GITHUB_OUTPUT"
+          echo "kind=$(echo "$PROFILE" | jq -r '.kind')" >> "$GITHUB_OUTPUT"
+
+      - name: Require locked website build inputs
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          test -f "src/cogs/${{ matrix.cog }}/package.json"
+          test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
+
+      - uses: actions/setup-node@v4
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/cogs/${{ matrix.cog }}/package-lock.json
+
+      - name: Run vite-production-v1
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -x node_modules/.bin/vite
+          node_modules/.bin/vite build
+
+      - name: Package deterministic website bundle
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_website_bundle.py package \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --cog-dir "src/cogs/${{ matrix.cog }}" \
+            --out-dir out/website
+
+      - name: Pin one release build timestamp
+        run: echo "COG_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Vulnerability scan and pinned SBOM
+        env:
+          CARGO_AUDIT_VERSION: '0.22.2'
+          SYFT_VERSION: '1.44.0'
+          SYFT_SHA256: '0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a'
+        run: |
+          set -euo pipefail
+          cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked --quiet
+          set +e
+          (cd "src/cogs/${{ matrix.cog }}" && cargo audit --json) > out/vuln-scan.json
+          AUDIT_STATUS=$?
+          set -e
+          export AUDIT_STATUS
+          python3 - <<'PY'
+          import json, os, sys
+          data = json.load(open("out/vuln-scan.json"))
+          advisories = data.get("vulnerabilities", {}).get("list") or []
+          for row in advisories:
+              advisory = row.get("advisory", {})
+              print(f"::error::{advisory.get('id')}: {advisory.get('title')}")
+          if advisories or int(os.environ["AUDIT_STATUS"]) != 0:
+              raise SystemExit("vulnerability scan did not produce a passing verdict")
+          PY
+          archive="$RUNNER_TEMP/syft.tar.gz"
+          curl -fsSL \
+            "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz" \
+            -o "$archive"
+          echo "$SYFT_SHA256  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" syft
+          "$RUNNER_TEMP/syft" scan "dir:src/cogs/${{ matrix.cog }}" \
+            -o cyclonedx-json=out/sbom.cdx.json -q
+          test -s out/sbom.cdx.json
+
+      - name: Preserve and verify Sigstore keyless artifact evidence
+        env:
+          BIN: out/cog-${{ matrix.cog }}-${{ matrix.gcs }}
+          COSIGN_VERSION: v3.1.2
+          COSIGN_SHA256: f7622ed3cf22e55e1ae6377c080979ff77a22da9981c11df222a2e444991e7cf
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
+            -o "$RUNNER_TEMP/cosign"
+          echo "$COSIGN_SHA256  $RUNNER_TEMP/cosign" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/cosign"
+          "$RUNNER_TEMP/cosign" sign-blob --yes --bundle "$BIN.sigstore.json" "$BIN"
+          "$RUNNER_TEMP/cosign" verify-blob --bundle "$BIN.sigstore.json" \
+            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$BIN"
+
+      - name: Enforce declared console isolation
+        run: |
+          set -euo pipefail
+          (cd "src/cogs/${{ matrix.cog }}" && cargo build --locked --release)
+          python3 scripts/cog_isolation.py \
+            --cog-id "${{ matrix.cog }}" \
+            --manifest "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --binary "src/cogs/${{ matrix.cog }}/target/release/cog-${{ matrix.cog }}" \
+            --output out/isolation-runs.json
+
+      - name: SLSA build provenance
+        id: provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: out/cog-${{ matrix.cog }}-${{ matrix.gcs }}
+
+      - name: Preserve provenance bundle
+        run: |
+          set -euo pipefail
+          test -s "${{ steps.provenance.outputs.bundle-path }}"
+          cp "${{ steps.provenance.outputs.bundle-path }}" out/provenance.sigstore.json
+
+      - name: Require stage-only WIF and KMS configuration
+        id: kms
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_COGS_STAGING_WIF_PROVIDER }}
+          PUBLISH_SA: ${{ vars.GCP_COGS_STAGING_PUBLISH_SA }}
+          KEY_RESOURCE: ${{ vars.GCP_COGS_STAGING_SIGNING_KEY_RESOURCE }}
+          KEY_ID: ${{ vars.GCP_COGS_STAGING_SIGNING_KEY_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re
+          provider, service = os.environ["WIF_PROVIDER"], os.environ["PUBLISH_SA"]
+          if not re.fullmatch(r"projects/[0-9]+/locations/global/workloadIdentityPools/[A-Za-z0-9_-]+/providers/[A-Za-z0-9_-]+", provider):
+              raise SystemExit("invalid or missing staging WIF provider")
+          if not re.fullmatch(r"[a-z0-9-]{3,63}@[a-z0-9-]{3,63}\.iam\.gserviceaccount\.com", service):
+              raise SystemExit("invalid or missing staging publish service account")
+          parts = os.environ["KEY_RESOURCE"].split("/")
+          labels = ["projects", "locations", "keyRings", "cryptoKeys", "cryptoKeyVersions"]
+          if len(parts) != 10 or parts[::2] != labels:
+              raise SystemExit("invalid or missing staging KMS key-version resource")
+          if any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", value) for value in parts[1::2]):
+              raise SystemExit("invalid KMS resource segment")
+          if not parts[-1].isdigit():
+              raise SystemExit("KMS key version must be numeric")
+          key_id = os.environ["KEY_ID"]
+          if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", key_id):
+              raise SystemExit("invalid or missing logical staging signing key id")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name, value in zip(("project", "location", "keyring", "key", "version"), parts[1::2]):
+                  print(f"{name}={value}", file=output)
+              print(f"key_id={key_id}", file=output)
+          PY
+
+      - name: Build the exact unsigned website release statement
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_release_provenance.py prepare \
+            --policy "src/cogs/${{ matrix.cog }}/release-policy.json" \
+            --arch "${{ matrix.arch }}" \
+            --version "${{ needs.matrix.outputs.version }}" \
+            --source-commit "${{ github.sha }}" \
+            --artifact "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}" \
+            --sigstore-bundle "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}.sigstore.json" \
+            --dependency-lock "src/cogs/${{ matrix.cog }}/Cargo.lock" \
+            --sbom out/sbom.cdx.json \
+            --vulnerability-scan out/vuln-scan.json \
+            --provenance out/provenance.sigstore.json \
+            --isolation out/isolation-runs.json \
+            --key-id "${{ steps.kms.outputs.key_id }}" \
+            --builder-identity "github-actions://${{ github.repository }}" \
+            --build-workflow "${{ github.workflow_ref }}" \
+            --built-at "$COG_BUILT_AT" \
+            --repository "${{ github.repository }}" \
+            --sigstore-tool-version "cosign@v3.1.2" \
+            --output-dir out/release
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_COGS_STAGING_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_COGS_STAGING_PUBLISH_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Sign raw canonical release bytes with KMS Ed25519
+        run: |
+          set -euo pipefail
+          KMS_ARGS=(
+            --project "${{ steps.kms.outputs.project }}"
+            --location "${{ steps.kms.outputs.location }}"
+            --keyring "${{ steps.kms.outputs.keyring }}"
+            --key "${{ steps.kms.outputs.key }}"
+          )
+          ALGORITHM=$(gcloud kms keys versions describe "${{ steps.kms.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(algorithm)')
+          STATE=$(gcloud kms keys versions describe "${{ steps.kms.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(state)')
+          [ "$ALGORITHM" = "EC_SIGN_ED25519" ] \
+            || { echo "::error::KMS version is not EC_SIGN_ED25519"; exit 1; }
+          [ "$STATE" = "ENABLED" ] \
+            || { echo "::error::KMS signing version is not enabled"; exit 1; }
+          gcloud kms keys versions get-public-key "${{ steps.kms.outputs.version }}" \
+            "${KMS_ARGS[@]}" --public-key-format=pem \
+            --output-file=out/release/release-public-key.pem
+          # EC_SIGN_ED25519 is PureEdDSA: send raw canonical bytes, never a digest flag.
+          gcloud kms asymmetric-sign \
+            "${KMS_ARGS[@]}" --version "${{ steps.kms.outputs.version }}" \
+            --input-file=out/release/release-statement.json \
+            --signature-file=out/release/release-signature.b64
+
+      - name: Finalize, authorize, and verify the detached release
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_release_provenance.py registry \
+            --public-key out/release/release-public-key.pem \
+            --key-id "${{ steps.kms.outputs.key_id }}" \
+            --builder-identity "github-actions://${{ github.repository }}" \
+            --build-workflow "${{ github.workflow_ref }}" \
+            --output out/release/release-trust-registry.json
+          python3 scripts/cog_release_provenance.py finalize \
+            --unsigned-release out/release/unsigned-release.json \
+            --build-evidence out/release/build-evidence.json \
+            --signature-file out/release/release-signature.b64 \
+            --output out/release/release-evidence.json \
+            --signed-release-output out/release/signed-release.json
+          python3 scripts/cog_release_provenance.py verify \
+            --release out/release/signed-release.json \
+            --registry out/release/release-trust-registry.json
+
+      - name: Upload immutable staging release objects
+        run: |
+          set -euo pipefail
+          ROOT="gs://cognitum-apps/staging/cogs/releases/${{ matrix.cog }}/${{ needs.matrix.outputs.version }}/${{ matrix.arch }}"
+          upload_immutable() {
+            local source="$1"
+            local category="$2"
+            local digest destination
+            digest=$(sha256sum "$source" | awk '{print $1}')
+            destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
+            gcloud storage cp --if-generation-match=0 "$source" "$destination"
+            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
+          }
+          {
+            echo "### Staging: ${{ matrix.cog }} ${{ needs.matrix.outputs.version }} ${{ matrix.arch }}"
+            echo ""
+            echo "| immutable object | GCS URI |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}" "binary"
+          while IFS= read -r -d '' manifest; do
+            upload_immutable "$manifest" "integrations"
+          done < <(find out/integrations -type f -print0 | sort -z)
+          if [ -d out/website ]; then
+            while IFS= read -r -d '' website; do
+              upload_immutable "$website" "website"
+            done < <(find out/website -type f -print0 | sort -z)
+          fi
+          if [ -d out/extra ]; then
+            while IFS= read -r -d '' asset; do
+              upload_immutable "$asset" "assets"
+            done < <(find out/extra -type f -print0 | sort -z)
+          fi
+          for evidence in \
+            out/vuln-scan.json \
+            out/sbom.cdx.json \
+            out/isolation-runs.json \
+            out/provenance.sigstore.json \
+            "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}.sigstore.json" \
+            out/release/policy-decision.json \
+            out/release/release-statement-metadata.json \
+            out/release/release-evidence.json \
+            out/release/signed-release.json \
+            out/release/release-trust-registry.json; do
+            upload_immutable "$evidence" "evidence"
+          done
+          echo "No production or legacy mutable path was written."

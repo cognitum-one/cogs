@@ -2,17 +2,16 @@ name: Build All Cogs
 
 # Umbrella batch build: cross-compiles EVERY cog under src/cogs/ for every arch
 # its cog.toml `hardware_requirement` declares (scripts/cog-targets.py), and
-# (when publish=true) uploads each stripped binary to
-# gs://cognitum-apps/cogs/{arm,arm64}/. The CI replacement for the local
-# scripts/build-all-arm.sh + build-all-arm64.sh hand-runs.
+# (when publish=true) emits each normalized integration sidecar and uploads
+# create-only, versioned, content-addressed release objects.
 #
 # Default (workflow_dispatch, publish=false) is a build-only smoke check across
 # the whole catalog. publish=true (or a cogs-v* tag) uploads to GCS. The
 # install catalog (app-registry.json) lives in cognitum-one/seed — refresh it
 # from the run summary's sha256 manifest artifact.
 #
-# Secret required for publish: GCP_COGNITUM_APPS_SA (objectAdmin on
-# gs://cognitum-apps).
+# The cogs-production environment owns the dedicated WIF provider and
+# create-only publisher identity. No service-account JSON key is accepted.
 
 on:
   workflow_dispatch:
@@ -44,9 +43,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate matrix from hardware_requirement
         id: gen
+        env:
+          COGS_INPUT: ${{ inputs.cogs }}
         run: |
           set -euo pipefail
-          MATRIX=$(python3 scripts/cog-targets.py --matrix ${{ inputs.cogs }})
+          python3 scripts/cog_integrations_cli.py validate --all
+          if [ -n "${COGS_INPUT:-}" ]; then
+            read -r -a requested_cogs <<< "$COGS_INPUT"
+            MATRIX=$(python3 scripts/cog-targets.py --matrix "${requested_cogs[@]}")
+          else
+            MATRIX=$(python3 scripts/cog-targets.py --matrix)
+          fi
           INCLUDE=$(echo "$MATRIX" | jq -c '.include')
           echo "include=$INCLUDE" >> "$GITHUB_OUTPUT"
           echo "count=$(echo "$INCLUDE" | jq 'length')" >> "$GITHUB_OUTPUT"
@@ -101,26 +108,126 @@ jobs:
           sha=$(sha256sum "$GITHUB_WORKSPACE/out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" | awk '{print $1}')
           echo "| \`cog-${{ matrix.cog }}-${{ matrix.suffix }}\` | \`$sha\` | $(stat -c%s "$BIN") |" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Authenticate to Google Cloud
-        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_COGNITUM_APPS_SA }}
-
-      - uses: google-github-actions/setup-gcloud@v2
-        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
-
-      - name: Upload to gs://cognitum-apps/cogs/${{ matrix.gcs }}/
-        if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+      - name: Emit content-addressed integration manifest
         run: |
           set -euo pipefail
-          gcloud storage cp "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" \
-            "gs://cognitum-apps/cogs/${{ matrix.gcs }}/cog-${{ matrix.cog }}-${{ matrix.suffix }}"
+          python3 scripts/cog_integrations_cli.py emit \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --out-dir out/integrations
 
-      - name: Upload binary as workflow artifact
+      - name: Inspect locked website profile
+        id: website
+        run: |
+          set -euo pipefail
+          PROFILE=$(python3 scripts/cog_website_bundle.py inspect \
+            "src/cogs/${{ matrix.cog }}/cog.toml")
+          echo "enabled=$(echo "$PROFILE" | jq -r '.enabled')" >> "$GITHUB_OUTPUT"
+          echo "kind=$(echo "$PROFILE" | jq -r '.kind')" >> "$GITHUB_OUTPUT"
+
+      - name: Require locked website build inputs
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          test -f "src/cogs/${{ matrix.cog }}/package.json"
+          test -f "src/cogs/${{ matrix.cog }}/package-lock.json"
+
+      - uses: actions/setup-node@v4
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/cogs/${{ matrix.cog }}/package-lock.json
+
+      - name: Run vite-production-v1
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        working-directory: src/cogs/${{ matrix.cog }}
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -x node_modules/.bin/vite
+          node_modules/.bin/vite build
+
+      - name: Package deterministic website bundle
+        if: steps.website.outputs.enabled == 'true' && steps.website.outputs.kind == 'static-build'
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_website_bundle.py package \
+            "src/cogs/${{ matrix.cog }}/cog.toml" \
+            --cog-dir "src/cogs/${{ matrix.cog }}" \
+            --out-dir out/website
+
+      - name: Upload release bundle as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cog-${{ matrix.cog }}-${{ matrix.suffix }}
-          path: out/cog-${{ matrix.cog }}-${{ matrix.suffix }}
+          name: cog-${{ matrix.cog }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: out/
           retention-days: 7
           if-no-files-found: error
+
+  publish:
+    name: Publish ${{ matrix.cog }} (${{ matrix.arch }})
+    needs: [matrix, build]
+    if: ${{ inputs.publish || startsWith(github.ref, 'refs/tags/cogs-v') }}
+    runs-on: ubuntu-latest
+    environment: cogs-production
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      - name: Download validated release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: cog-${{ matrix.cog }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: out
+
+      - name: Require production WIF configuration
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
+          PUBLISH_SA: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
+        run: |
+          set -euo pipefail
+          [ -n "$WIF_PROVIDER" ] || { echo "::error::missing GCP_COGS_PROD_WIF_PROVIDER"; exit 1; }
+          [ -n "$PUBLISH_SA" ] || { echo "::error::missing GCP_COGS_PROD_PUBLISH_SA"; exit 1; }
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_COGS_PROD_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_COGS_PROD_PUBLISH_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload immutable release objects
+        run: |
+          set -euo pipefail
+          ROOT="gs://cognitum-apps/cogs/releases/${{ matrix.cog }}/${{ matrix.version }}/${{ matrix.arch }}"
+          upload_immutable() {
+            local source="$1"
+            local category="$2"
+            local digest destination
+            digest=$(sha256sum "$source" | awk '{print $1}')
+            destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
+            gcloud storage cp --if-generation-match=0 "$source" "$destination"
+            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
+          }
+          {
+            echo "### ${{ matrix.cog }} ${{ matrix.version }} ${{ matrix.arch }}"
+            echo ""
+            echo "| immutable object | GCS URI |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          upload_immutable "out/cog-${{ matrix.cog }}-${{ matrix.suffix }}" "binary"
+          while IFS= read -r -d '' manifest; do
+            upload_immutable "$manifest" "integrations"
+          done < <(find out/integrations -type f -print0 | sort -z)
+          if [ -d out/website ]; then
+            while IFS= read -r -d '' website; do
+              upload_immutable "$website" "website"
+            done < <(find out/website -type f -print0 | sort -z)
+          fi
+          echo "Legacy mutable aliases were not written."

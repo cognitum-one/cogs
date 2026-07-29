@@ -180,6 +180,75 @@ jobs:
           print("::notice::all cogs declare a valid hardware_requirement")
           PY
 
+  integration-manifest-validate:
+    name: Validate optional runtime integration manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate and normalize every cog.toml
+        run: python3 scripts/cog_integrations_cli.py validate --all
+      - name: Run integration manifest security tests
+        run: python3 -m unittest tests/test_cog_integrations.py -v
+      - name: Parse integration JSON Schemas
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          schemas = sorted(Path("schemas").glob("cog-integrations*.schema.json"))
+          if len(schemas) != 4:
+              raise SystemExit(f"expected 4 integration schemas, found {len(schemas)}")
+          for schema in schemas:
+              json.loads(schema.read_text())
+              print(f"valid JSON: {schema}")
+          PY
+
+  release-provenance-validate:
+    name: Validate release provenance and isolation gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run detached-signature and isolation security tests
+        run: |
+          python3 -m unittest \
+            tests/test_cog_isolation.py \
+            tests/test_cog_release_provenance.py -v
+      - name: Parse release schemas and validate ratified policies
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "scripts")
+          from cog_release_provenance_lib import validate_policy
+
+          schemas = sorted(Path("schemas").glob("cognitum.cog.release-*.schema.json"))
+          if len(schemas) != 3:
+              raise SystemExit(f"expected 3 release schemas, found {len(schemas)}")
+          for schema in schemas:
+              json.loads(schema.read_text())
+          policies = sorted(Path("src/cogs").glob("*/release-policy.json"))
+          if not policies:
+              raise SystemExit("no ratified release policies")
+          for policy in policies:
+              validate_policy(json.loads(policy.read_text()))
+              lockfile = policy.parent / "Cargo.lock"
+              if not lockfile.is_file():
+                  raise SystemExit(f"{policy.parent.name}: ratified release has no Cargo.lock")
+          print(f"validated {len(schemas)} schemas and {len(policies)} release policies")
+          PY
+      - name: Verify anomaly-detect resolves only from its committed lock
+        run: cargo check --locked --manifest-path src/cogs/anomaly-detect/Cargo.toml
+      - name: Reject committed private signing keys
+        run: |
+          if rg -l 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' \
+            --glob '!tests/**' --glob '!docs/**' .; then
+            echo "::error::private key material is forbidden"
+            exit 1
+          fi
+
   adr-required:
     name: Require ADR for new cog
     if: github.event_name == 'pull_request'
