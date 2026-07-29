@@ -122,10 +122,10 @@ null static website digest.
 
 All GitHub Actions are pinned to reviewed commit SHAs. The reusable
 organization security workflow executes from immutable merged caller commit
-`0288b22e56b262eb5a9bf190abf626f635ff887f`. Its reviewed internal policy
-anchor is `e52c58eabb6081ef52440cb2243bcdd644132eaf`; both commits are ancestors
+`62489f1606ce871af9c0405dd9e1cb6f886b15cc`. Its reviewed internal policy
+anchor is `647765efc5152db840e29104f68a28340ca232f9`; both commits are ancestors
 of merged organization main commit
-`15633aba16ad3d9ce546665e3cc010ade0fead2a`.
+`5eb92ac7c8a8b72814663ab58d9241dd8e0510ae`.
 Every repository checkout disables persisted workflow credentials. CI has
 explicit read-only contents permission, so untrusted pull-request build code
 cannot inherit a write-capable repository token.
@@ -135,6 +135,49 @@ checksum
 `0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a`.
 `cargo-audit` is exactly 0.22.2 and installs with `--locked`; there is no
 unlocked fallback.
+
+### 6. Dependency scan remediation is exact and fail-closed
+
+The final organization policy runs OSV-Scanner 2.2.4 from the immutable
+Linux AMD64 binary digest
+`7702cd1e5d9f5059dd9570f4ad967f27d3c5f5391b371ec937b384c238177f55`
+with recursive, no-ignore, all-vulnerability traversal. The scan after this
+decision's dependency remediation reports five residual advisories, all with
+no fixed version: RSA timing advisory `RUSTSEC-2023-0071` at CVSS 5.9 and the
+unmaintained-crate notices for `number_prefix`, `paste`, `proc-macro-error`,
+and `proc-macro-error2`. The immutable policy gate therefore reports no
+unreviewed High/Critical fixable vulnerability. These residual advisories
+remain visible; they are not ignored or granted an exception.
+
+Fixable findings were removed by committed lock resolution rather than scanner
+suppression. The root graph now uses SQLx 0.8.6, `anyhow` 1.0.103,
+`crossbeam-epoch` 0.9.20, `memmap2` 0.9.11, rand 0.8.6/0.9.3, and RSA 0.9.10.
+AgentVM uses Wiremock 0.6.5, removing its obsolete `http-types` and rand 0.7
+chain. The affected benchmark and FXNN locks carry the same independently
+resolved patched checksums.
+
+FIXEL's old ESLint 8 dependency graph could not consume a patched
+`brace-expansion` without an invalid lock. It now uses ESLint 10.8.0,
+`@eslint/js` 10.0.1, typescript-eslint 8.65.0, Minimatch 10.2.6, and
+`brace-expansion` 5.0.8, with a flat TypeScript configuration and the exact
+Node range required by ESLint 10. `npm ci`, audit, lint, test, and build all
+pass without `--force`, an override, or an advisory suppression.
+
+Two legacy benchmark manifests still reference absent local path crates:
+`benchmarks` expects `cognitum-sim/crates/newport-raceway`, and
+`benchmarks/stress-tests` expects `newport-sim/crates/newport-core`.
+Their lock-only security updates copy exact version, checksum, and dependency
+stanzas from Cargo-resolved locks in this repository; OSV scans them
+successfully. Compiling those two legacy packages remains blocked until a
+separate source-ownership decision repairs or retires the missing path
+dependencies.
+
+Validation on the final working tree passed the root locked check and 216
+library tests with one explicitly ignored simulator test; locked all-target
+checks for the AgentVM workspace, FXNN, and the v0 appliance benchmark; all 15
+release-provenance policy tests; and the organization policy's 24 OSV-gate,
+13 scanner-wrapper, and 38 static-runtime-receipt tests. Existing compiler
+warnings remain non-fatal and are outside this dependency-only remediation.
 
 ## Website consumer requirement
 

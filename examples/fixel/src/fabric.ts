@@ -6,7 +6,7 @@
  * global clock distribution, and power management.
  */
 
-import { Cognitum, CognitumConfig, SpikeEvent, CognitumMetrics } from './cognitum';
+import { Cognitum, CognitumConfig, SpikeEvent } from './cognitum.js';
 
 /**
  * Density tier specifications for different use cases
@@ -335,7 +335,7 @@ export class Fabric {
       throw new Error(`Tile ${tileId} not found`);
     }
 
-    const values = tile.cognitums.map(c => c.getState().membrane);
+    const values = tile.cognitums.map(c => c.getMembranePotential());
 
     switch (op) {
       case 'sum':

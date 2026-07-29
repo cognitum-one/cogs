@@ -5,6 +5,6 @@
  * as a computational unit (Cognitum) organized into a mesh Fabric.
  */
 
-export * from './cognitum';
-export * from './fabric';
-export * from './neural';
+export * from './cognitum.js';
+export * from './fabric.js';
+export * from './neural.js';

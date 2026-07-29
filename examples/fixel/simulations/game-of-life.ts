@@ -290,7 +290,7 @@ export async function runGameOfLife(
   let generations = 0;
   let stableGeneration: number | undefined;
   let previousState = fabric.getCells();
-  let previousPreviousState = new Uint8Array(previousState.length);
+  let previousPreviousState: Uint8Array = new Uint8Array(previousState.length);
 
   // Run generations
   for (let gen = 0; gen < maxGenerations; gen++) {
@@ -384,7 +384,7 @@ export async function runWithPattern(
   let generations = 0;
   let stableGeneration: number | undefined;
   let previousState = fabric.getCells();
-  let previousPreviousState = new Uint8Array(previousState.length);
+  let previousPreviousState: Uint8Array = new Uint8Array(previousState.length);
 
   for (let gen = 0; gen < maxGenerations; gen++) {
     populationHistory.push(fabric.getPopulation());

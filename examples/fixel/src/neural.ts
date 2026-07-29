@@ -5,8 +5,8 @@
  * Each network leverages the fabric's Cognitum mesh connectivity and per-pixel computation.
  */
 
-import { Fabric, FabricMetrics, ReduceOp } from './fabric.js';
-import { Cognitum, SpikeEvent } from './cognitum.js';
+import { Fabric } from './fabric.js';
+import { Cognitum } from './cognitum.js';
 
 // High-resolution timer for performance measurement
 // Using Date.now() for cross-environment compatibility
@@ -47,20 +47,6 @@ export interface InferResult {
   metrics: NeuralMetrics;
   /** Inference duration in ms */
   durationMs: number;
-}
-
-/**
- * Helper to convert fabric metrics to neural metrics
- */
-function fabricToNeuralMetrics(fabricMetrics: FabricMetrics, clockSpeedMHz: number): NeuralMetrics {
-  return {
-    spikesPerSecond: fabricMetrics.totalSpikeRate,
-    powerMW: fabricMetrics.totalPowerWatts * 1000,
-    accuracy: 0,
-    cycles: fabricMetrics.cycleCount,
-    opsPerSecond: fabricMetrics.cycleCount * clockSpeedMHz * 1e6,
-    activeNeurons: fabricMetrics.activeTiles * 256, // Approximate
-  };
 }
 
 // ============================================================================
@@ -206,8 +192,6 @@ export class CellularNeuralNetwork {
         }
 
         const currentX = this.readFloat(cognitum, CellularNeuralNetwork.STATE_OFFSET);
-        const u = this.readFloat(cognitum, CellularNeuralNetwork.INPUT_OFFSET);
-
         // Calculate template convolutions
         let feedbackSum = 0;
         let inputSum = 0;
@@ -494,7 +478,6 @@ export class SpikingNeuralNetwork {
     for (const spike of spikes) {
       const cognitum = this.fabric.getCognitum(spike.x, spike.y);
       if (cognitum) {
-        const potential = cognitum.getMembranePotential();
         const strength = (spike.strength ?? 1.0) * 0x4000; // Scale to 16-bit
         cognitum.accumulateMembrane(Math.round(strength / 256)); // Convert to 8-bit for accumulate
       }
@@ -1453,8 +1436,6 @@ export class ConvolutionalLayer {
   forward(input: number[][], channelIdx: number = 0): number[][] {
     const kernel = this.kernels[channelIdx];
     const bias = this.biases[channelIdx];
-    const kHalf = Math.floor(this.kernelSize / 2);
-
     const outHeight = Math.floor((this.fabric.height + 2 * this.padding - this.kernelSize) / this.stride) + 1;
     const outWidth = Math.floor((this.fabric.width + 2 * this.padding - this.kernelSize) / this.stride) + 1;
 

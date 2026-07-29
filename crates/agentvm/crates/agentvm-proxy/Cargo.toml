@@ -52,7 +52,7 @@ chrono = { version = "0.4", features = ["serde"] }
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3.9"
-wiremock = "0.5"
+wiremock = "0.6"
 proptest = "1.4"
 test-log = { version = "0.2", features = ["trace"] }
 mockall = "0.12"
