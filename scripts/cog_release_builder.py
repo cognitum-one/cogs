@@ -31,6 +31,59 @@ def isolation_passed(path: Path, cog_id: str) -> bool:
     return data.get("cogId") == cog_id and evidence_passed(data)
 
 
+def require_transparency_log_bundle(path: Path) -> None:
+    bundle = read_json(path)
+    media_type = bundle.get("mediaType")
+    if (
+        not isinstance(media_type, str)
+        or "sigstore.bundle" not in media_type
+    ):
+        raise ReleaseError("Sigstore bundle media type is unsupported")
+    verification = bundle.get("verificationMaterial")
+    if not isinstance(verification, dict):
+        raise ReleaseError("Sigstore bundle lacks verification material")
+    entries = verification.get("tlogEntries")
+    if not isinstance(entries, list) or not entries:
+        raise ReleaseError("Sigstore bundle lacks transparency-log entries")
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ReleaseError("Sigstore transparency-log entry is malformed")
+        log_index = entry.get("logIndex")
+        if (
+            isinstance(log_index, bool)
+            or not isinstance(log_index, (str, int))
+            or not str(log_index).isdigit()
+        ):
+            raise ReleaseError("Sigstore transparency-log index is missing")
+        log_id = entry.get("logId")
+        if (
+            not isinstance(log_id, dict)
+            or not isinstance(log_id.get("keyId"), str)
+            or not log_id["keyId"]
+        ):
+            raise ReleaseError("Sigstore transparency-log identity is missing")
+        promise = entry.get("inclusionPromise")
+        proof = entry.get("inclusionProof")
+        has_promise = (
+            isinstance(promise, dict)
+            and isinstance(promise.get("signedEntryTimestamp"), str)
+            and bool(promise["signedEntryTimestamp"])
+        )
+        has_proof = (
+            isinstance(proof, dict)
+            and isinstance(proof.get("rootHash"), str)
+            and bool(proof["rootHash"])
+            and isinstance(proof.get("treeSize"), (str, int))
+            and not isinstance(proof.get("treeSize"), bool)
+            and str(proof["treeSize"]).isdigit()
+            and isinstance(proof.get("hashes"), list)
+        )
+        if not has_promise and not has_proof:
+            raise ReleaseError(
+                "Sigstore transparency-log inclusion evidence is missing"
+            )
+
+
 def prepare(args: argparse.Namespace) -> None:
     policy = validate_policy(read_json(args.policy))
     arch = require_ascii(args.arch, "arch", 16)
@@ -54,6 +107,7 @@ def prepare(args: argparse.Namespace) -> None:
         raise ReleaseError(
             "isolation evidence did not prove limits and negative control"
         )
+    require_transparency_log_bundle(args.sigstore_bundle)
     try:
         integration_manifest = load_canonical_manifest(args.integration_manifest)
     except (AttributeError, ManifestValidationError) as error:

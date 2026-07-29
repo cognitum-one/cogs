@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-runtime-cache-policy.v1.schema.json",
+  "title": "Cog release runtime cache outage policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "clockSkewSeconds",
+    "negativeWithdrawalTtlSeconds",
+    "sources",
+    "onRefreshFailure"
+  ],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.release-runtime-cache-policy.v1"
+    },
+    "clockSkewSeconds": {
+      "const": 300
+    },
+    "negativeWithdrawalTtlSeconds": {
+      "const": 30
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseProjection",
+        "withdrawalProjection",
+        "trustRegistry"
+      ],
+      "properties": {
+        "releaseProjection": {
+          "$ref": "#/$defs/projection"
+        },
+        "withdrawalProjection": {
+          "$ref": "#/$defs/projection"
+        },
+        "trustRegistry": {
+          "$ref": "#/$defs/registry"
+        }
+      }
+    },
+    "onRefreshFailure": {
+      "const": {
+        "coldStart": "zero-deployable",
+        "newDeploymentAfterTtl": "deny-dependency-unavailable",
+        "retryAfterRequired": true,
+        "runningWorkload": "continue"
+      }
+    }
+  },
+  "$defs": {
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ttlSeconds"],
+      "properties": {
+        "ttlSeconds": {
+          "const": 30
+        }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ttlSeconds"],
+      "properties": {
+        "ttlSeconds": {
+          "const": 300
+        }
+      }
+    }
+  }
+}

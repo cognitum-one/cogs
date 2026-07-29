@@ -21,11 +21,17 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from cog_release_provenance import (  # noqa: E402
     admission,
     finalize,
+    finalize_release_validity,
     finalize_withdrawal,
+    prepare_release_validity,
     prepare_withdrawal,
     registry,
     verify,
+    verify_admitted_release,
+    verify_release_validity,
+    verify_trust_registry,
     verify_withdrawal,
+    withdrawal_projection_decision,
 )
 from cog_release_builder import prepare  # noqa: E402
 from cog_integrations import (  # noqa: E402
@@ -45,7 +51,17 @@ from cog_release_provenance_lib import (  # noqa: E402
     validate_evidence_locations,
     validate_release,
     validate_policy,
+    validate_runtime_cache_policy,
+    runtime_cache_decision,
     withdrawal_payload_digest,
+)
+from cog_trust_registry import (  # noqa: E402
+    ROOT_IDENTITIES,
+    bootstrap_digest,
+    canonical_registry_payload,
+    registry_payload_digest,
+    validate_bootstrap,
+    validate_registry,
 )
 import cog_release_schema_check as schema_gate  # noqa: E402
 
@@ -65,6 +81,17 @@ KMS_KEY_VERSION = (
 GITHUB_OWNER_ID = "256911919"
 GITHUB_REPOSITORY_ID = "1211713542"
 GITHUB_WORKFLOW_ID = "322710413"
+WITHDRAWAL_KEY_ID = "gcp-kms:cogs-staging-withdrawal-2026-01"
+WITHDRAWAL_KMS_KEY_VERSION = (
+    "projects/cognitum-20260110/locations/us-central1/keyRings/"
+    "cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519/cryptoKeyVersions/1"
+)
+WITHDRAWAL_WORKFLOW = (
+    "cognitum-one/cogs/.github/workflows/withdraw-cog-staging.yml"
+    "@refs/heads/main"
+)
+WITHDRAWAL_WORKFLOW_ID = "422710413"
+WITHDRAWAL_WORKFLOW_SHA = "b" * 40
 
 
 def run(*command: str) -> None:
@@ -85,7 +112,24 @@ class CogReleaseProvenanceTests(unittest.TestCase):
         self.output = self.directory / "release"
         self.artifact.write_bytes(b"test artifact")
         self.bundle.write_text(
-            '{"mediaType":"application/vnd.dev.sigstore.bundle+json;version=0.3"}'
+            json.dumps(
+                {
+                    "mediaType": (
+                        "application/vnd.dev.sigstore.bundle+json;version=0.3"
+                    ),
+                    "verificationMaterial": {
+                        "tlogEntries": [
+                            {
+                                "logIndex": "1",
+                                "logId": {"keyId": "fixture-log"},
+                                "inclusionPromise": {
+                                    "signedEntryTimestamp": "fixture-set"
+                                },
+                            }
+                        ]
+                    },
+                }
+            )
         )
         self.lock.write_text("# deterministic lock")
         self.sbom.write_text('{"bomFormat":"CycloneDX"}')
@@ -193,9 +237,18 @@ class CogReleaseProvenanceTests(unittest.TestCase):
             kms_key_version=KMS_KEY_VERSION,
             kms_algorithm="EC_SIGN_ED25519",
             protection_level="SOFTWARE",
-            purpose=["release", "withdrawal"],
+            purpose=["release"],
             builder_identity=BUILDER,
             build_workflow=WORKFLOW,
+            workflow_sha="a" * 40,
+            sequence=1,
+            previous_registry=None,
+            existing_registry=None,
+            issued_at="2026-07-29T12:00:00Z",
+            not_before="2026-07-29T12:00:00Z",
+            expires_at="2026-10-27T12:00:00Z",
+            key_not_before="2026-07-29T00:00:00Z",
+            key_expires_at="2027-07-29T00:00:00Z",
             github_owner_id=GITHUB_OWNER_ID,
             github_repository_id=GITHUB_REPOSITORY_ID,
             github_workflow_id=[GITHUB_WORKFLOW_ID],
@@ -213,9 +266,164 @@ class CogReleaseProvenanceTests(unittest.TestCase):
                 signed_release_output=self.release,
             )
         )
+        prepare_release_validity(
+            argparse.Namespace(
+                release=self.release,
+                registry=self.registry,
+                issued_at="2026-07-29T12:01:00Z",
+                signed_at="2026-07-29T12:01:00Z",
+                not_before="2026-07-29T12:01:00Z",
+                expires_at="2026-08-28T12:01:00Z",
+                output_dir=self.output,
+            )
+        )
+        self.validity_signature_bin = self.output / "validity-signature.bin"
+        self.validity_signature_b64 = self.output / "validity-signature.b64"
+        run(
+            "openssl",
+            "pkeyutl",
+            "-sign",
+            "-inkey",
+            str(self.private_key),
+            "-rawin",
+            "-in",
+            str(self.output / "release-validity-statement.json"),
+            "-out",
+            str(self.validity_signature_bin),
+        )
+        self.validity_signature_b64.write_text(
+            base64.b64encode(self.validity_signature_bin.read_bytes()).decode()
+        )
+        self.validity = self.output / "signed-release-validity.json"
+        finalize_release_validity(
+            argparse.Namespace(
+                release=self.release,
+                registry=self.registry,
+                unsigned_validity=self.output / "unsigned-release-validity.json",
+                signature_file=self.validity_signature_b64,
+                output=self.validity,
+            )
+        )
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def _generate_ed25519_key(
+        self, name: str
+    ) -> tuple[Path, Path, str]:
+        directory = self.directory / name
+        directory.mkdir(parents=True, exist_ok=True)
+        private_key = directory / "private.pem"
+        public_key = directory / "public.pem"
+        run(
+            "openssl",
+            "genpkey",
+            "-algorithm",
+            "ED25519",
+            "-out",
+            str(private_key),
+        )
+        run(
+            "openssl",
+            "pkey",
+            "-in",
+            str(private_key),
+            "-pubout",
+            "-out",
+            str(public_key),
+        )
+        der = subprocess.run(
+            [
+                "openssl",
+                "pkey",
+                "-pubin",
+                "-in",
+                str(public_key),
+                "-outform",
+                "DER",
+            ],
+            check=True,
+            capture_output=True,
+        ).stdout
+        return (
+            private_key,
+            public_key,
+            "sha256:" + hashlib.sha256(der).hexdigest(),
+        )
+
+    def _sign_registry(
+        self,
+        registry_value: dict,
+        signers: list[tuple[str, Path]],
+        *,
+        name: str,
+    ) -> dict:
+        unsigned = copy.deepcopy(registry_value)
+        unsigned.pop("signatures", None)
+        payload_path = self.directory / f"{name}-registry-statement.json"
+        payload_path.write_bytes(canonical_registry_payload(unsigned))
+        signatures = []
+        for index, (key_id, private_key) in enumerate(signers):
+            signature_path = self.directory / f"{name}-root-{index}.sig"
+            run(
+                "openssl",
+                "pkeyutl",
+                "-sign",
+                "-inkey",
+                str(private_key),
+                "-rawin",
+                "-in",
+                str(payload_path),
+                "-out",
+                str(signature_path),
+            )
+            signatures.append(
+                {
+                    "schema": "cognitum.cog.trust-registry.v3",
+                    "algorithm": "ed25519",
+                    "keyId": key_id,
+                    "payloadDigest": registry_payload_digest(unsigned),
+                    "signature": base64.urlsafe_b64encode(
+                        signature_path.read_bytes()
+                    )
+                    .decode("ascii")
+                    .rstrip("="),
+                }
+            )
+        unsigned["signatures"] = signatures
+        return unsigned
+
+    def _root_authority_fixture(
+        self,
+    ) -> tuple[dict, list[tuple[str, Path]]]:
+        roots = []
+        signers = []
+        for index, (role, key_id) in enumerate(ROOT_IDENTITIES.items(), start=1):
+            private_key, public_key, fingerprint = self._generate_ed25519_key(
+                f"trust-root-{index}"
+            )
+            roots.append(
+                {
+                    "role": role,
+                    "keyId": key_id,
+                    "signingResource": (
+                        "projects/cognitum-20260110/locations/us-central1/"
+                        f"keyRings/cog-trust-root-{index}/cryptoKeys/"
+                        f"root-{index}-ed25519/cryptoKeyVersions/1"
+                    ),
+                    "algorithm": "ed25519",
+                    "publicKeyFingerprint": fingerprint,
+                    "publicKeyPem": public_key.read_text(),
+                }
+            )
+            signers.append((key_id, private_key))
+        bootstrap = {
+            "schema": "cognitum.cog.trust-bootstrap.v1",
+            "threshold": 2,
+            "roots": roots,
+        }
+        validate_bootstrap(bootstrap)
+        return bootstrap, signers
 
     def test_ed25519_round_trip_preserves_sigstore_evidence(self) -> None:
         verify(argparse.Namespace(release=self.release, registry=self.registry))
@@ -231,16 +439,20 @@ class CogReleaseProvenanceTests(unittest.TestCase):
         self.assertNotIn("PRIVATE KEY", self.evidence.read_text())
         self.assertNotIn("PRIVATE KEY", self.registry.read_text())
 
-    def test_trust_v2_binds_kms_fingerprint_purpose_and_numeric_github_ids(
+    def test_trust_v3_candidate_binds_kms_purpose_workflow_and_numeric_ids(
         self,
     ) -> None:
         trust = json.loads(self.registry.read_text())
-        key = trust["keys"][KEY_ID]
-        self.assertEqual(trust["schema"], "cognitum.cog.release-trust.v2")
+        key = trust["releases"][0]
+        self.assertEqual(trust["schema"], "cognitum.cog.trust-registry.v3")
+        self.assertEqual(trust["sequence"], 1)
+        self.assertEqual(trust["previousRegistryDigest"], "GENESIS")
+        self.assertEqual(trust["withdrawals"], [])
         self.assertEqual(key["kmsAlgorithm"], "EC_SIGN_ED25519")
         self.assertEqual(key["kmsKeyVersion"], KMS_KEY_VERSION)
         self.assertEqual(key["protectionLevel"], "software")
-        self.assertEqual(key["purposes"], ["release", "withdrawal"])
+        self.assertEqual(key["purpose"], "release")
+        self.assertEqual(key["workflowSha"], "a" * 40)
         self.assertEqual(
             key["github"],
             {
@@ -263,34 +475,578 @@ class CogReleaseProvenanceTests(unittest.TestCase):
                     }
                 },
             ),
-            ("wrong-purpose", {"purposes": ["withdrawal"]}),
+            ("wrong-purpose", {"purpose": "withdrawal"}),
         ):
             with self.subTest(name=name):
                 mutated = copy.deepcopy(trust)
-                mutated["keys"][KEY_ID].update(mutation)
+                mutated["releases"][0].update(mutation)
                 path = self.output / f"bad-trust-{name}.json"
                 path.write_text(json.dumps(mutated))
                 with self.assertRaises(ReleaseError):
                     verify(argparse.Namespace(release=self.release, registry=path))
 
-    def test_signed_withdrawal_round_trip_and_tampering_fail_closed(self) -> None:
-        withdrawal_dir = self.directory / "withdrawal"
-        prepare_withdrawal(
+    def test_quorum_rooted_registry_and_hash_chain_fail_closed(self) -> None:
+        bootstrap, signers = self._root_authority_fixture()
+        bootstrap_path = self.output / "trust-bootstrap.json"
+        bootstrap_path.write_text(json.dumps(bootstrap))
+        genesis = self._sign_registry(
+            json.loads(self.registry.read_text()),
+            signers[:2],
+            name="genesis",
+        )
+        genesis_path = self.output / "signed-trust-registry-genesis.json"
+        genesis_path.write_text(json.dumps(genesis))
+
+        def verify_registry(
+            registry_path: Path,
+            *,
+            expected_registry: str,
+            expected_bootstrap: str | None = None,
+            minimum_sequence: int = 1,
+            previous_registry: Path | None = None,
+            checked_at: str = "2026-07-29T12:30:00Z",
+            selected_bootstrap: Path = bootstrap_path,
+        ) -> None:
+            verify_trust_registry(
+                argparse.Namespace(
+                    bootstrap=selected_bootstrap,
+                    registry=registry_path,
+                    expected_bootstrap_digest=(
+                        expected_bootstrap or bootstrap_digest(bootstrap)
+                    ),
+                    expected_registry_digest=expected_registry,
+                    minimum_sequence=minimum_sequence,
+                    previous_registry=previous_registry,
+                    checked_at=checked_at,
+                )
+            )
+
+        verify_registry(
+            genesis_path,
+            expected_registry=registry_payload_digest(genesis),
+        )
+        verify_admitted_release(
             argparse.Namespace(
                 release=self.release,
-                registry=self.registry,
-                action="withdrawn",
-                reason_code="security.policy",
-                issued_at="2026-07-29T20:00:00Z",
-                key_id=KEY_ID,
-                issuer_identity=BUILDER,
-                issuer_workflow=WORKFLOW,
-                github_owner_id=GITHUB_OWNER_ID,
-                github_repository_id=GITHUB_REPOSITORY_ID,
-                github_workflow_id=GITHUB_WORKFLOW_ID,
-                output_dir=withdrawal_dir,
+                validity=self.validity,
+                bootstrap=bootstrap_path,
+                registry=genesis_path,
+                expected_bootstrap_digest=bootstrap_digest(bootstrap),
+                expected_registry_digest=registry_payload_digest(genesis),
+                minimum_sequence=1,
+                previous_registry=None,
+                checked_at="2026-07-29T12:30:00Z",
             )
         )
+
+        sequence_two = copy.deepcopy(genesis)
+        sequence_two.pop("signatures")
+        sequence_two.update(
+            {
+                "sequence": 2,
+                "previousRegistryDigest": registry_payload_digest(genesis),
+                "issuedAt": "2026-07-29T13:00:00Z",
+                "notBefore": "2026-07-29T13:00:00Z",
+                "expiresAt": "2026-10-27T13:00:00Z",
+            }
+        )
+        sequence_two = self._sign_registry(
+            sequence_two,
+            signers[1:],
+            name="sequence-two",
+        )
+        sequence_two_path = self.output / "signed-trust-registry-2.json"
+        sequence_two_path.write_text(json.dumps(sequence_two))
+        verify_registry(
+            sequence_two_path,
+            expected_registry=registry_payload_digest(sequence_two),
+            minimum_sequence=2,
+            previous_registry=genesis_path,
+            checked_at="2026-07-29T13:01:00Z",
+        )
+
+        one_signature = copy.deepcopy(genesis)
+        one_signature["signatures"] = one_signature["signatures"][:1]
+        duplicate_signature = copy.deepcopy(genesis)
+        duplicate_signature["signatures"][1]["keyId"] = (
+            duplicate_signature["signatures"][0]["keyId"]
+        )
+        unknown_root = copy.deepcopy(genesis)
+        unknown_root["signatures"][1]["keyId"] = "unknown/cog-trust-root"
+        tampered_payload = copy.deepcopy(genesis)
+        tampered_payload["releases"][0]["workflowSha"] = "f" * 40
+        for name, value in (
+            ("one-signature", one_signature),
+            ("duplicate-signature", duplicate_signature),
+            ("unknown-root", unknown_root),
+            ("signed-payload-tamper", tampered_payload),
+        ):
+            with self.subTest(adversarial=name):
+                path = self.output / f"bad-registry-{name}.json"
+                path.write_text(json.dumps(value))
+                with self.assertRaises(ReleaseError):
+                    verify_registry(
+                        path,
+                        expected_registry=registry_payload_digest(value),
+                    )
+
+        with self.subTest(adversarial="source-pin-substitution"):
+            with self.assertRaises(ReleaseError):
+                verify_registry(
+                    genesis_path,
+                    expected_registry=registry_payload_digest(genesis),
+                    expected_bootstrap="sha256:" + "0" * 64,
+                )
+
+        mutated_bootstrap = copy.deepcopy(bootstrap)
+        mutated_bootstrap["roots"][0]["publicKeyFingerprint"] = (
+            "sha256:" + "0" * 64
+        )
+        mutated_bootstrap_path = self.output / "bad-bootstrap-fingerprint.json"
+        mutated_bootstrap_path.write_text(json.dumps(mutated_bootstrap))
+        with self.subTest(adversarial="bootstrap-fingerprint-substitution"):
+            with self.assertRaises(ReleaseError):
+                verify_registry(
+                    genesis_path,
+                    expected_registry=registry_payload_digest(genesis),
+                    expected_bootstrap=bootstrap_digest(mutated_bootstrap),
+                    selected_bootstrap=mutated_bootstrap_path,
+                )
+
+        with self.subTest(adversarial="registry-rollback"):
+            with self.assertRaises(ReleaseError):
+                verify_registry(
+                    genesis_path,
+                    expected_registry=registry_payload_digest(genesis),
+                    minimum_sequence=2,
+                )
+
+        with self.subTest(adversarial="expired-registry"):
+            with self.assertRaises(ReleaseError):
+                verify_registry(
+                    genesis_path,
+                    expected_registry=registry_payload_digest(genesis),
+                    checked_at="2026-10-28T00:00:00Z",
+                )
+
+        for name, sequence, predecessor_digest in (
+            ("broken-predecessor", 2, "sha256:" + "0" * 64),
+            ("sequence-gap", 3, registry_payload_digest(genesis)),
+        ):
+            chained = copy.deepcopy(sequence_two)
+            chained.pop("signatures")
+            chained["sequence"] = sequence
+            chained["previousRegistryDigest"] = predecessor_digest
+            chained = self._sign_registry(
+                chained,
+                signers[:2],
+                name=name,
+            )
+            path = self.output / f"bad-registry-{name}.json"
+            path.write_text(json.dumps(chained))
+            with self.subTest(adversarial=name):
+                with self.assertRaises(ReleaseError):
+                    verify_registry(
+                        path,
+                        expected_registry=registry_payload_digest(chained),
+                        previous_registry=genesis_path,
+                        checked_at="2026-07-29T13:01:00Z",
+                    )
+
+    def test_release_validity_time_bounds_and_signature_fail_closed(self) -> None:
+        verify_release_validity(
+            argparse.Namespace(
+                release=self.release,
+                validity=self.validity,
+                registry=self.registry,
+                checked_at="2026-08-01T00:00:00Z",
+            )
+        )
+        with self.assertRaises(ReleaseError):
+            verify_release_validity(
+                argparse.Namespace(
+                    release=self.release,
+                    validity=self.validity,
+                    registry=self.registry,
+                    checked_at="2026-08-28T12:06:00Z",
+                )
+            )
+
+        tampered = json.loads(self.validity.read_text())
+        tampered["expiresAt"] = "2026-08-27T12:01:00Z"
+        tampered_path = self.output / "tampered-release-validity.json"
+        tampered_path.write_text(json.dumps(tampered))
+        with self.assertRaises(ReleaseError):
+            verify_release_validity(
+                argparse.Namespace(
+                    release=self.release,
+                    validity=tampered_path,
+                    registry=self.registry,
+                    checked_at="2026-08-01T00:00:00Z",
+                )
+            )
+
+        future_revocation = json.loads(self.registry.read_text())
+        future_revocation["releases"][0].update(
+            {
+                "status": "revoked",
+                "revocation": {
+                    "effectiveAt": "2026-07-29T13:00:00Z",
+                    "reasonCode": "security.key",
+                    "scope": "future-signatures",
+                },
+            }
+        )
+        future_revocation_path = self.output / "future-key-revocation.json"
+        future_revocation_path.write_text(json.dumps(future_revocation))
+        verify_release_validity(
+            argparse.Namespace(
+                release=self.release,
+                validity=self.validity,
+                registry=future_revocation_path,
+                checked_at="2026-08-01T00:00:00Z",
+            )
+        )
+        with self.assertRaises(ReleaseError):
+            verify(
+                argparse.Namespace(
+                    release=self.release,
+                    registry=future_revocation_path,
+                )
+            )
+
+        for name, effective_at, scope in (
+            ("all-signatures", "2026-07-29T13:00:00Z", "all-signatures"),
+            (
+                "future-signatures-after-effective",
+                "2026-07-29T12:00:00Z",
+                "future-signatures",
+            ),
+        ):
+            revoked = copy.deepcopy(future_revocation)
+            revoked["releases"][0]["revocation"].update(
+                {"effectiveAt": effective_at, "scope": scope}
+            )
+            revoked_path = self.output / f"revoked-{name}.json"
+            revoked_path.write_text(json.dumps(revoked))
+            with self.subTest(adversarial=name), self.assertRaises(ReleaseError):
+                verify_release_validity(
+                    argparse.Namespace(
+                        release=self.release,
+                        validity=self.validity,
+                        registry=revoked_path,
+                        checked_at="2026-08-01T00:00:00Z",
+                    )
+                )
+
+        for name, times in (
+            (
+                "overlong-lifetime",
+                {
+                    "issued_at": "2026-07-29T12:01:00Z",
+                    "signed_at": "2026-07-29T12:01:00Z",
+                    "not_before": "2026-07-29T12:01:00Z",
+                    "expires_at": "2026-08-29T12:01:00Z",
+                },
+            ),
+            (
+                "signed-before-issuance",
+                {
+                    "issued_at": "2026-07-29T12:01:00Z",
+                    "signed_at": "2026-07-29T12:00:59Z",
+                    "not_before": "2026-07-29T12:01:00Z",
+                    "expires_at": "2026-08-28T12:01:00Z",
+                },
+            ),
+            (
+                "signed-after-skew",
+                {
+                    "issued_at": "2026-07-29T12:01:00Z",
+                    "signed_at": "2026-07-29T12:06:01Z",
+                    "not_before": "2026-07-29T12:01:00Z",
+                    "expires_at": "2026-08-28T12:01:00Z",
+                },
+            ),
+        ):
+            with self.subTest(adversarial=name), self.assertRaises(ReleaseError):
+                prepare_release_validity(
+                    argparse.Namespace(
+                        release=self.release,
+                        registry=self.registry,
+                        output_dir=self.output / name,
+                        **times,
+                    )
+                )
+
+    def test_runtime_cache_staleness_policy_is_exact_and_fail_closed(self) -> None:
+        policy = json.loads(
+            (ROOT / "config" / "cog-release-runtime-cache-policy.json").read_text()
+        )
+        validate_runtime_cache_policy(policy)
+        self.assertEqual(
+            runtime_cache_decision(
+                policy,
+                source="trustRegistry",
+                fetched_at="2026-07-29T12:00:00Z",
+                checked_at="2026-07-29T12:05:00Z",
+                refresh_succeeded=False,
+                operation="new-deployment",
+            ),
+            "fresh",
+        )
+        self.assertEqual(
+            runtime_cache_decision(
+                policy,
+                source="trustRegistry",
+                fetched_at="2026-07-29T12:00:00Z",
+                checked_at="2026-07-29T12:05:01Z",
+                refresh_succeeded=False,
+                operation="new-deployment",
+            ),
+            "deny-dependency-unavailable",
+        )
+        self.assertEqual(
+            runtime_cache_decision(
+                policy,
+                source="withdrawalProjection",
+                fetched_at="2026-07-29T12:00:00Z",
+                checked_at="2026-07-29T12:00:31Z",
+                refresh_succeeded=False,
+                operation="running-workload",
+            ),
+            "continue",
+        )
+        self.assertEqual(
+            policy["onRefreshFailure"]["coldStart"],
+            "zero-deployable",
+        )
+        for name, mutate in (
+            (
+                "long-registry-ttl",
+                lambda value: value["sources"]["trustRegistry"].update(
+                    {"ttlSeconds": 301}
+                ),
+            ),
+            (
+                "long-negative-withdrawal-ttl",
+                lambda value: value.update(
+                    {"negativeWithdrawalTtlSeconds": 31}
+                ),
+            ),
+            (
+                "fail-open-new-deploy",
+                lambda value: value["onRefreshFailure"].update(
+                    {"newDeploymentAfterTtl": "continue"}
+                ),
+            ),
+        ):
+            with self.subTest(adversarial=name):
+                mutated = copy.deepcopy(policy)
+                mutate(mutated)
+                with self.assertRaises(ReleaseError):
+                    validate_runtime_cache_policy(mutated)
+
+    def test_sigstore_transparency_entry_is_mandatory(self) -> None:
+        for name, entries in (
+            ("missing-entry", []),
+            (
+                "empty-inclusion-promise",
+                [
+                    {
+                        "logIndex": "1",
+                        "logId": {"keyId": "fixture-log"},
+                        "inclusionPromise": {},
+                    }
+                ],
+            ),
+        ):
+            with self.subTest(adversarial=name):
+                missing_tlog = (
+                    self.directory / f"artifact-{name}.sigstore.json"
+                )
+                missing_tlog.write_text(
+                    json.dumps(
+                        {
+                            "mediaType": (
+                                "application/vnd.dev.sigstore.bundle+json;"
+                                "version=0.3"
+                            ),
+                            "verificationMaterial": {"tlogEntries": entries},
+                        }
+                    )
+                )
+                args = argparse.Namespace(**vars(self.prepare_args))
+                args.sigstore_bundle = missing_tlog
+                args.output_dir = self.directory / f"{name}-release"
+                with self.assertRaises(ReleaseError):
+                    prepare(args)
+
+    def test_evidence_matrix_is_complete_deterministic_and_owned(self) -> None:
+        matrix = json.loads(
+            (ROOT / "config" / "cog-release-evidence-matrix.v1.json").read_text()
+        )
+        self.assertEqual(
+            set(matrix),
+            {
+                "schema",
+                "adr",
+                "sourceAuthority",
+                "artifactTemplate",
+                "requiredEnvelopeFields",
+                "entries",
+            },
+        )
+        self.assertEqual(
+            matrix["schema"], "cognitum.cog.release-evidence-matrix.v1"
+        )
+        expected_ids = [f"EV-128-{index:02d}" for index in range(1, 15)]
+        self.assertEqual(
+            [entry["id"] for entry in matrix["entries"]],
+            expected_ids,
+        )
+        required_entry_fields = {
+            "id",
+            "owner",
+            "independentReviewer",
+            "command",
+            "expected",
+            "artifact",
+            "sourceStatus",
+        }
+        for entry in matrix["entries"]:
+            self.assertEqual(set(entry), required_entry_fields)
+            self.assertTrue(entry["owner"])
+            self.assertTrue(entry["independentReviewer"])
+            self.assertTrue(entry["command"])
+            self.assertTrue(entry["expected"])
+            self.assertEqual(
+                entry["artifact"],
+                f"evidence/adr-156/<run-id>/{entry['id']}.json",
+            )
+        envelope_fields = set(matrix["requiredEnvelopeFields"])
+        for field in (
+            "startedAt",
+            "finishedAt",
+            "inputDigest",
+            "stdoutDigest",
+            "stderrDigest",
+            "sourceSha",
+            "previousReceiptDigest",
+        ):
+            self.assertIn(field, envelope_fields)
+
+    def test_signed_withdrawal_round_trip_and_tampering_fail_closed(self) -> None:
+        withdrawal_dir = self.directory / "withdrawal"
+        withdrawal_private_key = withdrawal_dir / "private.pem"
+        withdrawal_public_key = withdrawal_dir / "public.pem"
+        withdrawal_dir.mkdir(parents=True)
+        run(
+            "openssl",
+            "genpkey",
+            "-algorithm",
+            "ED25519",
+            "-out",
+            str(withdrawal_private_key),
+        )
+        run(
+            "openssl",
+            "pkey",
+            "-in",
+            str(withdrawal_private_key),
+            "-pubout",
+            "-out",
+            str(withdrawal_public_key),
+        )
+        der = subprocess.run(
+            [
+                "openssl",
+                "pkey",
+                "-pubin",
+                "-in",
+                str(withdrawal_public_key),
+                "-outform",
+                "DER",
+            ],
+            check=True,
+            capture_output=True,
+        ).stdout
+        trust = json.loads(self.registry.read_text())
+        trust["withdrawals"].append(
+            {
+                "keyId": WITHDRAWAL_KEY_ID,
+                "algorithm": "ed25519",
+                "kmsAlgorithm": "EC_SIGN_ED25519",
+                "kmsKeyVersion": WITHDRAWAL_KMS_KEY_VERSION,
+                "protectionLevel": "software",
+                "publicKeyFingerprint": (
+                    "sha256:" + hashlib.sha256(der).hexdigest()
+                ),
+                "publicKeyPem": withdrawal_public_key.read_text(),
+                "status": "active",
+                "purpose": "withdrawal",
+                "notBefore": "2026-07-29T00:00:00Z",
+                "expiresAt": "2027-07-29T00:00:00Z",
+                "builderIdentities": [f"{BUILDER}:withdrawal"],
+                "buildWorkflows": [WITHDRAWAL_WORKFLOW],
+                "workflowSha": WITHDRAWAL_WORKFLOW_SHA,
+                "github": {
+                    "ownerId": GITHUB_OWNER_ID,
+                    "repositoryId": GITHUB_REPOSITORY_ID,
+                    "workflowIds": [WITHDRAWAL_WORKFLOW_ID],
+                },
+                "revocation": None,
+            }
+        )
+        validate_registry(trust, signed=False)
+        combined_registry = withdrawal_dir / "trust-registry.json"
+        combined_registry.write_text(json.dumps(trust))
+        withdrawal_arguments = {
+            "release": self.release,
+            "validity": self.validity,
+            "registry": combined_registry,
+            "action": "withdrawn",
+            "reason_code": "security.policy",
+            "issued_at": "2026-07-29T20:00:00Z",
+            "effective_at": "2026-07-29T20:00:00Z",
+            "key_id": WITHDRAWAL_KEY_ID,
+            "issuer_identity": f"{BUILDER}:withdrawal",
+            "issuer_workflow": WITHDRAWAL_WORKFLOW,
+            "github_owner_id": GITHUB_OWNER_ID,
+            "github_repository_id": GITHUB_REPOSITORY_ID,
+            "github_workflow_id": WITHDRAWAL_WORKFLOW_ID,
+            "workflow_sha": WITHDRAWAL_WORKFLOW_SHA,
+            "output_dir": withdrawal_dir,
+        }
+        for name, mutation in (
+            ("release-purpose-key", {"key_id": KEY_ID}),
+            (
+                "effective-before-release",
+                {"effective_at": "2026-07-29T12:00:59Z"},
+            ),
+            (
+                "effective-after-issuance",
+                {"effective_at": "2026-07-29T20:00:01Z"},
+            ),
+        ):
+            with self.subTest(adversarial=name), self.assertRaises(ReleaseError):
+                prepare_withdrawal(
+                    argparse.Namespace(**(withdrawal_arguments | mutation))
+                )
+        release_as_withdrawal = copy.deepcopy(trust)
+        misplaced_release = release_as_withdrawal["releases"].pop()
+        misplaced_release["purpose"] = "withdrawal"
+        release_as_withdrawal["withdrawals"].append(misplaced_release)
+        release_as_withdrawal_path = withdrawal_dir / "release-as-withdrawal.json"
+        release_as_withdrawal_path.write_text(json.dumps(release_as_withdrawal))
+        with self.assertRaises(ReleaseError):
+            verify(
+                argparse.Namespace(
+                    release=self.release,
+                    registry=release_as_withdrawal_path,
+                )
+            )
+
+        prepare_withdrawal(argparse.Namespace(**withdrawal_arguments))
         withdrawal_signature = withdrawal_dir / "withdrawal-signature.bin"
         withdrawal_signature_b64 = withdrawal_dir / "withdrawal-signature.b64"
         run(
@@ -298,7 +1054,7 @@ class CogReleaseProvenanceTests(unittest.TestCase):
             "pkeyutl",
             "-sign",
             "-inkey",
-            str(self.private_key),
+            str(withdrawal_private_key),
             "-rawin",
             "-in",
             str(withdrawal_dir / "withdrawal-statement.json"),
@@ -313,10 +1069,11 @@ class CogReleaseProvenanceTests(unittest.TestCase):
         finalize_withdrawal(
             argparse.Namespace(
                 release=self.release,
-                registry=self.registry,
+                validity=self.validity,
+                registry=combined_registry,
                 unsigned_withdrawal=withdrawal_dir / "unsigned-withdrawal.json",
                 signature_file=withdrawal_signature_b64,
-                key_id=KEY_ID,
+                key_id=WITHDRAWAL_KEY_ID,
                 output=evidence,
                 signed_withdrawal_output=signed,
             )
@@ -324,8 +1081,9 @@ class CogReleaseProvenanceTests(unittest.TestCase):
         verify_withdrawal(
             argparse.Namespace(
                 release=self.release,
+                validity=self.validity,
                 withdrawal=signed,
-                registry=self.registry,
+                registry=combined_registry,
             )
         )
         record = json.loads(signed.read_text())
@@ -352,7 +1110,7 @@ const fs=require('fs');
 const withdrawal=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
 const trust=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const envelope=withdrawal.detachedSignature;
-const key=trust.keys[envelope.keyId].publicKeyPem;
+const key=trust.withdrawals.find(k=>k.keyId===envelope.keyId).publicKeyPem;
 delete withdrawal.detachedSignature;
 delete withdrawal.seededAt;
 function c(v) {
@@ -370,7 +1128,7 @@ if (!crypto.verify(null,payload,key,Buffer.from(envelope.signature,'base64url'))
 process.stdout.write(payload);
 """,
                 str(signed),
-                str(self.registry),
+                str(combined_registry),
             ],
             check=True,
             capture_output=True,
@@ -385,23 +1143,69 @@ process.stdout.write(payload);
             verify_withdrawal(
                 argparse.Namespace(
                     release=self.release,
+                    validity=self.validity,
                     withdrawal=tampered_path,
-                    registry=self.registry,
+                    registry=combined_registry,
                 )
             )
 
-        trust = json.loads(self.registry.read_text())
-        trust["keys"][KEY_ID]["purposes"] = ["release"]
         release_only = withdrawal_dir / "release-only-trust.json"
-        release_only.write_text(json.dumps(trust))
+        release_only.write_text(self.registry.read_text())
         with self.assertRaises(ReleaseError):
             verify_withdrawal(
                 argparse.Namespace(
                     release=self.release,
+                    validity=self.validity,
                     withdrawal=signed,
                     registry=release_only,
                 )
             )
+
+        withdrawal_as_release = copy.deepcopy(trust)
+        misplaced_withdrawal = withdrawal_as_release["withdrawals"].pop()
+        misplaced_withdrawal["purpose"] = "release"
+        withdrawal_as_release["releases"].append(misplaced_withdrawal)
+        withdrawal_as_release_path = (
+            withdrawal_dir / "withdrawal-as-release.json"
+        )
+        withdrawal_as_release_path.write_text(json.dumps(withdrawal_as_release))
+        with self.assertRaises(ReleaseError):
+            verify_withdrawal(
+                argparse.Namespace(
+                    release=self.release,
+                    validity=self.validity,
+                    withdrawal=signed,
+                    registry=withdrawal_as_release_path,
+                )
+            )
+
+        decision = withdrawal_dir / "decision.json"
+        withdrawal_projection_decision(
+            argparse.Namespace(
+                release=self.release,
+                validity=self.validity,
+                withdrawal=signed,
+                registry=combined_registry,
+                expected_release_digest=record["releaseDigest"],
+                checked_at="2026-07-29T20:00:00Z",
+                output=decision,
+            )
+        )
+        self.assertEqual(json.loads(decision.read_text())["state"], "DENIED")
+        withdrawal_projection_decision(
+            argparse.Namespace(
+                release=self.release,
+                validity=self.validity,
+                withdrawal=tampered_path,
+                registry=combined_registry,
+                expected_release_digest=record["releaseDigest"],
+                checked_at="2026-07-29T20:00:00Z",
+                output=decision,
+            )
+        )
+        quarantined = json.loads(decision.read_text())
+        self.assertEqual(quarantined["state"], "QUARANTINED")
+        self.assertEqual(quarantined["releaseDigest"], record["releaseDigest"])
 
     def test_protected_generation_bound_evidence_admission(self) -> None:
         bucket = "cognitum-20260110-cog-release-stg"
@@ -418,6 +1222,8 @@ process.stdout.write(payload);
             ),
             generation="1785355200123456",
             content_digest=f"sha256:{content}",
+            sigstore_bundle_digest="sha256:" + "c" * 64,
+            sigstore_transparency_log_verified="true",
             output=output,
         )
         admission(args)
@@ -673,9 +1479,22 @@ process.stdout.write(c({schema:'cognitum.cog.release-provenance.v1',release}));
     def test_committed_public_fixture_verifies_in_python_and_node(self) -> None:
         release_path = PUBLIC_FIXTURE / "signed-release.json"
         trust_path = PUBLIC_FIXTURE / "release-trust-registry.json"
+        bootstrap_path = PUBLIC_FIXTURE / "trust-bootstrap.json"
+        trust_value = json.loads(trust_path.read_text())
+        bootstrap_value = json.loads(bootstrap_path.read_text())
+        verify_trust_registry(
+            argparse.Namespace(
+                bootstrap=bootstrap_path,
+                registry=trust_path,
+                expected_bootstrap_digest=bootstrap_digest(bootstrap_value),
+                expected_registry_digest=registry_payload_digest(trust_value),
+                minimum_sequence=1,
+                previous_registry=None,
+                checked_at="2026-07-29T12:01:00Z",
+            )
+        )
         verify(argparse.Namespace(release=release_path, registry=trust_path))
         release = json.loads(release_path.read_text())
-        trust = json.loads(trust_path.read_text())
         node = subprocess.run(
             [
                 "node",
@@ -686,7 +1505,7 @@ const fs=require('fs');
 const release=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
 const trust=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const envelope=release.provenance.detachedSignature;
-const key=trust.keys[envelope.keyId].publicKeyPem;
+const key=trust.releases.find(k=>k.keyId===envelope.keyId).publicKeyPem;
 delete release.provenance.detachedSignature;
 delete release.seededAt;
 function c(v) {
@@ -715,7 +1534,7 @@ process.stdout.write(payload);
         )
         self.assertEqual(
             hashlib.sha256(trust_path.read_bytes()).hexdigest(),
-            "7403d9b47e9f132e657a9a5fe51fe3833a512d15b763deffb37b0e4d79f5090a",
+            "b47856f9a940466d2961d04c65b202aa27f8060ac4b186284a53909f2070f8c8",
         )
 
     def test_tampering_or_workflow_substitution_fails_closed(self) -> None:
@@ -767,7 +1586,9 @@ process.stdout.write(payload);
             )
 
         trust = json.loads(self.registry.read_text())
-        trust["keys"][KEY_ID]["buildWorkflows"] = ["cognitum-one/cogs/other.yml@main"]
+        trust["releases"][0]["buildWorkflows"] = [
+            "cognitum-one/cogs/other.yml@main"
+        ]
         untrusted = self.output / "untrusted.json"
         untrusted.write_text(json.dumps(trust))
         with self.assertRaises(ReleaseError):
@@ -863,13 +1684,13 @@ process.stdout.write(payload);
             )
 
     def test_schemas_and_stage_only_workflow_contract(self) -> None:
-        schemas = sorted(ROOT.glob("schemas/cognitum.cog.release-*.schema.json"))
-        self.assertEqual(len(schemas), 6)
+        schemas = sorted(ROOT.glob("schemas/*.schema.json"))
+        self.assertEqual(len(schemas), 13)
         encoded = json.dumps([json.loads(path.read_text()) for path in schemas])
         self.assertIn("cognitum.cog.release-provenance.v1", encoded)
         self.assertIn("Complete signed Cog release record v1", encoded)
         self.assertIn("runtimeIntegrations", encoded)
-        self.assertIn("cognitum.cog.release-trust.v2", encoded)
+        self.assertIn("cognitum.cog.trust-registry.v3", encoded)
         self.assertIn("cognitum.cog.release-withdrawal.v1", encoded)
         self.assertIn("cognitum.cog.release-evidence-locations.v1", encoded)
         self.assertIn("ed25519", encoded)
@@ -878,7 +1699,7 @@ process.stdout.write(payload);
         self.assertIn("EC_SIGN_ED25519", staging)
         self.assertIn("kms asymmetric-sign", staging)
         self.assertNotIn("--digest-algorithm", staging)
-        self.assertIn("release-trust-registry.json", staging)
+        self.assertIn("candidate-trust-registry.json", staging)
         self.assertIn("cosign", staging)
         self.assertNotIn("GCP_COGS_STAGING_SIGNING_KEY", production)
         self.assertNotIn("EC_SIGN_ED25519", production)
@@ -891,7 +1712,7 @@ process.stdout.write(payload);
             text=True,
         )
         self.assertEqual(checked.returncode, 0, checked.stderr)
-        self.assertIn("validated 10 local schemas", checked.stdout)
+        self.assertIn("validated 13 local schemas", checked.stdout)
 
 
 class CogReleaseSchemaGateTests(unittest.TestCase):
@@ -956,6 +1777,7 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "security.yml",
                 "publish-cog.yml",
                 "publish-cog-staging.yml",
+                "withdraw-cog-staging.yml",
                 "build-all-cogs.yml",
             )
         }
@@ -995,6 +1817,7 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
         if "\npermissions:\n  contents: read\n\njobs:" not in ci:
             problems.append("ci: workflow permissions are not read-only")
         staging = workflows["publish-cog-staging.yml"]
+        withdrawal = workflows["withdraw-cog-staging.yml"]
         production = workflows["publish-cog.yml"]
         batch = workflows["build-all-cogs.yml"]
         sidecar_workflows = {
@@ -1028,21 +1851,65 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             'PREPARE+=(--static-website-bundle "${{ steps.website_bundle.outputs.bundle }}")',
             'upload_immutable "${{ steps.integrations.outputs.manifest }}"',
             'upload_immutable "${{ steps.integrations.outputs.checksum }}"',
-            "cognitum.cog.release-trust.v2",
+            "cognitum.cog.trust-registry.v3",
             "--kms-key-version",
             "--protection-level SOFTWARE",
-            "--purpose withdrawal",
+            "--purpose release",
             '--github-owner-id "${{ github.repository_owner_id }}"',
             '--github-repository-id "${{ github.repository_id }}"',
             "--github-workflow-id 322710413",
             "cognitum-20260110-cog-release-stg",
             "--if-generation-match=0",
             "--print-created-message",
-            "release-evidence-locations.json",
+            "candidate-release-evidence-locations.json",
             "--retention-policy-locked",
+            "timeout --signal=TERM --kill-after=5s 120s",
+            '"status": "UNKNOWN"',
+            '"retryAllowed": False',
+            "return 75",
+            "do not retry or upsert; use the read-only auditor",
+            "reconcile-cog-seed-staging.yml",
         ):
             if token not in staging:
                 problems.append(f"staging: missing exact sidecar binding {token}")
+        for token in (
+            "environment: cogs-withdrawal-staging",
+            "cogs-withdrawal-publisher-stg",
+            "cog-withdrawal-publisher-stg@cognitum-20260110",
+            "cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519",
+            "cognitum-20260110-cog-withdrawal-stg",
+            "verify-admitted-release",
+            "key.get(\"purpose\") != \"withdrawal\"",
+            "policy_decision_uri",
+            "sigstore_bundle_uri",
+            "require_transparency_log_bundle",
+            'release["securityAttestation"][',
+            '"policyDecisionDigest"',
+            "--effective-at",
+            "--if-generation-match=0",
+            "timeout --signal=TERM --kill-after=5s 120s",
+            "create result is UNKNOWN; never retry or upsert",
+            '"status": "UNKNOWN"',
+            '"retryAllowed": False',
+            "reconcile-cog-seed-staging.yml",
+            "exit 75",
+            "No Firestore/runtime seed was attempted.",
+        ):
+            if token not in withdrawal:
+                problems.append(f"withdrawal: missing authority separation {token}")
+        if (
+            "--purpose withdrawal" in staging
+            or "cog-withdrawal-stg" in staging
+            or "cog-withdrawal-publisher-stg" in staging
+        ):
+            problems.append("staging: release publisher retains withdrawal authority")
+        if (
+            "cog-release-publisher-stg@" in withdrawal
+            or "cog-release-stg/cryptoKeys/release-ed25519" in withdrawal
+        ):
+            problems.append("withdrawal: release authority is reused")
+        if "createDocument" in withdrawal or "datastore.entities" in withdrawal:
+            problems.append("withdrawal: publisher contains projection-seeder authority")
         if "gs://cognitum-apps" in staging:
             problems.append("staging: legacy public evidence bucket remains")
         if "Refuse unsigned production publication (ADR-155 freeze)" not in production:
@@ -1128,18 +1995,38 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             ),
             "trust-v1-downgrade": (
                 "publish-cog-staging.yml",
+                "cognitum.cog.trust-registry.v3",
                 "cognitum.cog.release-trust.v2",
-                "cognitum.cog.release-trust.v1",
             ),
             "legacy-public-bucket": (
                 "publish-cog-staging.yml",
                 "cognitum-20260110-cog-release-stg",
                 "cognitum-apps",
             ),
+            "release-gains-withdrawal-purpose": (
+                "publish-cog-staging.yml",
+                "--purpose release",
+                "--purpose withdrawal",
+            ),
+            "withdrawal-gains-release-purpose": (
+                "withdraw-cog-staging.yml",
+                'key.get("purpose") != "withdrawal"',
+                'key.get("purpose") != "release"',
+            ),
             "mutable-evidence-upload": (
                 "publish-cog-staging.yml",
                 "--if-generation-match=0",
                 "--if-generation-match=1",
+            ),
+            "unknown-becomes-retryable": (
+                "publish-cog-staging.yml",
+                '"retryAllowed": False',
+                '"retryAllowed": True',
+            ),
+            "withdrawal-blind-retry": (
+                "withdraw-cog-staging.yml",
+                "create result is UNKNOWN; never retry or upsert",
+                "create result is transient; retrying",
             ),
             "production-unfrozen": (
                 "publish-cog.yml",

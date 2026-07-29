@@ -1,0 +1,30 @@
+{
+  "roots": [
+    {
+      "algorithm": "ed25519",
+      "keyId": "security-custodian/cog-trust-root-a",
+      "publicKeyFingerprint": "sha256:d8a8186d43100aaf93ad6a5cb95891aa72c6018879318e2f825c38d0afecbe25",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAOBUrN5iZjEXsiX64277NP7YZ6zNSqdzuBmTukkEh3RA=\n-----END PUBLIC KEY-----\n",
+      "role": "security-custodian",
+      "signingResource": "projects/cognitum-fixture/locations/us-central1/keyRings/offline-cog-trust/cryptoKeys/root-a/cryptoKeyVersions/1"
+    },
+    {
+      "algorithm": "ed25519",
+      "keyId": "platform-custodian/cog-trust-root-b",
+      "publicKeyFingerprint": "sha256:8b7fadf010ae3b247dce2c570777fae08baab3fda6aa8c3fbfdff0dc6f0e2f9a",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAuZvla3L7cDLb/sbbA4haQZ2p1vL1fuyDhnEF9/5imzc=\n-----END PUBLIC KEY-----\n",
+      "role": "platform-custodian",
+      "signingResource": "projects/cognitum-fixture/locations/us-central1/keyRings/offline-cog-trust/cryptoKeys/root-b/cryptoKeyVersions/1"
+    },
+    {
+      "algorithm": "ed25519",
+      "keyId": "independent-auditor/cog-trust-root-c",
+      "publicKeyFingerprint": "sha256:cb200fbe348faec9dc403c729bf1257f3240b45f1f0cb0f815a460371945bb9d",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAzvn8fP60VLR5D5GH7dSbNgjmYsfkD5OQzCQA/CZ4S2Y=\n-----END PUBLIC KEY-----\n",
+      "role": "independent-auditor",
+      "signingResource": "projects/cognitum-fixture/locations/us-central1/keyRings/offline-cog-trust/cryptoKeys/root-c/cryptoKeyVersions/1"
+    }
+  ],
+  "schema": "cognitum.cog.trust-bootstrap.v1",
+  "threshold": 2
+}

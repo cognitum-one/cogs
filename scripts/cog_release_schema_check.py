@@ -22,11 +22,16 @@ EXPECTED_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from cog_release_provenance import verify  # noqa: E402
+from cog_release_provenance import verify, verify_trust_registry  # noqa: E402
 from cog_release_provenance_lib import (  # noqa: E402
     read_json,
     validate_policy,
     validate_release,
+    validate_runtime_cache_policy,
+)
+from cog_trust_registry import (  # noqa: E402
+    bootstrap_digest,
+    registry_payload_digest,
 )
 
 
@@ -389,10 +394,15 @@ def _validate(
 def check() -> None:
     registry, by_path = _load_schemas()
     release_paths = sorted(SCHEMA_DIR.glob("cognitum.cog.release-*.schema.json"))
+    trust_paths = sorted(SCHEMA_DIR.glob("cognitum.cog.trust-*.schema.json"))
     integration_paths = sorted(SCHEMA_DIR.glob("cog-integrations*.schema.json"))
-    if len(release_paths) != 6 or len(integration_paths) != 4:
+    if (
+        len(release_paths) != 7
+        or len(trust_paths) != 2
+        or len(integration_paths) != 4
+    ):
         raise SchemaCheckError(
-            "expected exactly six release and four integration schemas"
+            "expected seven release, two trust, and four integration schemas"
         )
 
     for path, schema in by_path.items():
@@ -416,8 +426,16 @@ def check() -> None:
             ROOT / "tests/fixtures/cog-release/signed-release.json",
         ),
         (
-            "https://schemas.cognitum.one/cognitum.cog.release-trust.v2.schema.json",
+            "https://schemas.cognitum.one/cognitum.cog.trust-registry.v3.schema.json",
             ROOT / "tests/fixtures/cog-release/release-trust-registry.json",
+        ),
+        (
+            "https://schemas.cognitum.one/cognitum.cog.trust-bootstrap.v1.schema.json",
+            ROOT / "tests/fixtures/cog-release/trust-bootstrap.json",
+        ),
+        (
+            "https://schemas.cognitum.one/cognitum.cog.release-runtime-cache-policy.v1.schema.json",
+            ROOT / "config/cog-release-runtime-cache-policy.json",
         ),
     )
     for schema_id, fixture_path in fixtures:
@@ -437,9 +455,23 @@ def check() -> None:
     release = read_json(fixtures[1][1])
     validate_policy(policy)
     validate_release(release, signed=True)
+    bootstrap = read_json(fixtures[3][1])
+    registry_value = read_json(fixtures[2][1])
+    validate_runtime_cache_policy(read_json(fixtures[4][1]))
+    verify_trust_registry(
+        argparse.Namespace(
+            bootstrap=fixtures[3][1],
+            registry=fixtures[2][1],
+            expected_bootstrap_digest=bootstrap_digest(bootstrap),
+            expected_registry_digest=registry_payload_digest(registry_value),
+            minimum_sequence=1,
+            previous_registry=None,
+            checked_at="2026-07-29T12:01:00Z",
+        )
+    )
     verify(argparse.Namespace(release=fixtures[1][1], registry=fixtures[2][1]))
     print(
-        "validated 10 local schemas, all references, ratified policy, "
+        "validated 13 local schemas, all references, ratified policy, "
         "and public signed fixtures"
     )
 

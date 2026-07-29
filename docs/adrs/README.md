@@ -13,7 +13,7 @@ in chronological order; status reflects current adoption.
 | 153 | [Optional runtime integration manifests](ADR-153-optional-runtime-integration-manifests.md) | Accepted |
 | 154 | [Canonical Ed25519 Cog release records](ADR-154-canonical-ed25519-release-records.md) | Accepted |
 | 155 | [Signed runtime integration release binding](ADR-155-signed-runtime-integration-release-binding.md) | Accepted |
-| 156 | [Release trust v2 and protected evidence custody](ADR-156-release-authority-v2-and-protected-custody.md) | Proposed |
+| 156 | [Quorum-rooted release authority and separated staging custody](ADR-156-release-authority-v2-and-protected-custody.md) | Proposed |
 
 ## New practical capability cogs (2026-04 wave)
 

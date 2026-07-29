@@ -4,7 +4,7 @@
   "title": "Protected Cog release evidence locations v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "bucket", "objects"],
+  "required": ["schema", "bucket", "integrity", "objects"],
   "properties": {
     "schema": {
       "const": "cognitum.cog.release-evidence-locations.v1"
@@ -47,6 +47,31 @@
         },
         "versioningEnabled": {
           "const": true
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kmsSignatureVerified",
+        "quorumRegistryRequired",
+        "sigstoreTransparencyLogVerified",
+        "sigstoreBundleDigest"
+      ],
+      "properties": {
+        "kmsSignatureVerified": {
+          "const": true
+        },
+        "quorumRegistryRequired": {
+          "const": true
+        },
+        "sigstoreTransparencyLogVerified": {
+          "const": true
+        },
+        "sigstoreBundleDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
         }
       }
     },
