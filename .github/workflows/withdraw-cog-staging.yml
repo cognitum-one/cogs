@@ -184,8 +184,9 @@ jobs:
             cognitum-20260110-cog-release-stg
           read_exact "$SIGSTORE_BUNDLE_URI" out/withdrawal/artifact.sigstore.json \
             cognitum-20260110-cog-release-stg
-          test -f config/cog-trust-bootstrap.json
-          cp config/cog-trust-bootstrap.json out/withdrawal/cog-trust-bootstrap.json
+          test -f config/cog-trust-bootstrap.v1.json
+          cp config/cog-trust-bootstrap.v1.json \
+            out/withdrawal/cog-trust-bootstrap.v1.json
 
       - name: Verify root admission and current release validity
         env:
@@ -199,7 +200,7 @@ jobs:
             --release out/withdrawal/signed-release.json \
             --validity out/withdrawal/signed-release-validity.json \
             --registry out/withdrawal/release-trust-registry.json \
-            --bootstrap out/withdrawal/cog-trust-bootstrap.json \
+            --bootstrap out/withdrawal/cog-trust-bootstrap.v1.json \
             --expected-bootstrap-digest "$BOOTSTRAP_DIGEST" \
             --expected-registry-digest "$REGISTRY_DIGEST" \
             --minimum-sequence "$MINIMUM_SEQUENCE" \
@@ -322,8 +323,8 @@ jobs:
             --issued-at "$ISSUED_AT" \
             --effective-at "$EFFECTIVE_AT" \
             --key-id "${{ steps.authority.outputs.key_id }}" \
-            --issuer-identity "github-actions://${{ github.repository }}:withdrawal" \
-            --issuer-workflow "${{ github.workflow_ref }}" \
+            --issuer-identity "github-actions://cognitum-one/cogs:withdrawal" \
+            --issuer-workflow "cognitum-one/cogs/.github/workflows/withdraw-cog-staging.yml@refs/heads/main" \
             --github-owner-id "${{ github.repository_owner_id }}" \
             --github-repository-id "${{ github.repository_id }}" \
             --github-workflow-id "${{ vars.GCP_COGS_WITHDRAWAL_STAGING_WORKFLOW_ID }}" \

@@ -68,11 +68,15 @@ One person cannot occupy more than one role. GitHub Actions, publisher/seeder
 service accounts, runtime identities, and the evidence project cannot access
 root private material or mutate the bootstrap.
 
-This repository deliberately does not contain
-`config/cog-trust-bootstrap.json`. The fixture at
+This repository contains the proposed public bootstrap only at the canonical
+path `config/cog-trust-bootstrap.v1.json`. It records the three exact
+versioned resources, public keys, and independently read-back SPKI
+fingerprints, but it is not live authority: non-overlapping custodian IAM,
+source-digest approval, the runtime pin, and receipt evidence are incomplete.
+The former `config/cog-trust-bootstrap.json` path is forbidden. The fixture at
 `tests/fixtures/cog-release/trust-bootstrap.json` is test-only and is not a
-production trust anchor. Until three real custodians, resources, fingerprints,
-and a reviewed source digest exist, there is no production genesis registry.
+production trust anchor. Until three real custodians and a reviewed source
+digest exist, there is no admitted genesis registry.
 
 Every `cognitum.cog.trust-registry.v3` statement contains:
 
@@ -111,23 +115,44 @@ The approved staging target is:
 
 | Act | Principal / provider | Key / workflow / environment | Protected destination |
 |---|---|---|---|
+| Trust append | `cog-trust-append-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-trust-registry-appender-stg` | no root key; `.github/workflows/admit-cog-trust-staging.yml`; `cogs-trust-admission-staging` | create-only `gs://cognitum-20260110-cog-trust-stg` |
 | Release publish | `cog-release-publisher-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-release-publisher-stg` | `cog-release-stg/cryptoKeys/release-ed25519/cryptoKeyVersions/1`; `.github/workflows/publish-cog-staging.yml`; `cogs-staging` | `gs://cognitum-20260110-cog-release-stg` |
 | Withdrawal publish | `cog-withdrawal-publisher-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-withdrawal-publisher-stg` | `cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519/cryptoKeyVersions/1`; `.github/workflows/withdraw-cog-staging.yml`; `cogs-withdrawal-staging` | `gs://cognitum-20260110-cog-withdrawal-stg` |
-| Release seed | `cog-release-seeder-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-release-seeder-stg` | website `seed-cog-release-staging.yml`; protected release-seeder environment | named Firestore database `staging` |
-| Withdrawal seed | `cog-withdrawal-seeder-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-withdrawal-seeder-stg` | website `seed-cog-withdrawal-staging.yml`; two-person withdrawal environment | named Firestore database `staging` |
-| Reconcile | `cog-release-auditor-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-release-auditor-stg` | website `reconcile-cog-seed-staging.yml`; read-only | exact projection/evidence/receipt reads |
+| Release seed | requester `cog-rel-seed-req-stg@cognitum-20260110.iam.gserviceaccount.com`; runtime `cog-rel-seed-run-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-release-seeder-stg` | website `seed-cog-release-staging.yml`; `cogs-release-seed-staging` | create-only named Firestore database `cog-release-staging` |
+| Withdrawal seed | requester `cog-wd-seed-req-stg@cognitum-20260110.iam.gserviceaccount.com`; runtime `cog-wd-seed-run-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-withdrawal-seeder-stg` | website `seed-cog-withdrawal-staging.yml`; `cogs-withdrawal-seed-staging` | create-only named Firestore database `cog-withdrawal-staging` |
+| Reconcile | requester `cog-rel-audit-req-stg@cognitum-20260110.iam.gserviceaccount.com`; runtime `cog-rel-audit-run-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-release-auditor-stg` | website `reconcile-cog-seed-staging.yml`; `cogs-reconciliation-staging`; read-only | exact `cog-release-staging` / `cog-withdrawal-staging` projection, evidence, and receipt reads |
 | Receipt attest | `cog-receipt-attestor-stg@cognitum-20260110.iam.gserviceaccount.com` | `cog-receipt-stg/cryptoKeys/receipt-ed25519/cryptoKeyVersions/1` | `gs://cognitum-20260110-cog-receipts-stg` |
 
-All KMS versions use `EC_SIGN_ED25519` and `SOFTWARE`. The publisher workflows
-in this repository are candidates for the first two acts only. The website
-seeders, auditor, receipt attestor, and runtime changes are external
-prerequisites and remain NO-GO blockers.
+All KMS versions use `EC_SIGN_ED25519` and `SOFTWARE`. The trust appender and
+two publisher workflows in this repository are source candidates for their
+three named acts only. The website seeders, auditor, receipt attestor, and
+runtime changes are external prerequisites and remain NO-GO blockers.
 
 The `cogs-withdrawal-staging` GitHub environment SHALL require two distinct
 Cognitum Security/Platform reviewers, prevent self-approval, and prevent
 administrator bypass. Its immutable approval receipt binds the reviewers,
 change ID, workflow SHA, run attempt, release digest, and withdrawal digest.
 Source comments cannot prove that environment configuration.
+
+The source-only trust appender consumes exactly
+`trust-admissions/<change-id>/registry.json` and, after genesis, the exact
+`previous-registry.json` in the same reviewed directory. No other file is
+allowed in that package. The registry must already contain two or three valid
+root signatures and use the deterministic reviewed JSON serialization. The
+appender verifies the canonical bootstrap digest, the protected current head
+sequence and digest, one appended purpose, the purpose-specific KMS resource,
+SPKI fingerprint, numeric owner/repository and workflow IDs, and the exact
+publisher workflow SHA. Its fixed
+predecessor/sequence destination plus `if-generation-match=0` prevents two
+successors from occupying the same admitted sequence.
+
+The appender's own workflow SHA, numeric workflow ID, approved registry
+digest, bootstrap digest, and current registry head are protected environment
+values. They are deliberately unset until external review completes. The
+workflow does not create root signatures, read or list trust storage, update
+those values, rotate a WIF condition, or seed runtime state. Any provider SHA
+change still requires the out-of-band federation-admin process and a digest
+of that approval is bound into the append plan.
 
 ## Time and signature contract
 
@@ -201,6 +226,13 @@ and never temporarily broadens the condition. Publishers, seeders, runtime
 identities, GitHub workflows, and repository administrators have no
 provider-update permission.
 
+The admission workflow cannot approve its own SHA. It requires the exact
+`github.workflow_sha` to equal both `github.sha` on `refs/heads/main` and a
+separately set protected-environment SHA. It records a numeric workflow ID and
+workflow-SHA approval-receipt digest, while the WIF provider independently
+pins the exact workflow reference and SHA. A source commit alone cannot
+populate or rotate those external pins.
+
 Every authority service account is keyless and has zero user-managed keys.
 Organization/folder policy SHALL enforce both, with no project exception:
 
@@ -231,11 +263,11 @@ have committed. The publisher or seeder:
 The auditor reads only the exact destination and returns a signed,
 append-only `COMMITTED`, `NOT_FOUND`, or `MISMATCH` receipt. Only an
 authoritative `NOT_FOUND` permits a new two-person-approved attempt.
-`MISMATCH` quarantines the digest. The current Cogs workflows stop as
-`UNKNOWN`, but their local artifact is not yet receipt-attestor signed or
-stored in the protected receipt chain; the external auditor does not yet
-reconcile GCS object creates. Those are explicit blockers, not successful
-idempotency.
+`MISMATCH` quarantines the digest. The current release, withdrawal, and
+trust-append workflows stop as `UNKNOWN`, but their local artifacts are not
+yet receipt-attestor signed or stored in the protected receipt chain; the
+external auditor does not yet reconcile GCS object creates. Those are explicit
+blockers, not successful idempotency.
 
 ## Evidence custody and integrity
 
@@ -336,7 +368,13 @@ per-digest withdrawal.
 
 Implemented in this source candidate:
 
+- canonical proposed public bootstrap path
+  `config/cog-trust-bootstrap.v1.json`, with the legacy path rejected;
 - trust bootstrap v1 and quorum-signed, chained registry v3 validation;
+- a protected, source-only trust-admission workflow candidate that accepts
+  only an already 2-of-3-signed single append, binds the exact numeric and
+  workflow-SHA topology, uses one predecessor/sequence create-only path, and
+  treats every ambiguous result as terminal `UNKNOWN`;
 - dedicated release/withdrawal purpose arrays and high-level cross-purpose
   rejection;
 - bounded signed release-validity and withdrawal statements;
@@ -348,7 +386,8 @@ Implemented in this source candidate:
 
 Still missing and therefore NO-GO:
 
-- real root custodians and source-pinned production bootstrap;
+- verified, non-overlapping root-custodian IAM and independent approval of the
+  proposed source bootstrap digest;
 - quorum-signed live registry and exact workflow-SHA rotation governance;
 - all target GCP identities, providers, keys, buckets, IAM, organization
   policies, audit logs, and GitHub environment protections;

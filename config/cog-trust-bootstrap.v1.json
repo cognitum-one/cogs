@@ -1,0 +1,30 @@
+{
+  "schema": "cognitum.cog.trust-bootstrap.v1",
+  "threshold": 2,
+  "roots": [
+    {
+      "role": "security-custodian",
+      "keyId": "security-custodian/cog-trust-root-a",
+      "signingResource": "projects/cognitum-20260110/locations/us-central1/keyRings/cog-trust-root-a/cryptoKeys/root-ed25519/cryptoKeyVersions/1",
+      "algorithm": "ed25519",
+      "publicKeyFingerprint": "sha256:456cccdefb7575aa98126ac6ecdc11ea9d86ea4799b9e8d7b1933284c9141d8a",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAJOca8y5LEaSz+x0S9TUIwd3GoUS1JSOLNe3hSJ2rhvQ=\n-----END PUBLIC KEY-----\n"
+    },
+    {
+      "role": "platform-custodian",
+      "keyId": "platform-custodian/cog-trust-root-b",
+      "signingResource": "projects/cognitum-20260110/locations/us-central1/keyRings/cog-trust-root-b/cryptoKeys/root-ed25519/cryptoKeyVersions/1",
+      "algorithm": "ed25519",
+      "publicKeyFingerprint": "sha256:28799ff25355348a0b743fbea22016d0a56eb563c05b725965a7741693161039",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAfguZf2te8VK3p8yaSpplJW1rpFDquXzQBOuzdae5De4=\n-----END PUBLIC KEY-----\n"
+    },
+    {
+      "role": "independent-auditor",
+      "keyId": "independent-auditor/cog-trust-root-c",
+      "signingResource": "projects/cognitum-20260110/locations/us-central1/keyRings/cog-trust-root-c/cryptoKeys/root-ed25519/cryptoKeyVersions/1",
+      "algorithm": "ed25519",
+      "publicKeyFingerprint": "sha256:10de74d9a3cc0cd58b9e6d5cc6797cc153e31c7e57df8e600275fd4001d37f84",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA4g2DM9nHJyU9TIfkSH8fBIHdg8RkbCzN++5Nm8VE9is=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
+}

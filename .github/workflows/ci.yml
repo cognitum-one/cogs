@@ -228,7 +228,8 @@ jobs:
         run: |
           python3 -m unittest \
             tests/test_cog_isolation.py \
-            tests/test_cog_release_provenance.py -v
+            tests/test_cog_release_provenance.py \
+            tests/test_cog_trust_admission.py -v
       - name: Resolve release schemas and validate public fixtures locally
         run: python3 scripts/cog_release_schema_check.py
       - name: Require committed locks for every ratified policy

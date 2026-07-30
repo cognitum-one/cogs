@@ -13,8 +13,8 @@
     },
     {
       "artifact": "evidence/adr-156/<run-id>/EV-128-02.json",
-      "command": "python3 scripts/cog_release_provenance.py verify-trust-registry --bootstrap <bootstrap> --registry <registry> --expected-bootstrap-digest <digest> --expected-registry-digest <digest> --minimum-sequence <n> --checked-at <utc>",
-      "expected": "Two distinct admitted roots, the source bootstrap pin, sequence/hash chain, time bounds, purposes, fingerprints, and workflow SHA pass.",
+      "command": "python3 scripts/cog_trust_admission.py --change-id <id> --expected-bootstrap-digest <digest> --expected-registry-digest <digest> --expected-head-sequence <n> --expected-head-digest <digest-or-GENESIS> --purpose <release-or-withdrawal> --key-id <key-id> --public-key-fingerprint <digest> --admitted-workflow-id <numeric-id> --admitted-workflow-sha <sha> --workflow-sha-approval-digest <digest> --admission-wif-provider <provider> --admission-service-account <service-account> --trust-bucket cognitum-20260110-cog-trust-stg --github-owner-id 256911919 --github-repository-id 1211713542 --repository-visibility public --admission-workflow-id <numeric-id> --admission-workflow-ref cognitum-one/cogs/.github/workflows/admit-cog-trust-staging.yml@refs/heads/main --admission-workflow-sha <sha> --approved-admission-workflow-sha <sha> --source-sha <sha> --source-ref refs/heads/main --event-name workflow_dispatch --actor-id <numeric-id> --checked-at <utc> --output <plan>",
+      "expected": "Two distinct admitted roots, deterministic bytes, the source bootstrap pin, one append over the protected sequence/hash head, purpose-specific KMS and numeric GitHub identity, the reviewed publisher SHA, and the separately approved admission workflow SHA pass.",
       "id": "EV-128-02",
       "independentReviewer": "independent-auditor",
       "owner": "two-trust-custodians",
