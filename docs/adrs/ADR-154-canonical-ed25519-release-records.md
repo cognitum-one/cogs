@@ -2,6 +2,9 @@
 
 **Status**: Accepted
 **Date**: 2026-07-29
+**Superseded in part**: ADR-156 replaces the staging trust-admission and
+evidence-custody handoff below; the canonical release-signature decision
+remains Accepted.
 **Related**: ADR-020 (build/publish), ADR-153 (optional integrations and WIF),
 website ADR-113 (release evidence), website ADR-123 (runtime reconciliation)
 
@@ -135,20 +138,16 @@ access, object deletion, production bucket, IAM, or deployment authority.
 
 ### 5. The handoff artifact is public-only and workflow-bound
 
-Every stage release emits `release-trust-registry.json` with schema
-`cognitum.cog.release-trust.v1`. It contains only:
+The original v1 design emitted a self-describing public registry entry. ADR-156
+supersedes that trust-admission path. The staging workflow now emits an
+explicitly unsigned `candidate-trust-registry.json`; it has no authority until
+two independent source-pinned roots sign an append-only
+`cognitum.cog.trust-registry.v3` statement. A website operator must not merge
+the candidate directly into runtime trust.
 
-- the logical key id;
-- the PEM public key;
-- `algorithm: ed25519`;
-- status `active`; and
-- exact allowed builder identity and workflow ref.
-
-The website staging operator merges this entry with the existing
-`COG_RELEASE_TRUSTED_PUBLIC_KEYS_JSON` registry. Replacement is unsafe because
-it could remove keys still needed to verify earlier releases. The signed
-`release-evidence.json` and `signed-release.json` are the release-record
-handoff; the public registry is the independent trust-root handoff.
+The signed `release-evidence.json`, `signed-release.json`, and mandatory signed
+release-validity sidecar remain the release-record handoff. Trust admission is
+independent and quorum-rooted.
 
 ### 6. External provisioning and rotation procedure
 

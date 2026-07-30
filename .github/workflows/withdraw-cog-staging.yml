@@ -1,0 +1,451 @@
+name: Publish Cog Withdrawal to Staging
+
+# Source-only ADR-156 lane. The cogs-withdrawal-staging environment MUST require
+# two independent reviewers, prevent self-review, and prevent administrator
+# bypass. Its provider, publisher SA, and KMS key are disjoint from release
+# publication. This workflow emits immutable evidence only; it has no Firestore
+# or runtime seeding authority.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_uri:
+        description: 'Exact versioned signed-release.json gs:// URI'
+        required: true
+      validity_uri:
+        description: 'Exact versioned signed-release-validity.json gs:// URI'
+        required: true
+      registry_uri:
+        description: 'Exact versioned quorum-admitted trust registry gs:// URI'
+        required: true
+      policy_decision_uri:
+        description: 'Exact versioned policy-decision.json gs:// URI'
+        required: true
+      sigstore_bundle_uri:
+        description: 'Exact versioned Sigstore bundle gs:// URI'
+        required: true
+      action:
+        description: 'Digest-specific action'
+        required: true
+        type: choice
+        options:
+          - withdrawn
+          - revoked
+      reason_code:
+        description: 'Reviewed machine-readable reason code'
+        required: true
+      issued_at:
+        description: 'RFC3339 issuance time'
+        required: true
+      effective_at:
+        description: 'RFC3339 effective time, not later than withdrawal issuance'
+        required: true
+      change_id:
+        description: 'Two-person reviewed change identifier'
+        required: true
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    environment: cogs-withdrawal-staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Validate independent withdrawal authority
+        id: authority
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_WIF_PROVIDER }}
+          PUBLISH_SA: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_PUBLISH_SA }}
+          KEY_RESOURCE: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_SIGNING_KEY_RESOURCE }}
+          KEY_ID: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_SIGNING_KEY_ID }}
+          EVIDENCE_BUCKET: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_EVIDENCE_BUCKET }}
+          APPROVED_WORKFLOW_SHA: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_APPROVED_WORKFLOW_SHA }}
+          EXPECTED_WORKFLOW_ID: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_WORKFLOW_ID }}
+          BOOTSTRAP_DIGEST: ${{ vars.GCP_COGS_STAGING_TRUST_BOOTSTRAP_DIGEST }}
+          REGISTRY_DIGEST: ${{ vars.GCP_COGS_STAGING_TRUST_REGISTRY_DIGEST }}
+          MINIMUM_SEQUENCE: ${{ vars.GCP_COGS_STAGING_TRUST_MINIMUM_SEQUENCE }}
+          REPOSITORY_OWNER_ID: ${{ github.repository_owner_id }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
+          CHANGE_ID: ${{ inputs.change_id }}
+          REQUESTING_ACTOR_ID: ${{ github.actor_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+
+          expected = {
+              "WIF_PROVIDER": (
+                  "projects/186366152200/locations/global/workloadIdentityPools/"
+                  "github-cog-authority-stg/providers/cogs-withdrawal-publisher-stg"
+              ),
+              "PUBLISH_SA": (
+                  "cog-withdrawal-publisher-stg@cognitum-20260110."
+                  "iam.gserviceaccount.com"
+              ),
+              "KEY_RESOURCE": (
+                  "projects/cognitum-20260110/locations/us-central1/keyRings/"
+                  "cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519/"
+                  "cryptoKeyVersions/1"
+              ),
+              "EVIDENCE_BUCKET": "cognitum-20260110-cog-withdrawal-stg",
+              "REPOSITORY_OWNER_ID": "256911919",
+              "REPOSITORY_ID": "1211713542",
+              "WORKFLOW_REF": (
+                  "cognitum-one/cogs/.github/workflows/"
+                  "withdraw-cog-staging.yml@refs/heads/main"
+              ),
+              "RELEASE_REF": "refs/heads/main",
+              "RELEASE_EVENT": "workflow_dispatch",
+          }
+          for name, value in expected.items():
+              if os.environ[name] != value:
+                  raise SystemExit(f"withdrawal authority mismatch: {name}")
+          if os.environ["PUBLISH_SA"].startswith("cog-release-publisher-"):
+              raise SystemExit("release publisher must never issue withdrawals")
+          for name in ("EXPECTED_WORKFLOW_ID", "REQUESTING_ACTOR_ID"):
+              if not re.fullmatch(r"[1-9][0-9]{4,24}", os.environ[name]):
+                  raise SystemExit(f"numeric withdrawal identity missing: {name}")
+          if (
+              not re.fullmatch(r"[a-f0-9]{40}", os.environ["WORKFLOW_SHA"])
+              or os.environ["WORKFLOW_SHA"] != os.environ["RELEASE_SHA"]
+              or os.environ["APPROVED_WORKFLOW_SHA"] != os.environ["WORKFLOW_SHA"]
+          ):
+              raise SystemExit("withdrawal workflow SHA lacks separate approval")
+          if not re.fullmatch(
+              r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", os.environ["KEY_ID"]
+          ):
+              raise SystemExit("withdrawal key id is invalid")
+          if not re.fullmatch(r"sha256:[a-f0-9]{64}", os.environ["BOOTSTRAP_DIGEST"]):
+              raise SystemExit("source bootstrap pin is invalid")
+          if not re.fullmatch(r"sha256:[a-f0-9]{64}", os.environ["REGISTRY_DIGEST"]):
+              raise SystemExit("trust-registry pin is invalid")
+          if not re.fullmatch(r"[1-9][0-9]{0,18}", os.environ["MINIMUM_SEQUENCE"]):
+              raise SystemExit("trust-registry sequence pin is invalid")
+          if not re.fullmatch(
+              r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", os.environ["CHANGE_ID"]
+          ):
+              raise SystemExit("reviewed change id is invalid")
+          parts = os.environ["KEY_RESOURCE"].split("/")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              for name, value in zip(
+                  ("project", "location", "keyring", "key", "version"),
+                  parts[1::2],
+              ):
+                  print(f"{name}={value}", file=output)
+              print(f"key_id={os.environ['KEY_ID']}", file=output)
+          PY
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_PUBLISH_SA }}
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+
+      - name: Read exact admitted release inputs
+        env:
+          RELEASE_URI: ${{ inputs.release_uri }}
+          VALIDITY_URI: ${{ inputs.validity_uri }}
+          REGISTRY_URI: ${{ inputs.registry_uri }}
+          POLICY_DECISION_URI: ${{ inputs.policy_decision_uri }}
+          SIGSTORE_BUNDLE_URI: ${{ inputs.sigstore_bundle_uri }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/withdrawal
+          read_exact() {
+            local uri="$1"
+            local output="$2"
+            local expected_bucket="$3"
+            [[ "$uri" =~ ^gs://${expected_bucket}/.+#[1-9][0-9]*$ ]]
+            timeout --signal=TERM --kill-after=5s 120s \
+              gcloud storage cp "$uri" "$output"
+          }
+          read_exact "$RELEASE_URI" out/withdrawal/signed-release.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$VALIDITY_URI" out/withdrawal/signed-release-validity.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$REGISTRY_URI" out/withdrawal/release-trust-registry.json \
+            cognitum-20260110-cog-trust-stg
+          read_exact "$POLICY_DECISION_URI" out/withdrawal/policy-decision.json \
+            cognitum-20260110-cog-release-stg
+          read_exact "$SIGSTORE_BUNDLE_URI" out/withdrawal/artifact.sigstore.json \
+            cognitum-20260110-cog-release-stg
+          test -f config/cog-trust-bootstrap.json
+          cp config/cog-trust-bootstrap.json out/withdrawal/cog-trust-bootstrap.json
+
+      - name: Verify root admission and current release validity
+        env:
+          BOOTSTRAP_DIGEST: ${{ vars.GCP_COGS_STAGING_TRUST_BOOTSTRAP_DIGEST }}
+          REGISTRY_DIGEST: ${{ vars.GCP_COGS_STAGING_TRUST_REGISTRY_DIGEST }}
+          MINIMUM_SEQUENCE: ${{ vars.GCP_COGS_STAGING_TRUST_MINIMUM_SEQUENCE }}
+        run: |
+          set -euo pipefail
+          CHECKED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          python3 scripts/cog_release_provenance.py verify-admitted-release \
+            --release out/withdrawal/signed-release.json \
+            --validity out/withdrawal/signed-release-validity.json \
+            --registry out/withdrawal/release-trust-registry.json \
+            --bootstrap out/withdrawal/cog-trust-bootstrap.json \
+            --expected-bootstrap-digest "$BOOTSTRAP_DIGEST" \
+            --expected-registry-digest "$REGISTRY_DIGEST" \
+            --minimum-sequence "$MINIMUM_SEQUENCE" \
+            --checked-at "$CHECKED_AT"
+
+      - name: Verify original Sigstore transparency binding
+        id: release_integrity
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "scripts")
+          from cog_release_builder import require_transparency_log_bundle
+          from cog_release_provenance_lib import digest_file, read_json
+
+          release = read_json(Path("out/withdrawal/signed-release.json"))
+          policy_path = Path("out/withdrawal/policy-decision.json")
+          bundle_path = Path("out/withdrawal/artifact.sigstore.json")
+          if digest_file(policy_path) != release["securityAttestation"][
+              "policyDecisionDigest"
+          ]:
+              raise SystemExit("policy decision is not bound to the signed release")
+          controls = [
+              control
+              for control in read_json(policy_path).get("controls", [])
+              if control.get("id") == "A7"
+              and control.get("name") == "sigstore-signature"
+              and control.get("verdict") == "pass"
+          ]
+          bundle_digest = digest_file(bundle_path)
+          if len(controls) != 1 or controls[0].get("evidence") != bundle_digest:
+              raise SystemExit("Sigstore bundle digest is not release-policy bound")
+          require_transparency_log_bundle(bundle_path)
+          with open(
+              __import__("os").environ["GITHUB_OUTPUT"], "a", encoding="utf-8"
+          ) as output:
+              print(f"sigstore_bundle_digest={bundle_digest}", file=output)
+          PY
+
+      - name: Verify live withdrawal KMS key is distinct and admitted
+        run: |
+          set -euo pipefail
+          KMS_ARGS=(
+            --project "${{ steps.authority.outputs.project }}"
+            --location "${{ steps.authority.outputs.location }}"
+            --keyring "${{ steps.authority.outputs.keyring }}"
+            --key "${{ steps.authority.outputs.key }}"
+          )
+          ALGORITHM=$(gcloud kms keys versions describe "${{ steps.authority.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(algorithm)')
+          STATE=$(gcloud kms keys versions describe "${{ steps.authority.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(state)')
+          PROTECTION=$(gcloud kms keys versions describe "${{ steps.authority.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(protectionLevel)')
+          [ "$ALGORITHM" = "EC_SIGN_ED25519" ]
+          [ "$STATE" = "ENABLED" ]
+          [ "$PROTECTION" = "SOFTWARE" ]
+          gcloud kms keys versions get-public-key "${{ steps.authority.outputs.version }}" \
+            "${KMS_ARGS[@]}" --public-key-format=pem \
+            --output-file=out/withdrawal/withdrawal-public-key.pem
+          KEY_ID="${{ steps.authority.outputs.key_id }}" \
+            KEY_RESOURCE="${{ vars.GCP_COGS_WITHDRAWAL_STAGING_SIGNING_KEY_RESOURCE }}" \
+            python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          trust = json.loads(
+              Path("out/withdrawal/release-trust-registry.json").read_text()
+          )
+          matches = [
+              key
+              for key in trust.get("withdrawals", [])
+              if key.get("keyId") == os.environ["KEY_ID"]
+          ]
+          key = matches[0] if len(matches) == 1 else None
+          if (
+              not isinstance(key, dict)
+              or key.get("purpose") != "withdrawal"
+              or key.get("kmsKeyVersion") != os.environ["KEY_RESOURCE"]
+          ):
+              raise SystemExit("live withdrawal key is not quorum-admitted")
+          der = subprocess.run(
+              [
+                  "openssl",
+                  "pkey",
+                  "-pubin",
+                  "-in",
+                  "out/withdrawal/withdrawal-public-key.pem",
+                  "-outform",
+                  "DER",
+              ],
+              check=True,
+              capture_output=True,
+          ).stdout
+          if key.get("publicKeyFingerprint") != (
+              "sha256:" + hashlib.sha256(der).hexdigest()
+          ):
+              raise SystemExit("live withdrawal key fingerprint differs")
+          PY
+
+      - name: Prepare, sign, and verify digest-specific withdrawal
+        env:
+          ACTION: ${{ inputs.action }}
+          REASON_CODE: ${{ inputs.reason_code }}
+          ISSUED_AT: ${{ inputs.issued_at }}
+          EFFECTIVE_AT: ${{ inputs.effective_at }}
+        run: |
+          set -euo pipefail
+          python3 scripts/cog_release_provenance.py prepare-withdrawal \
+            --release out/withdrawal/signed-release.json \
+            --validity out/withdrawal/signed-release-validity.json \
+            --registry out/withdrawal/release-trust-registry.json \
+            --action "$ACTION" \
+            --reason-code "$REASON_CODE" \
+            --issued-at "$ISSUED_AT" \
+            --effective-at "$EFFECTIVE_AT" \
+            --key-id "${{ steps.authority.outputs.key_id }}" \
+            --issuer-identity "github-actions://${{ github.repository }}:withdrawal" \
+            --issuer-workflow "${{ github.workflow_ref }}" \
+            --github-owner-id "${{ github.repository_owner_id }}" \
+            --github-repository-id "${{ github.repository_id }}" \
+            --github-workflow-id "${{ vars.GCP_COGS_WITHDRAWAL_STAGING_WORKFLOW_ID }}" \
+            --workflow-sha "${{ github.sha }}" \
+            --output-dir out/withdrawal
+          KMS_ARGS=(
+            --project "${{ steps.authority.outputs.project }}"
+            --location "${{ steps.authority.outputs.location }}"
+            --keyring "${{ steps.authority.outputs.keyring }}"
+            --key "${{ steps.authority.outputs.key }}"
+          )
+          gcloud kms asymmetric-sign \
+            "${KMS_ARGS[@]}" --version "${{ steps.authority.outputs.version }}" \
+            --input-file=out/withdrawal/withdrawal-statement.json \
+            --signature-file=out/withdrawal/withdrawal-signature.b64
+          python3 scripts/cog_release_provenance.py finalize-withdrawal \
+            --release out/withdrawal/signed-release.json \
+            --validity out/withdrawal/signed-release-validity.json \
+            --registry out/withdrawal/release-trust-registry.json \
+            --unsigned-withdrawal out/withdrawal/unsigned-withdrawal.json \
+            --signature-file out/withdrawal/withdrawal-signature.b64 \
+            --key-id "${{ steps.authority.outputs.key_id }}" \
+            --output out/withdrawal/release-withdrawal.json \
+            --signed-withdrawal-output out/withdrawal/signed-withdrawal.json
+
+      - name: Create immutable withdrawal evidence only
+        env:
+          EVIDENCE_BUCKET: ${{ vars.GCP_COGS_WITHDRAWAL_STAGING_EVIDENCE_BUCKET }}
+          SIGSTORE_BUNDLE_DIGEST: ${{ steps.release_integrity.outputs.sigstore_bundle_digest }}
+        run: |
+          set -euo pipefail
+          RELEASE_DIGEST=$(jq -r '.releaseDigest' out/withdrawal/signed-withdrawal.json)
+          RELEASE_HEX="${RELEASE_DIGEST#sha256:}"
+          CONTENT_HEX=$(sha256sum out/withdrawal/release-withdrawal.json | awk '{print $1}')
+          DESTINATION="gs://${EVIDENCE_BUCKET}/staging/cogs/withdrawals/sha256/${RELEASE_HEX}/evidence/sha256/${CONTENT_HEX}/release-withdrawal.json"
+          set +e
+          CREATED_LOG=$(timeout --signal=TERM --kill-after=5s 120s \
+            gcloud storage cp --if-generation-match=0 --print-created-message \
+            out/withdrawal/release-withdrawal.json "$DESTINATION" 2>&1)
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ]; then
+            CREATE_DESTINATION="$DESTINATION" \
+              CREATE_DIGEST="sha256:$CONTENT_HEX" \
+              CREATE_EXIT="$STATUS" \
+              RELEASE_DIGEST="$RELEASE_DIGEST" \
+              CHANGE_ID="${{ inputs.change_id }}" \
+              python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              "schema": "cognitum.cog.create-reconciliation.v1",
+              "status": "UNKNOWN",
+              "destination": os.environ["CREATE_DESTINATION"],
+              "contentDigest": os.environ["CREATE_DIGEST"],
+              "releaseDigest": os.environ["RELEASE_DIGEST"],
+              "changeId": os.environ["CHANGE_ID"],
+              "observedAt": datetime.datetime.now(datetime.timezone.utc)
+              .strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "exitCode": int(os.environ["CREATE_EXIT"]),
+              "retryAllowed": False,
+              "reconcileWith": (
+                  "cognitum-one/website/.github/workflows/"
+                  "reconcile-cog-seed-staging.yml"
+              ),
+          }
+          target = Path("out/withdrawal/create-result-unknown.json")
+          target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+            echo "::error::withdrawal create result is UNKNOWN; never retry or upsert"
+            exit 75
+          fi
+          VERSIONED_URI=$(CREATED_LOG="$CREATED_LOG" DESTINATION="$DESTINATION" \
+            python3 - <<'PY'
+          import os
+          import re
+
+          matches = {
+              candidate
+              for candidate in re.findall(
+                  r"gs://[^\s]+#[1-9][0-9]*", os.environ["CREATED_LOG"]
+              )
+              if candidate.rsplit("#", 1)[0] == os.environ["DESTINATION"]
+          }
+          if len(matches) != 1:
+              raise SystemExit("withdrawal create result is UNKNOWN")
+          print(matches.pop())
+          PY
+          )
+          python3 scripts/cog_release_provenance.py admission \
+            --bucket-name "$EVIDENCE_BUCKET" \
+            --retention-period-seconds 2592000 \
+            --retention-policy-locked false \
+            --kind withdrawal \
+            --uri "${VERSIONED_URI%#*}" \
+            --generation "${VERSIONED_URI##*#}" \
+            --content-digest "sha256:$CONTENT_HEX" \
+            --sigstore-bundle-digest "$SIGSTORE_BUNDLE_DIGEST" \
+            --sigstore-transparency-log-verified true \
+            --output out/withdrawal/withdrawal-evidence-locations.json
+          echo "No Firestore/runtime seed was attempted."
+
+      - name: Preserve ambiguous withdrawal create receipt for read-only reconciliation
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cog-withdrawal-create-unknown-${{ github.run_id }}
+          path: out/withdrawal/create-result-unknown.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Preserve withdrawal candidate for verified seeder
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cog-withdrawal-candidate-${{ github.run_id }}
+          path: |
+            out/withdrawal/signed-withdrawal.json
+            out/withdrawal/release-withdrawal.json
+            out/withdrawal/withdrawal-evidence-locations.json
+          if-no-files-found: error
+          retention-days: 30

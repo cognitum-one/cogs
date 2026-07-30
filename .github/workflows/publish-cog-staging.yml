@@ -2,8 +2,11 @@ name: Publish Cog to Staging
 
 # Isolated E2E lane for ADR-153. This workflow has no push/tag trigger and the
 # cogs-staging environment must require the dedicated staging WIF identity.
-# The provider should pin repository_id=1211713542, owner_id=256911919,
-# workflow_ref for this exact file, workflow_dispatch, and the approved branch.
+# The provider must pin repository_id=1211713542, owner_id=256911919,
+# workflow_id=322710413, workflow_ref and workflow_sha for this exact file,
+# workflow_dispatch, cogs-staging, and refs/heads/main.
+# Changing the approved workflow SHA is a separate two-owner environment
+# operation governed by ADR-156; a repository commit cannot approve itself.
 
 on:
   workflow_dispatch:
@@ -314,15 +317,36 @@ jobs:
           PUBLISH_SA: ${{ vars.GCP_COGS_STAGING_PUBLISH_SA }}
           KEY_RESOURCE: ${{ vars.GCP_COGS_STAGING_SIGNING_KEY_RESOURCE }}
           KEY_ID: ${{ vars.GCP_COGS_STAGING_SIGNING_KEY_ID }}
+          EVIDENCE_BUCKET: ${{ vars.GCP_COGS_STAGING_EVIDENCE_BUCKET }}
+          EVIDENCE_RETENTION_SECONDS: ${{ vars.GCP_COGS_STAGING_EVIDENCE_RETENTION_SECONDS }}
+          EVIDENCE_RETENTION_LOCKED: ${{ vars.GCP_COGS_STAGING_EVIDENCE_RETENTION_LOCKED }}
+          APPROVED_WORKFLOW_SHA: ${{ vars.GCP_COGS_STAGING_APPROVED_WORKFLOW_SHA }}
+          REPOSITORY_OWNER_ID: ${{ github.repository_owner_id }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_EVENT: ${{ github.event_name }}
+          EXPECTED_WORKFLOW_ID: '322710413'
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import os, re
           provider, service = os.environ["WIF_PROVIDER"], os.environ["PUBLISH_SA"]
-          if not re.fullmatch(r"projects/[0-9]+/locations/global/workloadIdentityPools/[A-Za-z0-9_-]+/providers/[A-Za-z0-9_-]+", provider):
-              raise SystemExit("invalid or missing staging WIF provider")
-          if not re.fullmatch(r"[a-z0-9-]{3,63}@[a-z0-9-]{3,63}\.iam\.gserviceaccount\.com", service):
-              raise SystemExit("invalid or missing staging publish service account")
+          expected_provider = (
+              "projects/186366152200/locations/global/workloadIdentityPools/"
+              "github-cog-authority-stg/providers/cogs-release-publisher-stg"
+          )
+          if provider != expected_provider:
+              raise SystemExit("staging WIF provider is not the dedicated cogs publisher")
+          expected_service = (
+              "cog-release-publisher-stg@cognitum-20260110."
+              "iam.gserviceaccount.com"
+          )
+          if service != expected_service:
+              raise SystemExit("staging publisher service account is not dedicated")
           parts = os.environ["KEY_RESOURCE"].split("/")
           labels = ["projects", "locations", "keyRings", "cryptoKeys", "cryptoKeyVersions"]
           if len(parts) != 10 or parts[::2] != labels:
@@ -331,13 +355,58 @@ jobs:
               raise SystemExit("invalid KMS resource segment")
           if not parts[-1].isdigit():
               raise SystemExit("KMS key version must be numeric")
+          expected_key = (
+              "projects/cognitum-20260110/locations/us-central1/keyRings/"
+              "cog-release-stg/cryptoKeys/release-ed25519/cryptoKeyVersions/1"
+          )
+          if os.environ["KEY_RESOURCE"] != expected_key:
+              raise SystemExit("staging signer is not the reviewed key version")
           key_id = os.environ["KEY_ID"]
           if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", key_id):
               raise SystemExit("invalid or missing logical staging signing key id")
+          bucket = os.environ["EVIDENCE_BUCKET"]
+          if bucket != "cognitum-20260110-cog-release-stg":
+              raise SystemExit("staging release evidence bucket is not dedicated")
+          try:
+              retention = int(os.environ["EVIDENCE_RETENTION_SECONDS"])
+          except ValueError as error:
+              raise SystemExit("invalid staging evidence retention period") from error
+          if retention != 30 * 24 * 60 * 60:
+              raise SystemExit("staging evidence retention must be exactly 30 days")
+          if os.environ["EVIDENCE_RETENTION_LOCKED"] != "false":
+              raise SystemExit("Proposed ADR-156 does not authorize retention lock")
+          expected_identity = {
+              "REPOSITORY_OWNER_ID": "256911919",
+              "REPOSITORY_ID": "1211713542",
+              "EXPECTED_WORKFLOW_ID": "322710413",
+              "REPOSITORY_VISIBILITY": "public",
+              "WORKFLOW_REF": (
+                  "cognitum-one/cogs/.github/workflows/"
+                  "publish-cog-staging.yml@refs/heads/main"
+              ),
+              "RELEASE_REF": "refs/heads/main",
+              "RELEASE_EVENT": "workflow_dispatch",
+          }
+          for name, expected in expected_identity.items():
+              if os.environ[name] != expected:
+                  raise SystemExit(f"GitHub release identity mismatch: {name}")
+          if (
+              not re.fullmatch(r"[a-f0-9]{40}", os.environ["WORKFLOW_SHA"])
+              or os.environ["WORKFLOW_SHA"] != os.environ["RELEASE_SHA"]
+          ):
+              raise SystemExit("workflow SHA is not the exact reviewed release SHA")
+          if (
+              not re.fullmatch(r"[a-f0-9]{40}", os.environ["APPROVED_WORKFLOW_SHA"])
+              or os.environ["APPROVED_WORKFLOW_SHA"] != os.environ["WORKFLOW_SHA"]
+          ):
+              raise SystemExit("workflow SHA lacks separate environment approval")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               for name, value in zip(("project", "location", "keyring", "key", "version"), parts[1::2]):
                   print(f"{name}={value}", file=output)
               print(f"key_id={key_id}", file=output)
+              print(f"evidence_bucket={bucket}", file=output)
+              print(f"evidence_retention_seconds={retention}", file=output)
+              print("evidence_retention_locked=false", file=output)
           PY
 
       - name: Build the exact unsigned website release statement
@@ -391,10 +460,14 @@ jobs:
             "${KMS_ARGS[@]}" --format='value(algorithm)')
           STATE=$(gcloud kms keys versions describe "${{ steps.kms.outputs.version }}" \
             "${KMS_ARGS[@]}" --format='value(state)')
+          PROTECTION=$(gcloud kms keys versions describe "${{ steps.kms.outputs.version }}" \
+            "${KMS_ARGS[@]}" --format='value(protectionLevel)')
           [ "$ALGORITHM" = "EC_SIGN_ED25519" ] \
             || { echo "::error::KMS version is not EC_SIGN_ED25519"; exit 1; }
           [ "$STATE" = "ENABLED" ] \
             || { echo "::error::KMS signing version is not enabled"; exit 1; }
+          [ "$PROTECTION" = "SOFTWARE" ] \
+            || { echo "::error::KMS signing version is not SOFTWARE"; exit 1; }
           gcloud kms keys versions get-public-key "${{ steps.kms.outputs.version }}" \
             "${KMS_ARGS[@]}" --public-key-format=pem \
             --output-file=out/release/release-public-key.pem
@@ -404,15 +477,46 @@ jobs:
             --input-file=out/release/release-statement.json \
             --signature-file=out/release/release-signature.b64
 
-      - name: Finalize, authorize, and verify the detached release
+      - name: Finalize candidate release and verify its detached signature
         run: |
           set -euo pipefail
+          REGISTRY_ISSUED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          export REGISTRY_ISSUED_AT
+          read -r REGISTRY_EXPIRES_AT KEY_EXPIRES_AT < <(python3 - <<'PY'
+          import datetime
+          import os
+
+          issued = datetime.datetime.fromisoformat(
+              os.environ["REGISTRY_ISSUED_AT"].replace("Z", "+00:00")
+          )
+          print(
+              (issued + datetime.timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              (issued + datetime.timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+          )
+          PY
+          )
           python3 scripts/cog_release_provenance.py registry \
             --public-key out/release/release-public-key.pem \
             --key-id "${{ steps.kms.outputs.key_id }}" \
+            --kms-key-version "${{ vars.GCP_COGS_STAGING_SIGNING_KEY_RESOURCE }}" \
+            --kms-algorithm EC_SIGN_ED25519 \
+            --protection-level SOFTWARE \
+            --purpose release \
             --builder-identity "github-actions://${{ github.repository }}" \
             --build-workflow "${{ github.workflow_ref }}" \
-            --output out/release/release-trust-registry.json
+            --workflow-sha "${{ github.sha }}" \
+            --sequence 1 \
+            --issued-at "$REGISTRY_ISSUED_AT" \
+            --not-before "$REGISTRY_ISSUED_AT" \
+            --expires-at "$REGISTRY_EXPIRES_AT" \
+            --key-not-before "$REGISTRY_ISSUED_AT" \
+            --key-expires-at "$KEY_EXPIRES_AT" \
+            --github-owner-id "${{ github.repository_owner_id }}" \
+            --github-repository-id "${{ github.repository_id }}" \
+            --github-workflow-id 322710413 \
+            --output out/release/candidate-trust-registry.json
+          jq -e '.schema == "cognitum.cog.trust-registry.v3" and (.signatures | not)' \
+            out/release/candidate-trust-registry.json >/dev/null
           python3 scripts/cog_release_provenance.py finalize \
             --unsigned-release out/release/unsigned-release.json \
             --build-evidence out/release/build-evidence.json \
@@ -421,20 +525,132 @@ jobs:
             --signed-release-output out/release/signed-release.json
           python3 scripts/cog_release_provenance.py verify \
             --release out/release/signed-release.json \
-            --registry out/release/release-trust-registry.json
+            --registry out/release/candidate-trust-registry.json
+          echo "This registry is a candidate only; offline root quorum admission is still required."
 
-      - name: Upload immutable staging release objects
+      - name: Issue bounded signed release validity
         run: |
           set -euo pipefail
-          ROOT="gs://cognitum-apps/staging/cogs/releases/${{ matrix.cog }}/${{ needs.matrix.outputs.version }}/${{ matrix.arch }}"
+          VALIDITY_ISSUED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          export VALIDITY_ISSUED_AT
+          VALIDITY_EXPIRES_AT=$(python3 - <<'PY'
+          import datetime
+          import os
+
+          issued = datetime.datetime.fromisoformat(
+              os.environ["VALIDITY_ISSUED_AT"].replace("Z", "+00:00")
+          )
+          print(
+              (issued + datetime.timedelta(days=30))
+              .astimezone(datetime.timezone.utc)
+              .strftime("%Y-%m-%dT%H:%M:%SZ")
+          )
+          PY
+          )
+          python3 scripts/cog_release_provenance.py prepare-release-validity \
+            --release out/release/signed-release.json \
+            --registry out/release/candidate-trust-registry.json \
+            --issued-at "$VALIDITY_ISSUED_AT" \
+            --signed-at "$VALIDITY_ISSUED_AT" \
+            --not-before "$VALIDITY_ISSUED_AT" \
+            --expires-at "$VALIDITY_EXPIRES_AT" \
+            --output-dir out/release
+          KMS_ARGS=(
+            --project "${{ steps.kms.outputs.project }}"
+            --location "${{ steps.kms.outputs.location }}"
+            --keyring "${{ steps.kms.outputs.keyring }}"
+            --key "${{ steps.kms.outputs.key }}"
+          )
+          gcloud kms asymmetric-sign \
+            "${KMS_ARGS[@]}" --version "${{ steps.kms.outputs.version }}" \
+            --input-file=out/release/release-validity-statement.json \
+            --signature-file=out/release/release-validity-signature.b64
+          python3 scripts/cog_release_provenance.py finalize-release-validity \
+            --release out/release/signed-release.json \
+            --registry out/release/candidate-trust-registry.json \
+            --unsigned-validity out/release/unsigned-release-validity.json \
+            --signature-file out/release/release-validity-signature.b64 \
+            --output out/release/signed-release-validity.json
+
+      - name: Upload immutable staging release objects
+        env:
+          EVIDENCE_BUCKET: ${{ steps.kms.outputs.evidence_bucket }}
+          EVIDENCE_RETENTION_SECONDS: ${{ steps.kms.outputs.evidence_retention_seconds }}
+          EVIDENCE_RETENTION_LOCKED: ${{ steps.kms.outputs.evidence_retention_locked }}
+        run: |
+          set -euo pipefail
+          ROOT="gs://${EVIDENCE_BUCKET}/staging/cogs/releases/${{ matrix.cog }}/${{ needs.matrix.outputs.version }}/${{ matrix.arch }}"
+          RELEASE_EVIDENCE_URI=""
+          RELEASE_EVIDENCE_GENERATION=""
+          RELEASE_EVIDENCE_DIGEST=""
           upload_immutable() {
             local source="$1"
             local category="$2"
-            local digest destination
+            local digest destination created_log versioned_uri status
             digest=$(sha256sum "$source" | awk '{print $1}')
             destination="$ROOT/$category/sha256/$digest/$(basename "$source")"
-            gcloud storage cp --if-generation-match=0 "$source" "$destination"
-            echo "| \`${source#out/}\` | \`$destination\` |" >> "$GITHUB_STEP_SUMMARY"
+            set +e
+            created_log=$(timeout --signal=TERM --kill-after=5s 120s \
+              gcloud storage cp \
+              --if-generation-match=0 \
+              --print-created-message \
+              "$source" "$destination" 2>&1)
+            status=$?
+            set -e
+            if [ "$status" -ne 0 ]; then
+              CREATE_DESTINATION="$destination" CREATE_DIGEST="sha256:$digest" \
+                CREATE_EXIT="$status" python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              "schema": "cognitum.cog.create-reconciliation.v1",
+              "status": "UNKNOWN",
+              "destination": os.environ["CREATE_DESTINATION"],
+              "contentDigest": os.environ["CREATE_DIGEST"],
+              "observedAt": datetime.datetime.now(datetime.timezone.utc)
+              .strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "exitCode": int(os.environ["CREATE_EXIT"]),
+              "retryAllowed": False,
+              "reconcileWith": (
+                  "cognitum-one/website/.github/workflows/"
+                  "reconcile-cog-seed-staging.yml"
+              ),
+          }
+          target = Path("out/release/create-result-unknown.json")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+              echo "::error::create result is UNKNOWN; do not retry or upsert; use the read-only auditor"
+              return 75
+            fi
+            printf '%s\n' "$created_log"
+            versioned_uri=$(CREATED_LOG="$created_log" DESTINATION="$destination" \
+              python3 - <<'PY'
+          import os, re
+
+          destination = os.environ["DESTINATION"]
+          matches = {
+              candidate
+              for candidate in re.findall(
+                  r"gs://[^\s]+#[1-9][0-9]*", os.environ["CREATED_LOG"]
+              )
+              if candidate.rsplit("#", 1)[0] == destination
+          }
+          if len(matches) != 1:
+              raise SystemExit("upload did not return one exact immutable generation")
+          print(matches.pop())
+          PY
+            )
+            echo "| \`${source#out/}\` | \`$versioned_uri\` |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$source" = "out/release/release-evidence.json" ]; then
+              RELEASE_EVIDENCE_URI="${versioned_uri%#*}"
+              RELEASE_EVIDENCE_GENERATION="${versioned_uri##*#}"
+              RELEASE_EVIDENCE_DIGEST="sha256:$digest"
+            fi
           }
           {
             echo "### Staging: ${{ matrix.cog }} ${{ needs.matrix.outputs.version }} ${{ matrix.arch }}"
@@ -464,7 +680,44 @@ jobs:
             out/release/release-statement-metadata.json \
             out/release/release-evidence.json \
             out/release/signed-release.json \
-            out/release/release-trust-registry.json; do
+            out/release/release-validity-statement-metadata.json \
+            out/release/signed-release-validity.json \
+            out/release/candidate-trust-registry.json; do
             upload_immutable "$evidence" "evidence"
           done
+          test -n "$RELEASE_EVIDENCE_URI"
+          test -n "$RELEASE_EVIDENCE_GENERATION"
+          test -n "$RELEASE_EVIDENCE_DIGEST"
+          python3 scripts/cog_release_provenance.py admission \
+            --bucket-name "$EVIDENCE_BUCKET" \
+            --retention-period-seconds "$EVIDENCE_RETENTION_SECONDS" \
+            --retention-policy-locked "$EVIDENCE_RETENTION_LOCKED" \
+            --kind release \
+            --uri "$RELEASE_EVIDENCE_URI" \
+            --generation "$RELEASE_EVIDENCE_GENERATION" \
+            --content-digest "$RELEASE_EVIDENCE_DIGEST" \
+            --sigstore-bundle-digest "$(sha256sum "out/cog-${{ matrix.cog }}-${{ matrix.gcs }}.sigstore.json" | awk '{print "sha256:"$1}')" \
+            --sigstore-transparency-log-verified true \
+            --output out/release/candidate-release-evidence-locations.json
+          upload_immutable \
+            out/release/candidate-release-evidence-locations.json \
+            admission
+          echo "Dedicated protected-bucket admission candidate emitted; root quorum remains required."
           echo "No production or legacy mutable path was written."
+
+      - name: Preserve evidence admission candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cog-release-admission-candidate-${{ matrix.cog }}-${{ matrix.arch }}-${{ github.sha }}
+          path: out/release/candidate-release-evidence-locations.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Preserve ambiguous create receipt for read-only reconciliation
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cog-release-create-unknown-${{ matrix.cog }}-${{ matrix.arch }}-${{ github.sha }}
+          path: out/release/create-result-unknown.json
+          if-no-files-found: ignore
+          retention-days: 7

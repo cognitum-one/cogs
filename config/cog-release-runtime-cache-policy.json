@@ -1,0 +1,22 @@
+{
+  "clockSkewSeconds": 300,
+  "negativeWithdrawalTtlSeconds": 30,
+  "onRefreshFailure": {
+    "coldStart": "zero-deployable",
+    "newDeploymentAfterTtl": "deny-dependency-unavailable",
+    "retryAfterRequired": true,
+    "runningWorkload": "continue"
+  },
+  "schema": "cognitum.cog.release-runtime-cache-policy.v1",
+  "sources": {
+    "releaseProjection": {
+      "ttlSeconds": 30
+    },
+    "trustRegistry": {
+      "ttlSeconds": 300
+    },
+    "withdrawalProjection": {
+      "ttlSeconds": 30
+    }
+  }
+}

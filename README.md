@@ -45,6 +45,15 @@ by hand from a publish run's immutable URI + sha256 summary. ADR-153 publication
 uses environment-scoped Workload Identity Federation and create-only access;
 service-account JSON keys and mutable aliases are not accepted.
 
+The staging authority candidate in ADR-156 uses a source-pinned 2-of-3
+`cognitum.cog.trust-bootstrap.v1`, quorum-signed and chained
+`cognitum.cog.trust-registry.v3`, purpose-separated release/withdrawal
+publishers, bounded signed release validity, protected evidence buckets, and
+fail-closed runtime caches. It is not deployable until the production
+bootstrap, GitHub protection, keyless WIF/KMS/Storage authority, independent
+website ingestion/seeding/audit, receipt transparency, and live staging proofs
+are complete.
+
 An enabled static website uses the locked `vite-production-v1` profile and is
 published as a deterministic content-addressed bundle. A declared OCI website
 must already be pinned by digest; these workflows do not push images.

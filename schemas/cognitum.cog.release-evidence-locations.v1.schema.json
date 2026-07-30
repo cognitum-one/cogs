@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-evidence-locations.v1.schema.json",
+  "title": "Protected Cog release evidence locations v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "bucket", "integrity", "objects"],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.release-evidence-locations.v1"
+    },
+    "bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "resource",
+        "publicAccessPrevention",
+        "uniformBucketLevelAccess",
+        "retentionPeriodSeconds",
+        "retentionPolicyLocked",
+        "versioningEnabled"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^(?!cognitum-apps$)[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$"
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "publicAccessPrevention": {
+          "const": "enforced"
+        },
+        "uniformBucketLevelAccess": {
+          "const": true
+        },
+        "retentionPeriodSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31536000
+        },
+        "retentionPolicyLocked": {
+          "type": "boolean"
+        },
+        "versioningEnabled": {
+          "const": true
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kmsSignatureVerified",
+        "quorumRegistryRequired",
+        "sigstoreTransparencyLogVerified",
+        "sigstoreBundleDigest"
+      ],
+      "properties": {
+        "kmsSignatureVerified": {
+          "const": true
+        },
+        "quorumRegistryRequired": {
+          "const": true
+        },
+        "sigstoreTransparencyLogVerified": {
+          "const": true
+        },
+        "sigstoreBundleDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "uri",
+          "generation",
+          "contentDigest",
+          "ifGenerationMatch"
+        ],
+        "properties": {
+          "kind": {
+            "enum": ["release", "withdrawal"]
+          },
+          "uri": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "generation": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "contentDigest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "ifGenerationMatch": {
+            "const": 0
+          }
+        }
+      }
+    }
+  }
+}

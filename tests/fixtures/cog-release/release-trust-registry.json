@@ -1,6 +1,10 @@
 {
-  "keys": {
-    "fixture-ed25519-2026-07": {
+  "expiresAt": "2026-10-27T12:00:00Z",
+  "issuedAt": "2026-07-29T12:00:00Z",
+  "notBefore": "2026-07-29T12:00:00Z",
+  "previousRegistryDigest": "GENESIS",
+  "releases": [
+    {
       "algorithm": "ed25519",
       "buildWorkflows": [
         "cognitum-one/cogs/.github/workflows/publish-cog-staging.yml@refs/heads/fixture"
@@ -8,9 +12,44 @@
       "builderIdentities": [
         "github-actions://cognitum-one/cogs"
       ],
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "github": {
+        "ownerId": "256911919",
+        "repositoryId": "1211713542",
+        "workflowIds": [
+          "322710413"
+        ]
+      },
+      "keyId": "fixture-ed25519-2026-07",
+      "kmsAlgorithm": "EC_SIGN_ED25519",
+      "kmsKeyVersion": "projects/cognitum-staging/locations/us-central1/keyRings/cog-release/cryptoKeys/cog-release-signing/cryptoKeyVersions/1",
+      "notBefore": "2026-01-01T00:00:00Z",
+      "protectionLevel": "software",
+      "publicKeyFingerprint": "sha256:d9c5e8425df4663c8ae91f1403d660379788b28dee89b1c199eb1cd73de445a2",
       "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAfHX0IeNzv23eoGfyQtr0vYpIVvsM3a25DvADzNV5Rgc=\n-----END PUBLIC KEY-----\n",
-      "status": "active"
+      "purpose": "release",
+      "revocation": null,
+      "status": "active",
+      "workflowSha": "1111111111111111111111111111111111111111"
     }
-  },
-  "schema": "cognitum.cog.release-trust.v1"
+  ],
+  "schema": "cognitum.cog.trust-registry.v3",
+  "sequence": 1,
+  "signatures": [
+    {
+      "algorithm": "ed25519",
+      "keyId": "security-custodian/cog-trust-root-a",
+      "payloadDigest": "sha256:2f08766ff87f9023bb89fce2f5d81e85ce6bb1392f00a9922e14286e06f05657",
+      "schema": "cognitum.cog.trust-registry.v3",
+      "signature": "6WKanYSKC1wEJA0UHbPPG1i4mwCjzNuf_0ck66fwIqxPjiVMkH_qdbg-F5dxoL8rS1Z5RDZYyqdn8qAQ53E0Bw"
+    },
+    {
+      "algorithm": "ed25519",
+      "keyId": "platform-custodian/cog-trust-root-b",
+      "payloadDigest": "sha256:2f08766ff87f9023bb89fce2f5d81e85ce6bb1392f00a9922e14286e06f05657",
+      "schema": "cognitum.cog.trust-registry.v3",
+      "signature": "St_BXqzCuD73W3_FeATTs2zN7z7Tie0iazZojvxxEslytWIQCdTePEOSoItGxByT31k3zHQsc1bOlGEtIO4qBA"
+    }
+  ],
+  "withdrawals": []
 }

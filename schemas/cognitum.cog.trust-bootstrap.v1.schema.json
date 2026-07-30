@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.trust-bootstrap.v1.schema.json",
+  "title": "Source-pinned 2-of-3 Cog trust bootstrap v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "threshold", "roots"],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.trust-bootstrap.v1"
+    },
+    "threshold": {
+      "const": 2
+    },
+    "roots": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "keyId",
+          "signingResource",
+          "algorithm",
+          "publicKeyFingerprint",
+          "publicKeyPem"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "security-custodian",
+              "platform-custodian",
+              "independent-auditor"
+            ]
+          },
+          "keyId": {
+            "enum": [
+              "security-custodian/cog-trust-root-a",
+              "platform-custodian/cog-trust-root-b",
+              "independent-auditor/cog-trust-root-c"
+            ]
+          },
+          "signingResource": {
+            "type": "string",
+            "pattern": "^projects/[a-z][a-z0-9-]{4,28}[a-z0-9]/locations/[a-z0-9-]+/keyRings/[A-Za-z0-9_-]{1,63}/cryptoKeys/[A-Za-z0-9_-]{1,63}/cryptoKeyVersions/[1-9][0-9]*$"
+          },
+          "algorithm": {
+            "const": "ed25519"
+          },
+          "publicKeyFingerprint": {
+            "$ref": "#/$defs/digest"
+          },
+          "publicKeyPem": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

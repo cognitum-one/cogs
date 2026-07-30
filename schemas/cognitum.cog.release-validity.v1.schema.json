@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cognitum.one/cognitum.cog.release-validity.v1.schema.json",
+  "title": "Signed bounded Cog release validity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "releaseDigest",
+    "releasePayloadDigest",
+    "cogId",
+    "issuedAt",
+    "signedAt",
+    "notBefore",
+    "expiresAt",
+    "detachedSignature"
+  ],
+  "properties": {
+    "schema": {
+      "const": "cognitum.cog.release-validity.v1"
+    },
+    "releaseDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "releasePayloadDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "cogId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "issuedAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "signedAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "notBefore": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "expiresAt": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "detachedSignature": {
+      "$ref": "#/$defs/signature"
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "algorithm", "keyId", "payloadDigest", "signature"],
+      "properties": {
+        "schema": {
+          "const": "cognitum.cog.release-validity.v1"
+        },
+        "algorithm": {
+          "const": "ed25519"
+        },
+        "keyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "payloadDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      }
+    }
+  }
+}
