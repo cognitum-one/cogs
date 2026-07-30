@@ -1778,6 +1778,7 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "publish-cog.yml",
                 "publish-cog-staging.yml",
                 "withdraw-cog-staging.yml",
+                "admit-cog-trust-staging.yml",
                 "build-all-cogs.yml",
             )
         }
@@ -1818,6 +1819,7 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             problems.append("ci: workflow permissions are not read-only")
         staging = workflows["publish-cog-staging.yml"]
         withdrawal = workflows["withdraw-cog-staging.yml"]
+        trust_admission = workflows["admit-cog-trust-staging.yml"]
         production = workflows["publish-cog.yml"]
         batch = workflows["build-all-cogs.yml"]
         sidecar_workflows = {
@@ -1912,6 +1914,44 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             problems.append("withdrawal: release authority is reused")
         if "createDocument" in withdrawal or "datastore.entities" in withdrawal:
             problems.append("withdrawal: publisher contains projection-seeder authority")
+        for token in (
+            "environment: cogs-trust-admission-staging",
+            "scripts/cog_trust_admission.py",
+            "GCP_COGS_TRUST_STAGING_APPROVED_WORKFLOW_SHA",
+            "GCP_COGS_TRUST_STAGING_APPROVED_REGISTRY_DIGEST",
+            "GCP_COGS_TRUST_STAGING_REGISTRY_HEAD_SEQUENCE",
+            "GCP_COGS_TRUST_STAGING_REGISTRY_HEAD_DIGEST",
+            "--if-generation-match=0",
+            '"status": "UNKNOWN"',
+            '"retryAllowed": False',
+            "never retry, overwrite, or use an alternate path",
+            '"receiptAttestation": "PENDING_EXTERNAL"',
+            '"deploymentAuthority": False',
+        ):
+            if token not in trust_admission:
+                problems.append(
+                    f"trust-admission: missing fail-closed append control {token}"
+                )
+        for forbidden in (
+            "kms asymmetric-sign",
+            "gcloud storage ls",
+            "gcloud storage cat",
+            "gcloud storage rm",
+            "gcloud storage mv",
+            "createDocument",
+            "datastore.entities",
+            "workload-identity-pools providers update",
+            "--if-generation-match=1",
+            "credentials_json",
+        ):
+            if forbidden in trust_admission:
+                problems.append(
+                    f"trust-admission: forbidden authority remains: {forbidden}"
+                )
+        if trust_admission.count('"retryAllowed": False') != 2:
+            problems.append(
+                "trust-admission: every terminal outcome must remain non-retryable"
+            )
         if "gs://cognitum-apps" in staging:
             problems.append("staging: legacy public evidence bucket remains")
         if "Refuse unsigned production publication (ADR-155 freeze)" not in production:
@@ -2036,6 +2076,21 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "withdraw-cog-staging.yml",
                 "create result is UNKNOWN; never retry or upsert",
                 "create result is transient; retrying",
+            ),
+            "trust-admission-mutable-append": (
+                "admit-cog-trust-staging.yml",
+                "--if-generation-match=0",
+                "--if-generation-match=1",
+            ),
+            "trust-admission-blind-retry": (
+                "admit-cog-trust-staging.yml",
+                '"retryAllowed": False',
+                '"retryAllowed": True',
+            ),
+            "trust-admission-unapproved-sha": (
+                "admit-cog-trust-staging.yml",
+                "GCP_COGS_TRUST_STAGING_APPROVED_WORKFLOW_SHA",
+                "GITHUB_SHA",
             ),
             "production-unfrozen": (
                 "publish-cog.yml",

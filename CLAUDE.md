@@ -63,6 +63,10 @@ firmware does not build cogs — it installs the binaries this repo publishes.
   arch (e.g. `tailscale` is `["pi-zero-2w"]` — v0 runs Tailscale natively).
 - `scripts/cog-targets.py` maps `hardware_requirement` → build arches.
 - **Publish via CI, not by hand:**
+  - `admit-cog-trust-staging.yml` may append only an already 2-of-3-root-signed
+    `trust-admissions/<change-id>` package after protected head/bootstrap/SHA
+    approval; it cannot sign roots, rotate federation, update runtime pins, or
+    retry an ambiguous create.
   - `gh workflow run publish-cog-staging.yml -f cog=<id>` — manual isolated
     staging proof through the `cogs-staging` environment.
   - `publish-cog.yml` may build and validate, but ADR-155 freezes production

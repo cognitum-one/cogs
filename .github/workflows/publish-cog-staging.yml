@@ -427,8 +427,8 @@ jobs:
             --provenance out/provenance.sigstore.json
             --isolation out/isolation-runs.json
             --key-id "${{ steps.kms.outputs.key_id }}"
-            --builder-identity "github-actions://${{ github.repository }}"
-            --build-workflow "${{ github.workflow_ref }}"
+            --builder-identity "github-actions://cognitum-one/cogs"
+            --build-workflow "cognitum-one/cogs/.github/workflows/publish-cog-staging.yml@refs/heads/main"
             --built-at "$COG_BUILT_AT"
             --repository "${{ github.repository }}"
             --sigstore-tool-version "cosign@v3.1.2"
@@ -502,8 +502,8 @@ jobs:
             --kms-algorithm EC_SIGN_ED25519 \
             --protection-level SOFTWARE \
             --purpose release \
-            --builder-identity "github-actions://${{ github.repository }}" \
-            --build-workflow "${{ github.workflow_ref }}" \
+            --builder-identity "github-actions://cognitum-one/cogs" \
+            --build-workflow "cognitum-one/cogs/.github/workflows/publish-cog-staging.yml@refs/heads/main" \
             --workflow-sha "${{ github.sha }}" \
             --sequence 1 \
             --issued-at "$REGISTRY_ISSUED_AT" \
