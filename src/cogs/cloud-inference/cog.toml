@@ -1,7 +1,7 @@
 [cog]
 id = "cloud-inference"
 name = "Cloud Inference (Tier-3 metered)"
-version = "0.1.0"
+version = "0.1.1"
 category = "ai"
 description = "Forwards OpenAI-compat /v1/chat/completions to the metered meta-llm gateway (cognitum-auto). Standalone provider cog per ADR-090 §e — the seed reaches Tier-3 cloud inference through this cog."
 binary = "cog-cloud-inference"

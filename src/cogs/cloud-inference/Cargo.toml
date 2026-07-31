@@ -1,6 +1,6 @@
 [package]
 name = "cog-cloud-inference"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Cloud inference provider cog — forwards OpenAI-compat /v1/chat/completions to the metered meta-llm gateway (ADR-090 §e, ADR-095)"
 license = "MIT"
