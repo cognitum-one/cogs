@@ -40,9 +40,14 @@ identical:
   plane; it routes `/v1/*` to meta-llm's `apicompletions` service as of
   2026-07-17. Point it at a paired v0 hub for hub-mediated mode.)
 - `--timeout-secs` (default `60`)
-- **`COG_CLOUD_INFERENCE_KEY`** (env, **secret**) — the `cog_` gateway bearer.
-  Never a cli-arg or registry field. Absent ⇒ completions return `503` and the
-  agent degrades to the on-device model.
+- **`COG_CLOUD_INFERENCE_KEY_FILE`** (env, **secret path**, preferred) — an
+  absolute path to the agent-owned `0600` gateway bearer file. The cog re-reads
+  this file for every completion, so atomic OAuth access-token rotation takes
+  effect without restarting the cog. A missing, empty, non-regular, symlinked,
+  or group/other-accessible file fails closed with `503`.
+- **`COG_CLOUD_INFERENCE_KEY`** (env, **secret**, legacy fallback) — a static
+  `cog_` gateway bearer used only when no credential-file path is configured.
+  Never a cli-arg or registry field.
 - `COGNITUM_COG_TOKEN` (env) — the per-cog bearer the agent injects; enforced on
   `paired` endpoints.
 

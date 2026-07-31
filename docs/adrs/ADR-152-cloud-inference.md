@@ -68,11 +68,15 @@ this same plane; this cog is its edge sibling, not its client.)*
 
 ### 4. Own credential, own failure mode
 
-`COG_CLOUD_INFERENCE_KEY` (env, secret — never a `cli_arg`, never a registry
-field) holds the cog's **own** `cog_` bearer, distinct from ADR-095's
-`COGNITUM_COG_TOKEN` proxy bearer. The cog does **not** forward the seed owner's
-key. Absent key → `503`, which seed#255's dispatch already treats as a
-local-degrade trigger, so the two compose without special-casing.
+`COG_CLOUD_INFERENCE_KEY_FILE` (env, secret path — never a `cli_arg`, never a
+registry field) points to an absolute, agent-owned `0600` credential file. The
+cog re-reads it for every completion, allowing an atomically replaced
+short-lived OAuth access token to take effect without a process restart.
+Missing, empty, non-regular, symlinked, or group/other-accessible files fail
+closed. `COG_CLOUD_INFERENCE_KEY` remains a static backward-compatible fallback
+when no file path is configured. Both are distinct from ADR-095's
+`COGNITUM_COG_TOKEN` proxy bearer. Absent credential → `503`, which seed#255's
+dispatch already treats as a local-degrade trigger.
 
 A cloud `2xx` whose body has no `choices` → **`502 bad_upstream`**, never passed
 through as a completion. `402`/`429` + `Retry-After` propagate verbatim — the

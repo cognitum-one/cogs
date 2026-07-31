@@ -12,7 +12,7 @@ path = "src/main.rs"
 [dependencies]
 # HTTP server (loopback only, agent-proxied per ADR-095).
 axum = { version = "0.7", default-features = false, features = ["http1", "json", "tokio"] }
-tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net"] }
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "signal", "net", "fs"] }
 # Outbound client to the cloud gateway. rustls-tls (ring) NOT native-tls: ring
 # cross-compiles to armhf/aarch64 without cmake/openssl (same reason the seed
 # firmware picks ring — CLAUDE.md). No default features to drop the openssl path.
