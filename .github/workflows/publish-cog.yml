@@ -388,11 +388,11 @@ jobs:
 
       # ── Isolation (gate A6) ─────────────────────────────────────────────────
       # Runs the cog under the limits its OWN cog.toml declares, and records what held. This
-      # is the gate that had never been satisfiable: all 109 cogs declared allowed_commands,
+      # is the gate that had never been satisfiable: all 108 cogs declared allowed_commands,
       # max_runtime_secs and output_limit_bytes, and nothing enforced any of it (see #60), so
       # there was nothing to gather evidence about.
       #
-      # EXPECT THIS TO FAIL FOR MOST COGS TODAY, and that is the gate working. 107 cogs list
+      # EXPECT THIS TO FAIL FOR MOST COGS TODAY, and that is the gate working. 106 cogs list
       # `--help` in allowed_commands and exactly ONE implements it (#62); the rest ignore the
       # flag, fall through to their normal run loop, and get killed at their own deadline. A
       # cog that hangs on a command it advertises is not releasable, so the step refuses. Fix
