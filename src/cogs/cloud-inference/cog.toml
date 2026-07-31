@@ -38,11 +38,11 @@ max = 300
 unit = "seconds"
 cli_arg = "--timeout-secs"
 
-# The `cog_` bearer is NEVER a cli_arg or a registry field — it is a secret.
-# The agent/operator provides it via the env var COG_CLOUD_INFERENCE_KEY
-# (a cog env asset under /var/lib/cognitum/, per ADR-090 §e). Absent ⇒ the cog
-# returns 503 (Tier-3 unavailable) and the agent falls back to the local
-# sparse-LLM.
+# The gateway bearer is NEVER a cli_arg or a registry field — it is a secret.
+# Prefer COG_CLOUD_INFERENCE_KEY_FILE pointing to an absolute agent-owned 0600
+# file; the cog re-reads it per request so short-lived OAuth tokens rotate
+# without restart. COG_CLOUD_INFERENCE_KEY remains the static legacy fallback.
+# Absent/unreadable ⇒ the cog returns 503 and the agent falls back locally.
 
 # ADR-095 §1 — agent proxies /api/v1/cogs/cloud-inference/<endpoint> to the
 # loopback bind port with the per-cog bearer token.

@@ -10,8 +10,10 @@
 //! Boot:
 //!   1. Read `COGNITUM_COG_TOKEN` (per-cog bearer the agent injects) — absent
 //!      ⇒ standalone-dev mode (any Authorization accepted; warned).
-//!   2. Read `COG_CLOUD_INFERENCE_KEY` (the `cog_` gateway bearer) from the
-//!      env — a SECRET, never a cli-arg/registry field. Absent ⇒ every
+//!   2. Read the gateway bearer from `COG_CLOUD_INFERENCE_KEY_FILE` on every
+//!      request (preferred, so short-lived OAuth credentials rotate without a
+//!      cog restart), or from the legacy `COG_CLOUD_INFERENCE_KEY` env value.
+//!      Both are SECRET inputs, never cli-args/registry fields. Absent ⇒ every
 //!      completion returns 503 so the agent falls back to the local sparse-LLM.
 //!   3. Bind axum to `127.0.0.1:<port>` (loopback only — the agent proxy is the
 //!      only legitimate caller, ADR-095 §1).
@@ -34,6 +36,7 @@ use axum::{
 use clap::Parser;
 use serde_json::{json, Value};
 use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -42,6 +45,8 @@ const COG_VERSION: &str = env!("CARGO_PKG_VERSION");
 const AUTO_MODEL: &str = "cognitum-auto";
 const DEFAULT_MAX_TOKENS: u64 = 512;
 const KEY_ENV: &str = "COG_CLOUD_INFERENCE_KEY";
+const KEY_FILE_ENV: &str = "COG_CLOUD_INFERENCE_KEY_FILE";
+const MAX_CREDENTIAL_BYTES: u64 = 64 * 1024;
 /// ADR-106 §2 / ADR-258 §5 R-b — cap down to the key's held tier instead of
 /// 403-ing. Rationale at [`build_forward_body`].
 const FALLBACK_POLICY: &str = "best_effort";
@@ -79,13 +84,85 @@ struct AppState {
     started_at: Instant,
     /// Per-cog bearer the agent injects (`COGNITUM_COG_TOKEN`). `None` = dev mode.
     expected_token: Option<String>,
-    /// The `cog_` gateway bearer (`COG_CLOUD_INFERENCE_KEY`). `None` = Tier-3 off.
-    cloud_key: Option<Arc<String>>,
+    /// The gateway bearer. A file is re-read for every request so an OAuth
+    /// access token can rotate atomically without restarting the cog.
+    cloud_credential: CloudCredentialSource,
     base_url: String,
     client: reqwest::Client,
 }
 
 // ─────────────────────────── pure helpers ──────────────────────────
+
+#[derive(Clone)]
+enum CloudCredentialSource {
+    File(Arc<PathBuf>),
+    Static(Arc<String>),
+    Missing,
+}
+
+impl CloudCredentialSource {
+    fn from_env() -> Self {
+        if let Some(path) = std::env::var_os(KEY_FILE_ENV).filter(|p| !p.is_empty()) {
+            return Self::File(Arc::new(PathBuf::from(path)));
+        }
+        std::env::var(KEY_ENV)
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .map(|s| Self::Static(Arc::new(s)))
+            .unwrap_or(Self::Missing)
+    }
+
+    async fn configured(&self) -> bool {
+        self.load().await.is_ok()
+    }
+
+    async fn load(&self) -> Result<Arc<String>, CredentialError> {
+        match self {
+            Self::Static(key) => Ok(key.clone()),
+            Self::Missing => Err(CredentialError::Missing),
+            Self::File(path) => load_credential_file(path).await,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum CredentialError {
+    Missing,
+    UnsafeFile,
+    Unreadable,
+}
+
+async fn load_credential_file(path: &Path) -> Result<Arc<String>, CredentialError> {
+    if !path.is_absolute() {
+        return Err(CredentialError::UnsafeFile);
+    }
+    let metadata = tokio::fs::symlink_metadata(path)
+        .await
+        .map_err(|_| CredentialError::Unreadable)?;
+    if !metadata.file_type().is_file() {
+        return Err(CredentialError::UnsafeFile);
+    }
+    if metadata.len() > MAX_CREDENTIAL_BYTES {
+        return Err(CredentialError::UnsafeFile);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if metadata.permissions().mode() & 0o077 != 0 {
+            return Err(CredentialError::UnsafeFile);
+        }
+    }
+    let key = tokio::fs::read_to_string(path)
+        .await
+        .map_err(|_| CredentialError::Unreadable)?
+        .trim()
+        .to_string();
+    if key.is_empty() {
+        return Err(CredentialError::Missing);
+    }
+    Ok(Arc::new(key))
+}
 
 /// Validate `Authorization: Bearer <token>` in constant time. Dev mode (no
 /// token configured) accepts anything. Mirrors the cognitive-pipeline cog.
@@ -93,7 +170,9 @@ fn check_authorization(state: &AppState, headers: &HeaderMap) -> bool {
     let Some(expected) = state.expected_token.as_ref() else {
         return true;
     };
-    let Some(auth) = headers.get(axum::http::header::AUTHORIZATION).and_then(|v| v.to_str().ok())
+    let Some(auth) = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
     else {
         return false;
     };
@@ -120,7 +199,8 @@ fn check_authorization(state: &AppState, headers: &HeaderMap) -> bool {
 fn build_forward_body(mut body: Value) -> Value {
     if let Some(obj) = body.as_object_mut() {
         obj.insert("model".to_string(), Value::String(AUTO_MODEL.to_string()));
-        obj.entry("max_tokens").or_insert_with(|| json!(DEFAULT_MAX_TOKENS));
+        obj.entry("max_tokens")
+            .or_insert_with(|| json!(DEFAULT_MAX_TOKENS));
         obj.insert("stream".to_string(), Value::Bool(false));
         obj.entry("fallback_policy")
             .or_insert_with(|| json!(FALLBACK_POLICY));
@@ -139,7 +219,11 @@ fn is_completion_body(v: &Value) -> bool {
 }
 
 fn error_json(status: StatusCode, code: &str, message: &str) -> Response {
-    (status, Json(json!({ "error": { "type": code, "message": message } }))).into_response()
+    (
+        status,
+        Json(json!({ "error": { "type": code, "message": message } })),
+    )
+        .into_response()
 }
 
 // ─────────────────────────── handlers ──────────────────────────────
@@ -149,7 +233,7 @@ async fn get_info(State(state): State<AppState>) -> Response {
         "id": COG_ID,
         "version": COG_VERSION,
         "inference_base_url": state.base_url,
-        "cloud_key_configured": state.cloud_key.is_some(),
+        "cloud_key_configured": state.cloud_credential.configured().await,
         "uptime_secs": state.started_at.elapsed().as_secs(),
         "streaming": false,
     }))
@@ -168,24 +252,47 @@ async fn post_completions(
     raw: Bytes,
 ) -> Response {
     if !check_authorization(&state, &headers) {
-        return error_json(StatusCode::UNAUTHORIZED, "unauthorized", "missing or invalid per-cog token");
+        return error_json(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+            "missing or invalid per-cog token",
+        );
     }
     // No cloud key ⇒ Tier-3 unavailable; agent falls back to sparse-LLM.
-    let Some(key) = state.cloud_key.as_ref() else {
-        return error_json(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "tier_unavailable",
-            "Tier-3 cloud inference requires COG_CLOUD_INFERENCE_KEY",
-        );
+    let key = match state.cloud_credential.load().await {
+        Ok(key) => key,
+        Err(_) => {
+            return error_json(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "tier_unavailable",
+                "Tier-3 cloud inference credential is unavailable",
+            );
+        }
     };
     let Ok(body) = serde_json::from_slice::<Value>(&raw) else {
-        return error_json(StatusCode::BAD_REQUEST, "invalid_request", "body must be JSON");
+        return error_json(
+            StatusCode::BAD_REQUEST,
+            "invalid_request",
+            "body must be JSON",
+        );
     };
     if !body.get("messages").map(|m| m.is_array()).unwrap_or(false) {
-        return error_json(StatusCode::BAD_REQUEST, "invalid_request", "missing `messages` array");
+        return error_json(
+            StatusCode::BAD_REQUEST,
+            "invalid_request",
+            "missing `messages` array",
+        );
     }
-    if body.get("stream").and_then(|s| s.as_bool()).unwrap_or(false) {
-        return error_json(StatusCode::BAD_REQUEST, "unsupported", "streaming is not supported in v1");
+    if body
+        .get("stream")
+        .and_then(|s| s.as_bool())
+        .unwrap_or(false)
+    {
+        return error_json(
+            StatusCode::BAD_REQUEST,
+            "unsupported",
+            "streaming is not supported in v1",
+        );
     }
 
     let mut req = state
@@ -194,7 +301,11 @@ async fn post_completions(
         .bearer_auth(key.as_str())
         .json(&build_forward_body(body));
     // Propagate the caller's tier bounds + sub-tenant attribution (ADR-217).
-    for h in ["x-cognitum-min-tier", "x-cognitum-max-tier", "x-cognitum-sub-tenant"] {
+    for h in [
+        "x-cognitum-min-tier",
+        "x-cognitum-max-tier",
+        "x-cognitum-sub-tenant",
+    ] {
         if let Some(v) = headers.get(h).and_then(|v| v.to_str().ok()) {
             req = req.header(h, v);
         }
@@ -204,8 +315,16 @@ async fn post_completions(
         Ok(r) => r,
         // Offline / DNS / TLS failure ⇒ honest 503 so the agent degrades.
         Err(e) => {
-            let code = if e.is_timeout() { StatusCode::GATEWAY_TIMEOUT } else { StatusCode::SERVICE_UNAVAILABLE };
-            return error_json(code, "degraded", &format!("cloud upstream unreachable: {e}"));
+            let code = if e.is_timeout() {
+                StatusCode::GATEWAY_TIMEOUT
+            } else {
+                StatusCode::SERVICE_UNAVAILABLE
+            };
+            return error_json(
+                code,
+                "degraded",
+                &format!("cloud upstream unreachable: {e}"),
+            );
         }
     };
     let status = StatusCode::from_u16(resp.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
@@ -216,12 +335,21 @@ async fn post_completions(
         .map(str::to_string);
     let bytes = match resp.bytes().await {
         Ok(b) => b,
-        Err(e) => return error_json(StatusCode::BAD_GATEWAY, "degraded", &format!("reading upstream body: {e}")),
+        Err(e) => {
+            return error_json(
+                StatusCode::BAD_GATEWAY,
+                "degraded",
+                &format!("reading upstream body: {e}"),
+            )
+        }
     };
 
     // Fail safe on a wrong-but-2xx upstream (non-completion body).
     if status.is_success() {
-        let ok = serde_json::from_slice::<Value>(&bytes).ok().map(|v| is_completion_body(&v)).unwrap_or(false);
+        let ok = serde_json::from_slice::<Value>(&bytes)
+            .ok()
+            .map(|v| is_completion_body(&v))
+            .unwrap_or(false);
         if !ok {
             return error_json(
                 StatusCode::BAD_GATEWAY,
@@ -233,11 +361,14 @@ async fn post_completions(
 
     // Pass the upstream status + body through; propagate Retry-After on 402/429.
     let mut out = (status, bytes).into_response();
-    out.headers_mut()
-        .insert(axum::http::header::CONTENT_TYPE, "application/json".parse().unwrap());
+    out.headers_mut().insert(
+        axum::http::header::CONTENT_TYPE,
+        "application/json".parse().unwrap(),
+    );
     if let Some(ra) = retry_after {
         if let Ok(hv) = ra.parse() {
-            out.headers_mut().insert(axum::http::header::RETRY_AFTER, hv);
+            out.headers_mut()
+                .insert(axum::http::header::RETRY_AFTER, hv);
         }
     }
     out
@@ -256,22 +387,26 @@ fn build_router(state: AppState) -> Router {
 async fn main() {
     let args = Args::parse();
 
-    let cloud_key = std::env::var(KEY_ENV).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let cloud_credential = CloudCredentialSource::from_env();
     if args.info {
         println!(
             "{COG_ID} v{COG_VERSION}\n  inference_base_url = {}\n  cloud_key_configured = {}",
             args.inference_base_url,
-            cloud_key.is_some()
+            cloud_credential.configured().await
         );
         return;
     }
 
-    let expected_token = std::env::var("COGNITUM_COG_TOKEN").ok().filter(|s| !s.is_empty());
+    let expected_token = std::env::var("COGNITUM_COG_TOKEN")
+        .ok()
+        .filter(|s| !s.is_empty());
     if expected_token.is_none() {
         eprintln!("[{COG_ID}] WARN: COGNITUM_COG_TOKEN unset — standalone-dev mode, Authorization not enforced");
     }
-    if cloud_key.is_none() {
-        eprintln!("[{COG_ID}] WARN: {KEY_ENV} unset — Tier-3 returns 503 until a cog_ key is provisioned");
+    if !cloud_credential.configured().await {
+        eprintln!(
+            "[{COG_ID}] WARN: no readable cloud credential — Tier-3 returns 503 until one is provisioned"
+        );
     }
 
     let client = reqwest::Client::builder()
@@ -282,30 +417,61 @@ async fn main() {
     let state = AppState {
         started_at: Instant::now(),
         expected_token,
-        cloud_key: cloud_key.map(Arc::new),
+        cloud_credential,
         base_url: args.inference_base_url.trim_end_matches('/').to_string(),
         client,
     };
 
     let addr: SocketAddr = ([127, 0, 0, 1], args.port).into();
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("bind loopback");
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("bind loopback");
     eprintln!("[{COG_ID}] listening on http://{addr} → {}", state.base_url);
-    axum::serve(listener, build_router(state)).await.expect("serve");
+    axum::serve(listener, build_router(state))
+        .await
+        .expect("serve");
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::HeaderValue;
+    use std::sync::atomic::{AtomicU64, Ordering};
 
     fn state(token: Option<&str>, key: Option<&str>) -> AppState {
         AppState {
             started_at: Instant::now(),
             expected_token: token.map(String::from),
-            cloud_key: key.map(|k| Arc::new(k.to_string())),
+            cloud_credential: key
+                .map(|k| CloudCredentialSource::Static(Arc::new(k.to_string())))
+                .unwrap_or(CloudCredentialSource::Missing),
             base_url: "http://127.0.0.1:0".into(),
             client: reqwest::Client::new(),
         }
+    }
+
+    fn credential_file(contents: &str) -> PathBuf {
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "cog-cloud-inference-credential-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        #[cfg(unix)]
+        {
+            use std::io::Write;
+            use std::os::unix::fs::OpenOptionsExt;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(0o600)
+                .open(&path)
+                .unwrap();
+            file.write_all(contents.as_bytes()).unwrap();
+        }
+        #[cfg(not(unix))]
+        std::fs::write(&path, contents).unwrap();
+        path
     }
 
     #[test]
@@ -352,9 +518,13 @@ mod tests {
 
     #[test]
     fn completion_shape_guard() {
-        assert!(is_completion_body(&json!({ "choices": [{ "message": {} }] })));
+        assert!(is_completion_body(
+            &json!({ "choices": [{ "message": {} }] })
+        ));
         // The api.cognitum.one storefront 200 must NOT pass.
-        assert!(!is_completion_body(&json!({ "status": "healthy", "endpoints": {} })));
+        assert!(!is_completion_body(
+            &json!({ "status": "healthy", "endpoints": {} })
+        ));
         assert!(!is_completion_body(&json!({})));
     }
 
@@ -369,10 +539,16 @@ mod tests {
         let st = state(Some("secret"), Some("cog_k"));
         assert!(!check_authorization(&st, &HeaderMap::new()));
         let mut good = HeaderMap::new();
-        good.insert(axum::http::header::AUTHORIZATION, HeaderValue::from_static("Bearer secret"));
+        good.insert(
+            axum::http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer secret"),
+        );
         assert!(check_authorization(&st, &good));
         let mut bad = HeaderMap::new();
-        bad.insert(axum::http::header::AUTHORIZATION, HeaderValue::from_static("Bearer nope"));
+        bad.insert(
+            axum::http::header::AUTHORIZATION,
+            HeaderValue::from_static("Bearer nope"),
+        );
         assert!(!check_authorization(&st, &bad));
     }
 
@@ -390,11 +566,110 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn credential_file_is_reread_for_each_request() {
+        use std::sync::Mutex;
+
+        let seen_auth = Arc::new(Mutex::new(Vec::<String>::new()));
+        let captured = seen_auth.clone();
+        let app = Router::new().route(
+            "/v1/chat/completions",
+            post(move |headers: HeaderMap| {
+                let captured = captured.clone();
+                async move {
+                    captured.lock().unwrap().push(
+                        headers
+                            .get(axum::http::header::AUTHORIZATION)
+                            .and_then(|v| v.to_str().ok())
+                            .unwrap_or("")
+                            .to_string(),
+                    );
+                    Json(json!({ "choices": [] }))
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let path = credential_file("oauth_token_one\n");
+        let mut st = state(None, None);
+        st.base_url = format!("http://{addr}");
+        st.cloud_credential = CloudCredentialSource::File(Arc::new(path.clone()));
+        let body = Bytes::from_static(br#"{"messages":[]}"#);
+
+        let first = post_completions(State(st.clone()), HeaderMap::new(), body.clone()).await;
+        assert_eq!(first.status(), StatusCode::OK);
+        let rotated = credential_file("oauth_token_two\n");
+        std::fs::rename(rotated, &path).unwrap();
+        let second = post_completions(State(st), HeaderMap::new(), body).await;
+        assert_eq!(second.status(), StatusCode::OK);
+
+        assert_eq!(
+            *seen_auth.lock().unwrap(),
+            ["Bearer oauth_token_one", "Bearer oauth_token_two"]
+        );
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[tokio::test]
+    async fn missing_empty_or_unsafe_credential_file_fails_closed() {
+        let path = credential_file("token");
+        let mut st = state(None, None);
+        st.cloud_credential = CloudCredentialSource::File(Arc::new(path.clone()));
+        let body = Bytes::from_static(br#"{"messages":[]}"#);
+
+        std::fs::write(&path, " \n").unwrap();
+        let empty = post_completions(State(st.clone()), HeaderMap::new(), body.clone()).await;
+        assert_eq!(empty.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        std::fs::remove_file(&path).unwrap();
+        let missing = post_completions(State(st), HeaderMap::new(), body).await;
+        assert_eq!(missing.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let relative = load_credential_file(Path::new("relative-token")).await;
+        assert!(matches!(relative, Err(CredentialError::UnsafeFile)));
+
+        let oversized = credential_file(&"x".repeat(MAX_CREDENTIAL_BYTES as usize + 1));
+        assert!(matches!(
+            load_credential_file(&oversized).await,
+            Err(CredentialError::UnsafeFile)
+        ));
+        std::fs::remove_file(oversized).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn credential_file_rejects_symlinks_and_broad_permissions() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+
+        let path = credential_file("token");
+        let link = path.with_extension("link");
+        symlink(&path, &link).unwrap();
+        assert!(matches!(
+            load_credential_file(&link).await,
+            Err(CredentialError::UnsafeFile)
+        ));
+
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o640)).unwrap();
+        assert!(matches!(
+            load_credential_file(&path).await,
+            Err(CredentialError::UnsafeFile)
+        ));
+        std::fs::remove_file(link).unwrap();
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[tokio::test]
     async fn bad_body_and_stream_rejected() {
         let st = state(None, Some("cog_k"));
         let r1 = post_completions(State(st.clone()), HeaderMap::new(), Bytes::from("{")).await;
         assert_eq!(r1.status(), StatusCode::BAD_REQUEST);
-        let r2 = post_completions(State(st.clone()), HeaderMap::new(), Bytes::from(r#"{"foo":1}"#)).await;
+        let r2 = post_completions(
+            State(st.clone()),
+            HeaderMap::new(),
+            Bytes::from(r#"{"foo":1}"#),
+        )
+        .await;
         assert_eq!(r2.status(), StatusCode::BAD_REQUEST);
         let r3 = post_completions(
             State(st),
@@ -440,7 +715,10 @@ mod tests {
         let mut st = state(None, Some("cog_test"));
         st.base_url = format!("http://{addr}");
         let mut h = HeaderMap::new();
-        h.insert("x-cognitum-sub-tenant", HeaderValue::from_static("cognitum-8b40"));
+        h.insert(
+            "x-cognitum-sub-tenant",
+            HeaderValue::from_static("cognitum-8b40"),
+        );
 
         let resp = post_completions(
             State(st),
