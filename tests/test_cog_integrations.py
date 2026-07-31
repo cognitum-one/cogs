@@ -133,7 +133,7 @@ class CogIntegrationManifestTests(unittest.TestCase):
 
     def test_catalog_manifests_all_validate_with_default_off(self) -> None:
         paths = sorted((ROOT / "src" / "cogs").glob("*/cog.toml"))
-        self.assertEqual(len(paths), 109)
+        self.assertEqual(len(paths), 108)
         for path in paths:
             with self.subTest(cog=path.parent.name):
                 integrations = load_manifest(path)["integrations"]
@@ -168,7 +168,7 @@ class CogIntegrationManifestTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(checked.returncode, 0, checked.stderr)
-        self.assertIn("valid integration manifests: 109", checked.stdout)
+        self.assertIn("valid integration manifests: 108", checked.stdout)
         with tempfile.TemporaryDirectory() as output:
             emitted = subprocess.run(
                 command

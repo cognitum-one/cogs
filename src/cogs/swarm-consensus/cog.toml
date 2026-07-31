@@ -29,11 +29,11 @@ cli_arg = "--peers"
 [config.propose]
 type = "string"
 label = "Proposal"
-description = "Action to propose for voting (e.g. enable-cog:presence)"
+description = "Action to propose for voting (e.g. enable-cog:presence-field)"
 default = ""
 cli_arg = "--propose"
 
 [console]
-allowed_commands = ["--once --peers 169.254.42.2 --propose enable-cog:presence", "--help"]
+allowed_commands = ["--once --peers 169.254.42.2 --propose enable-cog:presence-field", "--help"]
 max_runtime_secs = 15
 output_limit_bytes = 65536

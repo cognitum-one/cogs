@@ -4,7 +4,7 @@
 //! commit on majority. Simple 2-phase commit (prepare + commit).
 //!
 //! Usage:
-//!   cog-swarm-consensus --once --peers 169.254.42.2,169.254.42.3 --propose "enable-cog:presence"
+//!   cog-swarm-consensus --once --peers 169.254.42.2,169.254.42.3 --propose "enable-cog:presence-field"
 //!   cog-swarm-consensus --interval 60 --peers 169.254.42.2
 
 use std::io::{Read, Write};
