@@ -227,6 +227,24 @@ fn now_secs() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
 }
 
+fn calibration_error(path: &str, reason: &str) -> serde_json::Value {
+    let baseline = std::path::Path::new(path)
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("baseline.json");
+    serde_json::json!({
+        "error": "calibration_required",
+        "baseline": baseline,
+        "reason": reason,
+        "recoverable": true,
+    })
+}
+
+fn calibration_required(path: &str, reason: &str) -> ! {
+    eprintln!("{}", calibration_error(path, reason));
+    std::process::exit(5)
+}
+
 /// Optional: persist a presence reading to the seed store (best-effort).
 /// MUST NOT block the presence loop — uses a short connect timeout because on the
 /// seed an unanswered SYN to :80 otherwise hangs the loop ~15s (frames go stale).
@@ -333,10 +351,16 @@ fn main() {
 
     // ── Load baseline ─────────────────────────────────────────────────────
     let base: Baseline = match std::fs::read(&baseline_path) {
-        Ok(b) => serde_json::from_slice(&b).unwrap_or_default(),
-        Err(_) => { eprintln!("[presence-field] no baseline at {baseline_path} — run with --calibrate <secs> first"); std::process::exit(5); }
+        Ok(b) => match serde_json::from_slice(&b) {
+            Ok(base) => base,
+            Err(_) => calibration_required(&baseline_path, "baseline_invalid"),
+        },
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            calibration_required(&baseline_path, "baseline_missing")
+        }
+        Err(_) => calibration_required(&baseline_path, "baseline_unreadable"),
     };
-    if base.nodes.is_empty() { eprintln!("[presence-field] baseline has no nodes"); std::process::exit(5); }
+    if base.nodes.is_empty() { calibration_required(&baseline_path, "baseline_empty"); }
     eprintln!("[presence-field] running: {} calibrated node(s)", base.nodes.len());
 
     // ── Runtime loop ──────────────────────────────────────────────────────
@@ -488,6 +512,15 @@ mod tests {
         (0..n)
             .map(|k| dc + amp * (2.0 * std::f64::consts::PI * freq_hz * k as f64 / fs).sin())
             .collect()
+    }
+
+    #[test]
+    fn missing_baseline_is_a_typed_recoverable_error() {
+        let error = calibration_error("/state/baseline.json", "baseline_missing");
+        assert_eq!(error["error"], "calibration_required");
+        assert_eq!(error["reason"], "baseline_missing");
+        assert_eq!(error["recoverable"], true);
+        assert_eq!(error["baseline"], "baseline.json");
     }
 
     #[test]

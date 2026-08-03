@@ -218,6 +218,39 @@ struct HealthReport {
     /// Lets operators and support tell at a glance whether vitals came from the
     /// real contactless feed or the demo stream.
     source: String,
+    /// Whether this report is backed by a directly observed ESP32 packet.
+    /// Synthetic/unknown sources remain usable for demos but cannot make a
+    /// confident physiological or "normal" claim.
+    evidence_state: String,
+    evidence_reason: String,
+}
+
+fn source_evidence(source: &str) -> (&'static str, &'static str) {
+    if matches!(source, "auto:esp32-vitals" | "esp32-vitals") {
+        ("transport_observed", "unauthenticated device-computed ESP32 vitals packet")
+    } else if matches!(source, "auto:esp32-udp" | "esp32-udp") {
+        ("transport_observed", "unauthenticated live ESP32 feature packet")
+    } else if matches!(source, "auto:seed-stream" | "seed-stream") {
+        ("unverified", "seed stream provenance is synthetic or unspecified")
+    } else {
+        ("unverified", "source provenance is not independently verified")
+    }
+}
+
+fn suppress_unverified_signals(
+    apnea_detected: &mut bool,
+    breathing_drop_pct: &mut f64,
+    alerts: &mut Vec<String>,
+) {
+    *apnea_detected = false;
+    *breathing_drop_pct = 0.0;
+    alerts.clear();
+}
+
+fn reset_alert_streaks(a: &mut u32, b: &mut u32, c: &mut u32) {
+    *a = 0;
+    *b = 0;
+    *c = 0;
 }
 
 // ── Sensor sources (ADR-091) ─────────────────────────────────────────
@@ -811,7 +844,38 @@ fn main() {
                         low_hr_streak = 0;
                     }
 
-                    let overall = if alerts.iter().any(|a| a.starts_with("APNEA")) {
+                    let (evidence_state, evidence_reason) = source_evidence(r.source_tag);
+                    let verified = evidence_state == "verified";
+                    if !verified {
+                        // Demo/synthetic data must never raise a physiological
+                        // alarm or claim a normal patient state. Reset every
+                        // clinical accumulator after this demo calculation so
+                        // synthetic history cannot prime the next verified
+                        // packet's alert decision.
+                        suppress_unverified_signals(
+                            &mut r.apnea_detected,
+                            &mut r.drop_pct,
+                            &mut alerts,
+                        );
+                        breathing_filter = BandpassFilter::new(0.1, 0.5, sample_rate);
+                        hr_filter = BandpassFilter::new(0.8, 2.0, sample_rate);
+                        presence = PresenceDetector::new();
+                        apnea = ApneaDetector::new();
+                        vital_stats = WelfordStats::new();
+                        presence_sticky = false;
+                        presence_absent_streak = 0;
+                        low_breath_streak = 0;
+                        reset_alert_streaks(
+                            &mut high_breath_streak,
+                            &mut high_hr_streak,
+                            &mut low_hr_streak,
+                        );
+                        breath_smooth.clear();
+                        hr_smooth.clear();
+                    }
+                    let overall = if !verified {
+                        "unverified"
+                    } else if alerts.iter().any(|a| a.starts_with("APNEA")) {
                         "critical"
                     } else if alerts.is_empty() {
                         "normal"
@@ -833,11 +897,17 @@ fn main() {
                             .unwrap_or_default()
                             .as_secs(),
                         source: r.source_tag.to_string(),
+                        evidence_state: evidence_state.into(),
+                        evidence_reason: evidence_reason.into(),
                     };
 
                     println!("{}", serde_json::to_string(&report).unwrap_or_default());
-                    if let Err(e) = store_report(&report) {
-                        eprintln!("[cog-health-monitor] store error: {e}");
+                    if verified {
+                        if let Err(e) = store_report(&report) {
+                            eprintln!("[cog-health-monitor] store error: {e}");
+                        }
+                    } else {
+                        eprintln!("[cog-health-monitor] unverified report not written to physiological store");
                     }
                     if !alerts.is_empty() {
                         eprintln!("[cog-health-monitor] ALERT: {:?}", alerts);
@@ -857,7 +927,37 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{SmoothWindow, sustained};
+    use super::{reset_alert_streaks, source_evidence, suppress_unverified_signals, SmoothWindow, sustained};
+
+    #[test]
+    fn source_tags_never_upgrade_transport_to_verified_evidence() {
+        assert_eq!(source_evidence("auto:esp32-vitals").0, "transport_observed");
+        assert_eq!(source_evidence("auto:esp32-udp").0, "transport_observed");
+        assert_eq!(source_evidence("auto:seed-stream").0, "unverified");
+        assert_eq!(source_evidence("custom-source").0, "unverified");
+        assert_eq!(source_evidence("spoof-esp32-vitals").0, "unverified");
+    }
+
+    #[test]
+    fn unverified_policy_suppresses_all_alert_bearing_fields() {
+        let mut apnea = true;
+        let mut drop = 0.75;
+        let mut alerts = vec!["APNEA".into(), "TACHYCARDIA".into()];
+        suppress_unverified_signals(&mut apnea, &mut drop, &mut alerts);
+        assert!(!apnea);
+        assert_eq!(drop, 0.0);
+        assert!(alerts.is_empty());
+    }
+
+    #[test]
+    fn unverified_transition_clears_streaks_before_verified_input() {
+        let mut streaks = [2, 2, 2];
+        let [ref mut a, ref mut b, ref mut c] = streaks;
+        reset_alert_streaks(a, b, c);
+        assert_eq!(streaks, [0, 0, 0]);
+        let (next, fired) = sustained(true, streaks[0], 3);
+        assert_eq!((next, fired), (1, false));
+    }
 
     #[test]
     fn median_rejects_a_single_spike() {
