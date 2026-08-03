@@ -145,21 +145,26 @@ ratio. The `breathing_*` fields are **advisory** — see Limitations.
 - **Single-node `hd_distance` is unusable** — the single-node report carries
   no real distance field (reads 0 always); the multi-node baseline is the
   intended path, not `hd_distance`.
-- **Calibration is launch-time `--calibrate` only on shipped firmware.** A
-  runtime trigger + drift recalibration is a follow-up (see ADR-030). A real
-  `POST /api/v1/apps/{id}/calibrate` endpoint exists in seed `main`
-  (seed#290, fixed in `e7e7489` / seed#294), but v0.24.0 publication is held
-  and field devices run v0.23.x, so the CLI flag is still the only route in
-  practice.
-- **`thresh` cannot be set through the seed API.** It is declared
-  `type = "number"` in `cog.toml`; the agent's argv builder handles
-  `boolean | integer | float | string` and drops anything else silently, so a
-  `PUT /apps/presence-field/config` returns 200 and changes nothing. The other
-  four keys (`quorum`, `modes`, `hold`, `interval`) are integers and do apply —
-  except that a value equal to the declared default also emits no argv. Fixed
-  in seed `main` under the same held release (seed#289). Until it ships, per-site
-  threshold tuning — which this ADR's own config description calls for — is
-  CLI-only.
+- **Calibration is API-driven from seed v0.24.1; CLI-only below it.**
+  `POST /api/v1/apps/{id}/calibrate` shipped in seed **v0.24.1**
+  (2026-07-31, `e7e7489` / seed#294, closing seed#290) and is live on hardware
+  — verified on cognitum-8b40 running 0.24.2. Body `{"secs": N}`, 1-600; it
+  appends `--calibrate N` to the schema-driven argv and answers 202 echoing the
+  argv actually passed. Note it **kills any running instance first** rather than
+  refusing, and because `--calibrate` falls through into detection, the single
+  call both calibrates and leaves the cog running. Seeds below v0.24.1 — which
+  includes design-partner units still on 0.22.x — have no such endpoint and must
+  use the CLI flag. A runtime drift-recalibration trigger is still a follow-up
+  (see ADR-030).
+- **`thresh` was unsettable through the seed API below v0.24.1.** It is declared
+  `type = "number"` in `cog.toml`, and the agent's argv builder matched only
+  `boolean | integer | float | string`, dropping anything else silently — so
+  `PUT /apps/presence-field/config` returned 200 and changed nothing. Fixed in
+  seed v0.24.1 (seed#289): both argv builders now match
+  `"integer" | "float" | "number"` and `"string" | "select"`. Still true on any
+  firmware, and worth knowing: a value **equal to the declared default** emits no
+  argv at all, so a config write can look like a no-op even for the keys that
+  work. The `args` array in the `/start` response is the reliable check.
 
 ## Consequences
 
@@ -172,8 +177,11 @@ ratio. The `breathing_*` fields are **advisory** — see Limitations.
   `presence_detected` for a patient who rests still, which is precisely the
   case that remains unproven. Landing the breathing-band detector did not
   change this, because the detector is advisory.
-- Store-only deployment of this cog still requires out-of-band SSH — tracked as
-  cogs#38, with the fail-honest source/calibration contract as cogs#75.
+- Store-only deployment is closer but not confirmed. cogs#38's first blocker —
+  calibration unreachable from the store — is addressed at the API level by
+  seed v0.24.1's `/calibrate` endpoint. Its other two items (Health Monitor
+  source selection, racy stop→start) and whether a UI surfaces the new endpoint
+  are unverified here. The fail-honest source/calibration contract is cogs#75.
 
 ## Follow-ups
 
@@ -183,6 +191,9 @@ ratio. The `breathing_*` fields are **advisory** — see Limitations.
   should be quoted as the behaviour of this cog.
 - Make the calibration-quality guard fail closed, or persist the verdict into
   `baseline.json` so a running cog can report `calibration_suspect`.
-- Re-declare `thresh` as `float`, or land seed#289 — whichever ships first.
+- `thresh` now applies via the API on seed v0.24.1+ (seed#289 shipped), but it
+  is still declared `type = "number"` while every other key in this manifest
+  uses a type the pre-0.24.1 builder understood. Re-declaring it `float` would
+  make the cog work correctly on older seeds still in the field.
 - Expose `--window` and the `--breath-*` knobs in `cog.toml` if they are meant
   to be tunable per site; today they are unreachable through the API.
