@@ -2,6 +2,8 @@
 
 **Status:** Proposed
 **Date:** 2026-07-29
+**Updated:** 2026-08-15 (founder-stage single-approver override)
+**Founder-stage repository release override:** Recorded; enforcement is owned by each release lane
 **Production deployment:** NOT approved
 **Staging authority:** NO-GO until every required evidence item is complete
 **Irreversible retention lock:** NOT approved by this ADR
@@ -54,6 +56,52 @@ admit its own key, seed a projection, update a provider, or sign for the other
 purpose. A seeder cannot sign. The auditor cannot write or retry. The runtime
 has no signing credential.
 
+## Founder-stage human approval override (2026-08-15)
+
+The team is currently too small to assign the human custodian, reviewer,
+publisher, merger, and deployment-operator roles to different people. Dragan
+explicitly overrides that natural-person separation during the founder stage.
+This does not collapse the authority topology above: cryptographic keys,
+service accounts, workload-identity providers, protected environments,
+databases, buckets, purpose restrictions, immutable artifacts, receipts,
+audit records, and rollback boundaries remain separate technical principals
+and controls.
+
+The authorized founder-stage approvers are identified by GitHub login and
+immutable numeric user ID:
+
+- Dragan Spiridonov — `proffesor-for-testing` / `214853444`;
+- rUv — `ruvnet` / `2934394`;
+- Nick Ruest — `nicholas-ruest` / `127058086`;
+- Ofer Shaal — `shaal` / `22901`;
+- Rob Ranson — `rcraw` / `61807077`; and
+- Martin Vladimirov — `martinvlad` / `36089262`.
+
+Any one listed person MAY author, review, approve, merge, stage, and promote the
+same pull request. Self-approval is explicit and must not be represented as an
+independent review or multi-person quorum. Release approval is valid only when
+automation binds the allowlisted login and numeric ID to the exact PR head and
+resulting merge SHA, all required CI is green, at least one exact-head
+adversarial review records a no-block verdict, the full QE PR flow is complete,
+the relevant staging evidence is successful, the immutable artifact and
+rollback target are identified, and the approval is recorded before deployment
+credentials are acquired.
+
+This section supersedes every natural-person-separation, two-human-reviewer,
+no-self-approval, independent-human-review, and human-quorum statement in this
+ADR while the founder-stage override is active. Distinct cryptographic keys and
+signatures may still be required as technical integrity and purpose-separation
+controls. If one person operates more than one such role, those signatures MUST
+be described as distinct technical signatures, not independent human approvals.
+
+This override prevents the absent multi-person team from blocking ordinary
+repository PRs and otherwise-authorized staging or production releases. It does
+not synthesize the missing Cog authority evidence, approve retention locking,
+or lift the ADR-155 production publishing freeze. Those controls remain
+fail-closed until their own stated evidence and approval conditions are met.
+When staffing permits independent custody, replace this temporary override
+through the same full QE PR flow.
+
 ## Root bootstrap and trust registry
 
 The immutable `cognitum.cog.trust-bootstrap.v1` production document SHALL
@@ -64,9 +112,11 @@ resources, SPKI SHA-256 fingerprints, and `threshold: 2`:
 - `platform-custodian/cog-trust-root-b`; and
 - `independent-auditor/cog-trust-root-c`.
 
-One person cannot occupy more than one role. GitHub Actions, publisher/seeder
-service accounts, runtime identities, and the evidence project cannot access
-root private material or mutate the bootstrap.
+During the founder-stage override one allowlisted person may operate more than
+one role, but the named roles, keys, signatures, service accounts, and audit
+records remain distinct. GitHub Actions, publisher/seeder service accounts,
+runtime identities, and the evidence project cannot access root private
+material or mutate the bootstrap.
 
 This repository contains the proposed public bootstrap only at the canonical
 path `config/cog-trust-bootstrap.v1.json`. It records the three exact
@@ -100,7 +150,7 @@ One signature, duplicate roles, an unknown root, a substituted bootstrap
 fingerprint, a broken signature, a sequence gap, a fork, a rollback, an expired
 registry, or a broken predecessor digest fails closed. Root rotation requires
 an old-root quorum transition, a new runtime image and bootstrap digest, an
-Accepted successor ADR, staging rollback proof, and independent approval.
+Accepted successor ADR, staging rollback proof, and founder-gate approval.
 
 ## Purpose isolation and authority topology
 
@@ -128,9 +178,11 @@ two publisher workflows in this repository are source candidates for their
 three named acts only. The website seeders, auditor, receipt attestor, and
 runtime changes are external prerequisites and remain NO-GO blockers.
 
-The `cogs-withdrawal-staging` GitHub environment SHALL require two distinct
-Cognitum Security/Platform reviewers, prevent self-approval, and prevent
-administrator bypass. Its immutable approval receipt binds the reviewers,
+The `cogs-withdrawal-staging` GitHub environment SHALL require the founder-stage
+release gate above. Until the override is retired, its two required technical
+approval signatures may be produced by one allowlisted person; self-approval
+is permitted but administrator bypass of the evidence gate is not. Its
+immutable approval receipt binds the approver identities,
 change ID, workflow SHA, run attempt, release digest, and withdrawal digest.
 Source comments cannot prove that environment configuration.
 
@@ -188,7 +240,9 @@ A malformed, ambiguous, unknown-key, wrong-purpose, invalid-signature, or
 wrong-binding immutable withdrawal is never interpreted as absence. It
 quarantines its exact bound release digest pending read-only audit. It does not
 re-enable that release and cannot globally deny unrelated digests. Only the
-verified, two-person-approved withdrawal seeder may create a projection.
+verified, founder-gate-approved withdrawal seeder may create a projection. Its
+two technical approval signatures do not imply two human reviewers during the
+founder stage.
 
 ## Website parser and runtime migration
 
@@ -219,8 +273,10 @@ requests, forks, alternate claims, mutable repository-name-only conditions,
 and publisher provider updates fail.
 
 Only `cog-trust-federation-admins@cognitum.one` may change a provider's exact
-workflow SHA, through an out-of-band audited GCP request with two approvers and
-the dedicated `cog-federation-admin` service account. The request references
+workflow SHA, through an out-of-band audited GCP request with two technical
+approval signatures and the dedicated `cog-federation-admin` service account.
+During the founder stage one allowlisted person may create both signatures;
+the request references
 the quorum-signed registry update, proves old/new deny canaries and rollback,
 and never temporarily broadens the condition. Publishers, seeders, runtime
 identities, GitHub workflows, and repository administrators have no
@@ -262,7 +318,7 @@ have committed. The publisher or seeder:
 
 The auditor reads only the exact destination and returns a signed,
 append-only `COMMITTED`, `NOT_FOUND`, or `MISMATCH` receipt. Only an
-authoritative `NOT_FOUND` permits a new two-person-approved attempt.
+authoritative `NOT_FOUND` permits a new founder-gate-approved attempt.
 `MISMATCH` quarantines the digest. The current release, withdrawal, and
 trust-append workflows stop as `UNKNOWN`, but their local artifacts are not
 yet receipt-attestor signed or stored in the protected receipt chain; the
@@ -314,7 +370,7 @@ quarantines the exact digest and cannot be overridden by an older cache.
 
 The machine-readable owner and artifact matrix is
 `config/cog-release-evidence-matrix.v1.json`. It mirrors website EV-128-01
-through EV-128-14 and assigns each item an owner, independent reviewer, exact
+through EV-128-14 and assigns each item an owner, reviewer role, exact
 command, expected result, source implementation status, and deterministic
 artifact path:
 
@@ -323,8 +379,10 @@ artifact path:
 Each envelope contains start/finish UTC timestamps, source SHA, subject
 resource/version/digest, exact command and tool versions, expected/actual
 result, exit code, input/stdout/stderr SHA-256 digests, workflow identity and
-attempt, redaction declaration, independent reviewer, and previous receipt
-digest. The receipt attestor signs the canonical envelope and appends it to the
+attempt, redaction declaration, reviewer role, and previous receipt digest.
+One allowlisted person may fill both owner and reviewer roles during the
+founder stage, but the evidence MUST record that overlap. The receipt attestor
+signs the canonical envelope and appends it to the
 receipt chain. Console prose and screenshots are supporting material, not gate
 evidence.
 
@@ -353,12 +411,12 @@ The source and live evidence together SHALL prove:
 
 ## Rollout, rollback, and current status
 
-Rollout order is: source contract; real bootstrap/custodians; branch and
-two-person environments; key-prohibition policies; separate keyless
+Rollout order is: source contract; real bootstrap/custodian roles; branch and
+founder-gated environments; key-prohibition policies; separate keyless
 identities/providers; three KMS keys; three protected buckets; quorum-signed
 registry; negative federation/IAM canaries; website parser/cache migration;
 verified seeders and read-only auditor; signed receipt chain; authenticated
-staging E2E; independent review; then a separate production decision.
+staging E2E; founder-stage QE approval; then a separate production decision.
 
 Before the first admitted release, rollback disables the provider and service
 account, removes workload bindings and bucket-create roles, and disables the
@@ -386,8 +444,8 @@ Implemented in this source candidate:
 
 Still missing and therefore NO-GO:
 
-- verified, non-overlapping root-custodian IAM and independent approval of the
-  proposed source bootstrap digest;
+- verified, technically non-overlapping root-custodian IAM and founder-gate
+  approval of the proposed source bootstrap digest;
 - quorum-signed live registry and exact workflow-SHA rotation governance;
 - all target GCP identities, providers, keys, buckets, IAM, organization
   policies, audit logs, and GitHub environment protections;
