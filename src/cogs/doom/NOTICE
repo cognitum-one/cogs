@@ -1,0 +1,44 @@
+cog-doom — licensing NOTICE
+===========================
+
+IMPORTANT: This cog is licensed under the GNU General Public License,
+version 2 (GPLv2) — NOT the MIT license that covers the rest of the
+cognitum-one/cogs repository.
+
+Why this directory is GPLv2
+---------------------------
+The `doom` cog statically links the vendored `doomgeneric` C engine
+(vendor/doomgeneric/), which is a derivative of id Software's original
+DOOM source release. That source is licensed under GPLv2. Linking it
+into the cog binary makes the resulting binary a derivative work, so the
+whole cog (the Rust wrapper + the linked C engine) must be distributed
+under GPLv2-compatible terms. See:
+
+  * vendor/doomgeneric/LICENSE        (GPLv2, the engine's license)
+  * vendor/doomgeneric/README         (origin: github.com/ozkl/doomgeneric)
+  * ./LICENSE                          (full GPLv2 text, governing this cog)
+  * Cargo.toml `license = "GPL-2.0-or-later"`
+
+Scope
+-----
+ONLY the `src/cogs/doom/` directory is GPLv2. Every other cog and the
+repository root remain MIT (see the repo-root LICENSE). Nothing in this
+directory relicenses or "infects" the rest of the repo — GPL applies to
+this derivative work, which is self-contained here.
+
+Game data (no DOOM assets shipped)
+----------------------------------
+This cog vendors only the doomgeneric *engine* source — it ships NO DOOM
+game data (no commercial or shareware WAD). At runtime it uses the
+freely-redistributable FreeDoom IWAD (`freedoom1.wad`), declared as an
+asset in cog.toml and fetched at install time. FreeDoom is distributed
+under a BSD-3-Clause license by the Freedoom project
+(https://freedoom.github.io/). FreeDoom's own license terms accompany
+the WAD; it is not vendored in this repository.
+
+For maintainers
+---------------
+Please confirm you accept a GPLv2 subdirectory living inside this
+otherwise-MIT repository. If that is not acceptable, the alternative is
+to host the doom cog in a separate repository and reference it from the
+registry — but vendoring keeps the PR self-contained and CI green.
