@@ -1,0 +1,14 @@
+# Pinned, NOT "stable". A floating channel means a Rust release can red every
+# PR in this repository overnight with no change from anyone. That happened
+# org-wide on 2026-08-20: 1.98.0 reached stable and clippy's result_large_err
+# began rejecting code that had been fine for weeks (cognitum-one/console#242).
+#
+# 1.97.1 was the stable channel until 2026-08-20, so this is the toolchain this
+# repository was already building with. A pin, not an upgrade.
+#
+# Moving the org to 1.98.0 is tracked deliberately in cognitum-one/cognitum#540,
+# repo by repo, because each one's clippy fallout has to be absorbed and
+# reviewed. To upgrade: raise the version here, in a PR.
+[toolchain]
+channel = "1.97.1"
+components = ["clippy", "rustfmt"]
