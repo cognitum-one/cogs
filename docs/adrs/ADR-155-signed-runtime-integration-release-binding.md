@@ -122,7 +122,7 @@ null static website digest.
 
 All GitHub Actions are pinned to reviewed commit SHAs. The reusable
 organization security workflow executes from immutable merged caller commit
-`62489f1606ce871af9c0405dd9e1cb6f886b15cc`. Its reviewed internal policy
+`28fc1abd35b26695f00fe8cde354a72337e7fcda`. Its reviewed internal policy
 anchor is `647765efc5152db840e29104f68a28340ca232f9`; both commits are ancestors
 of merged organization main commit
 `5eb92ac7c8a8b72814663ab58d9241dd8e0510ae`.
