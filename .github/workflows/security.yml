@@ -8,4 +8,4 @@ on:
     - cron: "0 6 * * 1"
 jobs:
   scan:
-    uses: cognitum-one/.github/.github/workflows/security-scan.yml@28fc1abd35b26695f00fe8cde354a72337e7fcda
+    uses: cognitum-one/.github/.github/workflows/security-scan.yml@8f1f1b465553d3838f5e592cf951cb0f9a2dd7b5
