@@ -11,7 +11,7 @@ permissions:
 jobs:
   changed-cogs:
     name: Detect changed cogs
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     outputs:
       cogs: ${{ steps.detect.outputs.cogs }}
       shared: ${{ steps.detect.outputs.shared }}
@@ -65,7 +65,7 @@ jobs:
     name: cargo check ${{ matrix.cog }}
     needs: changed-cogs
     if: needs.changed-cogs.outputs.cogs != '[]' && needs.changed-cogs.outputs.cogs != ''
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     strategy:
       fail-fast: false
       max-parallel: 6
@@ -102,7 +102,7 @@ jobs:
     name: cargo check shared crates
     needs: changed-cogs
     if: needs.changed-cogs.outputs.shared == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -117,7 +117,7 @@ jobs:
 
   manifest-validate:
     name: Validate cog.toml + Cargo.toml consistency
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -193,7 +193,7 @@ jobs:
 
   integration-manifest-validate:
     name: Validate optional runtime integration manifests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -218,7 +218,7 @@ jobs:
 
   release-provenance-validate:
     name: Validate release provenance and isolation gates
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -259,7 +259,7 @@ jobs:
   adr-required:
     name: Require ADR for new cog
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -291,7 +291,7 @@ jobs:
   asset-sha256-validate:
     name: Asset sha256 must not be TODO (publish gate)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, gcp-bypass]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
