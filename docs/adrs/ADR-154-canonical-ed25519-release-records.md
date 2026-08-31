@@ -2,9 +2,9 @@
 
 **Status**: Accepted
 **Date**: 2026-07-29
-**Superseded in part**: ADR-156 replaces the staging trust-admission and
-evidence-custody handoff below; the canonical release-signature decision
-remains Accepted.
+**Current relationship**: ADR-156's staging trust-admission and evidence-custody
+handoff was superseded for routine releases on 2026-08-31. The canonical
+release-signature decision remains Accepted under the lean authority model.
 **Related**: ADR-020 (build/publish), ADR-153 (optional integrations and WIF),
 website ADR-113 (release evidence), website ADR-123 (runtime reconciliation)
 

@@ -1,13 +1,36 @@
 # ADR-156: Quorum-rooted release authority and separated staging custody
 
-**Status:** Proposed
+**Status:** Superseded for routine releases
 **Date:** 2026-07-29
-**Updated:** 2026-08-15 (founder-stage single-approver override)
+**Updated:** 2026-08-31 (routine-release topology retired)
 **Founder-stage repository release override:** Recorded; enforcement is owned by each release lane
 **Production deployment:** NOT approved
 **Staging authority:** NO-GO until every required evidence item is complete
 **Irreversible retention lock:** NOT approved by this ADR
 **Website authority:** ADR-128 in `cognitum-one/website`
+
+## Supersession notice (2026-08-31)
+
+Website ADR-140 now governs routine Cog releases and supersedes this proposed
+topology for that purpose. The quorum-rooted trust registry, evidence seeders,
+reconciliation auditor, receipt chain, deployment admission, and artifact
+custody described below were never activated and grant no release authority.
+
+The routine artifact-integrity boundary is deliberately lean:
+
+1. an authorized team member deliberately invokes publication after the
+   applicable exact-head automated checks pass;
+2. signing is isolated from pull-request code and uses a non-exportable,
+   purpose-bound key;
+3. publication produces immutable, digest-addressed artifacts and evidence;
+   and
+4. a digest-specific withdrawal or quarantine action remains available for
+   containment, followed by monitoring, forward-fix publication, and consumer
+   pin rollback.
+
+No mandatory second human, independent review, branch promotion, or technical
+quorum applies to the routine lane. The remainder of this ADR is retained as
+historical design rationale for a deliberately selected high-assurance lane.
 
 This ADR supersedes the staging trust-admission and evidence-custody portions
 of ADR-154. ADR-154's canonical Ed25519 release record and ADR-155's signed
@@ -161,11 +184,11 @@ withdrawal-purpose key on a release path are rejected even if the key,
 signature, workflow, and KMS resource would otherwise be valid. The two
 publishers must also use different logical key IDs and KMS versions.
 
-The approved staging target is:
+The historical proposed staging target was:
 
 | Act | Principal / provider | Key / workflow / environment | Protected destination |
 |---|---|---|---|
-| Trust append | `cog-trust-append-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-trust-registry-appender-stg` | no root key; `.github/workflows/admit-cog-trust-staging.yml`; `cogs-trust-admission-staging` | create-only `gs://cognitum-20260110-cog-trust-stg` |
+| Trust append | `cog-trust-append-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-trust-registry-appender-stg` | retired without activation | create-only `gs://cognitum-20260110-cog-trust-stg` |
 | Release publish | `cog-release-publisher-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-release-publisher-stg` | `cog-release-stg/cryptoKeys/release-ed25519/cryptoKeyVersions/1`; `.github/workflows/publish-cog-staging.yml`; `cogs-staging` | `gs://cognitum-20260110-cog-release-stg` |
 | Withdrawal publish | `cog-withdrawal-publisher-stg@cognitum-20260110.iam.gserviceaccount.com`; `github-cog-authority-stg/providers/cogs-withdrawal-publisher-stg` | `cog-withdrawal-stg/cryptoKeys/withdrawal-ed25519/cryptoKeyVersions/1`; `.github/workflows/withdraw-cog-staging.yml`; `cogs-withdrawal-staging` | `gs://cognitum-20260110-cog-withdrawal-stg` |
 | Release seed | requester `cog-rel-seed-req-stg@cognitum-20260110.iam.gserviceaccount.com`; runtime `cog-rel-seed-run-stg@cognitum-20260110.iam.gserviceaccount.com`; `website-release-seeder-stg` | website `seed-cog-release-staging.yml`; `cogs-release-seed-staging` | create-only named Firestore database `cog-release-staging` |
@@ -366,13 +389,12 @@ upgrade, and placement deny as dependency unavailable and require
 dependency failure. A valid or malformed withdrawal immediately denies or
 quarantines the exact digest and cannot be overridden by an older cache.
 
-## Deterministic validation evidence
+## Historical deterministic validation evidence
 
-The machine-readable owner and artifact matrix is
-`config/cog-release-evidence-matrix.v1.json`. It mirrors website EV-128-01
-through EV-128-14 and assigns each item an owner, reviewer role, exact
-command, expected result, source implementation status, and deterministic
-artifact path:
+The removed source candidate included an EV-128-01 through EV-128-14 owner and
+artifact matrix. It assigned each item an owner, reviewer role, command,
+expected result, source implementation status, and deterministic artifact
+path:
 
 `evidence/adr-156/<run-id>/<evidence-id>.json`
 
@@ -456,5 +478,6 @@ Still missing and therefore NO-GO:
 - authenticated staging and GCP E2E evidence EV-128-01 through EV-128-14; and
 - an Accepted production ADR.
 
-ADR-156 remains **Proposed**, staging authority remains **NO-GO**, production
-remains **NOT approved**, and retention locking remains **NOT approved**.
+ADR-156 is **Superseded for routine releases**. Its proposed staging authority
+was never activated, production was never approved by this ADR, and retention
+locking remains **NOT approved**.
