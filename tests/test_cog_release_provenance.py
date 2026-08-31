@@ -881,60 +881,6 @@ class CogReleaseProvenanceTests(unittest.TestCase):
                 with self.assertRaises(ReleaseError):
                     prepare(args)
 
-    def test_evidence_matrix_is_complete_deterministic_and_owned(self) -> None:
-        matrix = json.loads(
-            (ROOT / "config" / "cog-release-evidence-matrix.v1.json").read_text()
-        )
-        self.assertEqual(
-            set(matrix),
-            {
-                "schema",
-                "adr",
-                "sourceAuthority",
-                "artifactTemplate",
-                "requiredEnvelopeFields",
-                "entries",
-            },
-        )
-        self.assertEqual(
-            matrix["schema"], "cognitum.cog.release-evidence-matrix.v1"
-        )
-        expected_ids = [f"EV-128-{index:02d}" for index in range(1, 15)]
-        self.assertEqual(
-            [entry["id"] for entry in matrix["entries"]],
-            expected_ids,
-        )
-        required_entry_fields = {
-            "id",
-            "owner",
-            "independentReviewer",
-            "command",
-            "expected",
-            "artifact",
-            "sourceStatus",
-        }
-        for entry in matrix["entries"]:
-            self.assertEqual(set(entry), required_entry_fields)
-            self.assertTrue(entry["owner"])
-            self.assertTrue(entry["independentReviewer"])
-            self.assertTrue(entry["command"])
-            self.assertTrue(entry["expected"])
-            self.assertEqual(
-                entry["artifact"],
-                f"evidence/adr-156/<run-id>/{entry['id']}.json",
-            )
-        envelope_fields = set(matrix["requiredEnvelopeFields"])
-        for field in (
-            "startedAt",
-            "finishedAt",
-            "inputDigest",
-            "stdoutDigest",
-            "stderrDigest",
-            "sourceSha",
-            "previousReceiptDigest",
-        ):
-            self.assertIn(field, envelope_fields)
-
     def test_signed_withdrawal_round_trip_and_tampering_fail_closed(self) -> None:
         withdrawal_dir = self.directory / "withdrawal"
         withdrawal_private_key = withdrawal_dir / "private.pem"
@@ -1778,7 +1724,6 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "publish-cog.yml",
                 "publish-cog-staging.yml",
                 "withdraw-cog-staging.yml",
-                "admit-cog-trust-staging.yml",
                 "build-all-cogs.yml",
             )
         }
@@ -1819,7 +1764,6 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             problems.append("ci: workflow permissions are not read-only")
         staging = workflows["publish-cog-staging.yml"]
         withdrawal = workflows["withdraw-cog-staging.yml"]
-        trust_admission = workflows["admit-cog-trust-staging.yml"]
         production = workflows["publish-cog.yml"]
         batch = workflows["build-all-cogs.yml"]
         sidecar_workflows = {
@@ -1914,44 +1858,6 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
             problems.append("withdrawal: release authority is reused")
         if "createDocument" in withdrawal or "datastore.entities" in withdrawal:
             problems.append("withdrawal: publisher contains projection-seeder authority")
-        for token in (
-            "environment: cogs-trust-admission-staging",
-            "scripts/cog_trust_admission.py",
-            "GCP_COGS_TRUST_STAGING_APPROVED_WORKFLOW_SHA",
-            "GCP_COGS_TRUST_STAGING_APPROVED_REGISTRY_DIGEST",
-            "GCP_COGS_TRUST_STAGING_REGISTRY_HEAD_SEQUENCE",
-            "GCP_COGS_TRUST_STAGING_REGISTRY_HEAD_DIGEST",
-            "--if-generation-match=0",
-            '"status": "UNKNOWN"',
-            '"retryAllowed": False',
-            "never retry, overwrite, or use an alternate path",
-            '"receiptAttestation": "PENDING_EXTERNAL"',
-            '"deploymentAuthority": False',
-        ):
-            if token not in trust_admission:
-                problems.append(
-                    f"trust-admission: missing fail-closed append control {token}"
-                )
-        for forbidden in (
-            "kms asymmetric-sign",
-            "gcloud storage ls",
-            "gcloud storage cat",
-            "gcloud storage rm",
-            "gcloud storage mv",
-            "createDocument",
-            "datastore.entities",
-            "workload-identity-pools providers update",
-            "--if-generation-match=1",
-            "credentials_json",
-        ):
-            if forbidden in trust_admission:
-                problems.append(
-                    f"trust-admission: forbidden authority remains: {forbidden}"
-                )
-        if trust_admission.count('"retryAllowed": False') != 2:
-            problems.append(
-                "trust-admission: every terminal outcome must remain non-retryable"
-            )
         if "gs://cognitum-apps" in staging:
             problems.append("staging: legacy public evidence bucket remains")
         if "Refuse unsigned production publication (ADR-155 freeze)" not in production:
@@ -2076,21 +1982,6 @@ class CogReleaseWorkflowPolicyTests(unittest.TestCase):
                 "withdraw-cog-staging.yml",
                 "create result is UNKNOWN; never retry or upsert",
                 "create result is transient; retrying",
-            ),
-            "trust-admission-mutable-append": (
-                "admit-cog-trust-staging.yml",
-                "--if-generation-match=0",
-                "--if-generation-match=1",
-            ),
-            "trust-admission-blind-retry": (
-                "admit-cog-trust-staging.yml",
-                '"retryAllowed": False',
-                '"retryAllowed": True',
-            ),
-            "trust-admission-unapproved-sha": (
-                "admit-cog-trust-staging.yml",
-                "GCP_COGS_TRUST_STAGING_APPROVED_WORKFLOW_SHA",
-                "GITHUB_SHA",
             ),
             "production-unfrozen": (
                 "publish-cog.yml",

@@ -63,16 +63,16 @@ firmware does not build cogs — it installs the binaries this repo publishes.
   arch (e.g. `tailscale` is `["pi-zero-2w"]` — v0 runs Tailscale natively).
 - `scripts/cog-targets.py` maps `hardware_requirement` → build arches.
 - **Publish via CI, not by hand:**
-  - `admit-cog-trust-staging.yml` may append only an already 2-of-3-root-signed
-    `trust-admissions/<change-id>` package after protected head/bootstrap/SHA
-    approval; it cannot sign roots, rotate federation, update runtime pins, or
-    retry an ambiguous create.
   - `gh workflow run publish-cog-staging.yml -f cog=<id>` — manual isolated
     staging proof through the `cogs-staging` environment.
-  - `publish-cog.yml` may build and validate, but ADR-155 freezes production
-    authentication/upload until a separate Ed25519 production-authority ADR.
+  - An authorized team member may deliberately invoke routine publication when
+    the applicable exact-head automated checks pass. Signing remains isolated
+    from pull-request code and artifacts remain immutable and digest-addressed.
+  - `publish-cog.yml` is the production publication surface; withdrawal or
+    quarantine is digest-specific and does not require branch promotion or a
+    mandatory second human.
   - `build-all-cogs.yml` is an umbrella build-only smoke. Its legacy
-    `publish=true`/tag path fails closed under the same ADR-155 freeze.
+    `publish=true`/tag path is not the routine per-Cog release surface.
 - Every build emits a canonical, content-addressed optional-integration sidecar.
   Missing website, Tailscale attachment, and web MCP tables mean disabled.
 - A release-eligible policy binds the exact normalized sidecar, its digest,

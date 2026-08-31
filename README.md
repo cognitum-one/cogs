@@ -45,14 +45,12 @@ by hand from a publish run's immutable URI + sha256 summary. ADR-153 publication
 uses environment-scoped Workload Identity Federation and create-only access;
 service-account JSON keys and mutable aliases are not accepted.
 
-The staging authority candidate in ADR-156 uses a source-pinned 2-of-3
-`cognitum.cog.trust-bootstrap.v1`, quorum-signed and chained
-`cognitum.cog.trust-registry.v3`, purpose-separated release/withdrawal
-publishers, bounded signed release validity, protected evidence buckets, and
-fail-closed runtime caches. It is not deployable until the production
-bootstrap, GitHub protection, keyless WIF/KMS/Storage authority, independent
-website ingestion/seeding/audit, receipt transparency, and live staging proofs
-are complete.
+ADR-156's unactivated quorum and custody topology is superseded for routine
+releases. Routine publication is deliberately invoked by an authorized team
+member after applicable exact-head checks, keeps non-exportable signing
+isolated from pull-request code, writes immutable digest-addressed artifacts,
+and retains a digest-specific withdrawal or quarantine path. No branch
+promotion or mandatory second human is part of this routine boundary.
 
 An enabled static website uses the locked `vite-production-v1` profile and is
 published as a deterministic content-addressed bundle. A declared OCI website
