@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "cog-presence-field"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cog-sensor-sources",
  "serde",

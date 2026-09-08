@@ -1,7 +1,7 @@
 [cog]
 id = "presence-field"
 name = "Presence Field"
-version = "0.1.1"
+version = "0.1.2"
 category = "presence"
 description = "Multi-node WiFi-CSI presence via field-model residual (ADR-151). Learns an empty-room baseline per node, then detects a person as the residual after projecting out environmental modes, maxed across nodes. Consumes raw CSI from the seed csi-relay (ADR-104 P2) on its fan-out port and publishes a presence file that vitals cogs read."
 binary = "cog-presence-field-arm"
@@ -11,6 +11,23 @@ hardware_requirement = ["pi-zero-2w", "v0-appliance"]
 csi_packet_types = ["raw"]
 
 [config]
+
+[config.occupancy_only]
+type = "boolean"
+label = "Occupancy only"
+description = "Report only binary room occupancy from the spatial field residual. Disables breathing-band analysis and omits breathing fields so the first qualification phase cannot be mistaken for a vitals result."
+default = false
+cli_arg = "--occupancy-only"
+
+[config.calibrate_seconds]
+type = "integer"
+label = "Empty-room calibration"
+description = "Collect a new empty-room baseline for this many seconds, then continue running. The room must remain empty and the RF topology must remain unchanged."
+default = 120
+min = 30
+max = 600
+unit = "seconds"
+cli_arg = "--calibrate"
 
 [config.thresh]
 type = "number"

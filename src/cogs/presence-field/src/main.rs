@@ -208,19 +208,88 @@ fn decode_csi(d: &[u8]) -> Option<(u8, Vec<f64>)> {
     let magic = u32::from_le_bytes([d[0], d[1], d[2], d[3]]);
     if magic != CSI_MAGIC { return None; }
     let node_id = d[4];
-    let iq = &d[20..];
-    let n = (iq.len() / 2).min(N_SUB);
-    let mut amp = vec![0.0; N_SUB];
-    for k in 0..n {
-        let i = iq[2 * k] as i8 as f64;
-        let q = iq[2 * k + 1] as i8 as f64;
-        amp[k] = (i * i + q * q).sqrt();
+    let declared = u16::from_le_bytes([d[6], d[7]]) as usize;
+    if declared < N_SUB || d.len() < 20 + declared * 2 {
+        return None;
+    }
+    let iq = &d[20..20 + declared * 2];
+    let mut amp = Vec::with_capacity(N_SUB);
+    for k in 0..N_SUB {
+        // Preserve the whole measured RF span while keeping the field model's
+        // bounded 64-dimensional cost. This is identity for 64-subcarrier
+        // frames and an endpoint-preserving projection for C6 128/192/256.
+        let source = k * (declared - 1) / (N_SUB - 1);
+        let i = iq[2 * source] as i8 as f64;
+        let q = iq[2 * source + 1] as i8 as f64;
+        amp.push((i * i + q * q).sqrt());
     }
     Some((node_id, amp))
 }
 
 fn arg(args: &[String], key: &str) -> Option<String> {
     args.iter().position(|a| a == key).and_then(|i| args.get(i + 1)).cloned()
+}
+
+fn bool_arg(args: &[String], key: &str) -> bool {
+    arg(args, key)
+        .map(|value| matches!(value.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or_else(|| args.iter().any(|value| value == key))
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DetectionScope {
+    Occupancy,
+    Presence,
+}
+
+impl DetectionScope {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Occupancy => "occupancy",
+            Self::Presence => "presence",
+        }
+    }
+}
+
+fn checks_breathing_during_calibration(scope: DetectionScope) -> bool {
+    scope == DetectionScope::Presence
+}
+
+#[allow(clippy::too_many_arguments)]
+fn detection_report(
+    scope: DetectionScope,
+    detected: bool,
+    best_ratio: f64,
+    threshold: f64,
+    nodes_over_thresh: usize,
+    quorum: usize,
+    per_node_ratio: serde_json::Map<String, serde_json::Value>,
+    breathing: Option<(bool, f64, f64)>,
+    nodes: usize,
+    method: &str,
+    timestamp: u64,
+) -> serde_json::Value {
+    let mut report = serde_json::Map::new();
+    report.insert("detection_scope".into(), serde_json::json!(scope.label()));
+    let outcome_key = match scope {
+        DetectionScope::Occupancy => "occupied",
+        DetectionScope::Presence => "presence_detected",
+    };
+    report.insert(outcome_key.into(), serde_json::json!(detected));
+    report.insert("score".into(), serde_json::json!((best_ratio * 10.0).round() / 10.0));
+    report.insert("threshold".into(), serde_json::json!(threshold));
+    report.insert("nodes_over_thresh".into(), serde_json::json!(nodes_over_thresh));
+    report.insert("quorum".into(), serde_json::json!(quorum));
+    report.insert("per_node_ratio".into(), serde_json::Value::Object(per_node_ratio));
+    report.insert("nodes".into(), serde_json::json!(nodes));
+    report.insert("method".into(), serde_json::json!(method));
+    report.insert("timestamp".into(), serde_json::json!(timestamp));
+    if let Some((advisory, bpm, snr)) = breathing {
+        report.insert("breathing_advisory".into(), serde_json::json!(advisory));
+        report.insert("breathing_bpm".into(), serde_json::json!((bpm * 10.0).round() / 10.0));
+        report.insert("breathing_snr".into(), serde_json::json!((snr * 10.0).round() / 10.0));
+    }
+    serde_json::Value::Object(report)
 }
 
 fn now_secs() -> u64 {
@@ -248,16 +317,29 @@ fn calibration_required(path: &str, reason: &str) -> ! {
 /// Optional: persist a presence reading to the seed store (best-effort).
 /// MUST NOT block the presence loop — uses a short connect timeout because on the
 /// seed an unanswered SYN to :80 otherwise hangs the loop ~15s (frames go stale).
+fn store_target(gateway_url: Option<&str>) -> (std::net::SocketAddr, String) {
+    let authority = gateway_url
+        .and_then(|url| url.strip_prefix("http://"))
+        .and_then(|rest| rest.split('/').next())
+        .filter(|value| !value.is_empty())
+        .unwrap_or("127.0.0.1:80");
+    let address = authority
+        .parse()
+        .unwrap_or_else(|_| "127.0.0.1:80".parse().expect("static socket address"));
+    (address, authority.to_string())
+}
+
 fn store_presence(present: bool, score: f64) {
     let vector = vec![if present { 1.0 } else { 0.0 }, (score / 100.0).min(1.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
     let payload = serde_json::json!({ "vectors": [[0, vector]], "dedup": true });
     let body = match serde_json::to_vec(&payload) { Ok(b) => b, Err(_) => return };
-    let addr: std::net::SocketAddr = match "127.0.0.1:80".parse() { Ok(a) => a, Err(_) => return };
+    let gateway_url = std::env::var("COGNITUM_GATEWAY_URL").ok();
+    let (addr, host) = store_target(gateway_url.as_deref());
     if let Ok(mut conn) = std::net::TcpStream::connect_timeout(&addr, Duration::from_millis(300)) {
         let _ = conn.set_write_timeout(Some(Duration::from_millis(500)));
         let _ = conn.set_read_timeout(Some(Duration::from_millis(500)));
         use std::io::Write;
-        let _ = write!(conn, "POST /api/v1/store/ingest HTTP/1.0\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", body.len());
+        let _ = write!(conn, "POST /api/v1/store/ingest HTTP/1.0\r\nHost: {host}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", body.len());
         let _ = conn.write_all(&body);
         let mut sink = Vec::new();
         let _ = conn.read_to_end(&mut sink);
@@ -281,6 +363,11 @@ fn main() {
     let hold = arg(&args, "--hold").and_then(|s| s.parse().ok()).unwrap_or(5u64);
     let interval = arg(&args, "--interval").and_then(|s| s.parse().ok()).unwrap_or(1u64);
     let window = arg(&args, "--window").and_then(|s| s.parse().ok()).unwrap_or(20usize);
+    let scope = if bool_arg(&args, "--occupancy-only") {
+        DetectionScope::Occupancy
+    } else {
+        DetectionScope::Presence
+    };
     // Breathing-band still-person detector (ADR-151): residual history window in
     // seconds, peak-over-floor SNR required, and consecutive-eval stability count.
     let breath_secs = arg(&args, "--breath-secs").and_then(|s| s.parse().ok()).unwrap_or(45u64);
@@ -304,7 +391,7 @@ fn main() {
         Err(e) => { eprintln!("[presence-field] FATAL: cannot bind {bind}: {e} (another CSI cog may hold it)"); std::process::exit(2); }
     };
     socket.set_read_timeout(Some(Duration::from_millis(500))).ok();
-    eprintln!("[presence-field] starting bind={bind} modes={k} thresh={thresh}x hold={hold}s");
+    eprintln!("[presence-field] starting bind={bind} scope={} modes={k} thresh={thresh}x hold={hold}s", scope.label());
 
     // ── Calibration mode ──────────────────────────────────────────────────
     if let Some(secs) = calibrate {
@@ -331,13 +418,15 @@ fn main() {
         // silently destroys later detection — bench-verified 2026-06-15, where the
         // still-person ratio collapsed from ~6x to ~2x until the baseline was
         // re-taken clean. Warn loudly so the operator re-calibrates.
-        for (nid, frames) in &per {
-            if let Some(m) = base.nodes.get(nid) {
-                let series: Vec<f64> = frames.iter().map(|f| residual_energy(f, m)).collect();
-                let fs = frames.len() as f64 / secs.max(1) as f64;
-                if let Some((bpm, snr)) = breathing_band(&series, fs) {
-                    if snr >= breath_snr && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&bpm) {
-                        eprintln!("[presence-field] ⚠ node{nid}: empty baseline shows a respiration band ({bpm:.0} bpm, snr {snr:.1}) — the room may NOT have been empty. RE-CALIBRATE with the room truly clear or detection will be degraded.");
+        if checks_breathing_during_calibration(scope) {
+            for (nid, frames) in &per {
+                if let Some(m) = base.nodes.get(nid) {
+                    let series: Vec<f64> = frames.iter().map(|f| residual_energy(f, m)).collect();
+                    let fs = frames.len() as f64 / secs.max(1) as f64;
+                    if let Some((bpm, snr)) = breathing_band(&series, fs) {
+                        if snr >= breath_snr && (RESP_LO_HZ * 60.0..=RESP_HI_HZ * 60.0).contains(&bpm) {
+                            eprintln!("[presence-field] ⚠ node{nid}: empty baseline shows a respiration band ({bpm:.0} bpm, snr {snr:.1}) — the room may NOT have been empty. RE-CALIBRATE with the room truly clear or detection will be degraded.");
+                        }
                     }
                 }
             }
@@ -393,11 +482,13 @@ fn main() {
                     q.push_back(e);
                     while q.len() > window { q.pop_front(); }
                     // Breathing-band history: time-stamped residual, trimmed by age.
-                    let now = Instant::now();
-                    let h = hist.entry(nid).or_default();
-                    h.push_back((now, e));
-                    while h.front().is_some_and(|&(t, _)| now.duration_since(t) > Duration::from_secs(breath_secs)) {
-                        h.pop_front();
+                    if scope == DetectionScope::Presence {
+                        let now = Instant::now();
+                        let h = hist.entry(nid).or_default();
+                        h.push_back((now, e));
+                        while h.front().is_some_and(|&(t, _)| now.duration_since(t) > Duration::from_secs(breath_secs)) {
+                            h.pop_front();
+                        }
                     }
                 }
             }
@@ -423,15 +514,17 @@ fn main() {
         // (still) person — caught where the motion ratio fades to baseline.
         let mut breath_bpm = 0.0f64;
         let mut breath_snr_best = 0.0f64;
-        for nid in base.nodes.keys() {
-            if let Some(h) = hist.get(nid) {
-                if h.len() >= RESP_MIN_SAMPLES {
-                    let span = h.back().unwrap().0.duration_since(h.front().unwrap().0).as_secs_f64();
-                    if span > 1.0 {
-                        let fs = (h.len() - 1) as f64 / span;
-                        let series: Vec<f64> = h.iter().map(|&(_, e)| e).collect();
-                        if let Some((bpm, snr)) = breathing_band(&series, fs) {
-                            if snr > breath_snr_best { breath_snr_best = snr; breath_bpm = bpm; }
+        if scope == DetectionScope::Presence {
+            for nid in base.nodes.keys() {
+                if let Some(h) = hist.get(nid) {
+                    if h.len() >= RESP_MIN_SAMPLES {
+                        let span = h.back().unwrap().0.duration_since(h.front().unwrap().0).as_secs_f64();
+                        if span > 1.0 {
+                            let fs = (h.len() - 1) as f64 / span;
+                            let series: Vec<f64> = h.iter().map(|&(_, e)| e).collect();
+                            if let Some((bpm, snr)) = breathing_band(&series, fs) {
+                                if snr > breath_snr_best { breath_snr_best = snr; breath_bpm = bpm; }
+                            }
                         }
                     }
                 }
@@ -473,6 +566,8 @@ fn main() {
         // Publish presence for downstream gating (Health Monitor reads this file).
         let pj = serde_json::json!({
             "present": present,
+            "occupied": present,
+            "detection_scope": scope.label(),
             "score": (best_ratio * 10.0).round() / 10.0,
             "method": method,
             "nodes_over_thresh": nodes_over,
@@ -484,20 +579,21 @@ fn main() {
         });
         let _ = std::fs::write(&presence_file, serde_json::to_vec(&pj).unwrap_or_default());
 
-        let report = serde_json::json!({
-            "presence_detected": present,
-            "score": (best_ratio * 10.0).round() / 10.0,   // residual ratio over empty baseline
-            "threshold": thresh,
-            "nodes_over_thresh": nodes_over,
-            "quorum": quorum,
-            "per_node_ratio": per_node,
-            "breathing_advisory": breath_advisory,         // liveness hint only — does NOT gate presence
-            "breathing_bpm": (breath_bpm * 10.0).round() / 10.0,
-            "breathing_snr": (breath_snr_best * 10.0).round() / 10.0,
-            "nodes": base.nodes.len(),
-            "method": method,
-            "timestamp": ts,
-        });
+        let breathing = (scope == DetectionScope::Presence)
+            .then_some((breath_advisory, breath_bpm, breath_snr_best));
+        let report = detection_report(
+            scope,
+            present,
+            best_ratio,
+            thresh,
+            nodes_over,
+            quorum,
+            per_node,
+            breathing,
+            base.nodes.len(),
+            method,
+            ts,
+        );
         println!("{}", serde_json::to_string(&report).unwrap_or_default());
         store_presence(present, best_ratio);
     }
@@ -506,6 +602,19 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn raw_csi_frame(node_id: u8, subcarriers: &[(i8, i8)]) -> Vec<u8> {
+        let mut frame = vec![0u8; 20];
+        frame[0..4].copy_from_slice(&CSI_MAGIC.to_le_bytes());
+        frame[4] = node_id;
+        frame[5] = 1; // one antenna
+        frame[6..8].copy_from_slice(&(subcarriers.len() as u16).to_le_bytes());
+        for &(i, q) in subcarriers {
+            frame.push(i as u8);
+            frame.push(q as u8);
+        }
+        frame
+    }
 
     fn sine(freq_hz: f64, fs: f64, secs: f64, amp: f64, dc: f64) -> Vec<f64> {
         let n = (fs * secs) as usize;
@@ -561,5 +670,64 @@ mod tests {
         let on = freq_power(&s, 0.3, fs);
         let off = freq_power(&s, 0.45, fs);
         assert!(on > off * 5.0, "power at signal freq ({on}) not dominant over off ({off})");
+    }
+
+    #[test]
+    fn raw_csi_decode_uses_declared_count_and_spans_wide_frames() {
+        let mut subcarriers = vec![(0, 0); 256];
+        subcarriers[255] = (3, 4);
+        let frame = raw_csi_frame(13, &subcarriers);
+
+        let (node, amplitudes) = decode_csi(&frame).expect("valid 256-subcarrier frame");
+
+        assert_eq!(node, 13);
+        assert_eq!(amplitudes.len(), N_SUB);
+        assert_eq!(amplitudes[N_SUB - 1], 5.0, "projection must cover the full RF span");
+    }
+
+    #[test]
+    fn raw_csi_decode_rejects_a_truncated_declared_payload() {
+        let subcarriers = vec![(1, 1); 64];
+        let mut frame = raw_csi_frame(11, &subcarriers);
+        frame[6..8].copy_from_slice(&256u16.to_le_bytes());
+
+        assert!(decode_csi(&frame).is_none());
+    }
+
+    #[test]
+    fn occupancy_report_excludes_unqualified_vitals_fields() {
+        let report = detection_report(
+            DetectionScope::Occupancy,
+            true,
+            7.5,
+            4.0,
+            2,
+            2,
+            serde_json::Map::new(),
+            None,
+            3,
+            "field-residual",
+            123,
+        );
+
+        assert_eq!(report["detection_scope"], "occupancy");
+        assert_eq!(report["occupied"], true);
+        assert!(report.get("breathing_bpm").is_none());
+        assert!(report.get("breathing_snr").is_none());
+        assert!(report.get("breathing_advisory").is_none());
+    }
+
+    #[test]
+    fn occupancy_calibration_does_not_run_breathing_analysis() {
+        assert!(!checks_breathing_during_calibration(DetectionScope::Occupancy));
+        assert!(checks_breathing_during_calibration(DetectionScope::Presence));
+    }
+
+    #[test]
+    fn v0_gateway_url_selects_gateway_store_port() {
+        let (address, host) = store_target(Some("http://127.0.0.1:9000"));
+
+        assert_eq!(address, "127.0.0.1:9000".parse().unwrap());
+        assert_eq!(host, "127.0.0.1:9000");
     }
 }
